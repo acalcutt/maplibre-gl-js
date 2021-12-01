@@ -1,5 +1,8 @@
 /// <reference path="./types/glsl.d.ts" />
 /// <reference path="./types/non-typed-modules.d.ts" />
+import 'isomorphic-fetch';
+import "abort-controller/polyfill"
+import { performance, PerformanceObserver } from 'perf_hooks';
 import assert from 'assert';
 import {supported} from '@mapbox/mapbox-gl-supported';
 
@@ -27,6 +30,12 @@ import {clearTileCache} from './util/tile_request_cache';
 import {PerformanceUtils} from './util/performance';
 import type {RequestParameters, ResponseCallback} from './util/ajax';
 import type {Cancelable} from './types/cancelable';
+
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
+}
 
 const exported = {
     supported,

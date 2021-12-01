@@ -1,5 +1,7 @@
 
+import flowRemoveTypes from '@mapbox/flow-remove-types';
 import resolve from '@rollup/plugin-node-resolve';
+import buble from '@rollup/plugin-buble';
 import replace from '@rollup/plugin-replace';
 import commonjs from '@rollup/plugin-commonjs';
 import unassert from 'rollup-plugin-unassert';
@@ -12,16 +14,10 @@ import strip from '@rollup/plugin-strip';
 // builds (main maplibre bundle, style-spec package, benchmarks bundle)
 
 export const plugins = (minified, production) => [
+    flow(),
     minifyStyleSpec(),
     json(),
-    // https://github.com/zaach/jison/issues/351
-    replace({
-        include: /\/jsonlint-lines-primitives\/lib\/jsonlint.js/,
-        delimiters: ['', ''],
-        values: {
-            '_token_stack:': ''
-        }
-    }),
+    buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
     production ? strip({
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
@@ -43,3 +39,13 @@ export const plugins = (minified, production) => [
         ignoreGlobal: true
     })
 ].filter(Boolean);
+
+export function flow() {
+    return {
+        name: 'flow-remove-types',
+        transform: (code) => ({
+            code: flowRemoveTypes(code).toString(),
+            map: null
+        })
+    };
+}

@@ -2,6 +2,7 @@ import path, {dirname} from 'path';
 import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import buble from '@rollup/plugin-buble';
 import unassert from 'rollup-plugin-unassert';
 import json from '@rollup/plugin-json';
 import {fileURLToPath} from 'url';
@@ -43,6 +44,7 @@ const config = [{
             }
         }),
         json(),
+        buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
         unassert(),
         resolve({
             browser: true,
