@@ -4,7 +4,7 @@ import Tile from './tile';
 import {Event, ErrorEvent, Evented} from '../util/evented';
 import TileCache from './tile_cache';
 import MercatorCoordinate from '../geo/mercator_coordinate';
-import {keysDifference} from '../util/util';
+import {values, keysDifference} from '../util/util';
 import EXTENT from '../data/extent';
 import Context from '../gl/context';
 import Point from '../util/point';
@@ -21,7 +21,6 @@ import type Transform from '../geo/transform';
 import type {TileState} from './tile';
 import type {Callback} from '../types/callback';
 import type {SourceSpecification} from '../style-spec/types';
-import {values} from '../../src/util/util';
 
 /**
  * `SourceCache` is responsible for

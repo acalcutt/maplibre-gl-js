@@ -7,7 +7,7 @@ import SymbolBucket from '../data/bucket/symbol_bucket';
 import LineBucket from '../data/bucket/line_bucket';
 import FillBucket from '../data/bucket/fill_bucket';
 import FillExtrusionBucket from '../data/bucket/fill_extrusion_bucket';
-import {warnOnce, mapObject} from '../util/util';
+import {warnOnce, mapObject, values} from '../util/util';
 import assert from 'assert';
 import ImageAtlas from '../render/image_atlas';
 import GlyphAtlas from '../render/glyph_atlas';
@@ -26,7 +26,6 @@ import type {
 } from '../source/worker_source';
 import type {PromoteIdSpecification} from '../style-spec/types';
 import type {VectorTile} from '@mapbox/vector-tile';
-import {values} from '../../src/util/util';
 
 class WorkerTile {
     tileID: OverscaledTileID;

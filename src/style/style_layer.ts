@@ -144,7 +144,7 @@ abstract class StyleLayer extends Evented {
     }
 
     getPaintProperty(name: string) {
-        if (endsWith(name,TRANSITION_SUFFIX)) {
+        if (endsWith(name, TRANSITION_SUFFIX)) {
             return this._transitionablePaint.getTransition(name.slice(0, -TRANSITION_SUFFIX.length));
         } else {
             return this._transitionablePaint.getValue(name);
@@ -159,7 +159,7 @@ abstract class StyleLayer extends Evented {
             }
         }
 
-        if (endsWith(name,TRANSITION_SUFFIX)) {
+        if (endsWith(name, TRANSITION_SUFFIX)) {
             this._transitionablePaint.setTransition(name.slice(0, -TRANSITION_SUFFIX.length), (value as any) || undefined);
             return false;
         } else {
