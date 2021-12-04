@@ -42,6 +42,7 @@
     "@mapbox/mvt-fixtures": "^3.6.0",
     "@octokit/rest": "^18.10.0",
     "@rollup/plugin-commonjs": "^21.0.0",
+    "@rollup/plugin-buble": "^0.21.3",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.6",
     "@rollup/plugin-replace": "^3.0.0",
@@ -167,7 +168,12 @@
     "testem": "^3.5.0",
     "ts-jest": "^27.0.5",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.2"
+    "typescript": "^4.4.2",
+    "@mapbox/flow-remove-types": "^2.0.0",
+    "@rollup/pluginutils": "^4.1.1",
+    "abortcontroller-polyfill": "^1.7.3",
+    "promise-polyfill": "8.2.1",
+    "unfetch": "^4.2.0"
   },
   "browser": {
     "./rollup/build/tsc/src/util/web_worker.js": "./build/web_worker_replacement.js"

@@ -21,6 +21,7 @@ import type Transform from '../geo/transform';
 import type {TileState} from './tile';
 import type {Callback} from '../types/callback';
 import type {SourceSpecification} from '../style-spec/types';
+import {values} from '../../src/util/util';
 
 /**
  * `SourceCache` is responsible for
@@ -185,7 +186,7 @@ class SourceCache extends Evented {
      * @private
      */
     getIds(): Array<string> {
-        return (Object.values(this._tiles) as any).map((tile: Tile) => tile.tileID).sort(compareTileId).map(id => id.key);
+        return (values(this._tiles) as any).map((tile: Tile) => tile.tileID).sort(compareTileId).map(id => id.key);
     }
 
     getRenderableIds(symbolLayer?: boolean): Array<string> {

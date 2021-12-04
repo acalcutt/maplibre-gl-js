@@ -26,6 +26,7 @@ import type {
 } from '../source/worker_source';
 import type {PromoteIdSpecification} from '../style-spec/types';
 import type {VectorTile} from '@mapbox/vector-tile';
+import {values} from '../../src/util/util';
 
 class WorkerTile {
     tileID: OverscaledTileID;
@@ -201,7 +202,7 @@ class WorkerTile {
 
                 this.status = 'done';
                 callback(null, {
-                    buckets: Object.values(buckets).filter(b => !b.isEmpty()),
+                    buckets: values(buckets).filter(b => !b.isEmpty()),
                     featureIndex,
                     collisionBoxArray: this.collisionBoxArray,
                     glyphAtlasImage: glyphAtlas.image,
