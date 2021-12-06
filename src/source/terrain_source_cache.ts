@@ -16,7 +16,7 @@ import type Context from '../gl/context';
 import type Painter from '../render/painter';
 import type RasterDEMTileSource from '../source/raster_dem_tile_source';
 import type Framebuffer from '../gl/framebuffer';
-import { warnOnce } from '../util/util';
+import { values, warnOnce } from '../util/util';
 import VertexBuffer from '../gl/vertex_buffer';
 import IndexBuffer from '../gl/index_buffer';
 
@@ -446,7 +446,7 @@ class TerrainSourceCache extends Evented {
      * @returns {Array<Tile>}
      */
     tilesAfterTime(time=Date.now()): Array<Tile> {
-        return Object.values(this._tiles).filter(t => t.timeLoaded >= time);
+        return values(this._tiles).filter(t => t.timeLoaded >= time);
     }
 
     /**

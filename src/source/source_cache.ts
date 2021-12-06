@@ -524,7 +524,7 @@ class SourceCache extends Evented {
                   parents[parent.key] = parent;
                }
             }
-            idealTileIDs = idealTileIDs.concat(Object.values(parents));
+            idealTileIDs = idealTileIDs.concat(values(parents));
         }
 
         // Retain is a list of tiles that we shouldn't delete, even if they are not
