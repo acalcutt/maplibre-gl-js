@@ -1,6 +1,5 @@
 /rollup/build/
 /types/
-/dist/
 /dist_type/
 *.es.js
 node_modules
