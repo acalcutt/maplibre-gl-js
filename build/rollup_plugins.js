@@ -1,4 +1,3 @@
-import flowRemoveTypes from '@mapbox/flow-remove-types';
 import buble from '@rollup/plugin-buble';
 import {createFilter} from '@rollup/pluginutils';
 import resolve from '@rollup/plugin-node-resolve';
@@ -14,7 +13,6 @@ import strip from '@rollup/plugin-strip';
 // builds (main maplibre bundle, style-spec package, benchmarks bundle)
 
 export const plugins = (minified, production) => [
-    flow(),
     minifyStyleSpec(),
     json(),
     // https://github.com/zaach/jison/issues/351
@@ -47,41 +45,3 @@ export const plugins = (minified, production) => [
         ignoreGlobal: true
     })
 ].filter(Boolean);
-
-// Using this instead of rollup-plugin-flow due to
-// https://github.com/leebyron/rollup-plugin-flow/issues/5
-export function flow() {
-    return {
-        name: 'flow-remove-types',
-        transform: (code) => ({
-            code: flowRemoveTypes(code).toString(),
-            map: null
-        })
-    };
-}
-
-// Using this instead of rollup-plugin-string to add minification
-function glsl(include, minify) {
-    const filter = createFilter(include);
-    return {
-        name: 'glsl',
-        transform(code, id) {
-            if (!filter(id)) return;
-
-            // barebones GLSL minification
-            if (minify) {
-                code = code.trim() // strip whitespace at the start/end
-                    .replace(/\s*\/\/[^\n]*\n/g, '\n') // strip double-slash comments
-                    .replace(/\n+/g, '\n') // collapse multi line breaks
-                    .replace(/\n\s+/g, '\n') // strip identation
-                    .replace(/\s?([+-\/*=,])\s?/g, '$1') // strip whitespace around operators
-                    .replace(/([;\(\),\{\}])\n(?=[^#])/g, '$1'); // strip more line breaks
-            }
-
-            return {
-                code: `export default ${JSON.stringify(code)};`,
-                map: {mappings: ''}
-            };
-        }
-    };
-}
