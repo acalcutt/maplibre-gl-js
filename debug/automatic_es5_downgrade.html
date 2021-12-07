@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>MapLibre GL JS Auto ES5 Downgrade Example</title>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="../dist/maplibre-gl.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        html, body, #map { height: 100%; }
+    </style>
+</head>
+
+<body>
+<div id='map'></div>
+<!--
+maplibre-gl2.es5.js can be downloaded from this branch ( https://github.com/acalcutt/maplibre-gl-js/tree/2.x_es5_terrain )
+maplibre-gl2.es6.js can be downloaded from this branch ( https://github.com/acalcutt/maplibre-gl-js/tree/2.x_es6_terrain )
+-->
+<script>if (typeof Symbol !== 'undefined') {document.write('<script src="../dist/maplibre-gl2.es6.js"><\/script>')}else{document.write('<script src="../dist/maplibre-gl2.es5.js"><\/script>')}</script>
+
+new maplibregl.Map({
+    container: 'map',
+    zoom: 12.5,
+    center: [-77.01866, 38.888],
+    style: 'https://demotiles.maplibre.org/style.json',
+    hash: true
+});
+
+</script>
+</body>
+</html>
