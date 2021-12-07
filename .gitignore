@@ -2,7 +2,6 @@
 /types/
 /dist_type/
 *.es.js
-*.js.map
 node_modules
 *.sublime-*
 coverage
