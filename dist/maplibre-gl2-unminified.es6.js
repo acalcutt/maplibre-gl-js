@@ -25195,7 +25195,6 @@ class GeoJSONSource extends performance.Evented {
         this._data = options.data;
         this._options = performance.extend({}, options);
         this._collectResourceTiming = options.collectResourceTiming;
-        this._resourceTiming = [];
         if (options.maxzoom !== undefined)
             this.maxzoom = options.maxzoom;
         if (options.type)
@@ -25228,22 +25227,7 @@ class GeoJSONSource extends performance.Evented {
         }, options.workerOptions);
     }
     load() {
-        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._updateWorkerData(err => {
-            if (err) {
-                this.fire(new performance.ErrorEvent(err));
-                return;
-            }
-            const data = {
-                dataType: 'source',
-                sourceDataType: 'metadata'
-            };
-            if (this._collectResourceTiming && this._resourceTiming && this._resourceTiming.length > 0) {
-                data.resourceTiming = this._resourceTiming;
-                this._resourceTiming = [];
-            }
-            this.fire(new performance.Event('data', data));
-        });
+        this._updateWorkerData('metadata');
     }
     onAdd(map) {
         this.map = map;
@@ -25251,22 +25235,7 @@ class GeoJSONSource extends performance.Evented {
     }
     setData(data) {
         this._data = data;
-        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._updateWorkerData(err => {
-            if (err) {
-                this.fire(new performance.ErrorEvent(err));
-                return;
-            }
-            const data = {
-                dataType: 'source',
-                sourceDataType: 'content'
-            };
-            if (this._collectResourceTiming && this._resourceTiming && this._resourceTiming.length > 0) {
-                data.resourceTiming = this._resourceTiming;
-                this._resourceTiming = [];
-            }
-            this.fire(new performance.Event('data', data));
-        });
+        this._updateWorkerData('content');
         return this;
     }
     getClusterExpansionZoom(clusterId, callback) {
@@ -25292,7 +25261,7 @@ class GeoJSONSource extends performance.Evented {
         }, callback);
         return this;
     }
-    _updateWorkerData(callback) {
+    _updateWorkerData(sourceDataType) {
         const options = performance.extend({}, this.workerOptions);
         const data = this._data;
         if (typeof data === 'string') {
@@ -25302,15 +25271,27 @@ class GeoJSONSource extends performance.Evented {
             options.data = JSON.stringify(data);
         }
         this._pendingLoads++;
+        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
         this.actor.send(`${ this.type }.loadData`, options, (err, result) => {
             this._pendingLoads--;
             if (this._removed || result && result.abandoned) {
                 return;
             }
+            let resourceTiming = null;
             if (result && result.resourceTiming && result.resourceTiming[this.id])
-                this._resourceTiming = result.resourceTiming[this.id].slice(0);
+                resourceTiming = result.resourceTiming[this.id].slice(0);
             this.actor.send(`${ this.type }.coalesce`, { source: options.source }, null);
-            callback(err);
+            if (err) {
+                this.fire(new performance.ErrorEvent(err));
+                return;
+            }
+            const data = {
+                dataType: 'source',
+                sourceDataType
+            };
+            if (this._collectResourceTiming && resourceTiming && resourceTiming.length > 0)
+                performance.extend(data, { resourceTiming });
+            this.fire(new performance.Event('data', data));
         });
     }
     loaded() {
@@ -37731,28 +37712,17 @@ class AttributionControl {
         return 'bottom-right';
     }
     onAdd(map) {
-        const compact = this.options && this.options.compact;
         this._map = map;
         this._container = DOM.create('details', 'maplibregl-ctrl maplibregl-ctrl-attrib mapboxgl-ctrl mapboxgl-ctrl-attrib');
         this._compactButton = DOM.create('summary', 'maplibregl-ctrl-attrib-button mapboxgl-ctrl-attrib-button', this._container);
-        if (compact !== false) {
-            this._compactButton.addEventListener('click', this._toggleAttribution);
-        }
+        this._compactButton.addEventListener('click', this._toggleAttribution);
         this._setElementTitle(this._compactButton, 'ToggleAttribution');
         this._innerContainer = DOM.create('div', 'maplibregl-ctrl-attrib-inner mapboxgl-ctrl-attrib-inner', this._container);
-        if (compact) {
-            this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
-        }
-        if (!compact) {
-            this._container.setAttribute('open', '');
-        }
+        this._updateCompact();
         this._updateAttributions();
         this._map.on('styledata', this._updateData);
         this._map.on('sourcedata', this._updateData);
-        if (compact === undefined) {
-            this._map.on('resize', this._updateCompact);
-            this._updateCompact();
-        }
+        this._map.on('resize', this._updateCompact);
         return this._container;
     }
     onRemove() {
