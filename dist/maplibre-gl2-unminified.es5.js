@@ -28621,7 +28621,6 @@ var GeoJSONSource = function (_super) {
         _this._data = options.data;
         _this._options = performance.extend({}, options);
         _this._collectResourceTiming = options.collectResourceTiming;
-        _this._resourceTiming = [];
         if (options.maxzoom !== undefined) {
             _this.maxzoom = options.maxzoom;
         }
@@ -28658,47 +28657,15 @@ var GeoJSONSource = function (_super) {
         return _this;
     }
     GeoJSONSource.prototype.load = function () {
-        var _this = this;
-        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._updateWorkerData(function (err) {
-            if (err) {
-                _this.fire(new performance.ErrorEvent(err));
-                return;
-            }
-            var data = {
-                dataType: 'source',
-                sourceDataType: 'metadata'
-            };
-            if (_this._collectResourceTiming && _this._resourceTiming && _this._resourceTiming.length > 0) {
-                data.resourceTiming = _this._resourceTiming;
-                _this._resourceTiming = [];
-            }
-            _this.fire(new performance.Event('data', data));
-        });
+        this._updateWorkerData('metadata');
     };
     GeoJSONSource.prototype.onAdd = function (map) {
         this.map = map;
         this.load();
     };
     GeoJSONSource.prototype.setData = function (data) {
-        var _this = this;
         this._data = data;
-        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._updateWorkerData(function (err) {
-            if (err) {
-                _this.fire(new performance.ErrorEvent(err));
-                return;
-            }
-            var data = {
-                dataType: 'source',
-                sourceDataType: 'content'
-            };
-            if (_this._collectResourceTiming && _this._resourceTiming && _this._resourceTiming.length > 0) {
-                data.resourceTiming = _this._resourceTiming;
-                _this._resourceTiming = [];
-            }
-            _this.fire(new performance.Event('data', data));
-        });
+        this._updateWorkerData('content');
         return this;
     };
     GeoJSONSource.prototype.getClusterExpansionZoom = function (clusterId, callback) {
@@ -28724,7 +28691,7 @@ var GeoJSONSource = function (_super) {
         }, callback);
         return this;
     };
-    GeoJSONSource.prototype._updateWorkerData = function (callback) {
+    GeoJSONSource.prototype._updateWorkerData = function (sourceDataType) {
         var _this = this;
         var options = performance.extend({}, this.workerOptions);
         var data = this._data;
@@ -28735,16 +28702,29 @@ var GeoJSONSource = function (_super) {
             options.data = JSON.stringify(data);
         }
         this._pendingLoads++;
+        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
         this.actor.send(''.concat(this.type, '.loadData'), options, function (err, result) {
             _this._pendingLoads--;
             if (_this._removed || result && result.abandoned) {
                 return;
             }
+            var resourceTiming = null;
             if (result && result.resourceTiming && result.resourceTiming[_this.id]) {
-                _this._resourceTiming = result.resourceTiming[_this.id].slice(0);
+                resourceTiming = result.resourceTiming[_this.id].slice(0);
             }
             _this.actor.send(''.concat(_this.type, '.coalesce'), { source: options.source }, null);
-            callback(err);
+            if (err) {
+                _this.fire(new performance.ErrorEvent(err));
+                return;
+            }
+            var data = {
+                dataType: 'source',
+                sourceDataType: sourceDataType
+            };
+            if (_this._collectResourceTiming && resourceTiming && resourceTiming.length > 0) {
+                performance.extend(data, { resourceTiming: resourceTiming });
+            }
+            _this.fire(new performance.Event('data', data));
         });
     };
     GeoJSONSource.prototype.loaded = function () {
@@ -42555,28 +42535,18 @@ var AttributionControl = function () {
         return 'bottom-right';
     };
     AttributionControl.prototype.onAdd = function (map) {
-        var compact = this.options && this.options.compact;
+        this.options && this.options.compact;
         this._map = map;
         this._container = DOM.create('details', 'maplibregl-ctrl maplibregl-ctrl-attrib mapboxgl-ctrl mapboxgl-ctrl-attrib');
         this._compactButton = DOM.create('summary', 'maplibregl-ctrl-attrib-button mapboxgl-ctrl-attrib-button', this._container);
-        if (compact !== false) {
-            this._compactButton.addEventListener('click', this._toggleAttribution);
-        }
+        this._compactButton.addEventListener('click', this._toggleAttribution);
         this._setElementTitle(this._compactButton, 'ToggleAttribution');
         this._innerContainer = DOM.create('div', 'maplibregl-ctrl-attrib-inner mapboxgl-ctrl-attrib-inner', this._container);
-        if (compact) {
-            this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
-        }
-        if (!compact) {
-            this._container.setAttribute('open', '');
-        }
+        this._updateCompact();
         this._updateAttributions();
         this._map.on('styledata', this._updateData);
         this._map.on('sourcedata', this._updateData);
-        if (compact === undefined) {
-            this._map.on('resize', this._updateCompact);
-            this._updateCompact();
-        }
+        this._map.on('resize', this._updateCompact);
         return this._container;
     };
     AttributionControl.prototype.onRemove = function () {
