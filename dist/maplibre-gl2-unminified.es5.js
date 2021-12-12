@@ -42535,7 +42535,6 @@ var AttributionControl = function () {
         return 'bottom-right';
     };
     AttributionControl.prototype.onAdd = function (map) {
-        this.options && this.options.compact;
         this._map = map;
         this._container = DOM.create('details', 'maplibregl-ctrl maplibregl-ctrl-attrib mapboxgl-ctrl mapboxgl-ctrl-attrib');
         this._compactButton = DOM.create('summary', 'maplibregl-ctrl-attrib-button mapboxgl-ctrl-attrib-button', this._container);
@@ -42631,14 +42630,21 @@ var AttributionControl = function () {
         this._editLink = null;
     };
     AttributionControl.prototype._updateCompact = function () {
-        if (this._map.getCanvasContainer().offsetWidth <= 640) {
-            if (!this._container.classList.contains('maplibregl-compact')) {
-                this._container.removeAttribute('open');
+        var compact = this.options && this.options.compact;
+        if (this._map.getCanvasContainer().offsetWidth <= 640 || compact) {
+            if (compact === false) {
+                this._container.setAttribute('open', '');
+            } else {
+                if (!this._container.classList.contains('maplibregl-compact')) {
+                    this._container.removeAttribute('open');
+                    this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
+                }
             }
-            this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
         } else {
             this._container.setAttribute('open', '');
-            this._container.classList.remove('maplibregl-compact', 'maplibregl-compact-show', 'mapboxgl-compact', 'mapboxgl-compact-show');
+            if (this._container.classList.contains('maplibregl-compact')) {
+                this._container.classList.remove('maplibregl-compact', 'maplibregl-compact-show', 'mapboxgl-compact', 'mapboxgl-compact-show');
+            }
         }
     };
     return AttributionControl;
