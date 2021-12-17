@@ -40125,6 +40125,47 @@ class FullscreenControl {
     }
 }
 
+class TerrainControl {
+    constructor(options = {}) {
+        this.options = options;
+        performance.bindAll([
+            '_toggleTerrain',
+            '_toggleTerrainIcon'
+        ], this);
+    }
+    onAdd(map) {
+        this._map = map;
+        this._container = DOM.create('div', 'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group');
+        this._terrainButton = DOM.create('button', 'maplibregl-ctrl-terrain mapboxgl-ctrl-terrain', this._container);
+        DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._terrainButton).setAttribute('aria-hidden', 'true');
+        this._terrainButton.type = 'button';
+        this._terrainButton.addEventListener('click', this._toggleTerrain);
+        this._toggleTerrainIcon;
+        return this._container;
+    }
+    onRemove() {
+        DOM.remove(this._container);
+        this._map = undefined;
+    }
+    _toggleTerrain() {
+        if (this._map.style.terrainSourceCache.isEnabled()) {
+            this._map.removeTerrain();
+        } else {
+            this._map.addTerrain(this.options.id, this.options.options);
+        }
+        this._toggleTerrainIcon();
+    }
+    _toggleTerrainIcon() {
+        if (this._map.style.terrainSourceCache.isEnabled()) {
+            this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+            this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+        } else {
+            this._terrainButton.classList.add('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+            this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+        }
+    }
+}
+
 const defaultOptions = {
     closeButton: true,
     closeOnClick: true,
@@ -40463,6 +40504,7 @@ const exported = {
     AttributionControl,
     ScaleControl,
     FullscreenControl,
+    TerrainControl,
     Popup,
     Marker,
     Style,
