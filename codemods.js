@@ -65,30 +65,6 @@ replace.sync({
     to: 'test('
 });
 
-replace.sync({
-    files: [file],
-    from: /t.spy\(\)/g,
-    to: 'jest.fn()'
-});
-
-replace.sync({
-    files: [file],
-    from: /t.spy\(/g,
-    to: 'jest.spyOn('
-});
-
-replace.sync({
-    files: [file],
-    from: /.callCount\).toBe/g,
-    to: ').toHaveBeenCalledTimes'
-});
-
-replace.sync({
-    files: [file],
-    from: /.notCalled\).toBeTruthy/g,
-    to: ').not.toHaveBeenCalled'
-});
-
 if (automate) {
     execSync('npm run lint -- --fix');
     execSync(`git add ${file}`);
