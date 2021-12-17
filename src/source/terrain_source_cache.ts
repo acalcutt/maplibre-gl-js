@@ -7,7 +7,7 @@ import Style from '../style/style';
 import Texture from '../render/texture';
 import {RGBAImage} from '../util/image';
 import {PosArray, TriangleIndexArray} from '../data/array_types';
-import {number as mix} from '../style-spec/util/interpolate.js';
+import {number as mix} from '../style-spec/util/interpolate';
 import posAttributes from '../data/pos_attributes';
 import SegmentVector from '../data/segment';
 import type Transform from '../geo/transform';
