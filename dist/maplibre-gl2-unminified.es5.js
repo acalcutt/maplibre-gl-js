@@ -45163,6 +45163,51 @@ var FullscreenControl = function () {
     return FullscreenControl;
 }();
 
+var TerrainControl = function () {
+    function TerrainControl(options) {
+        if (options === void 0) {
+            options = {};
+        }
+        this.options = options;
+        performance.bindAll([
+            '_toggleTerrain',
+            '_toggleTerrainIcon'
+        ], this);
+    }
+    TerrainControl.prototype.onAdd = function (map) {
+        this._map = map;
+        this._container = DOM.create('div', 'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group');
+        this._terrainButton = DOM.create('button', 'maplibregl-ctrl-terrain mapboxgl-ctrl-terrain', this._container);
+        DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._terrainButton).setAttribute('aria-hidden', 'true');
+        this._terrainButton.type = 'button';
+        this._terrainButton.addEventListener('click', this._toggleTerrain);
+        this._toggleTerrainIcon;
+        return this._container;
+    };
+    TerrainControl.prototype.onRemove = function () {
+        DOM.remove(this._container);
+        this._map = undefined;
+    };
+    TerrainControl.prototype._toggleTerrain = function () {
+        if (this._map.style.terrainSourceCache.isEnabled()) {
+            this._map.removeTerrain();
+        } else {
+            this._map.addTerrain(this.options.id, this.options.options);
+        }
+        this._toggleTerrainIcon();
+    };
+    TerrainControl.prototype._toggleTerrainIcon = function () {
+        if (this._map.style.terrainSourceCache.isEnabled()) {
+            this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+            this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+        } else {
+            this._terrainButton.classList.add('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+            this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+        }
+    };
+    return TerrainControl;
+}();
+
 var __extends = undefined && undefined.__extends || function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
@@ -45536,6 +45581,7 @@ var exported = {
     AttributionControl: AttributionControl,
     ScaleControl: ScaleControl,
     FullscreenControl: FullscreenControl,
+    TerrainControl: TerrainControl,
     Popup: Popup,
     Marker: Marker,
     Style: Style,
