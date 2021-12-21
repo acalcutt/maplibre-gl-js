@@ -29,8 +29,8 @@ export const plugins = (minified, production, watch) => [
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }) : false,
-    buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
     glsl('**/*.glsl', production),
+    buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
     minified ? terser({
         compress: {
             pure_getters: true,
