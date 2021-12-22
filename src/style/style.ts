@@ -61,6 +61,7 @@ import type {
 import type {CustomLayerInterface} from './style_layer/custom_style_layer';
 import type {Validator} from './validate_style';
 import type {OverscaledTileID} from '../source/tile_id';
+import {isMapabcURL} from '../util/request_manager';
 
 const supportedDiffOperations = pick(diffOperations, [
     'addLayer',
@@ -204,12 +205,14 @@ class Style extends Evented {
 
     loadURL(url: string, options: {
       validate?: boolean;
+      accessToken?: string;
     } = {}) {
         this.fire(new Event('dataloading', {dataType: 'style'}));
 
         const validate = typeof options.validate === 'boolean' ?
-            options.validate : true;
+            options.validate : !isMapabcURL(url);
 
+        url = this.map._requestManager.normalizeStyleURL(url, options.accessToken);
         const request = this.map._requestManager.transformRequest(url, ResourceType.Style);
         this._request = getJSON(request, (error?: Error | null, json?: any | null) => {
             this._request = null;

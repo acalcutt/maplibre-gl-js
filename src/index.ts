@@ -82,6 +82,23 @@ const exported = {
     clearPrewarmedResources,
 
     /**
+     * Gets and sets the map's [access token](https://www.mapabc.com/help/define-access-token/).
+     *
+     * @var {string} accessToken
+     * @returns {string} The currently set access token.
+     * @example
+     * mapabcgl.accessToken = myAccessToken;
+     * @see [Display a map](https://mapabc.org/mapabc-gl-js-docs/examples/)
+     */
+    get accessToken(): string {
+        return config.ACCESS_TOKEN;
+    },
+
+    set accessToken(token: string) {
+        config.ACCESS_TOKEN = token;
+    },
+
+    /**
      * Gets and sets the number of web workers instantiated on a page with GL JS maps.
      * By default, it is set to half the number of CPU cores (capped at 6).
      * Make sure to set this property before creating any map instances for it to have effect.

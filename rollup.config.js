@@ -37,7 +37,7 @@ export default [{
     // rollup/maplibregl.js for details.
     input: 'rollup/maplibregl.js',
     output: {
-        name: 'maplibregl',
+        name: 'mapabcgl',
         file: outputFile,
         format: 'umd',
         sourcemap: production ? true : 'inline',

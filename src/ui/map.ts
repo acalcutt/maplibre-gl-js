@@ -55,6 +55,7 @@ import type {
 } from '../style-spec/types';
 import {Callback} from '../types/callback';
 import type {ControlPosition, IControl} from './control/control';
+import config from '../util/config';
 
 /* eslint-enable no-use-before-define */
 
@@ -101,6 +102,7 @@ export type MapOptions = {
   localIdeographFontFamily?: string;
   style: StyleSpecification | string;
   pitchWithRotate?: boolean;
+  accessToken: string;
 };
 
 // See article here: https://medium.com/terria/typescript-transforming-optional-properties-to-required-properties-that-may-be-undefined-7482cb4e1585
@@ -122,8 +124,8 @@ const defaultMaxPitch = 60;
 const maxPitchThreshold = 85;
 
 const defaultOptions = {
-    center: [0, 0],
-    zoom: 0,
+    center: [116.39729, 39.908648],
+    zoom: 10,
     bearing: 0,
     pitch: 0,
 
@@ -156,8 +158,9 @@ const defaultOptions = {
     renderWorldCopies: true,
     refreshExpiredTiles: true,
     maxTileCacheSize: null,
-    localIdeographFontFamily: 'sans-serif',
+    localIdeographFontFamily: 'sans-serif,PingFang SC,Microsoft YaHei,微软雅黑,Arial,sans-serif,黑体',
     transformRequest: null,
+    accessToken: null,
     fadeDuration: 300,
     crossSourceCollisions: true
 } as CompleteMapOptions;
@@ -364,6 +367,10 @@ class Map extends Camera {
      * Find more details and examples using `touchPitch` in the {@link TouchPitchHandler} section.
      */
     touchPitch: TouchPitchHandler;
+
+    _trafficLayerId: string;
+    _intervalFunc: any;
+    _intervalFuncTraffic: any;
 
     constructor(options: MapOptions) {
         PerformanceUtils.mark(PerformanceMarkers.create);
@@ -1438,7 +1445,7 @@ class Map extends Camera {
       diff?: boolean;
     } & StyleOptions) {
         if (typeof style === 'string') {
-            const url = style;
+            const url = this._requestManager.normalizeStyleURL(style);
             const request = this._requestManager.transformRequest(url, ResourceType.Style);
             getJSON(request, (error?: Error | null, json?: any | null) => {
                 if (error) {
@@ -1947,10 +1954,22 @@ class Map extends Camera {
      * @see [Add a vector tile source](https://maplibre.org/maplibre-gl-js-docs/example/vector-source/)
      * @see [Add a WMS source](https://maplibre.org/maplibre-gl-js-docs/example/wms/)
      */
-    addLayer(layer: LayerSpecification | CustomLayerInterface, beforeId?: string) {
+    addLayer(layer: LayerSpecification | CustomLayerInterface | any, beforeId?: string) {
         this._lazyInitEmptyStyle();
         this.style.addLayer(layer, beforeId);
         return this._update(true);
+    }
+
+    /*
+     * Removes the layer and the layer's source with the given ID from the map's style.
+     */
+    removeLayerAndSource(layerid: string) {
+        if (this.getLayer(layerid)) {
+            this.removeLayer(layerid);
+        }
+        if (this.getSource(layerid)) {
+            this.removeSource(layerid);
+        }
     }
 
     /**
@@ -2337,6 +2356,449 @@ class Map extends Camera {
      */
     getCanvas() {
         return this._canvas;
+    }
+
+    trafficLayer(show: boolean, options: any) {
+        const _this = this;
+        //生成默认配置
+        options = extend({}, {
+            minzoom: 1, //最小级别
+            maxzoom: 24,  //最大级别
+            type: 'vector',  //路况图层类型 默认矢量
+            refresh: 120 * 1000, // 刷新时间,默认2分钟
+            before: '',   //所在**图层之前
+            layerid: 'layer-traffic-amap',
+            animation: false
+        }, options);
+        this._trafficLayerId = options.layerid; //设置全局layerid
+        if (!show) { //是否显示路况  隐藏
+            /*if(this.getLayer(options.sourceid)){
+                this.removeLayer(options.sourceid);
+            }
+            if(this.getSource(options.sourceid)){
+                this.removeSource(options.sourceid);
+            }*/
+            if (this._intervalFunc) { //清除路况刷新定时器
+                clearInterval(this._intervalFunc);
+            }
+            if (this._intervalFuncTraffic) {
+                clearInterval(this._intervalFuncTraffic);
+            }
+            //删除原有路况
+            this.removeLayerAndSource(this._trafficLayerId);
+        } else {
+            if (this.getSource(this._trafficLayerId) || this.getLayer(this._trafficLayerId)) { //重复调用显示路况方法，清除原有叠加路况
+                if (this._intervalFunc) {
+                    clearInterval(this._intervalFunc);
+                }
+                if (this._intervalFuncTraffic) {
+                    clearInterval(this._intervalFuncTraffic);
+                }
+                this.removeLayerAndSource(this._trafficLayerId);
+            }
+            if (!this.getSource(this._trafficLayerId) && !this.getLayer(this._trafficLayerId)) {
+                if (options.type === 'vector') {
+                    //定义路况图层属性
+                    const trafficLayerStyle = {
+                        'id': this._trafficLayerId,
+                        'type': 'line',
+                        'source': typeof options.source !== 'undefined' ? options.source : (config.TRAFFIC_SOURCE as any).vector,
+                        // 'source-layer': 'TFRoad',//高德路况配置
+                        'source-layer': 'vectortraffic',
+                        'minzoom': options.minzoom,
+                        'maxzoom': options.maxzoom,
+                        'layout': {
+                            'line-cap': 'round',
+                            'line-join': 'round',
+                            'visibility': 'visible'
+                        },
+                        'paint': {
+                            'line-color': {
+                                'property': 'traffic_status',
+                                // 'property': 's',//高德路况配置
+                                'type': 'categorical',
+                                'stops': [
+                                    [
+                                        {
+                                            'zoom': 10,
+                                            'value': 1
+                                        },
+                                        'rgba(19, 134, 22, 1)'
+                                    ],
+                                    [
+                                        {
+                                            'zoom': 10,
+                                            'value': 2
+                                        },
+                                        'rgba(222, 161, 29, 1)'
+                                    ],
+                                    [
+                                        {
+                                            'zoom': 10,
+                                            'value': 3
+                                        },
+                                        'rgba(222, 29, 29, 1)'
+                                    ],
+                                    [
+                                        {
+                                            'zoom': 10,
+                                            'value': 4
+                                        },
+                                        'rgba(98, 3, 3, 1)'
+                                    ],
+                                    [
+                                        {
+                                            'zoom': 10,
+                                            'value': 5
+                                        },
+                                        'rgba(124, 124, 122, 1)'
+                                    ]
+                                ],
+                                //高德路况配置
+                                //  'stops': [
+                                // [
+                                //   {
+                                //  'zoom': 5,
+                                //  'value': 1
+                                //   },
+                                //   'rgba(255, 204, 0, 1)'
+                                // ],
+                                // [
+                                //   {
+                                //  'zoom': 5,
+                                //  'value': 2
+                                //   },
+                                //   'rgba(51, 177, 0, 1)'
+                                // ],
+                                // [
+                                //   {
+                                //  'zoom': 5,
+                                //  'value': 3
+                                //   },
+                                //   'rgba(140, 14, 14, 1)'
+                                // ],
+                                // [
+                                //   {
+                                //  'zoom': 5,
+                                //  'value': 4
+                                //   },
+                                //   'rgba(106, 143, 198, 1)'
+                                // ]
+                                //  ],
+                                'default': 'rgba(19, 134, 22, 1)'
+                            },
+                            // 'line-width': [
+                            //   'get',
+                            //   'w'
+                            // ]
+                            'line-width': {
+                                'stops': [
+                                    [
+                                        8,
+                                        2
+                                    ],
+                                    [
+                                        10,
+                                        2.2
+                                    ],
+                                    [
+                                        15,
+                                        3
+                                    ]
+                                ]
+                            },
+                        }
+                    };
+                    //添加路况图层
+                    this.addLayer(trafficLayerStyle , options.before);
+                    this._intervalFunc = setInterval(function() {
+                        _this.removeLayerAndSource(_this._trafficLayerId);
+                        _this.addLayer(trafficLayerStyle , options.before);
+                    }, options.refresh);
+                    //矢量路况设置流动效果
+                    if (options.animation) {
+                        const dashLength = 0.01;
+                        const gapLength = 4;
+                        let valueOne, valueTwo, valueThree, valueFour, ValueFive;
+                        const totalNumberOfSteps = 20;
+                        const dashSteps = totalNumberOfSteps * dashLength / (gapLength + dashLength); //4
+                        const gapSteps = totalNumberOfSteps - dashSteps; //16
+                        let currentStep = 20;
+                        this._intervalFuncTraffic = setInterval(function() {
+                            currentStep = currentStep - 1;
+                            if (currentStep <= 0) {
+                                currentStep = 20;
+                            }
+                            if (currentStep < dashSteps) {
+                                valueOne = currentStep / dashSteps;
+                                valueTwo = (1 - valueOne) * dashLength; //3 2 1
+                                valueThree = gapLength;//16 16 16
+                                valueFour = valueOne * dashLength; //1 2 3
+                                ValueFive = 0;
+                            } else {
+                                valueOne = (currentStep - dashSteps) / (gapSteps);//0
+                                valueTwo = 0; ///0
+                                valueThree = (1 - valueOne) * gapLength;
+                                valueFour = dashLength;
+                                ValueFive = valueOne * gapLength;
+                            }
+                            var arr = [];
+                            arr.push(valueTwo, valueThree, valueFour, ValueFive)
+                            _this.setPaintProperty('layer-traffic-amap', 'line-dasharray', arr);
+                        }, 60);
+                    }
+                }
+                if (options.type === 'raster') {
+                    const trafficLayerStyle = {
+                        'id': this._trafficLayerId,
+                        'type': 'raster',
+                        'source': typeof options.source !== 'undefined' ? options.source : (config.TRAFFIC_SOURCE as any).raster
+                    };
+                    trafficLayerStyle.source.tileSize = Number(trafficLayerStyle.source.tileSize);
+                    this.addLayer(trafficLayerStyle, options.before);
+                    this._intervalFunc = setInterval(function() {
+                        _this.removeLayerAndSource(_this._trafficLayerId);
+                        _this.addLayer(trafficLayerStyle , options.before);
+                    },options.refresh);
+                }
+            }
+        }
+        return this;
+    }
+
+    /*
+     * 地图poi点击
+     */
+    poiClick(show: boolean, callback: Function) {
+        const _this = this;
+        if (show) {
+            this.on('mousemove', function(e) {
+                const features = _this.queryRenderedFeatures(e.point, {filter: ['==', '$type', 'Point']});
+                if (features.length > 0) {
+                    this.getCanvas().style.cursor = 'pointer';
+                } else {
+                    this.getCanvas().style.cursor = '';
+                }
+            });
+            this.on('click', (e) => {
+                const features = _this.queryRenderedFeatures(e.point, {filter: ['==', '$type', 'Point']});
+                if (callback) {
+                    callback(features);
+                }
+            });
+        }
+    }
+
+    /*
+     * 地图矢量图层点击
+     */
+    layerClick(options: any, callback:Function) {
+        const _this = this;
+        options =  Object.assign({
+            show: false,
+            type:'Point'
+        }, options);
+        if (options.show) {
+            this.on('mousemove', function(e) {
+                const features = _this.queryRenderedFeatures(e.point, {filter: ['==', '$type', options.type]});
+                if (features.length > 0) {
+                    this.getCanvas().style.cursor = 'pointer';
+                } else {
+                    this.getCanvas().style.cursor = '';
+                }
+            });
+            this.on('click', (e) => {
+                const features = _this.queryRenderedFeatures(e.point, {filter: ['==', '$type', options.type]});
+                if (callback) {
+                    callback(features);
+                }
+            });
+        }
+    }
+
+    /*
+     * 自封装ajax
+     */
+    Ajax(type, url, data, success, failed) {
+        let ActiveXObject: (type: string) => void;
+        // 创建ajax对象
+        let xhr = null;
+        if (window.XMLHttpRequest) {
+            xhr = new XMLHttpRequest();
+        } else {
+            xhr = new ActiveXObject('Microsoft.XMLHTTP');
+        }
+        type = type.toUpperCase();
+        // 用于清除缓存
+        const random = Math.random();
+        if (typeof data == 'object') {
+            let str = '';
+            for (const key in data) {
+                str += key + '=' + data[key] + '&';
+            }
+            data = str.replace(/&$/, '');
+        }
+        if (type === 'GET') {
+            if (data) {
+                xhr.open('GET', url + '?' + data, true);
+            } else {
+                xhr.open('GET', url + '?t=' + random, true);
+            }
+            xhr.send();
+        } else if (type === 'POST') {
+            xhr.open('POST', url, true);
+            // 如果需要像 html 表单那样 POST 数据，请使用 setRequestHeader() 来添加 http 头。
+            xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+            xhr.send(data);
+        }
+        // 处理返回数据
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    success(xhr.responseText);
+                } else {
+                    if (failed) {
+                        failed(xhr.status);
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * 地理编码与逆地理编码
+     */
+    Geocoder(options: Object, callback:Function) {
+        options = Object.assign({
+            address:'',
+            city:'',
+            location:'',
+            ak: (window as any).mapabcgl.accessToken
+        }, options);
+        for (const key in options) {
+            if (options[key] === '') {
+                delete options[key];
+            }
+        }
+        this.Ajax('get', config.API_URL + '/gss/geocode/v2', options, function(data) {
+            if (callback) {
+                callback(JSON.parse(data))
+            }
+        }, function(error) {
+            console.log(error);
+        });
+    }
+
+    /*
+     * 行政区划查询
+     */
+    DistrictSearch(options: Object, callback:Function) {
+        options =  Object.assign({
+            query:'', //关键字，关键字的首字母、拼音格式如，公园/gy/gongyuan（必填）
+            city:'', //所在的城市名称
+            level:'', //只查询该级的行政区划，可选province(省)、cit有(城市)、district(区县)。说明：当参数city有效时，该参数无效
+            ak: (window as any).mapabcgl.accessToken
+        }, options);
+        for (const key in options) {
+            if (options[key] === '') {
+                delete options[key];
+            }
+        }
+        this.Ajax('get', config.API_URL + '/gss/district/v2', options, function(data) {
+            if (callback) {
+                callback(JSON.parse(data));
+            }
+        }, function(error) {
+            console.log(error);
+        });
+    }
+
+    /*
+     * 车行路径规划
+     */
+    Driving(options: Object, callback:Function) {
+        options = Object.assign({
+            origin: '', //起点经纬度，或起点名称+经纬度（必填）
+            destination:'', //终点经纬度，或终点名称+经纬度（必填）
+            waypoints:'', //最多支持设置16组途经点。经、纬度之间用“,”分隔，坐标点之间用"；"分隔
+            coord_type:'', //坐标类型 见文档
+            tactics:'', //路径规划策略 见文档
+            avoidpolygons:'', //区域避让，支持32个避让区域，每个区域最多可有16个顶点 例 x,y;x,y|x,y;x,y
+            ak: (window as any).mapabcgl.accessToken
+        }, options);
+        for (const key in options) {
+            if (options[key] === '') {
+                delete options[key];
+            }
+        }
+        this.Ajax('get', config.API_URL + '/as/route/car', options, function(data) {
+            if (callback) {
+                callback(JSON.parse(data));
+            }
+        }, function(error) {
+            console.log(error);
+        });
+    }
+
+    /*
+     * 步行路径规划
+     */
+    Walking(options: Object, callback:Function) {
+        options = Object.assign({
+            origin:'', //起点经纬度，或起点名称+经纬度（必填）
+            destination:'', //终点经纬度，或终点名称+经纬度（必填）
+            coord_type:'', //坐标类型 见文档
+            tactics:'', //路径规划策略 见文档
+            ak: (window as any).mapabcgl.accessToken
+        }, options);
+        for (const key in options) {
+            if (options[key] === '') {
+                delete options[key];
+            }
+        }
+        this.Ajax('get', config.API_URL + '/as/route/walk', options, function(data) {
+            if (callback) {
+                callback(JSON.parse(data));
+            }
+        }, function(error) {
+            console.log(error);
+        });
+    }
+
+    /*
+     * poi搜索（关键字、多边形、周边）
+     */
+    PoiSearch(options: Object, callback:Function) {
+        options =  Object.assign({
+            query:'', //关键字，关键字的首字母、拼音格式如，公园/gy/gongyuan（必填）
+            scope:1, //检索结果详细程度,1返回基本信息；2返回POI详细信息。（必填）
+            region:'', //检索区域名称,可输入城市名或省份名或全国（必填）
+            type:'', //关键字类型
+            page_size:20, //每页记录数,最大值为50，超过50则按照50处理。
+            page_num:1, //分页页码,
+            location:'', //中心点(周边搜索必填)
+            radius:'', //半径，取值范围0~50000，超过50000时，按默认值1000进行搜搜，单位米。(周边搜索必填)
+            regionType:'', //几何对象类型,可选rectangle（矩形）、polygon(多边形)、circle（圆）、ellipse(椭圆)
+            bounds:'', //地理坐标点集合,目前支持四种图形类型：
+            // 坐标点经、纬度间使用半角“,”隔开，坐标对间使用半角“;”分隔。 如： x1,y1;x2,y2; x3,y3;x4,y4;x5,y5;
+            // regionType=rectangle，矩形左下、右上（或左上、右下）两个顶点的坐标；
+            // regionType=polygon，多边形所有顶点的顺序坐标，且首尾坐标相同；
+            // regionType=circle，圆形外接矩形左下、右上（或左上、右下）两个顶点的坐标；
+            // regionType=ellipse，椭圆外接矩形左下、右上（或左上、右下）两个顶点的坐标。
+            ak: (window as any).mapabcgl.accessToken
+        }, options);
+        for (const key in options) {
+            if (options[key] === '') {
+                delete options[key];
+            }
+        }
+        this.Ajax('get', config.API_URL + '/as/search/poi', options, function(data) {
+            if (callback) {
+                callback(JSON.parse(data));
+            }
+        }, function(error){
+            console.log(error);
+        });
     }
 
     _containerDimensions() {
