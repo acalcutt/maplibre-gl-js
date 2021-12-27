@@ -60,14 +60,14 @@ export class RequestManager {
         // urlObject.path = `/styles/v1${urlObject.path}`;
         urlObject.path = urlObject.path.replace(/\//g, '');
         urlObject.params.push(`n=${urlObject.path}`);
-        //添加默认参数
+        //Add default parameters
         const hasAddSourceParam = urlObject.params.filter((ele) => {
             if (ele.indexOf('addSource') === -1) {
                 return false;
             }
             return true;
         });
-        //添加默认参数
+        //Add default parameters
         const hasSourceTypeParam = urlObject.params.filter((ele) => {
             if (ele.indexOf('sourceType') === -1) {
                 return false;
