@@ -2360,34 +2360,34 @@ class Map extends Camera {
 
     trafficLayer(show: boolean, options: any) {
         const _this = this;
-        //生成默认配置
+        //Generate default configuration
         options = extend({}, {
-            minzoom: 1, //最小级别
-            maxzoom: 24,  //最大级别
-            type: 'vector',  //路况图层类型 默认矢量
-            refresh: 120 * 1000, // 刷新时间,默认2分钟
-            before: '',   //所在**图层之前
+            minzoom: 1, //Minimum level
+            maxzoom: 24,  //Maximum level
+            type: 'vector',  //Road condition layer type Default vector
+            refresh: 120 * 1000, // Refresh time, default 2 minutes
+            before: '',   //Before the ** layer
             layerid: 'layer-traffic-amap',
             animation: false
         }, options);
-        this._trafficLayerId = options.layerid; //设置全局layerid
-        if (!show) { //是否显示路况  隐藏
+        this._trafficLayerId = options.layerid; //Set global layerid
+        if (!show) { //Whether to show traffic conditions hide
             /*if(this.getLayer(options.sourceid)){
                 this.removeLayer(options.sourceid);
             }
             if(this.getSource(options.sourceid)){
                 this.removeSource(options.sourceid);
             }*/
-            if (this._intervalFunc) { //清除路况刷新定时器
+            if (this._intervalFunc) { //Clear the road condition refresh timer
                 clearInterval(this._intervalFunc);
             }
             if (this._intervalFuncTraffic) {
                 clearInterval(this._intervalFuncTraffic);
             }
-            //删除原有路况
+            //Delete original traffic
             this.removeLayerAndSource(this._trafficLayerId);
         } else {
-            if (this.getSource(this._trafficLayerId) || this.getLayer(this._trafficLayerId)) { //重复调用显示路况方法，清除原有叠加路况
+            if (this.getSource(this._trafficLayerId) || this.getLayer(this._trafficLayerId)) { //Repeatedly call the display road condition method to clear the original superimposed road condition
                 if (this._intervalFunc) {
                     clearInterval(this._intervalFunc);
                 }
@@ -2398,12 +2398,12 @@ class Map extends Camera {
             }
             if (!this.getSource(this._trafficLayerId) && !this.getLayer(this._trafficLayerId)) {
                 if (options.type === 'vector') {
-                    //定义路况图层属性
+                    //Define road condition layer attributes
                     const trafficLayerStyle = {
                         'id': this._trafficLayerId,
                         'type': 'line',
                         'source': typeof options.source !== 'undefined' ? options.source : (config.TRAFFIC_SOURCE as any).vector,
-                        // 'source-layer': 'TFRoad',//高德路况配置
+                        // 'source-layer': 'TFRoad',//High German road configuration
                         'source-layer': 'vectortraffic',
                         'minzoom': options.minzoom,
                         'maxzoom': options.maxzoom,
@@ -2415,7 +2415,7 @@ class Map extends Camera {
                         'paint': {
                             'line-color': {
                                 'property': 'traffic_status',
-                                // 'property': 's',//高德路况配置
+                                // 'property': 's',//High German road configuration
                                 'type': 'categorical',
                                 'stops': [
                                     [
@@ -2454,7 +2454,7 @@ class Map extends Camera {
                                         'rgba(124, 124, 122, 1)'
                                     ]
                                 ],
-                                //高德路况配置
+                                //High German road configuration
                                 //  'stops': [
                                 // [
                                 //   {
@@ -2509,13 +2509,13 @@ class Map extends Camera {
                             },
                         }
                     };
-                    //添加路况图层
+                    //Add traffic layer
                     this.addLayer(trafficLayerStyle , options.before);
                     this._intervalFunc = setInterval(function() {
                         _this.removeLayerAndSource(_this._trafficLayerId);
                         _this.addLayer(trafficLayerStyle , options.before);
                     }, options.refresh);
-                    //矢量路况设置流动效果
+                    //Vector traffic set flow effect
                     if (options.animation) {
                         const dashLength = 0.01;
                         const gapLength = 4;
@@ -2567,7 +2567,7 @@ class Map extends Camera {
     }
 
     /*
-     * 地图poi点击
+     * Map poi click
      */
     poiClick(show: boolean, callback: Function) {
         const _this = this;
@@ -2590,7 +2590,7 @@ class Map extends Camera {
     }
 
     /*
-     * 地图矢量图层点击
+     * Map vector layer click
      */
     layerClick(options: any, callback:Function) {
         const _this = this;
@@ -2617,11 +2617,11 @@ class Map extends Camera {
     }
 
     /*
-     * 自封装ajax
+     * Self-encapsulated ajax
      */
     Ajax(type, url, data, success, failed) {
         let ActiveXObject: (type: string) => void;
-        // 创建ajax对象
+        // Create ajax object
         let xhr = null;
         if (window.XMLHttpRequest) {
             xhr = new XMLHttpRequest();
@@ -2629,7 +2629,7 @@ class Map extends Camera {
             xhr = new ActiveXObject('Microsoft.XMLHTTP');
         }
         type = type.toUpperCase();
-        // 用于清除缓存
+        // Used to clear cache
         const random = Math.random();
         if (typeof data == 'object') {
             let str = '';
@@ -2647,11 +2647,11 @@ class Map extends Camera {
             xhr.send();
         } else if (type === 'POST') {
             xhr.open('POST', url, true);
-            // 如果需要像 html 表单那样 POST 数据，请使用 setRequestHeader() 来添加 http 头。
+            // If you need to POST data like an html form, please use setRequestHeader() to add an http header.
             xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
             xhr.send(data);
         }
-        // 处理返回数据
+        // Processing return data
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
@@ -2666,7 +2666,7 @@ class Map extends Camera {
     }
 
     /**
-     * 地理编码与逆地理编码
+     * Geocoding and inverse geocoding
      */
     Geocoder(options: Object, callback:Function) {
         options = Object.assign({
@@ -2690,13 +2690,13 @@ class Map extends Camera {
     }
 
     /*
-     * 行政区划查询
+     * Administrative division query
      */
     DistrictSearch(options: Object, callback:Function) {
         options =  Object.assign({
-            query:'', //关键字，关键字的首字母、拼音格式如，公园/gy/gongyuan（必填）
-            city:'', //所在的城市名称
-            level:'', //只查询该级的行政区划，可选province(省)、cit有(城市)、district(区县)。说明：当参数city有效时，该参数无效
+            query:'', //Keyword, the first letter of the keyword, pinyin format, such as park/gy/gongyuan (required)
+            city:'', //City name
+            level:'', //Only query the administrative divisions of this level, and you can choose province (province), cit (city), district (districts and counties). Note: When the parameter city is valid, the parameter is invalid
             ak: (window as any).mapabcgl.accessToken
         }, options);
         for (const key in options) {
@@ -2714,16 +2714,16 @@ class Map extends Camera {
     }
 
     /*
-     * 车行路径规划
+     * Vehicle path planning
      */
     Driving(options: Object, callback:Function) {
         options = Object.assign({
-            origin: '', //起点经纬度，或起点名称+经纬度（必填）
-            destination:'', //终点经纬度，或终点名称+经纬度（必填）
-            waypoints:'', //最多支持设置16组途经点。经、纬度之间用“,”分隔，坐标点之间用"；"分隔
-            coord_type:'', //坐标类型 见文档
-            tactics:'', //路径规划策略 见文档
-            avoidpolygons:'', //区域避让，支持32个避让区域，每个区域最多可有16个顶点 例 x,y;x,y|x,y;x,y
+            origin: '', //Starting point longitude and latitude, or starting point name + longitude and latitude (required)
+            destination:'', //Latitude and longitude of destination, or name of destination + latitude and longitude (required)
+            waypoints:'', //Supports up to 16 sets of passing points. Use "," to separate longitude and latitude, and use ";" to separate coordinate points
+            coord_type:'', //Coordinate type see document
+            tactics:'', //Path planning strategy see document
+            avoidpolygons:'', //Area avoidance, support 32 avoidance areas, each area can have up to 16 vertices Example x,y;x,y|x,y;x,y
             ak: (window as any).mapabcgl.accessToken
         }, options);
         for (const key in options) {
@@ -2741,14 +2741,14 @@ class Map extends Camera {
     }
 
     /*
-     * 步行路径规划
+     * Walking path planning
      */
     Walking(options: Object, callback:Function) {
         options = Object.assign({
-            origin:'', //起点经纬度，或起点名称+经纬度（必填）
-            destination:'', //终点经纬度，或终点名称+经纬度（必填）
-            coord_type:'', //坐标类型 见文档
-            tactics:'', //路径规划策略 见文档
+            origin:'', //Starting point longitude and latitude, or starting point name + longitude and latitude (required)
+            destination:'', //The latitude and longitude of the destination, or the name of the destination + latitude and longitude (required)
+            coord_type:'', //Coordinate type see document
+            tactics:'', //Path planning strategy see document
             ak: (window as any).mapabcgl.accessToken
         }, options);
         for (const key in options) {
@@ -2766,25 +2766,25 @@ class Map extends Camera {
     }
 
     /*
-     * poi搜索（关键字、多边形、周边）
+     * poi search (keywords, polygons, surroundings)
      */
     PoiSearch(options: Object, callback:Function) {
         options =  Object.assign({
-            query:'', //关键字，关键字的首字母、拼音格式如，公园/gy/gongyuan（必填）
-            scope:1, //检索结果详细程度,1返回基本信息；2返回POI详细信息。（必填）
-            region:'', //检索区域名称,可输入城市名或省份名或全国（必填）
-            type:'', //关键字类型
-            page_size:20, //每页记录数,最大值为50，超过50则按照50处理。
-            page_num:1, //分页页码,
-            location:'', //中心点(周边搜索必填)
-            radius:'', //半径，取值范围0~50000，超过50000时，按默认值1000进行搜搜，单位米。(周边搜索必填)
-            regionType:'', //几何对象类型,可选rectangle（矩形）、polygon(多边形)、circle（圆）、ellipse(椭圆)
-            bounds:'', //地理坐标点集合,目前支持四种图形类型：
-            // 坐标点经、纬度间使用半角“,”隔开，坐标对间使用半角“;”分隔。 如： x1,y1;x2,y2; x3,y3;x4,y4;x5,y5;
-            // regionType=rectangle，矩形左下、右上（或左上、右下）两个顶点的坐标；
-            // regionType=polygon，多边形所有顶点的顺序坐标，且首尾坐标相同；
-            // regionType=circle，圆形外接矩形左下、右上（或左上、右下）两个顶点的坐标；
-            // regionType=ellipse，椭圆外接矩形左下、右上（或左上、右下）两个顶点的坐标。
+            query:'', //Keyword, the first letter of the keyword, pinyin format, such as park/gy/gongyuan (required)
+            scope:1, //The degree of detail of the search result, 1 returns basic information; 2 returns POI detailed information. (Required)
+            region:'', //Retrieve the name of the area, you can enter the name of the city or province or the country (required)
+            type:'', //Keyword type
+            page_size:20, //The number of records per page, the maximum is 50, if it exceeds 50, it will be processed as 50.
+            page_num:1, //Pagination page number,
+            location:'', //Center point (required for surrounding search)
+            radius:'', //Radius, the value range is 0~50,000, when it exceeds 50,000, the search will be carried out according to the default value of 1000, and the unit is meter. (Required for surrounding search)
+            regionType:'', //Geometric object type, optional rectangle (rectangle), polygon (polygon), circle (circle), ellipse (ellipse)
+            bounds:'', //Geographic coordinate point collection, currently supports four types of graphics:
+            // Use half-angle "," to separate the longitude and latitude of coordinate points, and use half-angle ";" to separate the coordinate pairs. Such as: x1, y1; x2, y2; x3, y3; x4, y4; x5, y5;
+            // regionType=rectangle, the coordinates of the two vertices of the bottom left and top right (or top left and bottom right) of the rectangle;
+            // regionType=polygon, the sequential coordinates of all vertices of the polygon, and the first and last coordinates are the same;
+            // regionType=circle, the coordinates of the two vertices of the lower left and upper right (or upper left and lower right) of the circular circumscribing rectangle;
+            // regionType=ellipse, the coordinates of the lower left and upper right (or upper left, lower right) vertices of the ellipse circumscribing rectangle.
             ak: (window as any).mapabcgl.accessToken
         }, options);
         for (const key in options) {
