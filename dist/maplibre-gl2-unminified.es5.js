@@ -27134,18 +27134,19 @@ var GlyphManager = function () {
                 fontWeight: fontWeight
             });
         }
+        var char = tinySDF.draw(String.fromCharCode(id));
         return {
             id: id,
             bitmap: new performance.AlphaImage({
-                width: 30,
-                height: 30
-            }, tinySDF.draw(String.fromCharCode(id)).data),
+                width: char.width,
+                height: char.height
+            }, char.data),
             metrics: {
-                width: 24,
-                height: 24,
-                left: 0,
-                top: -8,
-                advance: 24
+                width: char.glyphWidth,
+                height: char.glyphHeight,
+                left: char.glyphLeft,
+                top: char.glyphTop,
+                advance: char.glyphAdvance
             }
         };
     };
@@ -38342,6 +38343,7 @@ var Transform = function () {
     function Transform(minZoom, maxZoom, minPitch, maxPitch, renderWorldCopies) {
         this.tileSize = 512;
         this.maxValidLatitude = 85.051129;
+        this.freezeElevation = false;
         this._renderWorldCopies = renderWorldCopies === undefined ? true : !!renderWorldCopies;
         this._minZoom = minZoom || 0;
         this._maxZoom = maxZoom || 22;
@@ -38551,7 +38553,6 @@ var Transform = function () {
             }
             this._unmodified = false;
             this._center = center;
-            this._elevation = this.getElevation(center);
             this._constrain();
             this._calcMatrices();
         },
@@ -38563,6 +38564,9 @@ var Transform = function () {
             return this._elevation;
         },
         set: function (elevation) {
+            if (this.freezeElevation) {
+                return;
+            }
             if (elevation === this._elevation) {
                 return;
             }
@@ -38781,6 +38785,32 @@ var Transform = function () {
         var tileX = Math.floor(mercX / tileSize), tileY = Math.floor(mercY / tileSize);
         var tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
         return this.terrainSourceCache.getElevation(tileID, mercX % tileSize, mercY % tileSize, tileSize);
+    };
+    Transform.prototype.getCameraPosition = function () {
+        var lngLat = this.pointLocation(this.getCameraPoint());
+        var altitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
+        return {
+            lngLat: lngLat,
+            altitude: altitude
+        };
+    };
+    Transform.prototype.recalculateZoom = function () {
+        var center = this.pointLocation3D(this.centerPoint);
+        var elevation = this.getElevation(center);
+        var deltaElevation = +this.elevation - elevation;
+        if (!deltaElevation) {
+            return;
+        }
+        var cameraAltitude = this.getCameraPosition().altitude + this.elevation;
+        var cameraLngLat = this.pointLocation(this.getCameraPoint());
+        var camera = performance.MercatorCoordinate.fromLngLat(cameraLngLat, cameraAltitude);
+        var target = performance.MercatorCoordinate.fromLngLat(center, elevation);
+        var dx = camera.x - target.x, dy = camera.y - target.y, dz = camera.z - target.z;
+        var distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        var zoom = this.scaleZoom(this.cameraToCenterDistance / distance / this.tileSize);
+        this._elevation = elevation;
+        this._center = center;
+        this.zoom = zoom;
     };
     Transform.prototype.setLocationAtPoint = function (lnglat, point) {
         var a = this.pointCoordinate(point);
@@ -39025,9 +39055,9 @@ var Transform = function () {
         var topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
         var point = this.point;
         var x = point.x, y = point.y;
-        var pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
+        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
         var furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + this.cameraToCenterDistance;
-        var farZ = (furthestDistance + elevation * pixelPerMeter / Math.cos(this._pitch)) * 1.01;
+        var farZ = (furthestDistance + elevation * this._pixelPerMeter / Math.cos(this._pitch)) * 1.01;
         var nearZ = this.height / 50;
         m = new Float64Array(16);
         performance.perspective(m, this._fov, this.width / this.height, nearZ, farZ);
@@ -39051,7 +39081,7 @@ var Transform = function () {
             0
         ]);
         this.mercatorMatrix = performance.scale(new Float64Array(16), m, fromValues(this.worldSize, this.worldSize, this.worldSize));
-        performance.scale(m, m, fromValues(1, 1, pixelPerMeter));
+        performance.scale(m, m, fromValues(1, 1, this._pixelPerMeter));
         this.pixelMatrix = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
         this.invProjMatrix = performance.invert(new Float64Array(16), m);
         performance.translate(m, m, [
@@ -41294,7 +41324,7 @@ var HandlerManager = function () {
     HandlerManager.prototype._updateMapTransform = function (combinedResult, combinedEventsInProgress, deactivatedHandlers) {
         var map = this._map;
         var tr = map.transform;
-        if (!hasChange(combinedResult)) {
+        if (!hasChange(combinedResult) && !this._drag) {
             return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
         }
         var panDelta = combinedResult.panDelta, zoomDelta = combinedResult.zoomDelta, bearingDelta = combinedResult.bearingDelta, pitchDelta = combinedResult.pitchDelta, around = combinedResult.around, pinchAround = combinedResult.pinchAround;
@@ -41303,7 +41333,6 @@ var HandlerManager = function () {
         }
         map._stop(true);
         around = around || map.transform.centerPoint;
-        var loc = tr.pointLocation(panDelta ? around.sub(panDelta) : around);
         if (bearingDelta) {
             tr.bearing += bearingDelta;
         }
@@ -41313,7 +41342,27 @@ var HandlerManager = function () {
         if (zoomDelta) {
             tr.zoom += zoomDelta;
         }
-        tr.setLocationAtPoint(loc, around);
+        if (combinedEventsInProgress.drag && !this._drag) {
+            this._drag = {
+                center: tr.centerPoint,
+                lngLat: tr.pointLocation(around),
+                point: around,
+                delta: panDelta,
+                handlerName: combinedEventsInProgress.drag.handlerName
+            };
+            tr.freezeElevation = true;
+        } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
+            tr.freezeElevation = false;
+            tr.recalculateZoom();
+            this._drag = null;
+        } else if (combinedEventsInProgress.drag && this._drag) {
+            this._drag.delta = this._drag.delta.add(panDelta);
+            if (map.style.terrainSourceCache.isEnabled()) {
+                tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
+            } else {
+                tr.setLocationAtPoint(this._drag.lngLat, this._drag.point.add(this._drag.delta));
+            }
+        }
         this._map._update();
         if (!combinedResult.noInertia) {
             this._inertia.record(combinedResult);
@@ -42227,7 +42276,7 @@ var __extends$3 = undefined && undefined.__extends || function () {
 var defaultMinZoom = -2;
 var defaultMaxZoom = 22;
 var defaultMinPitch = 0;
-var defaultMaxPitch = 75;
+var defaultMaxPitch = 65;
 var maxPitchThreshold = 85;
 var defaultOptions$4 = {
     center: [
