@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.0-pre.6/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.1/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -7269,2958 +7269,2431 @@ var Evented = function () {
 
 var $version = 8;
 var $root = {
-	version: {
-		required: true,
-		type: "enum",
-		values: [
-			8
-		]
-	},
-	name: {
-		type: "string"
-	},
-	metadata: {
-		type: "*"
-	},
-	center: {
-		type: "array",
-		value: "number"
-	},
-	zoom: {
-		type: "number"
-	},
-	bearing: {
-		type: "number",
-		"default": 0,
-		period: 360,
-		units: "degrees"
-	},
-	pitch: {
-		type: "number",
-		"default": 0,
-		units: "degrees"
-	},
-	light: {
-		type: "light"
-	},
-	sources: {
-		required: true,
-		type: "sources"
-	},
-	sprite: {
-		type: "string"
-	},
-	glyphs: {
-		type: "string"
-	},
-	transition: {
-		type: "transition"
-	},
-	layers: {
-		required: true,
-		type: "array",
-		value: "layer"
-	}
+    version: {
+        required: true,
+        type: 'enum',
+        values: [8]
+    },
+    name: { type: 'string' },
+    metadata: { type: '*' },
+    center: {
+        type: 'array',
+        value: 'number'
+    },
+    zoom: { type: 'number' },
+    bearing: {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees'
+    },
+    pitch: {
+        type: 'number',
+        'default': 0,
+        units: 'degrees'
+    },
+    light: { type: 'light' },
+    sources: {
+        required: true,
+        type: 'sources'
+    },
+    sprite: { type: 'string' },
+    glyphs: { type: 'string' },
+    transition: { type: 'transition' },
+    layers: {
+        required: true,
+        type: 'array',
+        value: 'layer'
+    }
 };
-var sources = {
-	"*": {
-		type: "source"
-	}
-};
+var sources = { '*': { type: 'source' } };
 var source = [
-	"source_vector",
-	"source_raster",
-	"source_raster_dem",
-	"source_geojson",
-	"source_video",
-	"source_image"
+    'source_vector',
+    'source_raster',
+    'source_raster_dem',
+    'source_geojson',
+    'source_video',
+    'source_image'
 ];
 var source_vector = {
-	type: {
-		required: true,
-		type: "enum",
-		values: {
-			vector: {
-			}
-		}
-	},
-	url: {
-		type: "string"
-	},
-	tiles: {
-		type: "array",
-		value: "string"
-	},
-	bounds: {
-		type: "array",
-		value: "number",
-		length: 4,
-		"default": [
-			-180,
-			-85.051129,
-			180,
-			85.051129
-		]
-	},
-	scheme: {
-		type: "enum",
-		values: {
-			xyz: {
-			},
-			tms: {
-			}
-		},
-		"default": "xyz"
-	},
-	minzoom: {
-		type: "number",
-		"default": 0
-	},
-	maxzoom: {
-		type: "number",
-		"default": 22
-	},
-	attribution: {
-		type: "string"
-	},
-	promoteId: {
-		type: "promoteId"
-	},
-	volatile: {
-		type: "boolean",
-		"default": false
-	},
-	"*": {
-		type: "*"
-	}
+    type: {
+        required: true,
+        type: 'enum',
+        values: { vector: {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    scheme: {
+        type: 'enum',
+        values: {
+            xyz: {},
+            tms: {}
+        },
+        'default': 'xyz'
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    attribution: { type: 'string' },
+    promoteId: { type: 'promoteId' },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
 };
 var source_raster = {
-	type: {
-		required: true,
-		type: "enum",
-		values: {
-			raster: {
-			}
-		}
-	},
-	url: {
-		type: "string"
-	},
-	tiles: {
-		type: "array",
-		value: "string"
-	},
-	bounds: {
-		type: "array",
-		value: "number",
-		length: 4,
-		"default": [
-			-180,
-			-85.051129,
-			180,
-			85.051129
-		]
-	},
-	minzoom: {
-		type: "number",
-		"default": 0
-	},
-	maxzoom: {
-		type: "number",
-		"default": 22
-	},
-	tileSize: {
-		type: "number",
-		"default": 512,
-		units: "pixels"
-	},
-	scheme: {
-		type: "enum",
-		values: {
-			xyz: {
-			},
-			tms: {
-			}
-		},
-		"default": "xyz"
-	},
-	attribution: {
-		type: "string"
-	},
-	volatile: {
-		type: "boolean",
-		"default": false
-	},
-	"*": {
-		type: "*"
-	}
+    type: {
+        required: true,
+        type: 'enum',
+        values: { raster: {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    tileSize: {
+        type: 'number',
+        'default': 512,
+        units: 'pixels'
+    },
+    scheme: {
+        type: 'enum',
+        values: {
+            xyz: {},
+            tms: {}
+        },
+        'default': 'xyz'
+    },
+    attribution: { type: 'string' },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
 };
 var source_raster_dem = {
-	type: {
-		required: true,
-		type: "enum",
-		values: {
-			"raster-dem": {
-			}
-		}
-	},
-	url: {
-		type: "string"
-	},
-	tiles: {
-		type: "array",
-		value: "string"
-	},
-	bounds: {
-		type: "array",
-		value: "number",
-		length: 4,
-		"default": [
-			-180,
-			-85.051129,
-			180,
-			85.051129
-		]
-	},
-	minzoom: {
-		type: "number",
-		"default": 0
-	},
-	maxzoom: {
-		type: "number",
-		"default": 22
-	},
-	tileSize: {
-		type: "number",
-		"default": 512,
-		units: "pixels"
-	},
-	attribution: {
-		type: "string"
-	},
-	encoding: {
-		type: "enum",
-		values: {
-			terrarium: {
-			},
-			mapbox: {
-			}
-		},
-		"default": "mapbox"
-	},
-	volatile: {
-		type: "boolean",
-		"default": false
-	},
-	"*": {
-		type: "*"
-	}
+    type: {
+        required: true,
+        type: 'enum',
+        values: { 'raster-dem': {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    tileSize: {
+        type: 'number',
+        'default': 512,
+        units: 'pixels'
+    },
+    attribution: { type: 'string' },
+    encoding: {
+        type: 'enum',
+        values: {
+            terrarium: {},
+            mapbox: {}
+        },
+        'default': 'mapbox'
+    },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
 };
 var source_geojson = {
-	type: {
-		required: true,
-		type: "enum",
-		values: {
-			geojson: {
-			}
-		}
-	},
-	data: {
-		type: "*"
-	},
-	maxzoom: {
-		type: "number",
-		"default": 18
-	},
-	attribution: {
-		type: "string"
-	},
-	buffer: {
-		type: "number",
-		"default": 128,
-		maximum: 512,
-		minimum: 0
-	},
-	filter: {
-		type: "*"
-	},
-	tolerance: {
-		type: "number",
-		"default": 0.375
-	},
-	cluster: {
-		type: "boolean",
-		"default": false
-	},
-	clusterRadius: {
-		type: "number",
-		"default": 50,
-		minimum: 0
-	},
-	clusterMaxZoom: {
-		type: "number"
-	},
-	clusterMinPoints: {
-		type: "number"
-	},
-	clusterProperties: {
-		type: "*"
-	},
-	lineMetrics: {
-		type: "boolean",
-		"default": false
-	},
-	generateId: {
-		type: "boolean",
-		"default": false
-	},
-	promoteId: {
-		type: "promoteId"
-	}
+    type: {
+        required: true,
+        type: 'enum',
+        values: { geojson: {} }
+    },
+    data: { type: '*' },
+    maxzoom: {
+        type: 'number',
+        'default': 18
+    },
+    attribution: { type: 'string' },
+    buffer: {
+        type: 'number',
+        'default': 128,
+        maximum: 512,
+        minimum: 0
+    },
+    filter: { type: '*' },
+    tolerance: {
+        type: 'number',
+        'default': 0.375
+    },
+    cluster: {
+        type: 'boolean',
+        'default': false
+    },
+    clusterRadius: {
+        type: 'number',
+        'default': 50,
+        minimum: 0
+    },
+    clusterMaxZoom: { type: 'number' },
+    clusterMinPoints: { type: 'number' },
+    clusterProperties: { type: '*' },
+    lineMetrics: {
+        type: 'boolean',
+        'default': false
+    },
+    generateId: {
+        type: 'boolean',
+        'default': false
+    },
+    promoteId: { type: 'promoteId' }
 };
 var source_video = {
-	type: {
-		required: true,
-		type: "enum",
-		values: {
-			video: {
-			}
-		}
-	},
-	urls: {
-		required: true,
-		type: "array",
-		value: "string"
-	},
-	coordinates: {
-		required: true,
-		type: "array",
-		length: 4,
-		value: {
-			type: "array",
-			length: 2,
-			value: "number"
-		}
-	}
+    type: {
+        required: true,
+        type: 'enum',
+        values: { video: {} }
+    },
+    urls: {
+        required: true,
+        type: 'array',
+        value: 'string'
+    },
+    coordinates: {
+        required: true,
+        type: 'array',
+        length: 4,
+        value: {
+            type: 'array',
+            length: 2,
+            value: 'number'
+        }
+    }
 };
 var source_image = {
-	type: {
-		required: true,
-		type: "enum",
-		values: {
-			image: {
-			}
-		}
-	},
-	url: {
-		required: true,
-		type: "string"
-	},
-	coordinates: {
-		required: true,
-		type: "array",
-		length: 4,
-		value: {
-			type: "array",
-			length: 2,
-			value: "number"
-		}
-	}
+    type: {
+        required: true,
+        type: 'enum',
+        values: { image: {} }
+    },
+    url: {
+        required: true,
+        type: 'string'
+    },
+    coordinates: {
+        required: true,
+        type: 'array',
+        length: 4,
+        value: {
+            type: 'array',
+            length: 2,
+            value: 'number'
+        }
+    }
 };
 var layer = {
-	id: {
-		type: "string",
-		required: true
-	},
-	type: {
-		type: "enum",
-		values: {
-			fill: {
-			},
-			line: {
-			},
-			symbol: {
-			},
-			circle: {
-			},
-			heatmap: {
-			},
-			"fill-extrusion": {
-			},
-			raster: {
-			},
-			hillshade: {
-			},
-			background: {
-			}
-		},
-		required: true
-	},
-	metadata: {
-		type: "*"
-	},
-	source: {
-		type: "string"
-	},
-	"source-layer": {
-		type: "string"
-	},
-	minzoom: {
-		type: "number",
-		minimum: 0,
-		maximum: 24
-	},
-	maxzoom: {
-		type: "number",
-		minimum: 0,
-		maximum: 24
-	},
-	filter: {
-		type: "filter"
-	},
-	layout: {
-		type: "layout"
-	},
-	paint: {
-		type: "paint"
-	}
+    id: {
+        type: 'string',
+        required: true
+    },
+    type: {
+        type: 'enum',
+        values: {
+            fill: {},
+            line: {},
+            symbol: {},
+            circle: {},
+            heatmap: {},
+            'fill-extrusion': {},
+            raster: {},
+            hillshade: {},
+            background: {}
+        },
+        required: true
+    },
+    metadata: { type: '*' },
+    source: { type: 'string' },
+    'source-layer': { type: 'string' },
+    minzoom: {
+        type: 'number',
+        minimum: 0,
+        maximum: 24
+    },
+    maxzoom: {
+        type: 'number',
+        minimum: 0,
+        maximum: 24
+    },
+    filter: { type: 'filter' },
+    layout: { type: 'layout' },
+    paint: { type: 'paint' }
 };
 var layout$7 = [
-	"layout_fill",
-	"layout_line",
-	"layout_circle",
-	"layout_heatmap",
-	"layout_fill-extrusion",
-	"layout_symbol",
-	"layout_raster",
-	"layout_hillshade",
-	"layout_background"
+    'layout_fill',
+    'layout_line',
+    'layout_circle',
+    'layout_heatmap',
+    'layout_fill-extrusion',
+    'layout_symbol',
+    'layout_raster',
+    'layout_hillshade',
+    'layout_background'
 ];
 var layout_background = {
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_fill = {
-	"fill-sort-key": {
-		type: "number",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    'fill-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_circle = {
-	"circle-sort-key": {
-		type: "number",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    'circle-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_heatmap = {
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_line = {
-	"line-cap": {
-		type: "enum",
-		values: {
-			butt: {
-			},
-			round: {
-			},
-			square: {
-			}
-		},
-		"default": "butt",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"line-join": {
-		type: "enum",
-		values: {
-			bevel: {
-			},
-			round: {
-			},
-			miter: {
-			}
-		},
-		"default": "miter",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-miter-limit": {
-		type: "number",
-		"default": 2,
-		requires: [
-			{
-				"line-join": "miter"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"line-round-limit": {
-		type: "number",
-		"default": 1.05,
-		requires: [
-			{
-				"line-join": "round"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"line-sort-key": {
-		type: "number",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    'line-cap': {
+        type: 'enum',
+        values: {
+            butt: {},
+            round: {},
+            square: {}
+        },
+        'default': 'butt',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-join': {
+        type: 'enum',
+        values: {
+            bevel: {},
+            round: {},
+            miter: {}
+        },
+        'default': 'miter',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-miter-limit': {
+        type: 'number',
+        'default': 2,
+        requires: [{ 'line-join': 'miter' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-round-limit': {
+        type: 'number',
+        'default': 1.05,
+        requires: [{ 'line-join': 'round' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_symbol = {
-	"symbol-placement": {
-		type: "enum",
-		values: {
-			point: {
-			},
-			line: {
-			},
-			"line-center": {
-			}
-		},
-		"default": "point",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"symbol-spacing": {
-		type: "number",
-		"default": 250,
-		minimum: 1,
-		units: "pixels",
-		requires: [
-			{
-				"symbol-placement": "line"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"symbol-avoid-edges": {
-		type: "boolean",
-		"default": false,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"symbol-sort-key": {
-		type: "number",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"symbol-z-order": {
-		type: "enum",
-		values: {
-			auto: {
-			},
-			"viewport-y": {
-			},
-			source: {
-			}
-		},
-		"default": "auto",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-allow-overlap": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-ignore-placement": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-optional": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"icon-image",
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-rotation-alignment": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			},
-			auto: {
-			}
-		},
-		"default": "auto",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-size": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		units: "factor of the original icon size",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-text-fit": {
-		type: "enum",
-		values: {
-			none: {
-			},
-			width: {
-			},
-			height: {
-			},
-			both: {
-			}
-		},
-		"default": "none",
-		requires: [
-			"icon-image",
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-text-fit-padding": {
-		type: "array",
-		value: "number",
-		length: 4,
-		"default": [
-			0,
-			0,
-			0,
-			0
-		],
-		units: "pixels",
-		requires: [
-			"icon-image",
-			"text-field",
-			{
-				"icon-text-fit": [
-					"both",
-					"width",
-					"height"
-				]
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-image": {
-		type: "resolvedImage",
-		tokens: true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-rotate": {
-		type: "number",
-		"default": 0,
-		period: 360,
-		units: "degrees",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-padding": {
-		type: "number",
-		"default": 2,
-		minimum: 0,
-		units: "pixels",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-keep-upright": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"icon-image",
-			{
-				"icon-rotation-alignment": "map"
-			},
-			{
-				"symbol-placement": [
-					"line",
-					"line-center"
-				]
-			}
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-offset": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-anchor": {
-		type: "enum",
-		values: {
-			center: {
-			},
-			left: {
-			},
-			right: {
-			},
-			top: {
-			},
-			bottom: {
-			},
-			"top-left": {
-			},
-			"top-right": {
-			},
-			"bottom-left": {
-			},
-			"bottom-right": {
-			}
-		},
-		"default": "center",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-pitch-alignment": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			},
-			auto: {
-			}
-		},
-		"default": "auto",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-pitch-alignment": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			},
-			auto: {
-			}
-		},
-		"default": "auto",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-rotation-alignment": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			},
-			auto: {
-			}
-		},
-		"default": "auto",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-field": {
-		type: "formatted",
-		"default": "",
-		tokens: true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-font": {
-		type: "array",
-		value: "string",
-		"default": [
-			"Open Sans Regular",
-			"Arial Unicode MS Regular"
-		],
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-size": {
-		type: "number",
-		"default": 16,
-		minimum: 0,
-		units: "pixels",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-max-width": {
-		type: "number",
-		"default": 10,
-		minimum: 0,
-		units: "ems",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-line-height": {
-		type: "number",
-		"default": 1.2,
-		units: "ems",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-letter-spacing": {
-		type: "number",
-		"default": 0,
-		units: "ems",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-justify": {
-		type: "enum",
-		values: {
-			auto: {
-			},
-			left: {
-			},
-			center: {
-			},
-			right: {
-			}
-		},
-		"default": "center",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-radial-offset": {
-		type: "number",
-		units: "ems",
-		"default": 0,
-		requires: [
-			"text-field"
-		],
-		"property-type": "data-driven",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		}
-	},
-	"text-variable-anchor": {
-		type: "array",
-		value: "enum",
-		values: {
-			center: {
-			},
-			left: {
-			},
-			right: {
-			},
-			top: {
-			},
-			bottom: {
-			},
-			"top-left": {
-			},
-			"top-right": {
-			},
-			"bottom-left": {
-			},
-			"bottom-right": {
-			}
-		},
-		requires: [
-			"text-field",
-			{
-				"symbol-placement": [
-					"point"
-				]
-			}
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-anchor": {
-		type: "enum",
-		values: {
-			center: {
-			},
-			left: {
-			},
-			right: {
-			},
-			top: {
-			},
-			bottom: {
-			},
-			"top-left": {
-			},
-			"top-right": {
-			},
-			"bottom-left": {
-			},
-			"bottom-right": {
-			}
-		},
-		"default": "center",
-		requires: [
-			"text-field",
-			{
-				"!": "text-variable-anchor"
-			}
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-max-angle": {
-		type: "number",
-		"default": 45,
-		units: "degrees",
-		requires: [
-			"text-field",
-			{
-				"symbol-placement": [
-					"line",
-					"line-center"
-				]
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-writing-mode": {
-		type: "array",
-		value: "enum",
-		values: {
-			horizontal: {
-			},
-			vertical: {
-			}
-		},
-		requires: [
-			"text-field",
-			{
-				"symbol-placement": [
-					"point"
-				]
-			}
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-rotate": {
-		type: "number",
-		"default": 0,
-		period: 360,
-		units: "degrees",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-padding": {
-		type: "number",
-		"default": 2,
-		minimum: 0,
-		units: "pixels",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-keep-upright": {
-		type: "boolean",
-		"default": true,
-		requires: [
-			"text-field",
-			{
-				"text-rotation-alignment": "map"
-			},
-			{
-				"symbol-placement": [
-					"line",
-					"line-center"
-				]
-			}
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-transform": {
-		type: "enum",
-		values: {
-			none: {
-			},
-			uppercase: {
-			},
-			lowercase: {
-			}
-		},
-		"default": "none",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-offset": {
-		type: "array",
-		value: "number",
-		units: "ems",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		requires: [
-			"text-field",
-			{
-				"!": "text-radial-offset"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-allow-overlap": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-ignore-placement": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-optional": {
-		type: "boolean",
-		"default": false,
-		requires: [
-			"text-field",
-			"icon-image"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    'symbol-placement': {
+        type: 'enum',
+        values: {
+            point: {},
+            line: {},
+            'line-center': {}
+        },
+        'default': 'point',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-spacing': {
+        type: 'number',
+        'default': 250,
+        minimum: 1,
+        units: 'pixels',
+        requires: [{ 'symbol-placement': 'line' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-avoid-edges': {
+        type: 'boolean',
+        'default': false,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'symbol-z-order': {
+        type: 'enum',
+        values: {
+            auto: {},
+            'viewport-y': {},
+            source: {}
+        },
+        'default': 'auto',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-allow-overlap': {
+        type: 'boolean',
+        'default': false,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-ignore-placement': {
+        type: 'boolean',
+        'default': false,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-optional': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'icon-image',
+            'text-field'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-rotation-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-size': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        units: 'factor of the original icon size',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-text-fit': {
+        type: 'enum',
+        values: {
+            none: {},
+            width: {},
+            height: {},
+            both: {}
+        },
+        'default': 'none',
+        requires: [
+            'icon-image',
+            'text-field'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-text-fit-padding': {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            0,
+            0,
+            0,
+            0
+        ],
+        units: 'pixels',
+        requires: [
+            'icon-image',
+            'text-field',
+            {
+                'icon-text-fit': [
+                    'both',
+                    'width',
+                    'height'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-image': {
+        type: 'resolvedImage',
+        tokens: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-padding': {
+        type: 'number',
+        'default': 2,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-keep-upright': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'icon-image',
+            { 'icon-rotation-alignment': 'map' },
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-offset': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-anchor': {
+        type: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        'default': 'center',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-rotation-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-field': {
+        type: 'formatted',
+        'default': '',
+        tokens: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-font': {
+        type: 'array',
+        value: 'string',
+        'default': [
+            'Open Sans Regular',
+            'Arial Unicode MS Regular'
+        ],
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-size': {
+        type: 'number',
+        'default': 16,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-max-width': {
+        type: 'number',
+        'default': 10,
+        minimum: 0,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-line-height': {
+        type: 'number',
+        'default': 1.2,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-letter-spacing': {
+        type: 'number',
+        'default': 0,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-justify': {
+        type: 'enum',
+        values: {
+            auto: {},
+            left: {},
+            center: {},
+            right: {}
+        },
+        'default': 'center',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-radial-offset': {
+        type: 'number',
+        units: 'ems',
+        'default': 0,
+        requires: ['text-field'],
+        'property-type': 'data-driven',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        }
+    },
+    'text-variable-anchor': {
+        type: 'array',
+        value: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        requires: [
+            'text-field',
+            { 'symbol-placement': ['point'] }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-anchor': {
+        type: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        'default': 'center',
+        requires: [
+            'text-field',
+            { '!': 'text-variable-anchor' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-max-angle': {
+        type: 'number',
+        'default': 45,
+        units: 'degrees',
+        requires: [
+            'text-field',
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-writing-mode': {
+        type: 'array',
+        value: 'enum',
+        values: {
+            horizontal: {},
+            vertical: {}
+        },
+        requires: [
+            'text-field',
+            { 'symbol-placement': ['point'] }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-padding': {
+        type: 'number',
+        'default': 2,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-keep-upright': {
+        type: 'boolean',
+        'default': true,
+        requires: [
+            'text-field',
+            { 'text-rotation-alignment': 'map' },
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-transform': {
+        type: 'enum',
+        values: {
+            none: {},
+            uppercase: {},
+            lowercase: {}
+        },
+        'default': 'none',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-offset': {
+        type: 'array',
+        value: 'number',
+        units: 'ems',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        requires: [
+            'text-field',
+            { '!': 'text-radial-offset' }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-allow-overlap': {
+        type: 'boolean',
+        'default': false,
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-ignore-placement': {
+        type: 'boolean',
+        'default': false,
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-optional': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'text-field',
+            'icon-image'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_raster = {
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var layout_hillshade = {
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
 };
 var filter = {
-	type: "array",
-	value: "*"
+    type: 'array',
+    value: '*'
 };
 var filter_operator = {
-	type: "enum",
-	values: {
-		"==": {
-		},
-		"!=": {
-		},
-		">": {
-		},
-		">=": {
-		},
-		"<": {
-		},
-		"<=": {
-		},
-		"in": {
-		},
-		"!in": {
-		},
-		all: {
-		},
-		any: {
-		},
-		none: {
-		},
-		has: {
-		},
-		"!has": {
-		},
-		within: {
-		}
-	}
+    type: 'enum',
+    values: {
+        '==': {},
+        '!=': {},
+        '>': {},
+        '>=': {},
+        '<': {},
+        '<=': {},
+        'in': {},
+        '!in': {},
+        all: {},
+        any: {},
+        none: {},
+        has: {},
+        '!has': {},
+        within: {}
+    }
 };
 var geometry_type = {
-	type: "enum",
-	values: {
-		Point: {
-		},
-		LineString: {
-		},
-		Polygon: {
-		}
-	}
+    type: 'enum',
+    values: {
+        Point: {},
+        LineString: {},
+        Polygon: {}
+    }
 };
 var function_stop = {
-	type: "array",
-	minimum: 0,
-	maximum: 24,
-	value: [
-		"number",
-		"color"
-	],
-	length: 2
+    type: 'array',
+    minimum: 0,
+    maximum: 24,
+    value: [
+        'number',
+        'color'
+    ],
+    length: 2
 };
 var expression = {
-	type: "array",
-	value: "*",
-	minimum: 1
+    type: 'array',
+    value: '*',
+    minimum: 1
 };
 var light = {
-	anchor: {
-		type: "enum",
-		"default": "viewport",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"property-type": "data-constant",
-		transition: false,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		}
-	},
-	position: {
-		type: "array",
-		"default": [
-			1.15,
-			210,
-			30
-		],
-		length: 3,
-		value: "number",
-		"property-type": "data-constant",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		}
-	},
-	color: {
-		type: "color",
-		"property-type": "data-constant",
-		"default": "#ffffff",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		transition: true
-	},
-	intensity: {
-		type: "number",
-		"property-type": "data-constant",
-		"default": 0.5,
-		minimum: 0,
-		maximum: 1,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		transition: true
-	}
+    anchor: {
+        type: 'enum',
+        'default': 'viewport',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'property-type': 'data-constant',
+        transition: false,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        }
+    },
+    position: {
+        type: 'array',
+        'default': [
+            1.15,
+            210,
+            30
+        ],
+        length: 3,
+        value: 'number',
+        'property-type': 'data-constant',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        }
+    },
+    color: {
+        type: 'color',
+        'property-type': 'data-constant',
+        'default': '#ffffff',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        transition: true
+    },
+    intensity: {
+        type: 'number',
+        'property-type': 'data-constant',
+        'default': 0.5,
+        minimum: 0,
+        maximum: 1,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        transition: true
+    }
 };
 var paint$9 = [
-	"paint_fill",
-	"paint_line",
-	"paint_circle",
-	"paint_heatmap",
-	"paint_fill-extrusion",
-	"paint_symbol",
-	"paint_raster",
-	"paint_hillshade",
-	"paint_background"
+    'paint_fill',
+    'paint_line',
+    'paint_circle',
+    'paint_heatmap',
+    'paint_fill-extrusion',
+    'paint_symbol',
+    'paint_raster',
+    'paint_hillshade',
+    'paint_background'
 ];
 var paint_fill = {
-	"fill-antialias": {
-		type: "boolean",
-		"default": true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"fill-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"fill-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		requires: [
-			{
-				"!": "fill-pattern"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"fill-outline-color": {
-		type: "color",
-		transition: true,
-		requires: [
-			{
-				"!": "fill-pattern"
-			},
-			{
-				"fill-antialias": true
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"fill-translate": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"fill-translate-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		requires: [
-			"fill-translate"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"fill-pattern": {
-		type: "resolvedImage",
-		transition: true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "cross-faded-data-driven"
-	}
+    'fill-antialias': {
+        type: 'boolean',
+        'default': true,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'fill-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-outline-color': {
+        type: 'color',
+        transition: true,
+        requires: [
+            { '!': 'fill-pattern' },
+            { 'fill-antialias': true }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['fill-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'cross-faded-data-driven'
+    }
 };
 var paint_line = {
-	"line-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		requires: [
-			{
-				"!": "line-pattern"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-translate": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"line-translate-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		requires: [
-			"line-translate"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"line-width": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-gap-width": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-offset": {
-		type: "number",
-		"default": 0,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-blur": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"line-dasharray": {
-		type: "array",
-		value: "number",
-		minimum: 0,
-		transition: true,
-		units: "line widths",
-		requires: [
-			{
-				"!": "line-pattern"
-			}
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "cross-faded"
-	},
-	"line-pattern": {
-		type: "resolvedImage",
-		transition: true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "cross-faded-data-driven"
-	},
-	"line-gradient": {
-		type: "color",
-		transition: false,
-		requires: [
-			{
-				"!": "line-dasharray"
-			},
-			{
-				"!": "line-pattern"
-			},
-			{
-				source: "geojson",
-				has: {
-					lineMetrics: true
-				}
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"line-progress"
-			]
-		},
-		"property-type": "color-ramp"
-	}
+    'line-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'line-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['line-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-width': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-gap-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-offset': {
+        type: 'number',
+        'default': 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-dasharray': {
+        type: 'array',
+        value: 'number',
+        minimum: 0,
+        transition: true,
+        units: 'line widths',
+        requires: [{ '!': 'line-pattern' }],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'cross-faded'
+    },
+    'line-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'cross-faded-data-driven'
+    },
+    'line-gradient': {
+        type: 'color',
+        transition: false,
+        requires: [
+            { '!': 'line-dasharray' },
+            { '!': 'line-pattern' },
+            {
+                source: 'geojson',
+                has: { lineMetrics: true }
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['line-progress']
+        },
+        'property-type': 'color-ramp'
+    }
 };
 var paint_circle = {
-	"circle-radius": {
-		type: "number",
-		"default": 5,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"circle-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"circle-blur": {
-		type: "number",
-		"default": 0,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"circle-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"circle-translate": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"circle-translate-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		requires: [
-			"circle-translate"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"circle-pitch-scale": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"circle-pitch-alignment": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "viewport",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"circle-stroke-width": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"circle-stroke-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"circle-stroke-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	}
+    'circle-radius': {
+        type: 'number',
+        'default': 5,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-blur': {
+        type: 'number',
+        'default': 0,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['circle-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-pitch-scale': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'viewport',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-stroke-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-stroke-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-stroke-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    }
 };
 var paint_heatmap = {
-	"heatmap-radius": {
-		type: "number",
-		"default": 30,
-		minimum: 1,
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"heatmap-weight": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		transition: false,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"heatmap-intensity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"heatmap-color": {
-		type: "color",
-		"default": [
-			"interpolate",
-			[
-				"linear"
-			],
-			[
-				"heatmap-density"
-			],
-			0,
-			"rgba(0, 0, 255, 0)",
-			0.1,
-			"royalblue",
-			0.3,
-			"cyan",
-			0.5,
-			"lime",
-			0.7,
-			"yellow",
-			1,
-			"red"
-		],
-		transition: false,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"heatmap-density"
-			]
-		},
-		"property-type": "color-ramp"
-	},
-	"heatmap-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	}
+    'heatmap-radius': {
+        type: 'number',
+        'default': 30,
+        minimum: 1,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'heatmap-weight': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'heatmap-intensity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'heatmap-color': {
+        type: 'color',
+        'default': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(0, 0, 255, 0)',
+            0.1,
+            'royalblue',
+            0.3,
+            'cyan',
+            0.5,
+            'lime',
+            0.7,
+            'yellow',
+            1,
+            'red'
+        ],
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: ['heatmap-density']
+        },
+        'property-type': 'color-ramp'
+    },
+    'heatmap-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
 };
 var paint_symbol = {
-	"icon-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-halo-color": {
-		type: "color",
-		"default": "rgba(0, 0, 0, 0)",
-		transition: true,
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-halo-width": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-halo-blur": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"icon-translate": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		transition: true,
-		units: "pixels",
-		requires: [
-			"icon-image"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"icon-translate-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		requires: [
-			"icon-image",
-			"icon-translate"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		overridable: true,
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-halo-color": {
-		type: "color",
-		"default": "rgba(0, 0, 0, 0)",
-		transition: true,
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-halo-width": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-halo-blur": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		transition: true,
-		units: "pixels",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"text-translate": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		transition: true,
-		units: "pixels",
-		requires: [
-			"text-field"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"text-translate-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		requires: [
-			"text-field",
-			"text-translate"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	}
+    'icon-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-color': {
+        type: 'color',
+        'default': 'rgba(0, 0, 0, 0)',
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: [
+            'icon-image',
+            'icon-translate'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        overridable: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-color': {
+        type: 'color',
+        'default': 'rgba(0, 0, 0, 0)',
+        transition: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: [
+            'text-field',
+            'text-translate'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
 };
 var paint_raster = {
-	"raster-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-hue-rotate": {
-		type: "number",
-		"default": 0,
-		period: 360,
-		transition: true,
-		units: "degrees",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-brightness-min": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-brightness-max": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-saturation": {
-		type: "number",
-		"default": 0,
-		minimum: -1,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-contrast": {
-		type: "number",
-		"default": 0,
-		minimum: -1,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-resampling": {
-		type: "enum",
-		values: {
-			linear: {
-			},
-			nearest: {
-			}
-		},
-		"default": "linear",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"raster-fade-duration": {
-		type: "number",
-		"default": 300,
-		minimum: 0,
-		transition: false,
-		units: "milliseconds",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	}
+    'raster-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-hue-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        transition: true,
+        units: 'degrees',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-brightness-min': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-brightness-max': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-saturation': {
+        type: 'number',
+        'default': 0,
+        minimum: -1,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-contrast': {
+        type: 'number',
+        'default': 0,
+        minimum: -1,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-resampling': {
+        type: 'enum',
+        values: {
+            linear: {},
+            nearest: {}
+        },
+        'default': 'linear',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-fade-duration': {
+        type: 'number',
+        'default': 300,
+        minimum: 0,
+        transition: false,
+        units: 'milliseconds',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
 };
 var paint_hillshade = {
-	"hillshade-illumination-direction": {
-		type: "number",
-		"default": 335,
-		minimum: 0,
-		maximum: 359,
-		transition: false,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"hillshade-illumination-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "viewport",
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"hillshade-exaggeration": {
-		type: "number",
-		"default": 0.5,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"hillshade-shadow-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"hillshade-highlight-color": {
-		type: "color",
-		"default": "#FFFFFF",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"hillshade-accent-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	}
+    'hillshade-illumination-direction': {
+        type: 'number',
+        'default': 335,
+        minimum: 0,
+        maximum: 359,
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-illumination-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'viewport',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-exaggeration': {
+        type: 'number',
+        'default': 0.5,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-shadow-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-highlight-color': {
+        type: 'color',
+        'default': '#FFFFFF',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-accent-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
 };
 var paint_background = {
-	"background-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		requires: [
-			{
-				"!": "background-pattern"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"background-pattern": {
-		type: "resolvedImage",
-		transition: true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "cross-faded"
-	},
-	"background-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	}
+    'background-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'background-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'background-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'cross-faded'
+    },
+    'background-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
 };
 var transition = {
-	duration: {
-		type: "number",
-		"default": 300,
-		minimum: 0,
-		units: "milliseconds"
-	},
-	delay: {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		units: "milliseconds"
-	}
+    duration: {
+        type: 'number',
+        'default': 300,
+        minimum: 0,
+        units: 'milliseconds'
+    },
+    delay: {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        units: 'milliseconds'
+    }
 };
-var promoteId = {
-	"*": {
-		type: "string"
-	}
-};
+var promoteId = { '*': { type: 'string' } };
 var spec = {
-	$version: $version,
-	$root: $root,
-	sources: sources,
-	source: source,
-	source_vector: source_vector,
-	source_raster: source_raster,
-	source_raster_dem: source_raster_dem,
-	source_geojson: source_geojson,
-	source_video: source_video,
-	source_image: source_image,
-	layer: layer,
-	layout: layout$7,
-	layout_background: layout_background,
-	layout_fill: layout_fill,
-	layout_circle: layout_circle,
-	layout_heatmap: layout_heatmap,
-	"layout_fill-extrusion": {
-	visibility: {
-		type: "enum",
-		values: {
-			visible: {
-			},
-			none: {
-			}
-		},
-		"default": "visible",
-		"property-type": "constant"
-	}
-},
-	layout_line: layout_line,
-	layout_symbol: layout_symbol,
-	layout_raster: layout_raster,
-	layout_hillshade: layout_hillshade,
-	filter: filter,
-	filter_operator: filter_operator,
-	geometry_type: geometry_type,
-	"function": {
-	expression: {
-		type: "expression"
-	},
-	stops: {
-		type: "array",
-		value: "function_stop"
-	},
-	base: {
-		type: "number",
-		"default": 1,
-		minimum: 0
-	},
-	property: {
-		type: "string",
-		"default": "$zoom"
-	},
-	type: {
-		type: "enum",
-		values: {
-			identity: {
-			},
-			exponential: {
-			},
-			interval: {
-			},
-			categorical: {
-			}
-		},
-		"default": "exponential"
-	},
-	colorSpace: {
-		type: "enum",
-		values: {
-			rgb: {
-			},
-			lab: {
-			},
-			hcl: {
-			}
-		},
-		"default": "rgb"
-	},
-	"default": {
-		type: "*",
-		required: false
-	}
-},
-	function_stop: function_stop,
-	expression: expression,
-	light: light,
-	paint: paint$9,
-	paint_fill: paint_fill,
-	"paint_fill-extrusion": {
-	"fill-extrusion-opacity": {
-		type: "number",
-		"default": 1,
-		minimum: 0,
-		maximum: 1,
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"fill-extrusion-color": {
-		type: "color",
-		"default": "#000000",
-		transition: true,
-		requires: [
-			{
-				"!": "fill-extrusion-pattern"
-			}
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"fill-extrusion-translate": {
-		type: "array",
-		value: "number",
-		length: 2,
-		"default": [
-			0,
-			0
-		],
-		transition: true,
-		units: "pixels",
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"fill-extrusion-translate-anchor": {
-		type: "enum",
-		values: {
-			map: {
-			},
-			viewport: {
-			}
-		},
-		"default": "map",
-		requires: [
-			"fill-extrusion-translate"
-		],
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	},
-	"fill-extrusion-pattern": {
-		type: "resolvedImage",
-		transition: true,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom",
-				"feature"
-			]
-		},
-		"property-type": "cross-faded-data-driven"
-	},
-	"fill-extrusion-height": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		units: "meters",
-		transition: true,
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"fill-extrusion-base": {
-		type: "number",
-		"default": 0,
-		minimum: 0,
-		units: "meters",
-		transition: true,
-		requires: [
-			"fill-extrusion-height"
-		],
-		expression: {
-			interpolated: true,
-			parameters: [
-				"zoom",
-				"feature",
-				"feature-state"
-			]
-		},
-		"property-type": "data-driven"
-	},
-	"fill-extrusion-vertical-gradient": {
-		type: "boolean",
-		"default": true,
-		transition: false,
-		expression: {
-			interpolated: false,
-			parameters: [
-				"zoom"
-			]
-		},
-		"property-type": "data-constant"
-	}
-},
-	paint_line: paint_line,
-	paint_circle: paint_circle,
-	paint_heatmap: paint_heatmap,
-	paint_symbol: paint_symbol,
-	paint_raster: paint_raster,
-	paint_hillshade: paint_hillshade,
-	paint_background: paint_background,
-	transition: transition,
-	"property-type": {
-	"data-driven": {
-		type: "property-type"
-	},
-	"cross-faded": {
-		type: "property-type"
-	},
-	"cross-faded-data-driven": {
-		type: "property-type"
-	},
-	"color-ramp": {
-		type: "property-type"
-	},
-	"data-constant": {
-		type: "property-type"
-	},
-	constant: {
-		type: "property-type"
-	}
-},
-	promoteId: promoteId
+    $version: $version,
+    $root: $root,
+    sources: sources,
+    source: source,
+    source_vector: source_vector,
+    source_raster: source_raster,
+    source_raster_dem: source_raster_dem,
+    source_geojson: source_geojson,
+    source_video: source_video,
+    source_image: source_image,
+    layer: layer,
+    layout: layout$7,
+    layout_background: layout_background,
+    layout_fill: layout_fill,
+    layout_circle: layout_circle,
+    layout_heatmap: layout_heatmap,
+    'layout_fill-extrusion': {
+        visibility: {
+            type: 'enum',
+            values: {
+                visible: {},
+                none: {}
+            },
+            'default': 'visible',
+            'property-type': 'constant'
+        }
+    },
+    layout_line: layout_line,
+    layout_symbol: layout_symbol,
+    layout_raster: layout_raster,
+    layout_hillshade: layout_hillshade,
+    filter: filter,
+    filter_operator: filter_operator,
+    geometry_type: geometry_type,
+    'function': {
+        expression: { type: 'expression' },
+        stops: {
+            type: 'array',
+            value: 'function_stop'
+        },
+        base: {
+            type: 'number',
+            'default': 1,
+            minimum: 0
+        },
+        property: {
+            type: 'string',
+            'default': '$zoom'
+        },
+        type: {
+            type: 'enum',
+            values: {
+                identity: {},
+                exponential: {},
+                interval: {},
+                categorical: {}
+            },
+            'default': 'exponential'
+        },
+        colorSpace: {
+            type: 'enum',
+            values: {
+                rgb: {},
+                lab: {},
+                hcl: {}
+            },
+            'default': 'rgb'
+        },
+        'default': {
+            type: '*',
+            required: false
+        }
+    },
+    function_stop: function_stop,
+    expression: expression,
+    light: light,
+    paint: paint$9,
+    paint_fill: paint_fill,
+    'paint_fill-extrusion': {
+        'fill-extrusion-opacity': {
+            type: 'number',
+            'default': 1,
+            minimum: 0,
+            maximum: 1,
+            transition: true,
+            expression: {
+                interpolated: true,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-color': {
+            type: 'color',
+            'default': '#000000',
+            transition: true,
+            requires: [{ '!': 'fill-extrusion-pattern' }],
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-translate': {
+            type: 'array',
+            value: 'number',
+            length: 2,
+            'default': [
+                0,
+                0
+            ],
+            transition: true,
+            units: 'pixels',
+            expression: {
+                interpolated: true,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-translate-anchor': {
+            type: 'enum',
+            values: {
+                map: {},
+                viewport: {}
+            },
+            'default': 'map',
+            requires: ['fill-extrusion-translate'],
+            expression: {
+                interpolated: false,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-pattern': {
+            type: 'resolvedImage',
+            transition: true,
+            expression: {
+                interpolated: false,
+                parameters: [
+                    'zoom',
+                    'feature'
+                ]
+            },
+            'property-type': 'cross-faded-data-driven'
+        },
+        'fill-extrusion-height': {
+            type: 'number',
+            'default': 0,
+            minimum: 0,
+            units: 'meters',
+            transition: true,
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-base': {
+            type: 'number',
+            'default': 0,
+            minimum: 0,
+            units: 'meters',
+            transition: true,
+            requires: ['fill-extrusion-height'],
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-vertical-gradient': {
+            type: 'boolean',
+            'default': true,
+            transition: false,
+            expression: {
+                interpolated: false,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        }
+    },
+    paint_line: paint_line,
+    paint_circle: paint_circle,
+    paint_heatmap: paint_heatmap,
+    paint_symbol: paint_symbol,
+    paint_raster: paint_raster,
+    paint_hillshade: paint_hillshade,
+    paint_background: paint_background,
+    transition: transition,
+    'property-type': {
+        'data-driven': { type: 'property-type' },
+        'cross-faded': { type: 'property-type' },
+        'cross-faded-data-driven': { type: 'property-type' },
+        'color-ramp': { type: 'property-type' },
+        'data-constant': { type: 'property-type' },
+        constant: { type: 'property-type' }
+    },
+    promoteId: promoteId
 };
 
 var ValidationError = function () {
@@ -19582,83 +19055,48 @@ function parseGlyphPBF (data) {
 var GLYPH_PBF_BORDER = border$1;
 
 function potpack(boxes) {
-
-    // calculate total box area and maximum box width
     var area = 0;
     var maxWidth = 0;
-
     for (var i$1 = 0, list = boxes; i$1 < list.length; i$1 += 1) {
         var box = list[i$1];
-
         area += box.w * box.h;
         maxWidth = Math.max(maxWidth, box.w);
     }
-
-    // sort the boxes for insertion by height, descending
-    boxes.sort(function (a, b) { return b.h - a.h; });
-
-    // aim for a squarish resulting container,
-    // slightly adjusted for sub-100% space utilization
+    boxes.sort(function (a, b) {
+        return b.h - a.h;
+    });
     var startWidth = Math.max(Math.ceil(Math.sqrt(area / 0.95)), maxWidth);
-
-    // start with a single empty space, unbounded at the bottom
-    var spaces = [{x: 0, y: 0, w: startWidth, h: Infinity}];
-
+    var spaces = [{
+            x: 0,
+            y: 0,
+            w: startWidth,
+            h: Infinity
+        }];
     var width = 0;
     var height = 0;
-
     for (var i$2 = 0, list$1 = boxes; i$2 < list$1.length; i$2 += 1) {
-        // look through spaces backwards so that we check smaller spaces first
         var box$1 = list$1[i$2];
-
         for (var i = spaces.length - 1; i >= 0; i--) {
             var space = spaces[i];
-
-            // look for empty spaces that can accommodate the current box
-            if (box$1.w > space.w || box$1.h > space.h) { continue; }
-
-            // found the space; add the box to its top-left corner
-            // |-------|-------|
-            // |  box  |       |
-            // |_______|       |
-            // |         space |
-            // |_______________|
+            if (box$1.w > space.w || box$1.h > space.h) {
+                continue;
+            }
             box$1.x = space.x;
             box$1.y = space.y;
-
             height = Math.max(height, box$1.y + box$1.h);
             width = Math.max(width, box$1.x + box$1.w);
-
             if (box$1.w === space.w && box$1.h === space.h) {
-                // space matches the box exactly; remove it
                 var last = spaces.pop();
-                if (i < spaces.length) { spaces[i] = last; }
-
+                if (i < spaces.length) {
+                    spaces[i] = last;
+                }
             } else if (box$1.h === space.h) {
-                // space matches the box height; update it accordingly
-                // |-------|---------------|
-                // |  box  | updated space |
-                // |_______|_______________|
                 space.x += box$1.w;
                 space.w -= box$1.w;
-
             } else if (box$1.w === space.w) {
-                // space matches the box width; update it accordingly
-                // |---------------|
-                // |      box      |
-                // |_______________|
-                // | updated space |
-                // |_______________|
                 space.y += box$1.h;
                 space.h -= box$1.h;
-
             } else {
-                // otherwise the box splits the space into two spaces
-                // |-------|-----------|
-                // |  box  | new space |
-                // |_______|___________|
-                // | updated space     |
-                // |___________________|
                 spaces.push({
                     x: space.x + box$1.w,
                     y: space.y,
@@ -19671,11 +19109,10 @@ function potpack(boxes) {
             break;
         }
     }
-
     return {
-        w: width, // container width
-        h: height, // container height
-        fill: (area / (width * height)) || 0 // space utilization
+        w: width,
+        h: height,
+        fill: area / (width * height) || 0
     };
 }
 
@@ -23080,39 +22517,17 @@ var MercatorCoordinate = function () {
     return MercatorCoordinate;
 }();
 
-/**
- * getTileBBox
- *
- * @param    {Number}  x  Tile coordinate x
- * @param    {Number}  y  Tile coordinate y
- * @param    {Number}  z  Tile zoom
- * @returns  {String}  String of the bounding box
- */
 function getTileBBox(x, y, z) {
-    // for Google/OSM tile scheme we need to alter the y
-    y = (Math.pow(2, z) - y - 1);
-
-    var min = getMercCoords(x * 256, y * 256, z),
-        max = getMercCoords((x + 1) * 256, (y + 1) * 256, z);
-
+    y = Math.pow(2, z) - y - 1;
+    var min = getMercCoords(x * 256, y * 256, z), max = getMercCoords((x + 1) * 256, (y + 1) * 256, z);
     return min[0] + ',' + min[1] + ',' + max[0] + ',' + max[1];
 }
-
-
-/**
- * getMercCoords
- *
- * @param    {Number}  x  Pixel coordinate x
- * @param    {Number}  y  Pixel coordinate y
- * @param    {Number}  z  Tile zoom
- * @returns  {Array}   [x, y]
- */
 function getMercCoords(x, y, z) {
-    var resolution = (2 * Math.PI * 6378137 / 256) / Math.pow(2, z),
-        merc_x = (x * resolution - 2 * Math.PI  * 6378137 / 2.0),
-        merc_y = (y * resolution - 2 * Math.PI  * 6378137 / 2.0);
-
-    return [merc_x, merc_y];
+    var resolution = 2 * Math.PI * 6378137 / 256 / Math.pow(2, z), merc_x = x * resolution - 2 * Math.PI * 6378137 / 2, merc_y = y * resolution - 2 * Math.PI * 6378137 / 2;
+    return [
+        merc_x,
+        merc_y
+    ];
 }
 
 var CanonicalTileID = function () {
@@ -28476,7 +27891,6 @@ var GeoJSONSource = function (_super) {
         _this._data = options.data;
         _this._options = performance.extend({}, options);
         _this._collectResourceTiming = options.collectResourceTiming;
-        _this._resourceTiming = [];
         if (options.maxzoom !== undefined) {
             _this.maxzoom = options.maxzoom;
         }
@@ -28513,47 +27927,15 @@ var GeoJSONSource = function (_super) {
         return _this;
     }
     GeoJSONSource.prototype.load = function () {
-        var _this = this;
-        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._updateWorkerData(function (err) {
-            if (err) {
-                _this.fire(new performance.ErrorEvent(err));
-                return;
-            }
-            var data = {
-                dataType: 'source',
-                sourceDataType: 'metadata'
-            };
-            if (_this._collectResourceTiming && _this._resourceTiming && _this._resourceTiming.length > 0) {
-                data.resourceTiming = _this._resourceTiming;
-                _this._resourceTiming = [];
-            }
-            _this.fire(new performance.Event('data', data));
-        });
+        this._updateWorkerData('metadata');
     };
     GeoJSONSource.prototype.onAdd = function (map) {
         this.map = map;
         this.load();
     };
     GeoJSONSource.prototype.setData = function (data) {
-        var _this = this;
         this._data = data;
-        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._updateWorkerData(function (err) {
-            if (err) {
-                _this.fire(new performance.ErrorEvent(err));
-                return;
-            }
-            var data = {
-                dataType: 'source',
-                sourceDataType: 'content'
-            };
-            if (_this._collectResourceTiming && _this._resourceTiming && _this._resourceTiming.length > 0) {
-                data.resourceTiming = _this._resourceTiming;
-                _this._resourceTiming = [];
-            }
-            _this.fire(new performance.Event('data', data));
-        });
+        this._updateWorkerData('content');
         return this;
     };
     GeoJSONSource.prototype.getClusterExpansionZoom = function (clusterId, callback) {
@@ -28579,7 +27961,7 @@ var GeoJSONSource = function (_super) {
         }, callback);
         return this;
     };
-    GeoJSONSource.prototype._updateWorkerData = function (callback) {
+    GeoJSONSource.prototype._updateWorkerData = function (sourceDataType) {
         var _this = this;
         var options = performance.extend({}, this.workerOptions);
         var data = this._data;
@@ -28590,16 +27972,29 @@ var GeoJSONSource = function (_super) {
             options.data = JSON.stringify(data);
         }
         this._pendingLoads++;
+        this.fire(new performance.Event('dataloading', { dataType: 'source' }));
         this.actor.send(''.concat(this.type, '.loadData'), options, function (err, result) {
             _this._pendingLoads--;
             if (_this._removed || result && result.abandoned) {
                 return;
             }
+            var resourceTiming = null;
             if (result && result.resourceTiming && result.resourceTiming[_this.id]) {
-                _this._resourceTiming = result.resourceTiming[_this.id].slice(0);
+                resourceTiming = result.resourceTiming[_this.id].slice(0);
             }
             _this.actor.send(''.concat(_this.type, '.coalesce'), { source: options.source }, null);
-            callback(err);
+            if (err) {
+                _this.fire(new performance.ErrorEvent(err));
+                return;
+            }
+            var data = {
+                dataType: 'source',
+                sourceDataType: sourceDataType
+            };
+            if (_this._collectResourceTiming && resourceTiming && resourceTiming.length > 0) {
+                performance.extend(data, { resourceTiming: resourceTiming });
+            }
+            _this.fire(new performance.Event('data', data));
         });
     };
     GeoJSONSource.prototype.loaded = function () {
@@ -41495,25 +40890,17 @@ var AttributionControl = function () {
         return 'bottom-right';
     };
     AttributionControl.prototype.onAdd = function (map) {
-        var compact = this.options && this.options.compact;
         this._map = map;
         this._container = DOM.create('details', 'maplibregl-ctrl maplibregl-ctrl-attrib mapboxgl-ctrl mapboxgl-ctrl-attrib');
         this._compactButton = DOM.create('summary', 'maplibregl-ctrl-attrib-button mapboxgl-ctrl-attrib-button', this._container);
         this._compactButton.addEventListener('click', this._toggleAttribution);
         this._setElementTitle(this._compactButton, 'ToggleAttribution');
         this._innerContainer = DOM.create('div', 'maplibregl-ctrl-attrib-inner mapboxgl-ctrl-attrib-inner', this._container);
-        if (compact) {
-            this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
-        } else {
-            this._container.setAttribute('open', '');
-        }
+        this._updateCompact();
         this._updateAttributions();
         this._map.on('styledata', this._updateData);
         this._map.on('sourcedata', this._updateData);
-        if (compact === undefined) {
-            this._map.on('resize', this._updateCompact);
-            this._updateCompact();
-        }
+        this._map.on('resize', this._updateCompact);
         return this._container;
     };
     AttributionControl.prototype.onRemove = function () {
@@ -41598,10 +40985,21 @@ var AttributionControl = function () {
         this._editLink = null;
     };
     AttributionControl.prototype._updateCompact = function () {
-        if (this._map.getCanvasContainer().offsetWidth <= 640) {
-            this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
+        var compact = this.options && this.options.compact;
+        if (this._map.getCanvasContainer().offsetWidth <= 640 || compact) {
+            if (compact === false) {
+                this._container.setAttribute('open', '');
+            } else {
+                if (!this._container.classList.contains('maplibregl-compact')) {
+                    this._container.removeAttribute('open');
+                    this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
+                }
+            }
         } else {
-            this._container.classList.remove('maplibregl-compact', 'maplibregl-compact-show', 'mapboxgl-compact', 'mapboxgl-compact-show');
+            this._container.setAttribute('open', '');
+            if (this._container.classList.contains('maplibregl-compact')) {
+                this._container.classList.remove('maplibregl-compact', 'maplibregl-compact-show', 'mapboxgl-compact', 'mapboxgl-compact-show');
+            }
         }
     };
     return AttributionControl;
@@ -42736,6 +42134,8 @@ var Map = function (_super) {
         if (extension) {
             extension.loseContext();
         }
+        this._canvas.removeEventListener('webglcontextrestored', this._contextRestored, false);
+        this._canvas.removeEventListener('webglcontextlost', this._contextLost, false);
         DOM.remove(this._canvasContainer);
         DOM.remove(this._controlContainer);
         this._container.classList.remove('maplibregl-map', 'mapboxgl-map');
