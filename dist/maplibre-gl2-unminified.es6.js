@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.0/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.1/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -33970,6 +33970,7 @@ class Transform {
     constructor(minZoom, maxZoom, minPitch, maxPitch, renderWorldCopies) {
         this.tileSize = 512;
         this.maxValidLatitude = 85.051129;
+        this.freezeElevation = false;
         this._renderWorldCopies = renderWorldCopies === undefined ? true : !!renderWorldCopies;
         this._minZoom = minZoom || 0;
         this._maxZoom = maxZoom || 22;
@@ -34121,7 +34122,6 @@ class Transform {
             return;
         this._unmodified = false;
         this._center = center;
-        this._elevation = this.getElevation(center);
         this._constrain();
         this._calcMatrices();
     }
@@ -34129,6 +34129,8 @@ class Transform {
         return this._elevation;
     }
     set elevation(elevation) {
+        if (this.freezeElevation)
+            return;
         if (elevation === this._elevation)
             return;
         this._unmodified = false;
@@ -34316,6 +34318,31 @@ class Transform {
         const tileX = Math.floor(mercX / tileSize), tileY = Math.floor(mercY / tileSize);
         const tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
         return this.terrainSourceCache.getElevation(tileID, mercX % tileSize, mercY % tileSize, tileSize);
+    }
+    getCameraPosition() {
+        const lngLat = this.pointLocation(this.getCameraPoint());
+        const altitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
+        return {
+            lngLat: lngLat,
+            altitude: altitude
+        };
+    }
+    recalculateZoom() {
+        const center = this.pointLocation3D(this.centerPoint);
+        const elevation = this.getElevation(center);
+        const deltaElevation = +this.elevation - elevation;
+        if (!deltaElevation)
+            return;
+        const cameraAltitude = this.getCameraPosition().altitude + this.elevation;
+        const cameraLngLat = this.pointLocation(this.getCameraPoint());
+        const camera = performance.MercatorCoordinate.fromLngLat(cameraLngLat, cameraAltitude);
+        const target = performance.MercatorCoordinate.fromLngLat(center, elevation);
+        const dx = camera.x - target.x, dy = camera.y - target.y, dz = camera.z - target.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const zoom = this.scaleZoom(this.cameraToCenterDistance / distance / this.tileSize);
+        this._elevation = elevation;
+        this._center = center;
+        this.zoom = zoom;
     }
     setLocationAtPoint(lnglat, point) {
         const a = this.pointCoordinate(point);
@@ -34546,9 +34573,9 @@ class Transform {
         const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
         const point = this.point;
         const x = point.x, y = point.y;
-        const pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
+        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
         const furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + this.cameraToCenterDistance;
-        const farZ = (furthestDistance + elevation * pixelPerMeter / Math.cos(this._pitch)) * 1.01;
+        const farZ = (furthestDistance + elevation * this._pixelPerMeter / Math.cos(this._pitch)) * 1.01;
         const nearZ = this.height / 50;
         m = new Float64Array(16);
         performance.perspective(m, this._fov, this.width / this.height, nearZ, farZ);
@@ -34572,7 +34599,7 @@ class Transform {
             0
         ]);
         this.mercatorMatrix = performance.scale(new Float64Array(16), m, fromValues(this.worldSize, this.worldSize, this.worldSize));
-        performance.scale(m, m, fromValues(1, 1, pixelPerMeter));
+        performance.scale(m, m, fromValues(1, 1, this._pixelPerMeter));
         this.pixelMatrix = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
         this.invProjMatrix = performance.invert(new Float64Array(16), m);
         performance.translate(m, m, [
@@ -36536,7 +36563,7 @@ class HandlerManager {
     _updateMapTransform(combinedResult, combinedEventsInProgress, deactivatedHandlers) {
         const map = this._map;
         const tr = map.transform;
-        if (!hasChange(combinedResult)) {
+        if (!hasChange(combinedResult) && !this._drag) {
             return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
         }
         let {panDelta, zoomDelta, bearingDelta, pitchDelta, around, pinchAround} = combinedResult;
@@ -36545,14 +36572,33 @@ class HandlerManager {
         }
         map._stop(true);
         around = around || map.transform.centerPoint;
-        const loc = tr.pointLocation(panDelta ? around.sub(panDelta) : around);
         if (bearingDelta)
             tr.bearing += bearingDelta;
         if (pitchDelta)
             tr.pitch += pitchDelta;
         if (zoomDelta)
             tr.zoom += zoomDelta;
-        tr.setLocationAtPoint(loc, around);
+        if (combinedEventsInProgress.drag && !this._drag) {
+            this._drag = {
+                center: tr.centerPoint,
+                lngLat: tr.pointLocation(around),
+                point: around,
+                delta: panDelta,
+                handlerName: combinedEventsInProgress.drag.handlerName
+            };
+            tr.freezeElevation = true;
+        } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
+            tr.freezeElevation = false;
+            tr.recalculateZoom();
+            this._drag = null;
+        } else if (combinedEventsInProgress.drag && this._drag) {
+            this._drag.delta = this._drag.delta.add(panDelta);
+            if (map.style.terrainSourceCache.isEnabled()) {
+                tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
+            } else {
+                tr.setLocationAtPoint(this._drag.lngLat, this._drag.point.add(this._drag.delta));
+            }
+        }
         this._map._update();
         if (!combinedResult.noInertia)
             this._inertia.record(combinedResult);
@@ -37362,7 +37408,7 @@ const defaultLocale = {
 const defaultMinZoom = -2;
 const defaultMaxZoom = 22;
 const defaultMinPitch = 0;
-const defaultMaxPitch = 75;
+const defaultMaxPitch = 65;
 const maxPitchThreshold = 85;
 const defaultOptions$4 = {
     center: [
