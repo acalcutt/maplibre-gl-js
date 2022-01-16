@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.0/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.1/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -27138,15 +27138,15 @@ var GlyphManager = function () {
         return {
             id: id,
             bitmap: new performance.AlphaImage({
-                width: char.width,
-                height: char.height
+                width: char.width || 30,
+                height: char.height || 30
             }, char.data),
             metrics: {
-                width: char.glyphWidth,
-                height: char.glyphHeight,
-                left: char.glyphLeft,
-                top: char.glyphTop,
-                advance: char.glyphAdvance
+                width: char.glyphWidth || 24,
+                height: char.glyphHeight || 24,
+                left: char.glyphLeft || 0,
+                top: char.glyphTop || -8,
+                advance: char.glyphAdvance || 24
             }
         };
     };
