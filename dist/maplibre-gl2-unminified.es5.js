@@ -27451,7 +27451,6 @@ function loadTileJSON (options, requestManager, callback) {
                 'minzoom',
                 'maxzoom',
                 'attribution',
-                'maplibreLogo',
                 'bounds',
                 'scheme',
                 'tileSize',
@@ -42128,44 +42127,23 @@ var LogoControl = function () {
         anchor.setAttribute('aria-label', this._map._getUIString('LogoControl.Title'));
         anchor.setAttribute('rel', 'noopener nofollow');
         this._container.appendChild(anchor);
-        this._container.style.display = 'none';
-        this._map.on('sourcedata', this._updateLogo);
-        this._updateLogo(undefined);
+        this._container.style.display = 'block';
         this._map.on('resize', this._updateCompact);
         this._updateCompact();
         return this._container;
     };
     LogoControl.prototype.onRemove = function () {
         DOM.remove(this._container);
-        this._map.off('sourcedata', this._updateLogo);
         this._map.off('resize', this._updateCompact);
     };
     LogoControl.prototype.getDefaultPosition = function () {
         return 'bottom-left';
     };
-    LogoControl.prototype._updateLogo = function (e) {
-        if (!e || e.sourceDataType === 'metadata') {
-            this._container.style.display = this._logoRequired() ? 'block' : 'none';
-        }
-    };
-    LogoControl.prototype._logoRequired = function () {
-        if (!this._map.style) {
-            return;
-        }
-        var sourceCaches = this._map.style.sourceCaches;
-        for (var id in sourceCaches) {
-            var source = sourceCaches[id].getSource();
-            if (source.maplibreLogo) {
-                return true;
-            }
-        }
-        return false;
-    };
     LogoControl.prototype._updateCompact = function () {
         var containerChildren = this._container.children;
         if (containerChildren.length) {
             var anchor = containerChildren[0];
-            if (this._map.getCanvasContainer().offsetWidth < 250) {
+            if (this._map.getCanvasContainer().offsetWidth <= 640) {
                 anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
             } else {
                 anchor.classList.remove('maplibregl-compact', 'mapboxgl-compact');
@@ -42304,6 +42282,7 @@ var defaultOptions$4 = {
     pitchWithRotate: true,
     hash: false,
     attributionControl: true,
+    maplibreLogo: true,
     failIfMajorPerformanceCaveat: false,
     preserveDrawingBuffer: false,
     trackResize: true,
@@ -42414,7 +42393,9 @@ var Map = function (_super) {
         if (options.attributionControl) {
             _this.addControl(new AttributionControl({ customAttribution: options.customAttribution }));
         }
-        _this.addControl(new LogoControl(), options.logoPosition);
+        if (options.maplibreLogo) {
+            _this.addControl(new LogoControl(), options.logoPosition);
+        }
         _this.on('style.load', function () {
             if (_this.transform.unmodified) {
                 _this.jumpTo(_this.style.stylesheet);
@@ -45044,6 +45025,7 @@ var exported = {
     NavigationControl: NavigationControl,
     GeolocateControl: GeolocateControl,
     AttributionControl: AttributionControl,
+    LogoControl: LogoControl,
     ScaleControl: ScaleControl,
     FullscreenControl: FullscreenControl,
     TerrainControl: TerrainControl,
