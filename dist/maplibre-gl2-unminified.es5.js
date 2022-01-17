@@ -41990,7 +41990,8 @@ var AttributionControl = function () {
         performance.bindAll([
             '_toggleAttribution',
             '_updateData',
-            '_updateCompact'
+            '_updateCompact',
+            '_updateCompactMinimize'
         ], this);
     }
     AttributionControl.prototype.getDefaultPosition = function () {
@@ -41998,16 +41999,18 @@ var AttributionControl = function () {
     };
     AttributionControl.prototype.onAdd = function (map) {
         this._map = map;
+        this._compact = this.options && this.options.compact;
         this._container = DOM.create('details', 'maplibregl-ctrl maplibregl-ctrl-attrib mapboxgl-ctrl mapboxgl-ctrl-attrib');
         this._compactButton = DOM.create('summary', 'maplibregl-ctrl-attrib-button mapboxgl-ctrl-attrib-button', this._container);
         this._compactButton.addEventListener('click', this._toggleAttribution);
         this._setElementTitle(this._compactButton, 'ToggleAttribution');
         this._innerContainer = DOM.create('div', 'maplibregl-ctrl-attrib-inner mapboxgl-ctrl-attrib-inner', this._container);
-        this._updateCompact();
         this._updateAttributions();
+        this._updateCompact();
         this._map.on('styledata', this._updateData);
         this._map.on('sourcedata', this._updateData);
         this._map.on('resize', this._updateCompact);
+        this._map.on('drag', this._updateCompactMinimize);
         return this._container;
     };
     AttributionControl.prototype.onRemove = function () {
@@ -42015,7 +42018,9 @@ var AttributionControl = function () {
         this._map.off('styledata', this._updateData);
         this._map.off('sourcedata', this._updateData);
         this._map.off('resize', this._updateCompact);
+        this._map.off('drag', this._updateCompactMinimize);
         this._map = undefined;
+        this._compact = undefined;
         this._attribHTML = undefined;
     };
     AttributionControl.prototype._setElementTitle = function (element, title) {
@@ -42024,10 +42029,14 @@ var AttributionControl = function () {
         element.setAttribute('aria-label', str);
     };
     AttributionControl.prototype._toggleAttribution = function () {
-        if (this._container.classList.contains('maplibregl-compact-show') || this._container.classList.contains('mapboxgl-compact-show')) {
-            this._container.classList.remove('maplibregl-compact-show', 'mapboxgl-compact-show');
-        } else {
-            this._container.classList.add('maplibregl-compact-show', 'mapboxgl-compact-show');
+        if (this._container.classList.contains('maplibregl-compact')) {
+            if (this._container.classList.contains('maplibregl-compact-show')) {
+                this._container.setAttribute('open', '');
+                this._container.classList.remove('maplibregl-compact-show', 'mapboxgl-compact-show');
+            } else {
+                this._container.classList.add('maplibregl-compact-show', 'mapboxgl-compact-show');
+                this._container.removeAttribute('open');
+            }
         }
     };
     AttributionControl.prototype._updateData = function (e) {
@@ -42067,6 +42076,9 @@ var AttributionControl = function () {
                 }
             }
         }
+        attributions = attributions.filter(function (e) {
+            return String(e).trim();
+        });
         attributions.sort(function (a, b) {
             return a.length - b.length;
         });
@@ -42089,23 +42101,28 @@ var AttributionControl = function () {
         } else {
             this._container.classList.add('maplibregl-attrib-empty', 'mapboxgl-attrib-empty');
         }
+        this._updateCompact();
         this._editLink = null;
     };
     AttributionControl.prototype._updateCompact = function () {
-        var compact = this.options && this.options.compact;
-        if (this._map.getCanvasContainer().offsetWidth <= 640 || compact) {
-            if (compact === false) {
+        if (this._map.getCanvasContainer().offsetWidth <= 640 || this._compact) {
+            if (this._compact === false) {
                 this._container.setAttribute('open', '');
-            } else {
-                if (!this._container.classList.contains('maplibregl-compact')) {
-                    this._container.removeAttribute('open');
-                    this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
-                }
+            } else if (!this._container.classList.contains('maplibregl-compact') && !this._container.classList.contains('maplibregl-attrib-empty')) {
+                this._container.setAttribute('open', '');
+                this._container.classList.add('maplibregl-compact', 'mapboxgl-compact', 'maplibregl-compact-show', 'mapboxgl-compact-show');
             }
         } else {
             this._container.setAttribute('open', '');
             if (this._container.classList.contains('maplibregl-compact')) {
                 this._container.classList.remove('maplibregl-compact', 'maplibregl-compact-show', 'mapboxgl-compact', 'mapboxgl-compact-show');
+            }
+        }
+    };
+    AttributionControl.prototype._updateCompactMinimize = function () {
+        if (this._container.classList.contains('maplibregl-compact')) {
+            if (this._container.classList.contains('maplibregl-compact-show')) {
+                this._container.classList.remove('maplibregl-compact-show', 'mapboxgl-compact-show');
             }
         }
     };
