@@ -42130,12 +42130,17 @@ var AttributionControl = function () {
 }();
 
 var LogoControl = function () {
-    function LogoControl() {
+    function LogoControl(options) {
+        if (options === void 0) {
+            options = {};
+        }
+        this.options = options;
         performance.bindAll(['_updateLogo'], this);
         performance.bindAll(['_updateCompact'], this);
     }
     LogoControl.prototype.onAdd = function (map) {
         this._map = map;
+        this._compact = this.options && this.options.compact;
         this._container = DOM.create('div', 'maplibregl-ctrl mapboxgl-ctrl');
         var anchor = DOM.create('a', 'maplibregl-ctrl-logo mapboxgl-ctrl-logo');
         anchor.target = '_blank';
@@ -42152,6 +42157,8 @@ var LogoControl = function () {
     LogoControl.prototype.onRemove = function () {
         DOM.remove(this._container);
         this._map.off('resize', this._updateCompact);
+        this._map = undefined;
+        this._compact = undefined;
     };
     LogoControl.prototype.getDefaultPosition = function () {
         return 'bottom-left';
@@ -42160,8 +42167,10 @@ var LogoControl = function () {
         var containerChildren = this._container.children;
         if (containerChildren.length) {
             var anchor = containerChildren[0];
-            if (this._map.getCanvasContainer().offsetWidth <= 640) {
-                anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
+            if (this._map.getCanvasContainer().offsetWidth <= 640 || this._compact) {
+                if (this._compact !== false) {
+                    anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
+                }
             } else {
                 anchor.classList.remove('maplibregl-compact', 'mapboxgl-compact');
             }
