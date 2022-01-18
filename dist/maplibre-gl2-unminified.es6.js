@@ -24147,7 +24147,6 @@ function loadTileJSON (options, requestManager, callback) {
                 'minzoom',
                 'maxzoom',
                 'attribution',
-                'maplibreLogo',
                 'bounds',
                 'scheme',
                 'tileSize',
@@ -37163,7 +37162,8 @@ class AttributionControl {
         performance.bindAll([
             '_toggleAttribution',
             '_updateData',
-            '_updateCompact'
+            '_updateCompact',
+            '_updateCompactMinimize'
         ], this);
     }
     getDefaultPosition() {
@@ -37171,16 +37171,18 @@ class AttributionControl {
     }
     onAdd(map) {
         this._map = map;
+        this._compact = this.options && this.options.compact;
         this._container = DOM.create('details', 'maplibregl-ctrl maplibregl-ctrl-attrib mapboxgl-ctrl mapboxgl-ctrl-attrib');
         this._compactButton = DOM.create('summary', 'maplibregl-ctrl-attrib-button mapboxgl-ctrl-attrib-button', this._container);
         this._compactButton.addEventListener('click', this._toggleAttribution);
         this._setElementTitle(this._compactButton, 'ToggleAttribution');
         this._innerContainer = DOM.create('div', 'maplibregl-ctrl-attrib-inner mapboxgl-ctrl-attrib-inner', this._container);
-        this._updateCompact();
         this._updateAttributions();
+        this._updateCompact();
         this._map.on('styledata', this._updateData);
         this._map.on('sourcedata', this._updateData);
         this._map.on('resize', this._updateCompact);
+        this._map.on('drag', this._updateCompactMinimize);
         return this._container;
     }
     onRemove() {
@@ -37188,7 +37190,9 @@ class AttributionControl {
         this._map.off('styledata', this._updateData);
         this._map.off('sourcedata', this._updateData);
         this._map.off('resize', this._updateCompact);
+        this._map.off('drag', this._updateCompactMinimize);
         this._map = undefined;
+        this._compact = undefined;
         this._attribHTML = undefined;
     }
     _setElementTitle(element, title) {
@@ -37197,10 +37201,14 @@ class AttributionControl {
         element.setAttribute('aria-label', str);
     }
     _toggleAttribution() {
-        if (this._container.classList.contains('maplibregl-compact-show') || this._container.classList.contains('mapboxgl-compact-show')) {
-            this._container.classList.remove('maplibregl-compact-show', 'mapboxgl-compact-show');
-        } else {
-            this._container.classList.add('maplibregl-compact-show', 'mapboxgl-compact-show');
+        if (this._container.classList.contains('maplibregl-compact')) {
+            if (this._container.classList.contains('maplibregl-compact-show')) {
+                this._container.setAttribute('open', '');
+                this._container.classList.remove('maplibregl-compact-show', 'mapboxgl-compact-show');
+            } else {
+                this._container.classList.add('maplibregl-compact-show', 'mapboxgl-compact-show');
+                this._container.removeAttribute('open');
+            }
         }
     }
     _updateData(e) {
@@ -37238,6 +37246,7 @@ class AttributionControl {
                 }
             }
         }
+        attributions = attributions.filter(e => String(e).trim());
         attributions.sort((a, b) => a.length - b.length);
         attributions = attributions.filter((attrib, i) => {
             for (let j = i + 1; j < attributions.length; j++) {
@@ -37257,18 +37266,16 @@ class AttributionControl {
         } else {
             this._container.classList.add('maplibregl-attrib-empty', 'mapboxgl-attrib-empty');
         }
+        this._updateCompact();
         this._editLink = null;
     }
     _updateCompact() {
-        const compact = this.options && this.options.compact;
-        if (this._map.getCanvasContainer().offsetWidth <= 640 || compact) {
-            if (compact === false) {
+        if (this._map.getCanvasContainer().offsetWidth <= 640 || this._compact) {
+            if (this._compact === false) {
                 this._container.setAttribute('open', '');
-            } else {
-                if (!this._container.classList.contains('maplibregl-compact')) {
-                    this._container.removeAttribute('open');
-                    this._container.classList.add('maplibregl-compact', 'mapboxgl-compact');
-                }
+            } else if (!this._container.classList.contains('maplibregl-compact') && !this._container.classList.contains('maplibregl-attrib-empty')) {
+                this._container.setAttribute('open', '');
+                this._container.classList.add('maplibregl-compact', 'mapboxgl-compact', 'maplibregl-compact-show', 'mapboxgl-compact-show');
             }
         } else {
             this._container.setAttribute('open', '');
@@ -37277,15 +37284,24 @@ class AttributionControl {
             }
         }
     }
+    _updateCompactMinimize() {
+        if (this._container.classList.contains('maplibregl-compact')) {
+            if (this._container.classList.contains('maplibregl-compact-show')) {
+                this._container.classList.remove('maplibregl-compact-show', 'mapboxgl-compact-show');
+            }
+        }
+    }
 }
 
 class LogoControl {
-    constructor() {
+    constructor(options = {}) {
+        this.options = options;
         performance.bindAll(['_updateLogo'], this);
         performance.bindAll(['_updateCompact'], this);
     }
     onAdd(map) {
         this._map = map;
+        this._compact = this.options && this.options.compact;
         this._container = DOM.create('div', 'maplibregl-ctrl mapboxgl-ctrl');
         const anchor = DOM.create('a', 'maplibregl-ctrl-logo mapboxgl-ctrl-logo');
         anchor.target = '_blank';
@@ -37294,44 +37310,28 @@ class LogoControl {
         anchor.setAttribute('aria-label', this._map._getUIString('LogoControl.Title'));
         anchor.setAttribute('rel', 'noopener nofollow');
         this._container.appendChild(anchor);
-        this._container.style.display = 'none';
-        this._map.on('sourcedata', this._updateLogo);
-        this._updateLogo(undefined);
+        this._container.style.display = 'block';
         this._map.on('resize', this._updateCompact);
         this._updateCompact();
         return this._container;
     }
     onRemove() {
         DOM.remove(this._container);
-        this._map.off('sourcedata', this._updateLogo);
         this._map.off('resize', this._updateCompact);
+        this._map = undefined;
+        this._compact = undefined;
     }
     getDefaultPosition() {
         return 'bottom-left';
-    }
-    _updateLogo(e) {
-        if (!e || e.sourceDataType === 'metadata') {
-            this._container.style.display = this._logoRequired() ? 'block' : 'none';
-        }
-    }
-    _logoRequired() {
-        if (!this._map.style)
-            return;
-        const sourceCaches = this._map.style.sourceCaches;
-        for (const id in sourceCaches) {
-            const source = sourceCaches[id].getSource();
-            if (source.maplibreLogo) {
-                return true;
-            }
-        }
-        return false;
     }
     _updateCompact() {
         const containerChildren = this._container.children;
         if (containerChildren.length) {
             const anchor = containerChildren[0];
-            if (this._map.getCanvasContainer().offsetWidth < 250) {
-                anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
+            if (this._map.getCanvasContainer().offsetWidth <= 640 || this._compact) {
+                if (this._compact !== false) {
+                    anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
+                }
             } else {
                 anchor.classList.remove('maplibregl-compact', 'mapboxgl-compact');
             }
@@ -37436,6 +37436,7 @@ const defaultOptions$4 = {
     pitchWithRotate: true,
     hash: false,
     attributionControl: true,
+    maplibreLogo: true,
     failIfMajorPerformanceCaveat: false,
     preserveDrawingBuffer: false,
     trackResize: true,
@@ -37536,7 +37537,8 @@ class Map extends Camera {
             this.setStyle(options.style, { localIdeographFontFamily: options.localIdeographFontFamily });
         if (options.attributionControl)
             this.addControl(new AttributionControl({ customAttribution: options.customAttribution }));
-        this.addControl(new LogoControl(), options.logoPosition);
+        if (options.maplibreLogo)
+            this.addControl(new LogoControl(), options.logoPosition);
         this.on('style.load', () => {
             if (this.transform.unmodified) {
                 this.jumpTo(this.style.stylesheet);
@@ -39962,6 +39964,7 @@ const exported = {
     NavigationControl,
     GeolocateControl,
     AttributionControl,
+    LogoControl,
     ScaleControl,
     FullscreenControl,
     TerrainControl,
