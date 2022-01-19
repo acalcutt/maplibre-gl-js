@@ -23865,18 +23865,19 @@ class GlyphManager {
                 fontWeight
             });
         }
+        const char = tinySDF.draw(String.fromCharCode(id));
         return {
             id,
             bitmap: new performance.AlphaImage({
-                width: 30,
-                height: 30
-            }, tinySDF.draw(String.fromCharCode(id)).data),
+                width: char.width || 30,
+                height: char.height || 30
+            }, char.data),
             metrics: {
-                width: 24,
-                height: 24,
-                left: 0,
-                top: -8,
-                advance: 24
+                width: char.glyphWidth || 24,
+                height: char.glyphHeight || 24,
+                left: char.glyphLeft || 0,
+                top: char.glyphTop || -8,
+                advance: char.glyphAdvance || 24
             }
         };
     }
@@ -37402,7 +37403,9 @@ const defaultLocale = {
     'ScaleControl.Meters': 'm',
     'ScaleControl.Kilometers': 'km',
     'ScaleControl.Miles': 'mi',
-    'ScaleControl.NauticalMiles': 'nm'
+    'ScaleControl.NauticalMiles': 'nm',
+    'TerrainControl.enableTerrain': 'Enable terrain',
+    'TerrainControl.disableTerrain': 'Disable terrain'
 };
 
 const defaultMinZoom = -2;
@@ -37945,16 +37948,22 @@ class Map extends Camera {
     addTerrain(id, options) {
         this.isSourceLoaded(id);
         this.style.terrainSourceCache.enable(this.style.sourceCaches[id], options);
+        this.transform.updateElevation();
         this.style.terrainSourceCache.update(this.transform);
         this._sourcesDirty = true;
         this._styleDirty = true;
         this.triggerRepaint();
+        this.fire(new performance.Event('terrain'));
         return this;
+    }
+    isTerrainLoaded() {
+        return this.style.terrainSourceCache.isEnabled();
     }
     removeTerrain() {
         this.style.terrainSourceCache.disable();
         this.transform.updateElevation();
         this.triggerRepaint();
+        this.fire(new performance.Event('terrain'));
         return this;
     }
     areTilesLoaded() {
@@ -39592,7 +39601,7 @@ class TerrainControl {
         this.options = options;
         performance.bindAll([
             '_toggleTerrain',
-            '_toggleTerrainIcon'
+            '_updateTerrainIcon'
         ], this);
     }
     onAdd(map) {
@@ -39602,11 +39611,13 @@ class TerrainControl {
         DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._terrainButton).setAttribute('aria-hidden', 'true');
         this._terrainButton.type = 'button';
         this._terrainButton.addEventListener('click', this._toggleTerrain);
-        this._toggleTerrainIcon;
+        this._updateTerrainIcon();
+        this._map.on('terrain', this._updateTerrainIcon);
         return this._container;
     }
     onRemove() {
         DOM.remove(this._container);
+        this._map.off('terrain', this._updateTerrainIcon);
         this._map = undefined;
     }
     _toggleTerrain() {
@@ -39615,15 +39626,17 @@ class TerrainControl {
         } else {
             this._map.addTerrain(this.options.id, this.options.options);
         }
-        this._toggleTerrainIcon();
+        this._updateTerrainIcon();
     }
-    _toggleTerrainIcon() {
-        if (this._map.style.terrainSourceCache.isEnabled()) {
+    _updateTerrainIcon() {
+        this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+        this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+        if (this._map.isTerrainLoaded()) {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
-            this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+            this._terrainButton.title = this._map._getUIString(`TerrainControl.disableTerrain`);
         } else {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
-            this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+            this._terrainButton.title = this._map._getUIString(`TerrainControl.enableTerrain`);
         }
     }
 }
