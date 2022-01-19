@@ -1553,11 +1553,21 @@ class Map extends Camera {
     addTerrain(id: string, options?: {exaggeration: number; elevationOffset: number}) {
         this.isSourceLoaded(id);
         this.style.terrainSourceCache.enable(this.style.sourceCaches[id], options);
+        this.transform.updateElevation();
         this.style.terrainSourceCache.update(this.transform);
         this._sourcesDirty = true;
         this._styleDirty = true;
         this.triggerRepaint();
+        this.fire(new Event("terrain"));
         return this;
+    }
+
+    /**
+     * Returns a Boolean indicating whether terrain is loaded.
+     * @returns {boolean}
+     */
+    isTerrainLoaded() {
+        return this.style.terrainSourceCache.isEnabled();
     }
 
     /**
@@ -1571,6 +1581,7 @@ class Map extends Camera {
         this.style.terrainSourceCache.disable();
         this.transform.updateElevation();
         this.triggerRepaint();
+        this.fire(new Event("terrain"));
         return this;
     }
 
