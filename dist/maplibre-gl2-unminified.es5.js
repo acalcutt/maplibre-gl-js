@@ -42250,7 +42250,9 @@ var defaultLocale = {
     'ScaleControl.Meters': 'm',
     'ScaleControl.Kilometers': 'km',
     'ScaleControl.Miles': 'mi',
-    'ScaleControl.NauticalMiles': 'nm'
+    'ScaleControl.NauticalMiles': 'nm',
+    'TerrainControl.enableTerrain': 'Enable terrain',
+    'TerrainControl.disableTerrain': 'Disable terrain'
 };
 
 var __extends$3 = undefined && undefined.__extends || function () {
@@ -42844,16 +42846,22 @@ var Map = function (_super) {
     Map.prototype.addTerrain = function (id, options) {
         this.isSourceLoaded(id);
         this.style.terrainSourceCache.enable(this.style.sourceCaches[id], options);
+        this.transform.updateElevation();
         this.style.terrainSourceCache.update(this.transform);
         this._sourcesDirty = true;
         this._styleDirty = true;
         this.triggerRepaint();
+        this.fire(new performance.Event('terrain'));
         return this;
+    };
+    Map.prototype.isTerrainLoaded = function () {
+        return this.style.terrainSourceCache.isEnabled();
     };
     Map.prototype.removeTerrain = function () {
         this.style.terrainSourceCache.disable();
         this.transform.updateElevation();
         this.triggerRepaint();
+        this.fire(new performance.Event('terrain'));
         return this;
     };
     Map.prototype.areTilesLoaded = function () {
@@ -44643,7 +44651,7 @@ var TerrainControl = function () {
         this.options = options;
         performance.bindAll([
             '_toggleTerrain',
-            '_toggleTerrainIcon'
+            '_updateTerrainIcon'
         ], this);
     }
     TerrainControl.prototype.onAdd = function (map) {
@@ -44653,11 +44661,13 @@ var TerrainControl = function () {
         DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._terrainButton).setAttribute('aria-hidden', 'true');
         this._terrainButton.type = 'button';
         this._terrainButton.addEventListener('click', this._toggleTerrain);
-        this._toggleTerrainIcon;
+        this._updateTerrainIcon();
+        this._map.on('terrain', this._updateTerrainIcon);
         return this._container;
     };
     TerrainControl.prototype.onRemove = function () {
         DOM.remove(this._container);
+        this._map.off('terrain', this._updateTerrainIcon);
         this._map = undefined;
     };
     TerrainControl.prototype._toggleTerrain = function () {
@@ -44666,15 +44676,17 @@ var TerrainControl = function () {
         } else {
             this._map.addTerrain(this.options.id, this.options.options);
         }
-        this._toggleTerrainIcon();
+        this._updateTerrainIcon();
     };
-    TerrainControl.prototype._toggleTerrainIcon = function () {
-        if (this._map.style.terrainSourceCache.isEnabled()) {
+    TerrainControl.prototype._updateTerrainIcon = function () {
+        this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+        this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+        if (this._map.isTerrainLoaded()) {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
-            this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
+            this._terrainButton.title = this._map._getUIString('TerrainControl.disableTerrain');
         } else {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
-            this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
+            this._terrainButton.title = this._map._getUIString('TerrainControl.enableTerrain');
         }
     };
     return TerrainControl;
