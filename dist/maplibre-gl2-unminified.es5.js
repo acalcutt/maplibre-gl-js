@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.1/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.2/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -346,141 +346,153 @@ var exported$1 = {
     }
 };
 
-var gridIndex = GridIndex;
 var NUM_PARAMS = 3;
-function GridIndex(extent, n, padding) {
-    var cells = this.cells = [];
-    if (extent instanceof ArrayBuffer) {
-        this.arrayBuffer = extent;
-        var array = new Int32Array(this.arrayBuffer);
-        extent = array[0];
-        n = array[1];
-        padding = array[2];
-        this.d = n + 2 * padding;
-        for (var k = 0; k < this.d * this.d; k++) {
-            var start = array[NUM_PARAMS + k];
-            var end = array[NUM_PARAMS + k + 1];
-            cells.push(start === end ? null : array.subarray(start, end));
+var TransferableGridIndex = function () {
+    function TransferableGridIndex(extent, n, padding) {
+        var cells = this.cells = [];
+        if (extent instanceof ArrayBuffer) {
+            this.arrayBuffer = extent;
+            var array = new Int32Array(this.arrayBuffer);
+            extent = array[0];
+            n = array[1];
+            padding = array[2];
+            this.d = n + 2 * padding;
+            for (var k = 0; k < this.d * this.d; k++) {
+                var start = array[NUM_PARAMS + k];
+                var end = array[NUM_PARAMS + k + 1];
+                cells.push(start === end ? null : array.subarray(start, end));
+            }
+            var keysOffset = array[NUM_PARAMS + cells.length];
+            var bboxesOffset = array[NUM_PARAMS + cells.length + 1];
+            this.keys = array.subarray(keysOffset, bboxesOffset);
+            this.bboxes = array.subarray(bboxesOffset);
+            this.insert = this._insertReadonly;
+        } else {
+            this.d = n + 2 * padding;
+            for (var i = 0; i < this.d * this.d; i++) {
+                cells.push([]);
+            }
+            this.keys = [];
+            this.bboxes = [];
         }
-        var keysOffset = array[NUM_PARAMS + cells.length];
-        var bboxesOffset = array[NUM_PARAMS + cells.length + 1];
-        this.keys = array.subarray(keysOffset, bboxesOffset);
-        this.bboxes = array.subarray(bboxesOffset);
-        this.insert = this._insertReadonly;
-    } else {
-        this.d = n + 2 * padding;
-        for (var i = 0; i < this.d * this.d; i++) {
-            cells.push([]);
+        this.n = n;
+        this.extent = extent;
+        this.padding = padding;
+        this.scale = n / extent;
+        this.uid = 0;
+        var p = padding / n * extent;
+        this.min = -p;
+        this.max = extent + p;
+    }
+    TransferableGridIndex.prototype.insert = function (key, x1, y1, x2, y2) {
+        this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++, undefined, undefined);
+        this.keys.push(key);
+        this.bboxes.push(x1);
+        this.bboxes.push(y1);
+        this.bboxes.push(x2);
+        this.bboxes.push(y2);
+    };
+    TransferableGridIndex.prototype._insertReadonly = function () {
+        throw new Error('Cannot insert into a GridIndex created from an ArrayBuffer.');
+    };
+    TransferableGridIndex.prototype._insertCell = function (x1, y1, x2, y2, cellIndex, uid) {
+        this.cells[cellIndex].push(uid);
+    };
+    TransferableGridIndex.prototype.query = function (x1, y1, x2, y2, intersectionTest) {
+        var min = this.min;
+        var max = this.max;
+        if (x1 <= min && y1 <= min && max <= x2 && max <= y2 && !intersectionTest) {
+            return Array.prototype.slice.call(this.keys);
+        } else {
+            var result = [];
+            var seenUids = {};
+            this._forEachCell(x1, y1, x2, y2, this._queryCell, result, seenUids, intersectionTest);
+            return result;
         }
-        this.keys = [];
-        this.bboxes = [];
-    }
-    this.n = n;
-    this.extent = extent;
-    this.padding = padding;
-    this.scale = n / extent;
-    this.uid = 0;
-    var p = padding / n * extent;
-    this.min = -p;
-    this.max = extent + p;
-}
-GridIndex.prototype.insert = function (key, x1, y1, x2, y2) {
-    this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++);
-    this.keys.push(key);
-    this.bboxes.push(x1);
-    this.bboxes.push(y1);
-    this.bboxes.push(x2);
-    this.bboxes.push(y2);
-};
-GridIndex.prototype._insertReadonly = function () {
-    throw 'Cannot insert into a GridIndex created from an ArrayBuffer.';
-};
-GridIndex.prototype._insertCell = function (x1, y1, x2, y2, cellIndex, uid) {
-    this.cells[cellIndex].push(uid);
-};
-GridIndex.prototype.query = function (x1, y1, x2, y2, intersectionTest) {
-    var min = this.min;
-    var max = this.max;
-    if (x1 <= min && y1 <= min && max <= x2 && max <= y2 && !intersectionTest) {
-        return Array.prototype.slice.call(this.keys);
-    } else {
-        var result = [];
-        var seenUids = {};
-        this._forEachCell(x1, y1, x2, y2, this._queryCell, result, seenUids, intersectionTest);
-        return result;
-    }
-};
-GridIndex.prototype._queryCell = function (x1, y1, x2, y2, cellIndex, result, seenUids, intersectionTest) {
-    var cell = this.cells[cellIndex];
-    if (cell !== null) {
-        var keys = this.keys;
-        var bboxes = this.bboxes;
-        for (var u = 0; u < cell.length; u++) {
-            var uid = cell[u];
-            if (seenUids[uid] === undefined) {
-                var offset = uid * 4;
-                if (intersectionTest ? intersectionTest(bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) : x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1]) {
-                    seenUids[uid] = true;
-                    result.push(keys[uid]);
-                } else {
-                    seenUids[uid] = false;
+    };
+    TransferableGridIndex.prototype._queryCell = function (x1, y1, x2, y2, cellIndex, result, seenUids, intersectionTest) {
+        var cell = this.cells[cellIndex];
+        if (cell !== null) {
+            var keys = this.keys;
+            var bboxes = this.bboxes;
+            for (var u = 0; u < cell.length; u++) {
+                var uid = cell[u];
+                if (seenUids[uid] === undefined) {
+                    var offset = uid * 4;
+                    if (intersectionTest ? intersectionTest(bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) : x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1]) {
+                        seenUids[uid] = true;
+                        result.push(keys[uid]);
+                    } else {
+                        seenUids[uid] = false;
+                    }
                 }
             }
         }
-    }
-};
-GridIndex.prototype._forEachCell = function (x1, y1, x2, y2, fn, arg1, arg2, intersectionTest) {
-    var cx1 = this._convertToCellCoord(x1);
-    var cy1 = this._convertToCellCoord(y1);
-    var cx2 = this._convertToCellCoord(x2);
-    var cy2 = this._convertToCellCoord(y2);
-    for (var x = cx1; x <= cx2; x++) {
-        for (var y = cy1; y <= cy2; y++) {
-            var cellIndex = this.d * y + x;
-            if (intersectionTest && !intersectionTest(this._convertFromCellCoord(x), this._convertFromCellCoord(y), this._convertFromCellCoord(x + 1), this._convertFromCellCoord(y + 1))) {
-                continue;
-            }
-            if (fn.call(this, x1, y1, x2, y2, cellIndex, arg1, arg2, intersectionTest)) {
-                return;
+    };
+    TransferableGridIndex.prototype._forEachCell = function (x1, y1, x2, y2, fn, arg1, arg2, intersectionTest) {
+        var cx1 = this._convertToCellCoord(x1);
+        var cy1 = this._convertToCellCoord(y1);
+        var cx2 = this._convertToCellCoord(x2);
+        var cy2 = this._convertToCellCoord(y2);
+        for (var x = cx1; x <= cx2; x++) {
+            for (var y = cy1; y <= cy2; y++) {
+                var cellIndex = this.d * y + x;
+                if (intersectionTest && !intersectionTest(this._convertFromCellCoord(x), this._convertFromCellCoord(y), this._convertFromCellCoord(x + 1), this._convertFromCellCoord(y + 1))) {
+                    continue;
+                }
+                if (fn.call(this, x1, y1, x2, y2, cellIndex, arg1, arg2, intersectionTest)) {
+                    return;
+                }
             }
         }
-    }
-};
-GridIndex.prototype._convertFromCellCoord = function (x) {
-    return (x - this.padding) / this.scale;
-};
-GridIndex.prototype._convertToCellCoord = function (x) {
-    return Math.max(0, Math.min(this.d - 1, Math.floor(x * this.scale) + this.padding));
-};
-GridIndex.prototype.toArrayBuffer = function () {
-    if (this.arrayBuffer) {
-        return this.arrayBuffer;
-    }
-    var cells = this.cells;
-    var metadataLength = NUM_PARAMS + this.cells.length + 1 + 1;
-    var totalCellLength = 0;
-    for (var i = 0; i < this.cells.length; i++) {
-        totalCellLength += this.cells[i].length;
-    }
-    var array = new Int32Array(metadataLength + totalCellLength + this.keys.length + this.bboxes.length);
-    array[0] = this.extent;
-    array[1] = this.n;
-    array[2] = this.padding;
-    var offset = metadataLength;
-    for (var k = 0; k < cells.length; k++) {
-        var cell = cells[k];
-        array[NUM_PARAMS + k] = offset;
-        array.set(cell, offset);
-        offset += cell.length;
-    }
-    array[NUM_PARAMS + cells.length] = offset;
-    array.set(this.keys, offset);
-    offset += this.keys.length;
-    array[NUM_PARAMS + cells.length + 1] = offset;
-    array.set(this.bboxes, offset);
-    offset += this.bboxes.length;
-    return array.buffer;
-};
+    };
+    TransferableGridIndex.prototype._convertFromCellCoord = function (x) {
+        return (x - this.padding) / this.scale;
+    };
+    TransferableGridIndex.prototype._convertToCellCoord = function (x) {
+        return Math.max(0, Math.min(this.d - 1, Math.floor(x * this.scale) + this.padding));
+    };
+    TransferableGridIndex.prototype.toArrayBuffer = function () {
+        if (this.arrayBuffer) {
+            return this.arrayBuffer;
+        }
+        var cells = this.cells;
+        var metadataLength = NUM_PARAMS + this.cells.length + 1 + 1;
+        var totalCellLength = 0;
+        for (var i = 0; i < this.cells.length; i++) {
+            totalCellLength += this.cells[i].length;
+        }
+        var array = new Int32Array(metadataLength + totalCellLength + this.keys.length + this.bboxes.length);
+        array[0] = this.extent;
+        array[1] = this.n;
+        array[2] = this.padding;
+        var offset = metadataLength;
+        for (var k = 0; k < cells.length; k++) {
+            var cell = cells[k];
+            array[NUM_PARAMS + k] = offset;
+            array.set(cell, offset);
+            offset += cell.length;
+        }
+        array[NUM_PARAMS + cells.length] = offset;
+        array.set(this.keys, offset);
+        offset += this.keys.length;
+        array[NUM_PARAMS + cells.length + 1] = offset;
+        array.set(this.bboxes, offset);
+        offset += this.bboxes.length;
+        return array.buffer;
+    };
+    TransferableGridIndex.serialize = function (grid, transferables) {
+        var buffer = grid.toArrayBuffer();
+        if (transferables) {
+            transferables.push(buffer);
+        }
+        return { buffer: buffer };
+    };
+    TransferableGridIndex.deserialize = function (serialized) {
+        return new TransferableGridIndex(serialized.buffer);
+    };
+    return TransferableGridIndex;
+}();
 
 var csscolorparser = {};
 
@@ -5685,17 +5697,7 @@ function register(name, klass, options) {
     };
 }
 register('Object', Object);
-gridIndex.serialize = function serialize(grid, transferables) {
-    var buffer = grid.toArrayBuffer();
-    if (transferables) {
-        transferables.push(buffer);
-    }
-    return { buffer: buffer };
-};
-gridIndex.deserialize = function deserialize(serialized) {
-    return new gridIndex(serialized.buffer);
-};
-register('TransferableGridIndex', gridIndex);
+register('TransferableGridIndex', TransferableGridIndex);
 register('Color', Color);
 register('Error', Error);
 register('ResolvedImage', ResolvedImage);
@@ -13392,6 +13394,139 @@ var FeatureIndexArray = function (_super) {
     return FeatureIndexArray;
 }(StructArrayLayout1ul2ui8);
 register('FeatureIndexArray', FeatureIndexArray);
+var PosArray = function (_super) {
+    __extends$d(PosArray, _super);
+    function PosArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PosArray;
+}(StructArrayLayout2i4);
+var RasterBoundsArray = function (_super) {
+    __extends$d(RasterBoundsArray, _super);
+    function RasterBoundsArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return RasterBoundsArray;
+}(StructArrayLayout4i8);
+var CircleLayoutArray = function (_super) {
+    __extends$d(CircleLayoutArray, _super);
+    function CircleLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CircleLayoutArray;
+}(StructArrayLayout2i4);
+var FillLayoutArray = function (_super) {
+    __extends$d(FillLayoutArray, _super);
+    function FillLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return FillLayoutArray;
+}(StructArrayLayout2i4);
+var FillExtrusionLayoutArray = function (_super) {
+    __extends$d(FillExtrusionLayoutArray, _super);
+    function FillExtrusionLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return FillExtrusionLayoutArray;
+}(StructArrayLayout2i4i12);
+(function (_super) {
+    __extends$d(HeatmapLayoutArray, _super);
+    function HeatmapLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return HeatmapLayoutArray;
+})(StructArrayLayout2i4);
+var LineLayoutArray = function (_super) {
+    __extends$d(LineLayoutArray, _super);
+    function LineLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineLayoutArray;
+}(StructArrayLayout2i4ub8);
+var LineExtLayoutArray = function (_super) {
+    __extends$d(LineExtLayoutArray, _super);
+    function LineExtLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineExtLayoutArray;
+}(StructArrayLayout2f8);
+var PatternLayoutArray = function (_super) {
+    __extends$d(PatternLayoutArray, _super);
+    function PatternLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PatternLayoutArray;
+}(StructArrayLayout10ui20);
+var SymbolLayoutArray = function (_super) {
+    __extends$d(SymbolLayoutArray, _super);
+    function SymbolLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SymbolLayoutArray;
+}(StructArrayLayout4i4ui4i24);
+var SymbolDynamicLayoutArray = function (_super) {
+    __extends$d(SymbolDynamicLayoutArray, _super);
+    function SymbolDynamicLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SymbolDynamicLayoutArray;
+}(StructArrayLayout3f12);
+var SymbolOpacityArray = function (_super) {
+    __extends$d(SymbolOpacityArray, _super);
+    function SymbolOpacityArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SymbolOpacityArray;
+}(StructArrayLayout1ul4);
+var CollisionBoxLayoutArray = function (_super) {
+    __extends$d(CollisionBoxLayoutArray, _super);
+    function CollisionBoxLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CollisionBoxLayoutArray;
+}(StructArrayLayout2i2i2i12);
+var CollisionCircleLayoutArray = function (_super) {
+    __extends$d(CollisionCircleLayoutArray, _super);
+    function CollisionCircleLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CollisionCircleLayoutArray;
+}(StructArrayLayout2f1f2i16);
+var CollisionVertexArray = function (_super) {
+    __extends$d(CollisionVertexArray, _super);
+    function CollisionVertexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CollisionVertexArray;
+}(StructArrayLayout2ub2f12);
+var QuadTriangleArray = function (_super) {
+    __extends$d(QuadTriangleArray, _super);
+    function QuadTriangleArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return QuadTriangleArray;
+}(StructArrayLayout3ui6);
+var TriangleIndexArray = function (_super) {
+    __extends$d(TriangleIndexArray, _super);
+    function TriangleIndexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return TriangleIndexArray;
+}(StructArrayLayout3ui6);
+var LineIndexArray = function (_super) {
+    __extends$d(LineIndexArray, _super);
+    function LineIndexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineIndexArray;
+}(StructArrayLayout2ui4);
+var LineStripIndexArray = function (_super) {
+    __extends$d(LineStripIndexArray, _super);
+    function LineStripIndexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineStripIndexArray;
+}(StructArrayLayout1ui2);
 
 var layout$6 = createLayout([{
         name: 'a_pos',
@@ -14319,16 +14454,16 @@ function paintAttributeNames(property, type) {
 function getLayoutException(property) {
     var propertyExceptions = {
         'line-pattern': {
-            'source': StructArrayLayout10ui20,
-            'composite': StructArrayLayout10ui20
+            'source': PatternLayoutArray,
+            'composite': PatternLayoutArray
         },
         'fill-pattern': {
-            'source': StructArrayLayout10ui20,
-            'composite': StructArrayLayout10ui20
+            'source': PatternLayoutArray,
+            'composite': PatternLayoutArray
         },
         'fill-extrusion-pattern': {
-            'source': StructArrayLayout10ui20,
-            'composite': StructArrayLayout10ui20
+            'source': PatternLayoutArray,
+            'composite': PatternLayoutArray
         }
     };
     return propertyExceptions[property];
@@ -14401,8 +14536,8 @@ var CircleBucket = function () {
         });
         this.index = options.index;
         this.hasPattern = false;
-        this.layoutVertexArray = new StructArrayLayout2i4();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new CircleLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.segments = new SegmentVector();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.stateDependentLayerIds = this.layers.filter(function (l) {
@@ -16230,9 +16365,9 @@ var FillBucket = function () {
         this.index = options.index;
         this.hasPattern = false;
         this.patternFeatures = [];
-        this.layoutVertexArray = new StructArrayLayout2i4();
-        this.indexArray = new StructArrayLayout3ui6();
-        this.indexArray2 = new StructArrayLayout2ui4();
+        this.layoutVertexArray = new FillLayoutArray();
+        this.indexArray = new TriangleIndexArray();
+        this.indexArray2 = new LineIndexArray();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.segments = new SegmentVector();
         this.segments2 = new SegmentVector();
@@ -16885,9 +17020,9 @@ var FillExtrusionBucket = function () {
         });
         this.index = options.index;
         this.hasPattern = false;
-        this.layoutVertexArray = new StructArrayLayout2i4i12();
-        this.centroidVertexArray = new StructArrayLayout2i4();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new FillExtrusionLayoutArray();
+        this.centroidVertexArray = new PosArray();
+        this.indexArray = new TriangleIndexArray();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.segments = new SegmentVector();
         this.stateDependentLayerIds = this.layers.filter(function (l) {
@@ -17329,9 +17464,9 @@ var LineBucket = function () {
         this.layers.forEach(function (layer) {
             _this.gradients[layer.id] = {};
         });
-        this.layoutVertexArray = new StructArrayLayout2i4ub8();
-        this.layoutVertexArray2 = new StructArrayLayout2f8();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new LineLayoutArray();
+        this.layoutVertexArray2 = new LineExtLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.segments = new SegmentVector();
         this.maxLineLength = 0;
@@ -21215,12 +21350,12 @@ function containsRTLText(formattedText) {
 }
 var SymbolBuffers = function () {
     function SymbolBuffers(programConfigurations) {
-        this.layoutVertexArray = new StructArrayLayout4i4ui4i24();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new SymbolLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.programConfigurations = programConfigurations;
         this.segments = new SegmentVector();
-        this.dynamicLayoutVertexArray = new StructArrayLayout3f12();
-        this.opacityVertexArray = new StructArrayLayout1ul4();
+        this.dynamicLayoutVertexArray = new SymbolDynamicLayoutArray();
+        this.opacityVertexArray = new SymbolOpacityArray();
         this.placedSymbolArray = new PlacedSymbolArray();
     }
     SymbolBuffers.prototype.isEmpty = function () {
@@ -21261,7 +21396,7 @@ var CollisionBuffers = function () {
         this.layoutAttributes = layoutAttributes;
         this.indexArray = new IndexArray();
         this.segments = new SegmentVector();
-        this.collisionVertexArray = new StructArrayLayout2ub2f12();
+        this.collisionVertexArray = new CollisionVertexArray();
     }
     CollisionBuffers.prototype.upload = function (context) {
         this.layoutVertexBuffer = context.createVertexBuffer(this.layoutVertexArray, this.layoutAttributes);
@@ -21569,8 +21704,8 @@ var SymbolBucket = function () {
         if (this.hasDebugData()) {
             this.destroyDebugData();
         }
-        this.textCollisionBox = new CollisionBuffers(StructArrayLayout2i2i2i12, collisionBoxLayout.members, StructArrayLayout2ui4);
-        this.iconCollisionBox = new CollisionBuffers(StructArrayLayout2i2i2i12, collisionBoxLayout.members, StructArrayLayout2ui4);
+        this.textCollisionBox = new CollisionBuffers(CollisionBoxLayoutArray, collisionBoxLayout.members, LineIndexArray);
+        this.iconCollisionBox = new CollisionBuffers(CollisionBoxLayoutArray, collisionBoxLayout.members, LineIndexArray);
         for (var i = 0; i < this.symbolInstances.length; i++) {
             var symbolInstance = this.symbolInstances.get(i);
             this.addDebugCollisionBoxes(symbolInstance.textBoxStartIndex, symbolInstance.textBoxEndIndex, symbolInstance, true);
@@ -22975,8 +23110,8 @@ var FeatureIndex = function () {
         this.x = tileID.canonical.x;
         this.y = tileID.canonical.y;
         this.z = tileID.canonical.z;
-        this.grid = new gridIndex(EXTENT, 16, 0);
-        this.grid3D = new gridIndex(EXTENT, 16, 0);
+        this.grid = new TransferableGridIndex(EXTENT, 16, 0);
+        this.grid3D = new TransferableGridIndex(EXTENT, 16, 0);
         this.featureIndexArray = new FeatureIndexArray();
         this.promoteId = promoteId;
     }
@@ -23222,6 +23357,7 @@ exports.Actor = Actor;
 exports.AlphaImage = AlphaImage;
 exports.CanonicalTileID = CanonicalTileID;
 exports.CollisionBoxArray = CollisionBoxArray;
+exports.CollisionCircleLayoutArray = CollisionCircleLayoutArray;
 exports.Color = Color;
 exports.DEMData = DEMData;
 exports.DataConstantProperty = DataConstantProperty;
@@ -23238,24 +23374,24 @@ exports.GeoJSONFeature = GeoJSONFeature;
 exports.ImageAtlas = ImageAtlas;
 exports.ImagePosition = ImagePosition;
 exports.LineBucket = LineBucket;
+exports.LineStripIndexArray = LineStripIndexArray;
 exports.LngLat = LngLat;
 exports.LngLatBounds = LngLatBounds;
 exports.MercatorCoordinate = MercatorCoordinate;
 exports.ONE_EM = ONE_EM;
 exports.OverscaledTileID = OverscaledTileID;
 exports.Point = Point$2;
+exports.PosArray = PosArray;
 exports.Properties = Properties;
+exports.QuadTriangleArray = QuadTriangleArray;
 exports.RGBAImage = RGBAImage;
+exports.RasterBoundsArray = RasterBoundsArray;
 exports.RequestPerformance = RequestPerformance;
 exports.ResourceType = ResourceType;
 exports.SegmentVector = SegmentVector;
-exports.StructArrayLayout1ui2 = StructArrayLayout1ui2;
-exports.StructArrayLayout2f1f2i16 = StructArrayLayout2f1f2i16;
-exports.StructArrayLayout2i4 = StructArrayLayout2i4;
-exports.StructArrayLayout3ui6 = StructArrayLayout3ui6;
-exports.StructArrayLayout4i8 = StructArrayLayout4i8;
 exports.SymbolBucket = SymbolBucket;
 exports.Transitionable = Transitionable;
+exports.TriangleIndexArray = TriangleIndexArray;
 exports.Uniform1f = Uniform1f;
 exports.Uniform1i = Uniform1i;
 exports.Uniform2f = Uniform2f;
@@ -28318,7 +28454,7 @@ var ImageSource = function (_super) {
         var tileCoords = cornerCoords.map(function (coord) {
             return _this.tileID.getTilePoint(coord)._round();
         });
-        this._boundsArray = new performance.StructArrayLayout4i8();
+        this._boundsArray = new performance.RasterBoundsArray();
         this._boundsArray.emplaceBack(tileCoords[0].x, tileCoords[0].y, 0, 0);
         this._boundsArray.emplaceBack(tileCoords[1].x, tileCoords[1].y, performance.EXTENT, 0);
         this._boundsArray.emplaceBack(tileCoords[3].x, tileCoords[3].y, 0, performance.EXTENT);
@@ -28703,10 +28839,10 @@ var create = function (id, specification, dispatcher, eventedParent) {
     ], source);
     return source;
 };
-var getType = function (name) {
+var getSourceType = function (name) {
     return sourceTypes[name];
 };
-var setType = function (name, type) {
+var setSourceType = function (name, type) {
     sourceTypes[name] = type;
 };
 
@@ -30602,7 +30738,7 @@ var TerrainSourceCache = function (_super) {
         if (this._mesh) {
             return this._mesh;
         }
-        var vertexArray = new performance.StructArrayLayout2i4(), indexArray = new performance.StructArrayLayout3ui6();
+        var vertexArray = new performance.PosArray(), indexArray = new performance.TriangleIndexArray();
         var meshSize = this.meshSize, delta = performance.EXTENT / meshSize, meshSize2 = meshSize * meshSize;
         for (var y = 0; y <= meshSize; y++) {
             for (var x = 0; x <= meshSize; x++) {
@@ -34006,8 +34142,8 @@ var Style = function (_super) {
     };
     return Style;
 }(performance.Evented);
-Style.getSourceType = getType;
-Style.setSourceType = setType;
+Style.getSourceType = getSourceType;
+Style.setSourceType = setSourceType;
 Style.registerForPluginStateChange = performance.registerForPluginStateChange;
 
 var preludeFrag = '#ifdef GL_ES\nprecision mediump float;\n#else\n\n#if !defined(lowp)\n#define lowp\n#endif\n\n#if !defined(mediump)\n#define mediump\n#endif\n\n#if !defined(highp)\n#define highp\n#endif\n\n#endif\n';
@@ -36364,7 +36500,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
         return;
     }
     var circleProgram = painter.useProgram('collisionCircle');
-    var vertexData = new performance.StructArrayLayout2f1f2i16();
+    var vertexData = new performance.CollisionCircleLayoutArray();
     vertexData.resize(circleCount * 4);
     vertexData._trim();
     var vertexOffset = 0;
@@ -36397,7 +36533,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
 }
 function createQuadTriangles(quadCount) {
     var triCount = quadCount * 2;
-    var array = new performance.StructArrayLayout3ui6();
+    var array = new performance.QuadTriangleArray();
     array.resize(triCount);
     array._trim();
     for (var i = 0; i < triCount; i++) {
@@ -37543,42 +37679,42 @@ var Painter = function () {
     };
     Painter.prototype.setup = function () {
         var context = this.context;
-        var tileExtentArray = new performance.StructArrayLayout2i4();
+        var tileExtentArray = new performance.PosArray();
         tileExtentArray.emplaceBack(0, 0);
         tileExtentArray.emplaceBack(performance.EXTENT, 0);
         tileExtentArray.emplaceBack(0, performance.EXTENT);
         tileExtentArray.emplaceBack(performance.EXTENT, performance.EXTENT);
         this.tileExtentBuffer = context.createVertexBuffer(tileExtentArray, posAttributes.members);
         this.tileExtentSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 2);
-        var debugArray = new performance.StructArrayLayout2i4();
+        var debugArray = new performance.PosArray();
         debugArray.emplaceBack(0, 0);
         debugArray.emplaceBack(performance.EXTENT, 0);
         debugArray.emplaceBack(0, performance.EXTENT);
         debugArray.emplaceBack(performance.EXTENT, performance.EXTENT);
         this.debugBuffer = context.createVertexBuffer(debugArray, posAttributes.members);
         this.debugSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 5);
-        var rasterBoundsArray = new performance.StructArrayLayout4i8();
+        var rasterBoundsArray = new performance.RasterBoundsArray();
         rasterBoundsArray.emplaceBack(0, 0, 0, 0);
         rasterBoundsArray.emplaceBack(performance.EXTENT, 0, performance.EXTENT, 0);
         rasterBoundsArray.emplaceBack(0, performance.EXTENT, 0, performance.EXTENT);
         rasterBoundsArray.emplaceBack(performance.EXTENT, performance.EXTENT, performance.EXTENT, performance.EXTENT);
         this.rasterBoundsBuffer = context.createVertexBuffer(rasterBoundsArray, rasterBoundsAttributes.members);
         this.rasterBoundsSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 2);
-        var viewportArray = new performance.StructArrayLayout2i4();
+        var viewportArray = new performance.PosArray();
         viewportArray.emplaceBack(0, 0);
         viewportArray.emplaceBack(1, 0);
         viewportArray.emplaceBack(0, 1);
         viewportArray.emplaceBack(1, 1);
         this.viewportBuffer = context.createVertexBuffer(viewportArray, posAttributes.members);
         this.viewportSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 2);
-        var tileLineStripIndices = new performance.StructArrayLayout1ui2();
+        var tileLineStripIndices = new performance.LineStripIndexArray();
         tileLineStripIndices.emplaceBack(0);
         tileLineStripIndices.emplaceBack(1);
         tileLineStripIndices.emplaceBack(3);
         tileLineStripIndices.emplaceBack(2);
         tileLineStripIndices.emplaceBack(0);
         this.tileBorderIndexBuffer = context.createIndexBuffer(tileLineStripIndices);
-        var quadTriangleIndices = new performance.StructArrayLayout3ui6();
+        var quadTriangleIndices = new performance.TriangleIndexArray();
         quadTriangleIndices.emplaceBack(0, 1, 2);
         quadTriangleIndices.emplaceBack(2, 1, 3);
         this.quadTriangleIndexBuffer = context.createIndexBuffer(quadTriangleIndices);
