@@ -24665,7 +24665,7 @@ class GeoJSONSource extends performance.Evented {
                 generateId: options.generateId || false
             },
             superclusterOptions: {
-                maxZoom: options.clusterMaxZoom !== undefined ? Math.min(options.clusterMaxZoom, this.maxzoom - 1) : this.maxzoom - 1,
+                maxZoom: options.clusterMaxZoom !== undefined ? options.clusterMaxZoom : this.maxzoom - 1,
                 minPoints: Math.max(2, options.clusterMinPoints || 2),
                 extent: performance.EXTENT,
                 radius: (options.clusterRadius || 50) * scale,
@@ -26655,6 +26655,7 @@ class TerrainSourceCache extends performance.Evented {
     update(transform) {
         if (!this.isEnabled() || !this._sourceCache._sourceLoaded)
             return;
+        transform.updateElevation();
         this._sourceCache.update(transform);
         this._renderableTiles = [];
         const tileIDs = {};
@@ -34228,8 +34229,14 @@ class Transform {
             return [];
         if (options.maxzoom !== undefined && z > options.maxzoom)
             z = options.maxzoom;
-        const centerCoord = tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+        const cameraCoord = tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+        const centerCoord = performance.MercatorCoordinate.fromLngLat(this.center);
         const numTiles = Math.pow(2, z);
+        const cameraPoint = [
+            numTiles * cameraCoord.x,
+            numTiles * cameraCoord.y,
+            0
+        ];
         const centerPoint = [
             numTiles * centerCoord.x,
             numTiles * centerCoord.y,
@@ -34280,8 +34287,8 @@ class Transform {
                     continue;
                 fullyVisible = intersectResult === 2;
             }
-            const distanceX = it.aabb.distanceX(centerPoint);
-            const distanceY = it.aabb.distanceY(centerPoint);
+            const distanceX = it.aabb.distanceX(cameraPoint);
+            const distanceY = it.aabb.distanceY(cameraPoint);
             const longestDim = Math.max(Math.abs(distanceX), Math.abs(distanceY));
             const distToSplit = radiusOfMaxLvlLodInTiles + (1 << maxZoom - it.zoom) - 2;
             if (it.zoom === maxZoom || longestDim > distToSplit && it.zoom >= minZoom) {
@@ -34606,14 +34613,16 @@ class Transform {
             1
         ]);
         this.glCoordMatrix = m;
+        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
         const groundAngle = Math.PI / 2 + this._pitch;
         const fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
-        const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
+        const cameraAltitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
+        const cameraToCenterDistance = (cameraAltitude + elevation) * this._pixelPerMeter / Math.cos(this._pitch);
+        const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
         const point = this.point;
         const x = point.x, y = point.y;
-        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
-        const furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + this.cameraToCenterDistance;
-        const farZ = (furthestDistance + elevation * this._pixelPerMeter / Math.cos(this._pitch)) * 1.01;
+        const furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + cameraToCenterDistance;
+        const farZ = furthestDistance * 1.01;
         const nearZ = this.height / 50;
         m = new Float64Array(16);
         performance.perspective(m, this._fov, this.width / this.height, nearZ, farZ);
