@@ -1,6 +1,8 @@
 import type {Cancelable} from '../types/cancelable';
 
-const now = Date.now.bind(Date);
+const now = typeof window !== "undefined" && performance && performance.now ?
+    performance.now.bind(performance) :
+    Date.now.bind(Date);
 
 let linkEl;
 
