@@ -300,7 +300,7 @@ function isImageBitmap(image) {
     return typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap;
 }
 
-var now = Date.now.bind(Date);
+var now = typeof window !== 'undefined' && performance && performance.now ? performance.now.bind(performance) : Date.now.bind(Date);
 var linkEl;
 var reducedMotionQuery;
 var exported$1 = {
@@ -28194,7 +28194,7 @@ var GeoJSONSource = function (_super) {
                 generateId: options.generateId || false
             },
             superclusterOptions: {
-                maxZoom: options.clusterMaxZoom !== undefined ? Math.min(options.clusterMaxZoom, _this.maxzoom - 1) : _this.maxzoom - 1,
+                maxZoom: options.clusterMaxZoom !== undefined ? options.clusterMaxZoom : _this.maxzoom - 1,
                 minPoints: Math.max(2, options.clusterMinPoints || 2),
                 extent: performance.EXTENT,
                 radius: (options.clusterRadius || 50) * scale,
@@ -30485,6 +30485,7 @@ var TerrainSourceCache = function (_super) {
         if (!this.isEnabled() || !this._sourceCache._sourceLoaded) {
             return;
         }
+        transform.updateElevation();
         this._sourceCache.update(transform);
         this._renderableTiles = [];
         var tileIDs = {};
@@ -38777,8 +38778,14 @@ var Transform = function () {
         if (options.maxzoom !== undefined && z > options.maxzoom) {
             z = options.maxzoom;
         }
-        var centerCoord = tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+        var cameraCoord = tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+        var centerCoord = performance.MercatorCoordinate.fromLngLat(this.center);
         var numTiles = Math.pow(2, z);
+        var cameraPoint = [
+            numTiles * cameraCoord.x,
+            numTiles * cameraCoord.y,
+            0
+        ];
         var centerPoint = [
             numTiles * centerCoord.x,
             numTiles * centerCoord.y,
@@ -38831,8 +38838,8 @@ var Transform = function () {
                 }
                 fullyVisible = intersectResult === 2;
             }
-            var distanceX = it_1.aabb.distanceX(centerPoint);
-            var distanceY = it_1.aabb.distanceY(centerPoint);
+            var distanceX = it_1.aabb.distanceX(cameraPoint);
+            var distanceY = it_1.aabb.distanceY(cameraPoint);
             var longestDim = Math.max(Math.abs(distanceX), Math.abs(distanceY));
             var distToSplit = radiusOfMaxLvlLodInTiles + (1 << maxZoom - it_1.zoom) - 2;
             if (it_1.zoom === maxZoom || longestDim > distToSplit && it_1.zoom >= minZoom) {
@@ -39185,14 +39192,16 @@ var Transform = function () {
             1
         ]);
         this.glCoordMatrix = m;
+        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
         var groundAngle = Math.PI / 2 + this._pitch;
         var fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
-        var topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
+        var cameraAltitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
+        var cameraToCenterDistance = (cameraAltitude + elevation) * this._pixelPerMeter / Math.cos(this._pitch);
+        var topHalfSurfaceDistance = Math.sin(fovAboveCenter) * cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
         var point = this.point;
         var x = point.x, y = point.y;
-        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
-        var furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + this.cameraToCenterDistance;
-        var farZ = (furthestDistance + elevation * this._pixelPerMeter / Math.cos(this._pitch)) * 1.01;
+        var furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + cameraToCenterDistance;
+        var farZ = furthestDistance * 1.01;
         var nearZ = this.height / 50;
         m = new Float64Array(16);
         performance.perspective(m, this._fov, this.width / this.height, nearZ, farZ);
