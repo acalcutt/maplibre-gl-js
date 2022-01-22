@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.1/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.3/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -346,141 +346,4075 @@ var exported$1 = {
     }
 };
 
-var gridIndex = GridIndex;
-var NUM_PARAMS = 3;
-function GridIndex(extent, n, padding) {
-    var cells = this.cells = [];
-    if (extent instanceof ArrayBuffer) {
-        this.arrayBuffer = extent;
-        var array = new Int32Array(this.arrayBuffer);
-        extent = array[0];
-        n = array[1];
-        padding = array[2];
-        this.d = n + 2 * padding;
-        for (var k = 0; k < this.d * this.d; k++) {
-            var start = array[NUM_PARAMS + k];
-            var end = array[NUM_PARAMS + k + 1];
-            cells.push(start === end ? null : array.subarray(start, end));
-        }
-        var keysOffset = array[NUM_PARAMS + cells.length];
-        var bboxesOffset = array[NUM_PARAMS + cells.length + 1];
-        this.keys = array.subarray(keysOffset, bboxesOffset);
-        this.bboxes = array.subarray(bboxesOffset);
-        this.insert = this._insertReadonly;
-    } else {
-        this.d = n + 2 * padding;
-        for (var i = 0; i < this.d * this.d; i++) {
-            cells.push([]);
-        }
-        this.keys = [];
-        this.bboxes = [];
-    }
-    this.n = n;
-    this.extent = extent;
-    this.padding = padding;
-    this.scale = n / extent;
-    this.uid = 0;
-    var p = padding / n * extent;
-    this.min = -p;
-    this.max = extent + p;
+var pointGeometry = Point$1;
+function Point$1(x, y) {
+    this.x = x;
+    this.y = y;
 }
-GridIndex.prototype.insert = function (key, x1, y1, x2, y2) {
-    this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++);
-    this.keys.push(key);
-    this.bboxes.push(x1);
-    this.bboxes.push(y1);
-    this.bboxes.push(x2);
-    this.bboxes.push(y2);
-};
-GridIndex.prototype._insertReadonly = function () {
-    throw 'Cannot insert into a GridIndex created from an ArrayBuffer.';
-};
-GridIndex.prototype._insertCell = function (x1, y1, x2, y2, cellIndex, uid) {
-    this.cells[cellIndex].push(uid);
-};
-GridIndex.prototype.query = function (x1, y1, x2, y2, intersectionTest) {
-    var min = this.min;
-    var max = this.max;
-    if (x1 <= min && y1 <= min && max <= x2 && max <= y2 && !intersectionTest) {
-        return Array.prototype.slice.call(this.keys);
-    } else {
-        var result = [];
-        var seenUids = {};
-        this._forEachCell(x1, y1, x2, y2, this._queryCell, result, seenUids, intersectionTest);
-        return result;
+Point$1.prototype = {
+    clone: function () {
+        return new Point$1(this.x, this.y);
+    },
+    add: function (p) {
+        return this.clone()._add(p);
+    },
+    sub: function (p) {
+        return this.clone()._sub(p);
+    },
+    multByPoint: function (p) {
+        return this.clone()._multByPoint(p);
+    },
+    divByPoint: function (p) {
+        return this.clone()._divByPoint(p);
+    },
+    mult: function (k) {
+        return this.clone()._mult(k);
+    },
+    div: function (k) {
+        return this.clone()._div(k);
+    },
+    rotate: function (a) {
+        return this.clone()._rotate(a);
+    },
+    rotateAround: function (a, p) {
+        return this.clone()._rotateAround(a, p);
+    },
+    matMult: function (m) {
+        return this.clone()._matMult(m);
+    },
+    unit: function () {
+        return this.clone()._unit();
+    },
+    perp: function () {
+        return this.clone()._perp();
+    },
+    round: function () {
+        return this.clone()._round();
+    },
+    mag: function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    },
+    equals: function (other) {
+        return this.x === other.x && this.y === other.y;
+    },
+    dist: function (p) {
+        return Math.sqrt(this.distSqr(p));
+    },
+    distSqr: function (p) {
+        var dx = p.x - this.x, dy = p.y - this.y;
+        return dx * dx + dy * dy;
+    },
+    angle: function () {
+        return Math.atan2(this.y, this.x);
+    },
+    angleTo: function (b) {
+        return Math.atan2(this.y - b.y, this.x - b.x);
+    },
+    angleWith: function (b) {
+        return this.angleWithSep(b.x, b.y);
+    },
+    angleWithSep: function (x, y) {
+        return Math.atan2(this.x * y - this.y * x, this.x * x + this.y * y);
+    },
+    _matMult: function (m) {
+        var x = m[0] * this.x + m[1] * this.y, y = m[2] * this.x + m[3] * this.y;
+        this.x = x;
+        this.y = y;
+        return this;
+    },
+    _add: function (p) {
+        this.x += p.x;
+        this.y += p.y;
+        return this;
+    },
+    _sub: function (p) {
+        this.x -= p.x;
+        this.y -= p.y;
+        return this;
+    },
+    _mult: function (k) {
+        this.x *= k;
+        this.y *= k;
+        return this;
+    },
+    _div: function (k) {
+        this.x /= k;
+        this.y /= k;
+        return this;
+    },
+    _multByPoint: function (p) {
+        this.x *= p.x;
+        this.y *= p.y;
+        return this;
+    },
+    _divByPoint: function (p) {
+        this.x /= p.x;
+        this.y /= p.y;
+        return this;
+    },
+    _unit: function () {
+        this._div(this.mag());
+        return this;
+    },
+    _perp: function () {
+        var y = this.y;
+        this.y = this.x;
+        this.x = -y;
+        return this;
+    },
+    _rotate: function (angle) {
+        var cos = Math.cos(angle), sin = Math.sin(angle), x = cos * this.x - sin * this.y, y = sin * this.x + cos * this.y;
+        this.x = x;
+        this.y = y;
+        return this;
+    },
+    _rotateAround: function (angle, p) {
+        var cos = Math.cos(angle), sin = Math.sin(angle), x = p.x + cos * (this.x - p.x) - sin * (this.y - p.y), y = p.y + sin * (this.x - p.x) + cos * (this.y - p.y);
+        this.x = x;
+        this.y = y;
+        return this;
+    },
+    _round: function () {
+        this.x = Math.round(this.x);
+        this.y = Math.round(this.y);
+        return this;
     }
 };
-GridIndex.prototype._queryCell = function (x1, y1, x2, y2, cellIndex, result, seenUids, intersectionTest) {
-    var cell = this.cells[cellIndex];
-    if (cell !== null) {
-        var keys = this.keys;
-        var bboxes = this.bboxes;
-        for (var u = 0; u < cell.length; u++) {
-            var uid = cell[u];
-            if (seenUids[uid] === undefined) {
-                var offset = uid * 4;
-                if (intersectionTest ? intersectionTest(bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) : x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1]) {
-                    seenUids[uid] = true;
-                    result.push(keys[uid]);
-                } else {
-                    seenUids[uid] = false;
+Point$1.convert = function (a) {
+    if (a instanceof Point$1) {
+        return a;
+    }
+    if (Array.isArray(a)) {
+        return new Point$1(a[0], a[1]);
+    }
+    return a;
+};
+
+function finallyConstructor(callback) {
+    var constructor = this.constructor;
+    return this.then(function (value) {
+        return constructor.resolve(callback()).then(function () {
+            return value;
+        });
+    }, function (reason) {
+        return constructor.resolve(callback()).then(function () {
+            return constructor.reject(reason);
+        });
+    });
+}
+
+function allSettled(arr) {
+    var P = this;
+    return new P(function (resolve, reject) {
+        if (!(arr && typeof arr.length !== 'undefined')) {
+            return reject(new TypeError(typeof arr + ' ' + arr + ' is not iterable(cannot read property Symbol(Symbol.iterator))'));
+        }
+        var args = Array.prototype.slice.call(arr);
+        if (args.length === 0) {
+            return resolve([]);
+        }
+        var remaining = args.length;
+        function res(i, val) {
+            if (val && (typeof val === 'object' || typeof val === 'function')) {
+                var then = val.then;
+                if (typeof then === 'function') {
+                    then.call(val, function (val) {
+                        res(i, val);
+                    }, function (e) {
+                        args[i] = {
+                            status: 'rejected',
+                            reason: e
+                        };
+                        if (--remaining === 0) {
+                            resolve(args);
+                        }
+                    });
+                    return;
                 }
             }
-        }
-    }
-};
-GridIndex.prototype._forEachCell = function (x1, y1, x2, y2, fn, arg1, arg2, intersectionTest) {
-    var cx1 = this._convertToCellCoord(x1);
-    var cy1 = this._convertToCellCoord(y1);
-    var cx2 = this._convertToCellCoord(x2);
-    var cy2 = this._convertToCellCoord(y2);
-    for (var x = cx1; x <= cx2; x++) {
-        for (var y = cy1; y <= cy2; y++) {
-            var cellIndex = this.d * y + x;
-            if (intersectionTest && !intersectionTest(this._convertFromCellCoord(x), this._convertFromCellCoord(y), this._convertFromCellCoord(x + 1), this._convertFromCellCoord(y + 1))) {
-                continue;
+            args[i] = {
+                status: 'fulfilled',
+                value: val
+            };
+            if (--remaining === 0) {
+                resolve(args);
             }
-            if (fn.call(this, x1, y1, x2, y2, cellIndex, arg1, arg2, intersectionTest)) {
+        }
+        for (var i = 0; i < args.length; i++) {
+            res(i, args[i]);
+        }
+    });
+}
+
+var setTimeoutFunc = setTimeout;
+var setImmediateFunc = typeof setImmediate !== 'undefined' ? setImmediate : null;
+function isArray(x) {
+    return Boolean(x && typeof x.length !== 'undefined');
+}
+function noop() {
+}
+function bind(fn, thisArg) {
+    return function () {
+        fn.apply(thisArg, arguments);
+    };
+}
+function Promise$1(fn) {
+    if (!(this instanceof Promise$1)) {
+        throw new TypeError('Promises must be constructed via new');
+    }
+    if (typeof fn !== 'function') {
+        throw new TypeError('not a function');
+    }
+    this._state = 0;
+    this._handled = false;
+    this._value = undefined;
+    this._deferreds = [];
+    doResolve(fn, this);
+}
+function handle(self, deferred) {
+    while (self._state === 3) {
+        self = self._value;
+    }
+    if (self._state === 0) {
+        self._deferreds.push(deferred);
+        return;
+    }
+    self._handled = true;
+    Promise$1._immediateFn(function () {
+        var cb = self._state === 1 ? deferred.onFulfilled : deferred.onRejected;
+        if (cb === null) {
+            (self._state === 1 ? resolve : reject)(deferred.promise, self._value);
+            return;
+        }
+        var ret;
+        try {
+            ret = cb(self._value);
+        } catch (e) {
+            reject(deferred.promise, e);
+            return;
+        }
+        resolve(deferred.promise, ret);
+    });
+}
+function resolve(self, newValue) {
+    try {
+        if (newValue === self) {
+            throw new TypeError('A promise cannot be resolved with itself.');
+        }
+        if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
+            var then = newValue.then;
+            if (newValue instanceof Promise$1) {
+                self._state = 3;
+                self._value = newValue;
+                finale(self);
+                return;
+            } else if (typeof then === 'function') {
+                doResolve(bind(then, newValue), self);
                 return;
             }
         }
+        self._state = 1;
+        self._value = newValue;
+        finale(self);
+    } catch (e) {
+        reject(self, e);
+    }
+}
+function reject(self, newValue) {
+    self._state = 2;
+    self._value = newValue;
+    finale(self);
+}
+function finale(self) {
+    if (self._state === 2 && self._deferreds.length === 0) {
+        Promise$1._immediateFn(function () {
+            if (!self._handled) {
+                Promise$1._unhandledRejectionFn(self._value);
+            }
+        });
+    }
+    for (var i = 0, len = self._deferreds.length; i < len; i++) {
+        handle(self, self._deferreds[i]);
+    }
+    self._deferreds = null;
+}
+function Handler(onFulfilled, onRejected, promise) {
+    this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
+    this.onRejected = typeof onRejected === 'function' ? onRejected : null;
+    this.promise = promise;
+}
+function doResolve(fn, self) {
+    var done = false;
+    try {
+        fn(function (value) {
+            if (done) {
+                return;
+            }
+            done = true;
+            resolve(self, value);
+        }, function (reason) {
+            if (done) {
+                return;
+            }
+            done = true;
+            reject(self, reason);
+        });
+    } catch (ex) {
+        if (done) {
+            return;
+        }
+        done = true;
+        reject(self, ex);
+    }
+}
+Promise$1.prototype['catch'] = function (onRejected) {
+    return this.then(null, onRejected);
+};
+Promise$1.prototype.then = function (onFulfilled, onRejected) {
+    var prom = new this.constructor(noop);
+    handle(this, new Handler(onFulfilled, onRejected, prom));
+    return prom;
+};
+Promise$1.prototype['finally'] = finallyConstructor;
+Promise$1.all = function (arr) {
+    return new Promise$1(function (resolve, reject) {
+        if (!isArray(arr)) {
+            return reject(new TypeError('Promise.all accepts an array'));
+        }
+        var args = Array.prototype.slice.call(arr);
+        if (args.length === 0) {
+            return resolve([]);
+        }
+        var remaining = args.length;
+        function res(i, val) {
+            try {
+                if (val && (typeof val === 'object' || typeof val === 'function')) {
+                    var then = val.then;
+                    if (typeof then === 'function') {
+                        then.call(val, function (val) {
+                            res(i, val);
+                        }, reject);
+                        return;
+                    }
+                }
+                args[i] = val;
+                if (--remaining === 0) {
+                    resolve(args);
+                }
+            } catch (ex) {
+                reject(ex);
+            }
+        }
+        for (var i = 0; i < args.length; i++) {
+            res(i, args[i]);
+        }
+    });
+};
+Promise$1.allSettled = allSettled;
+Promise$1.resolve = function (value) {
+    if (value && typeof value === 'object' && value.constructor === Promise$1) {
+        return value;
+    }
+    return new Promise$1(function (resolve) {
+        resolve(value);
+    });
+};
+Promise$1.reject = function (value) {
+    return new Promise$1(function (resolve, reject) {
+        reject(value);
+    });
+};
+Promise$1.race = function (arr) {
+    return new Promise$1(function (resolve, reject) {
+        if (!isArray(arr)) {
+            return reject(new TypeError('Promise.race accepts an array'));
+        }
+        for (var i = 0, len = arr.length; i < len; i++) {
+            Promise$1.resolve(arr[i]).then(resolve, reject);
+        }
+    });
+};
+Promise$1._immediateFn = typeof setImmediateFunc === 'function' && function (fn) {
+    setImmediateFunc(fn);
+} || function (fn) {
+    setTimeoutFunc(fn, 0);
+};
+Promise$1._unhandledRejectionFn = function _unhandledRejectionFn(err) {
+    if (typeof console !== 'undefined' && console) {
+        console.warn('Possible Unhandled Promise Rejection:', err);
     }
 };
-GridIndex.prototype._convertFromCellCoord = function (x) {
-    return (x - this.padding) / this.scale;
-};
-GridIndex.prototype._convertToCellCoord = function (x) {
-    return Math.max(0, Math.min(this.d - 1, Math.floor(x * this.scale) + this.padding));
-};
-GridIndex.prototype.toArrayBuffer = function () {
-    if (this.arrayBuffer) {
-        return this.arrayBuffer;
+
+var globalNS = function () {
+    if (typeof self !== 'undefined') {
+        return self;
     }
-    var cells = this.cells;
-    var metadataLength = NUM_PARAMS + this.cells.length + 1 + 1;
-    var totalCellLength = 0;
-    for (var i = 0; i < this.cells.length; i++) {
-        totalCellLength += this.cells[i].length;
+    if (typeof window !== 'undefined') {
+        return window;
     }
-    var array = new Int32Array(metadataLength + totalCellLength + this.keys.length + this.bboxes.length);
-    array[0] = this.extent;
-    array[1] = this.n;
-    array[2] = this.padding;
-    var offset = metadataLength;
-    for (var k = 0; k < cells.length; k++) {
-        var cell = cells[k];
-        array[NUM_PARAMS + k] = offset;
-        array.set(cell, offset);
-        offset += cell.length;
+    if (typeof global !== 'undefined') {
+        return global;
     }
-    array[NUM_PARAMS + cells.length] = offset;
-    array.set(this.keys, offset);
-    offset += this.keys.length;
-    array[NUM_PARAMS + cells.length + 1] = offset;
-    array.set(this.bboxes, offset);
-    offset += this.bboxes.length;
-    return array.buffer;
+    throw new Error('unable to locate global object');
+}();
+if (typeof globalNS['Promise'] !== 'function') {
+    globalNS['Promise'] = Promise$1;
+} else {
+    if (!globalNS.Promise.prototype['finally']) {
+        globalNS.Promise.prototype['finally'] = finallyConstructor;
+    }
+    if (!globalNS.Promise.allSettled) {
+        globalNS.Promise.allSettled = allSettled;
+    }
+}
+
+self.fetch || (self.fetch = function (e, n) {
+    return n = n || {}, new Promise(function (t, s) {
+        var r = new XMLHttpRequest(), o = [], u = [], i = {}, a = function () {
+                return {
+                    ok: 2 == (r.status / 100 | 0),
+                    statusText: r.statusText,
+                    status: r.status,
+                    url: r.responseURL,
+                    text: function () {
+                        return Promise.resolve(r.responseText);
+                    },
+                    json: function () {
+                        return Promise.resolve(r.responseText).then(JSON.parse);
+                    },
+                    blob: function () {
+                        return Promise.resolve(new Blob([r.response]));
+                    },
+                    clone: a,
+                    headers: {
+                        keys: function () {
+                            return o;
+                        },
+                        entries: function () {
+                            return u;
+                        },
+                        get: function (e) {
+                            return i[e.toLowerCase()];
+                        },
+                        has: function (e) {
+                            return e.toLowerCase() in i;
+                        }
+                    }
+                };
+            };
+        for (var c in (r.open(n.method || 'get', e, !0), r.onload = function () {
+                r.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm, function (e, n, t) {
+                    o.push(n = n.toLowerCase()), u.push([
+                        n,
+                        t
+                    ]), i[n] = i[n] ? i[n] + ',' + t : t;
+                }), t(a());
+            }, r.onerror = s, r.withCredentials = 'include' == n.credentials, n.headers)) {
+            r.setRequestHeader(c, n.headers[c]);
+        }
+        r.send(n.body || null);
+    });
+});
+
+(function (factory) {
+    typeof define === 'function' && define.amd ? define(factory) : factory();
+}(function () {
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError('Cannot call a class as a function');
+        }
+    }
+    function _defineProperties(target, props) {
+        for (var i = 0; i < props.length; i++) {
+            var descriptor = props[i];
+            descriptor.enumerable = descriptor.enumerable || false;
+            descriptor.configurable = true;
+            if ('value' in descriptor) {
+                descriptor.writable = true;
+            }
+            Object.defineProperty(target, descriptor.key, descriptor);
+        }
+    }
+    function _createClass(Constructor, protoProps, staticProps) {
+        if (protoProps) {
+            _defineProperties(Constructor.prototype, protoProps);
+        }
+        if (staticProps) {
+            _defineProperties(Constructor, staticProps);
+        }
+        return Constructor;
+    }
+    function _inherits(subClass, superClass) {
+        if (typeof superClass !== 'function' && superClass !== null) {
+            throw new TypeError('Super expression must either be null or a function');
+        }
+        subClass.prototype = Object.create(superClass && superClass.prototype, {
+            constructor: {
+                value: subClass,
+                writable: true,
+                configurable: true
+            }
+        });
+        if (superClass) {
+            _setPrototypeOf(subClass, superClass);
+        }
+    }
+    function _getPrototypeOf(o) {
+        _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
+            return o.__proto__ || Object.getPrototypeOf(o);
+        };
+        return _getPrototypeOf(o);
+    }
+    function _setPrototypeOf(o, p) {
+        _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+            o.__proto__ = p;
+            return o;
+        };
+        return _setPrototypeOf(o, p);
+    }
+    function _isNativeReflectConstruct() {
+        if (typeof Reflect === 'undefined' || !Reflect.construct) {
+            return false;
+        }
+        if (Reflect.construct.sham) {
+            return false;
+        }
+        if (typeof Proxy === 'function') {
+            return true;
+        }
+        try {
+            Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {
+            }));
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+    function _assertThisInitialized(self) {
+        if (self === void 0) {
+            throw new ReferenceError('this hasn\'t been initialised - super() hasn\'t been called');
+        }
+        return self;
+    }
+    function _possibleConstructorReturn(self, call) {
+        if (call && (typeof call === 'object' || typeof call === 'function')) {
+            return call;
+        }
+        return _assertThisInitialized(self);
+    }
+    function _createSuper(Derived) {
+        var hasNativeReflectConstruct = _isNativeReflectConstruct();
+        return function _createSuperInternal() {
+            var Super = _getPrototypeOf(Derived), result;
+            if (hasNativeReflectConstruct) {
+                var NewTarget = _getPrototypeOf(this).constructor;
+                result = Reflect.construct(Super, arguments, NewTarget);
+            } else {
+                result = Super.apply(this, arguments);
+            }
+            return _possibleConstructorReturn(this, result);
+        };
+    }
+    function _superPropBase(object, property) {
+        while (!Object.prototype.hasOwnProperty.call(object, property)) {
+            object = _getPrototypeOf(object);
+            if (object === null) {
+                break;
+            }
+        }
+        return object;
+    }
+    function _get(target, property, receiver) {
+        if (typeof Reflect !== 'undefined' && Reflect.get) {
+            _get = Reflect.get;
+        } else {
+            _get = function _get(target, property, receiver) {
+                var base = _superPropBase(target, property);
+                if (!base) {
+                    return;
+                }
+                var desc = Object.getOwnPropertyDescriptor(base, property);
+                if (desc.get) {
+                    return desc.get.call(receiver);
+                }
+                return desc.value;
+            };
+        }
+        return _get(target, property, receiver || target);
+    }
+    var Emitter = function () {
+        function Emitter() {
+            _classCallCheck(this, Emitter);
+            Object.defineProperty(this, 'listeners', {
+                value: {},
+                writable: true,
+                configurable: true
+            });
+        }
+        _createClass(Emitter, [
+            {
+                key: 'addEventListener',
+                value: function addEventListener(type, callback, options) {
+                    if (!(type in this.listeners)) {
+                        this.listeners[type] = [];
+                    }
+                    this.listeners[type].push({
+                        callback: callback,
+                        options: options
+                    });
+                }
+            },
+            {
+                key: 'removeEventListener',
+                value: function removeEventListener(type, callback) {
+                    if (!(type in this.listeners)) {
+                        return;
+                    }
+                    var stack = this.listeners[type];
+                    for (var i = 0, l = stack.length; i < l; i++) {
+                        if (stack[i].callback === callback) {
+                            stack.splice(i, 1);
+                            return;
+                        }
+                    }
+                }
+            },
+            {
+                key: 'dispatchEvent',
+                value: function dispatchEvent(event) {
+                    if (!(event.type in this.listeners)) {
+                        return;
+                    }
+                    var stack = this.listeners[event.type];
+                    var stackToCall = stack.slice();
+                    for (var i = 0, l = stackToCall.length; i < l; i++) {
+                        var listener = stackToCall[i];
+                        try {
+                            listener.callback.call(this, event);
+                        } catch (e) {
+                            Promise.resolve().then(function () {
+                                throw e;
+                            });
+                        }
+                        if (listener.options && listener.options.once) {
+                            this.removeEventListener(event.type, listener.callback);
+                        }
+                    }
+                    return !event.defaultPrevented;
+                }
+            }
+        ]);
+        return Emitter;
+    }();
+    var AbortSignal = function (_Emitter) {
+        _inherits(AbortSignal, _Emitter);
+        var _super = _createSuper(AbortSignal);
+        function AbortSignal() {
+            var _this;
+            _classCallCheck(this, AbortSignal);
+            _this = _super.call(this);
+            if (!_this.listeners) {
+                Emitter.call(_assertThisInitialized(_this));
+            }
+            Object.defineProperty(_assertThisInitialized(_this), 'aborted', {
+                value: false,
+                writable: true,
+                configurable: true
+            });
+            Object.defineProperty(_assertThisInitialized(_this), 'onabort', {
+                value: null,
+                writable: true,
+                configurable: true
+            });
+            return _this;
+        }
+        _createClass(AbortSignal, [
+            {
+                key: 'toString',
+                value: function toString() {
+                    return '[object AbortSignal]';
+                }
+            },
+            {
+                key: 'dispatchEvent',
+                value: function dispatchEvent(event) {
+                    if (event.type === 'abort') {
+                        this.aborted = true;
+                        if (typeof this.onabort === 'function') {
+                            this.onabort.call(this, event);
+                        }
+                    }
+                    _get(_getPrototypeOf(AbortSignal.prototype), 'dispatchEvent', this).call(this, event);
+                }
+            }
+        ]);
+        return AbortSignal;
+    }(Emitter);
+    var AbortController = function () {
+        function AbortController() {
+            _classCallCheck(this, AbortController);
+            Object.defineProperty(this, 'signal', {
+                value: new AbortSignal(),
+                writable: true,
+                configurable: true
+            });
+        }
+        _createClass(AbortController, [
+            {
+                key: 'abort',
+                value: function abort() {
+                    var event;
+                    try {
+                        event = new Event('abort');
+                    } catch (e) {
+                        if (typeof document !== 'undefined') {
+                            if (!document.createEvent) {
+                                event = document.createEventObject();
+                                event.type = 'abort';
+                            } else {
+                                event = document.createEvent('Event');
+                                event.initEvent('abort', false, false);
+                            }
+                        } else {
+                            event = {
+                                type: 'abort',
+                                bubbles: false,
+                                cancelable: false
+                            };
+                        }
+                    }
+                    this.signal.dispatchEvent(event);
+                }
+            },
+            {
+                key: 'toString',
+                value: function toString() {
+                    return '[object AbortController]';
+                }
+            }
+        ]);
+        return AbortController;
+    }();
+    if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        AbortController.prototype[Symbol.toStringTag] = 'AbortController';
+        AbortSignal.prototype[Symbol.toStringTag] = 'AbortSignal';
+    }
+    function polyfillNeeded(self) {
+        if (self.__FORCE_INSTALL_ABORTCONTROLLER_POLYFILL) {
+            console.log('__FORCE_INSTALL_ABORTCONTROLLER_POLYFILL=true is set, will force install polyfill');
+            return true;
+        }
+        return typeof self.Request === 'function' && !self.Request.prototype.hasOwnProperty('signal') || !self.AbortController;
+    }
+    function abortableFetchDecorator(patchTargets) {
+        if ('function' === typeof patchTargets) {
+            patchTargets = { fetch: patchTargets };
+        }
+        var _patchTargets = patchTargets, fetch = _patchTargets.fetch, _patchTargets$Request = _patchTargets.Request, NativeRequest = _patchTargets$Request === void 0 ? fetch.Request : _patchTargets$Request, NativeAbortController = _patchTargets.AbortController, _patchTargets$__FORCE = _patchTargets.__FORCE_INSTALL_ABORTCONTROLLER_POLYFILL, __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL = _patchTargets$__FORCE === void 0 ? false : _patchTargets$__FORCE;
+        if (!polyfillNeeded({
+                fetch: fetch,
+                Request: NativeRequest,
+                AbortController: NativeAbortController,
+                __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL: __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL
+            })) {
+            return {
+                fetch: fetch,
+                Request: Request
+            };
+        }
+        var Request = NativeRequest;
+        if (Request && !Request.prototype.hasOwnProperty('signal') || __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL) {
+            Request = function Request(input, init) {
+                var signal;
+                if (init && init.signal) {
+                    signal = init.signal;
+                    delete init.signal;
+                }
+                var request = new NativeRequest(input, init);
+                if (signal) {
+                    Object.defineProperty(request, 'signal', {
+                        writable: false,
+                        enumerable: false,
+                        configurable: true,
+                        value: signal
+                    });
+                }
+                return request;
+            };
+            Request.prototype = NativeRequest.prototype;
+        }
+        var realFetch = fetch;
+        var abortableFetch = function abortableFetch(input, init) {
+            var signal = Request && Request.prototype.isPrototypeOf(input) ? input.signal : init ? init.signal : undefined;
+            if (signal) {
+                var abortError;
+                try {
+                    abortError = new DOMException('Aborted', 'AbortError');
+                } catch (err) {
+                    abortError = new Error('Aborted');
+                    abortError.name = 'AbortError';
+                }
+                if (signal.aborted) {
+                    return Promise.reject(abortError);
+                }
+                var cancellation = new Promise(function (_, reject) {
+                    signal.addEventListener('abort', function () {
+                        return reject(abortError);
+                    }, { once: true });
+                });
+                if (init && init.signal) {
+                    delete init.signal;
+                }
+                return Promise.race([
+                    cancellation,
+                    realFetch(input, init)
+                ]);
+            }
+            return realFetch(input, init);
+        };
+        return {
+            fetch: abortableFetch,
+            Request: Request
+        };
+    }
+    (function (self) {
+        if (!polyfillNeeded(self)) {
+            return;
+        }
+        if (!self.fetch) {
+            console.warn('fetch() is not available, cannot install abortcontroller-polyfill');
+            return;
+        }
+        var _abortableFetch = abortableFetchDecorator(self), fetch = _abortableFetch.fetch, Request = _abortableFetch.Request;
+        self.fetch = fetch;
+        self.Request = Request;
+        Object.defineProperty(self, 'AbortController', {
+            writable: true,
+            enumerable: false,
+            configurable: true,
+            value: AbortController
+        });
+        Object.defineProperty(self, 'AbortSignal', {
+            writable: true,
+            enumerable: false,
+            configurable: true,
+            value: AbortSignal
+        });
+    }(typeof self !== 'undefined' ? self : global));
+}));
+
+var config = {
+    MAX_PARALLEL_IMAGE_REQUESTS: 16,
+    REGISTERED_PROTOCOLS: {}
 };
+
+var CACHE_NAME = 'mapbox-tiles';
+var cacheLimit = 500;
+var cacheCheckThreshold = 50;
+var MIN_TIME_UNTIL_EXPIRY = 1000 * 60 * 7;
+var sharedCache;
+function cacheOpen() {
+    if (typeof caches !== 'undefined' && !sharedCache) {
+        sharedCache = caches.open(CACHE_NAME);
+    }
+}
+var responseConstructorSupportsReadableStream;
+function prepareBody(response, callback) {
+    if (responseConstructorSupportsReadableStream === undefined) {
+        try {
+            new Response(new ReadableStream());
+            responseConstructorSupportsReadableStream = true;
+        } catch (e) {
+            responseConstructorSupportsReadableStream = false;
+        }
+    }
+    if (responseConstructorSupportsReadableStream) {
+        callback(response.body);
+    } else {
+        response.blob().then(callback);
+    }
+}
+function cachePut(request, response, requestTime) {
+    cacheOpen();
+    if (!sharedCache) {
+        return;
+    }
+    var options = {
+        status: response.status,
+        statusText: response.statusText,
+        headers: new Headers()
+    };
+    response.headers.forEach(function (v, k) {
+        return options.headers.set(k, v);
+    });
+    var cacheControl = parseCacheControl(response.headers.get('Cache-Control') || '');
+    if (cacheControl['no-store']) {
+        return;
+    }
+    if (cacheControl['max-age']) {
+        options.headers.set('Expires', new Date(requestTime + cacheControl['max-age'] * 1000).toUTCString());
+    }
+    var timeUntilExpiry = new Date(options.headers.get('Expires')).getTime() - requestTime;
+    if (timeUntilExpiry < MIN_TIME_UNTIL_EXPIRY) {
+        return;
+    }
+    prepareBody(response, function (body) {
+        var clonedResponse = new Response(body, options);
+        cacheOpen();
+        if (!sharedCache) {
+            return;
+        }
+        sharedCache.then(function (cache) {
+            return cache.put(stripQueryParameters(request.url), clonedResponse);
+        }).catch(function (e) {
+            return warnOnce(e.message);
+        });
+    });
+}
+function stripQueryParameters(url) {
+    var start = url.indexOf('?');
+    return start < 0 ? url : url.slice(0, start);
+}
+var globalEntryCounter = Infinity;
+function cacheEntryPossiblyAdded(dispatcher) {
+    globalEntryCounter++;
+    if (globalEntryCounter > cacheCheckThreshold) {
+        dispatcher.getActor().send('enforceCacheSizeLimit', cacheLimit);
+        globalEntryCounter = 0;
+    }
+}
+function enforceCacheSizeLimit(limit) {
+    cacheOpen();
+    if (!sharedCache) {
+        return;
+    }
+    sharedCache.then(function (cache) {
+        cache.keys().then(function (keys) {
+            for (var i = 0; i < keys.length - limit; i++) {
+                cache.delete(keys[i]);
+            }
+        });
+    });
+}
+function clearTileCache(callback) {
+    var promise = caches.delete(CACHE_NAME);
+    if (callback) {
+        promise.catch(callback).then(function () {
+            return callback();
+        });
+    }
+}
+function setCacheLimits(limit, checkThreshold) {
+    cacheLimit = limit;
+    cacheCheckThreshold = checkThreshold;
+}
+
+var exported = {
+    supported: false,
+    testSupport: testSupport
+};
+var glForTesting;
+var webpCheckComplete = false;
+var webpImgTest;
+var webpImgTestOnloadComplete = false;
+if (typeof document !== 'undefined') {
+    webpImgTest = document.createElement('img');
+    webpImgTest.onload = function () {
+        if (glForTesting) {
+            testWebpTextureUpload(glForTesting);
+        }
+        glForTesting = null;
+        webpImgTestOnloadComplete = true;
+    };
+    webpImgTest.onerror = function () {
+        webpCheckComplete = true;
+        glForTesting = null;
+    };
+    webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
+}
+function testSupport(gl) {
+    if (webpCheckComplete || !webpImgTest) {
+        return;
+    }
+    if (webpImgTestOnloadComplete) {
+        testWebpTextureUpload(gl);
+    } else {
+        glForTesting = gl;
+    }
+}
+function testWebpTextureUpload(gl) {
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    try {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, webpImgTest);
+        if (gl.isContextLost()) {
+            return;
+        }
+        exported.supported = true;
+    } catch (e) {
+    }
+    gl.deleteTexture(texture);
+    webpCheckComplete = true;
+}
+
+var __extends$i = undefined && undefined.__extends || function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
+            d.__proto__ = b;
+        } || function (d, b) {
+            for (var p in b) {
+                if (Object.prototype.hasOwnProperty.call(b, p)) {
+                    d[p] = b[p];
+                }
+            }
+        };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== 'function' && b !== null) {
+            throw new TypeError('Class extends value ' + String(b) + ' is not a constructor or null');
+        }
+        extendStatics(d, b);
+        function __() {
+            this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+}();
+var ResourceType = {
+    Unknown: 'Unknown',
+    Style: 'Style',
+    Source: 'Source',
+    Tile: 'Tile',
+    Glyphs: 'Glyphs',
+    SpriteImage: 'SpriteImage',
+    SpriteJSON: 'SpriteJSON',
+    Image: 'Image'
+};
+if (typeof Object.freeze == 'function') {
+    Object.freeze(ResourceType);
+}
+var AJAXError = function (_super) {
+    __extends$i(AJAXError, _super);
+    function AJAXError(message, status, url) {
+        var _this = _super.call(this, message) || this;
+        _this.status = status;
+        _this.url = url;
+        _this.name = _this.constructor.name;
+        _this.message = message;
+        return _this;
+    }
+    AJAXError.prototype.toString = function () {
+        return ''.concat(this.name, ': ').concat(this.message, ' (').concat(this.status, '): ').concat(this.url);
+    };
+    return AJAXError;
+}(Error);
+var getReferrer = isWorker() ? function () {
+    return self.worker && self.worker.referrer;
+} : function () {
+    return (window.location.protocol === 'blob:' ? window.parent : window).location.href;
+};
+var isFileURL = function (url) {
+    return /^file:/.test(url) || /^file:/.test(getReferrer()) && !/^\w+:/.test(url);
+};
+function makeFetchRequest(requestParameters, callback) {
+    var controller = new AbortController();
+    var request = new Request(requestParameters.url, {
+        method: requestParameters.method || 'GET',
+        body: requestParameters.body,
+        credentials: requestParameters.credentials,
+        headers: requestParameters.headers,
+        referrer: getReferrer(),
+        signal: controller.signal
+    });
+    var complete = false;
+    var aborted = false;
+    if (requestParameters.type === 'json') {
+        request.headers.set('Accept', 'application/json');
+    }
+    var validateOrFetch = function (err, cachedResponse, responseIsFresh) {
+        if (aborted) {
+            return;
+        }
+        if (err) {
+            if (err.message !== 'SecurityError') {
+                warnOnce(err);
+            }
+        }
+        if (cachedResponse && responseIsFresh) {
+            return finishRequest(cachedResponse);
+        }
+        var requestTime = Date.now();
+        fetch(request).then(function (response) {
+            if (response.ok) {
+                var cacheableResponse = null;
+                return finishRequest(response, cacheableResponse, requestTime);
+            } else {
+                return callback(new AJAXError(response.statusText, response.status, requestParameters.url));
+            }
+        }).catch(function (error) {
+            if (error.code === 20) {
+                return;
+            }
+            callback(new Error(error.message));
+        });
+    };
+    var finishRequest = function (response, cacheableResponse, requestTime) {
+        (requestParameters.type === 'arrayBuffer' ? response.arrayBuffer() : requestParameters.type === 'json' ? response.json() : response.text()).then(function (result) {
+            if (aborted) {
+                return;
+            }
+            if (cacheableResponse && requestTime) {
+                cachePut(request, cacheableResponse, requestTime);
+            }
+            complete = true;
+            callback(null, result, response.headers.get('Cache-Control'), response.headers.get('Expires'));
+        }).catch(function (err) {
+            if (!aborted) {
+                callback(new Error(err.message));
+            }
+        });
+    };
+    {
+        validateOrFetch(null, null);
+    }
+    return {
+        cancel: function () {
+            aborted = true;
+            if (!complete) {
+                controller.abort();
+            }
+        }
+    };
+}
+function makeXMLHttpRequest(requestParameters, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open(requestParameters.method || 'GET', requestParameters.url, true);
+    if (requestParameters.type === 'arrayBuffer') {
+        xhr.responseType = 'arraybuffer';
+    }
+    for (var k in requestParameters.headers) {
+        xhr.setRequestHeader(k, requestParameters.headers[k]);
+    }
+    if (requestParameters.type === 'json') {
+        xhr.responseType = 'text';
+        xhr.setRequestHeader('Accept', 'application/json');
+    }
+    xhr.withCredentials = requestParameters.credentials === 'include';
+    xhr.onerror = function () {
+        callback(new Error(xhr.statusText));
+    };
+    xhr.onload = function () {
+        if ((xhr.status >= 200 && xhr.status < 300 || xhr.status === 0) && xhr.response !== null) {
+            var data = xhr.response;
+            if (requestParameters.type === 'json') {
+                try {
+                    data = JSON.parse(xhr.response);
+                } catch (err) {
+                    return callback(err);
+                }
+            }
+            callback(null, data, xhr.getResponseHeader('Cache-Control'), xhr.getResponseHeader('Expires'));
+        } else {
+            callback(new AJAXError(xhr.statusText, xhr.status, requestParameters.url));
+        }
+    };
+    xhr.send(requestParameters.body);
+    return {
+        cancel: function () {
+            return xhr.abort();
+        }
+    };
+}
+var makeRequest = function (requestParameters, callback) {
+    if (/:\/\//.test(requestParameters.url) && !/^https?:|^file:/.test(requestParameters.url)) {
+        if (isWorker() && self.worker && self.worker.actor) {
+            return self.worker.actor.send('getResource', requestParameters, callback);
+        }
+        if (!isWorker()) {
+            var protocol = requestParameters.url.substring(0, requestParameters.url.indexOf('://'));
+            var action = config.REGISTERED_PROTOCOLS[protocol] || makeFetchRequest;
+            return action(requestParameters, callback);
+        }
+    }
+    if (!isFileURL(requestParameters.url)) {
+        if (fetch && Request && AbortController && Object.prototype.hasOwnProperty.call(Request.prototype, 'signal')) {
+            return makeFetchRequest(requestParameters, callback);
+        }
+        if (isWorker() && self.worker && self.worker.actor) {
+            var queueOnMainThread = true;
+            return self.worker.actor.send('getResource', requestParameters, callback, undefined, queueOnMainThread);
+        }
+    }
+    return makeXMLHttpRequest(requestParameters, callback);
+};
+var getJSON = function (requestParameters, callback) {
+    return makeRequest(extend$1(requestParameters, { type: 'json' }), callback);
+};
+var getArrayBuffer = function (requestParameters, callback) {
+    return makeRequest(extend$1(requestParameters, { type: 'arrayBuffer' }), callback);
+};
+function sameOrigin(url) {
+    var a = window.document.createElement('a');
+    a.href = url;
+    return a.protocol === window.document.location.protocol && a.host === window.document.location.host;
+}
+var transparentPngUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=';
+function arrayBufferToImage(data, callback, cacheControl, expires) {
+    var img = new Image();
+    img.onload = function () {
+        callback(null, img);
+        URL.revokeObjectURL(img.src);
+        img.onload = null;
+        window.requestAnimationFrame(function () {
+            img.src = transparentPngUrl;
+        });
+    };
+    img.onerror = function () {
+        return callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
+    };
+    var blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
+    img.cacheControl = cacheControl;
+    img.expires = expires;
+    img.src = data.byteLength ? URL.createObjectURL(blob) : transparentPngUrl;
+}
+function arrayBufferToImageBitmap(data, callback) {
+    var blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
+    createImageBitmap(blob).then(function (imgBitmap) {
+        callback(null, imgBitmap);
+    }).catch(function (e) {
+        callback(new Error('Could not load image because of '.concat(e.message, '. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.')));
+    });
+}
+function arrayBufferToCanvasImageSource(data, callback, cacheControl, expires) {
+    var imageBitmapSupported = typeof createImageBitmap === 'function';
+    if (imageBitmapSupported) {
+        arrayBufferToImageBitmap(data, callback);
+    } else {
+        arrayBufferToImage(data, callback, cacheControl, expires);
+    }
+}
+var imageQueue, numImageRequests;
+var resetImageRequestQueue = function () {
+    imageQueue = [];
+    numImageRequests = 0;
+};
+resetImageRequestQueue();
+var getImage = function (requestParameters, callback) {
+    if (exported.supported) {
+        if (!requestParameters.headers) {
+            requestParameters.headers = {};
+        }
+        requestParameters.headers.accept = 'image/webp,*/*';
+    }
+    if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
+        var queued = {
+            requestParameters: requestParameters,
+            callback: callback,
+            cancelled: false,
+            cancel: function () {
+                this.cancelled = true;
+            }
+        };
+        imageQueue.push(queued);
+        return queued;
+    }
+    numImageRequests++;
+    var advanced = false;
+    var advanceImageRequestQueue = function () {
+        if (advanced) {
+            return;
+        }
+        advanced = true;
+        numImageRequests--;
+        while (imageQueue.length && numImageRequests < config.MAX_PARALLEL_IMAGE_REQUESTS) {
+            var request_1 = imageQueue.shift();
+            var requestParameters_1 = request_1.requestParameters, callback_1 = request_1.callback, cancelled = request_1.cancelled;
+            if (!cancelled) {
+                request_1.cancel = getImage(requestParameters_1, callback_1).cancel;
+            }
+        }
+    };
+    var request = getArrayBuffer(requestParameters, function (err, data, cacheControl, expires) {
+        advanceImageRequestQueue();
+        if (err) {
+            callback(err);
+        } else if (data) {
+            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
+        }
+    });
+    return {
+        cancel: function () {
+            request.cancel();
+            advanceImageRequestQueue();
+        }
+    };
+};
+var getVideo = function (urls, callback) {
+    var video = window.document.createElement('video');
+    video.muted = true;
+    video.onloadstart = function () {
+        callback(null, video);
+    };
+    for (var i = 0; i < urls.length; i++) {
+        var s = window.document.createElement('source');
+        if (!sameOrigin(urls[i])) {
+            video.crossOrigin = 'Anonymous';
+        }
+        s.src = urls[i];
+        video.appendChild(s);
+    }
+    return {
+        cancel: function () {
+        }
+    };
+};
+
+var __extends$h = undefined && undefined.__extends || function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
+            d.__proto__ = b;
+        } || function (d, b) {
+            for (var p in b) {
+                if (Object.prototype.hasOwnProperty.call(b, p)) {
+                    d[p] = b[p];
+                }
+            }
+        };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== 'function' && b !== null) {
+            throw new TypeError('Class extends value ' + String(b) + ' is not a constructor or null');
+        }
+        extendStatics(d, b);
+        function __() {
+            this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+}();
+function _addEventListener(type, listener, listenerList) {
+    var listenerExists = listenerList[type] && listenerList[type].indexOf(listener) !== -1;
+    if (!listenerExists) {
+        listenerList[type] = listenerList[type] || [];
+        listenerList[type].push(listener);
+    }
+}
+function _removeEventListener(type, listener, listenerList) {
+    if (listenerList && listenerList[type]) {
+        var index = listenerList[type].indexOf(listener);
+        if (index !== -1) {
+            listenerList[type].splice(index, 1);
+        }
+    }
+}
+var Event$1 = function () {
+    function Event(type, data) {
+        if (data === void 0) {
+            data = {};
+        }
+        extend$1(this, data);
+        this.type = type;
+    }
+    return Event;
+}();
+var ErrorEvent = function (_super) {
+    __extends$h(ErrorEvent, _super);
+    function ErrorEvent(error, data) {
+        if (data === void 0) {
+            data = {};
+        }
+        return _super.call(this, 'error', extend$1({ error: error }, data)) || this;
+    }
+    return ErrorEvent;
+}(Event$1);
+var Evented = function () {
+    function Evented() {
+    }
+    Evented.prototype.on = function (type, listener) {
+        this._listeners = this._listeners || {};
+        _addEventListener(type, listener, this._listeners);
+        return this;
+    };
+    Evented.prototype.off = function (type, listener) {
+        _removeEventListener(type, listener, this._listeners);
+        _removeEventListener(type, listener, this._oneTimeListeners);
+        return this;
+    };
+    Evented.prototype.once = function (type, listener) {
+        this._oneTimeListeners = this._oneTimeListeners || {};
+        _addEventListener(type, listener, this._oneTimeListeners);
+        return this;
+    };
+    Evented.prototype.fire = function (event, properties) {
+        if (typeof event === 'string') {
+            event = new Event$1(event, properties || {});
+        }
+        var type = event.type;
+        if (this.listens(type)) {
+            event.target = this;
+            var listeners = this._listeners && this._listeners[type] ? this._listeners[type].slice() : [];
+            for (var _i = 0, listeners_1 = listeners; _i < listeners_1.length; _i++) {
+                var listener = listeners_1[_i];
+                listener.call(this, event);
+            }
+            var oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
+            for (var _a = 0, oneTimeListeners_1 = oneTimeListeners; _a < oneTimeListeners_1.length; _a++) {
+                var listener = oneTimeListeners_1[_a];
+                _removeEventListener(type, listener, this._oneTimeListeners);
+                listener.call(this, event);
+            }
+            var parent_1 = this._eventedParent;
+            if (parent_1) {
+                extend$1(event, typeof this._eventedParentData === 'function' ? this._eventedParentData() : this._eventedParentData);
+                parent_1.fire(event);
+            }
+        } else if (event instanceof ErrorEvent) {
+            console.error(event.error);
+        }
+        return this;
+    };
+    Evented.prototype.listens = function (type) {
+        return this._listeners && this._listeners[type] && this._listeners[type].length > 0 || this._oneTimeListeners && this._oneTimeListeners[type] && this._oneTimeListeners[type].length > 0 || this._eventedParent && this._eventedParent.listens(type);
+    };
+    Evented.prototype.setEventedParent = function (parent, data) {
+        this._eventedParent = parent;
+        this._eventedParentData = data;
+        return this;
+    };
+    return Evented;
+}();
+
+var $version = 8;
+var $root = {
+    version: {
+        required: true,
+        type: 'enum',
+        values: [8]
+    },
+    name: { type: 'string' },
+    metadata: { type: '*' },
+    center: {
+        type: 'array',
+        value: 'number'
+    },
+    zoom: { type: 'number' },
+    bearing: {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees'
+    },
+    pitch: {
+        type: 'number',
+        'default': 0,
+        units: 'degrees'
+    },
+    light: { type: 'light' },
+    sources: {
+        required: true,
+        type: 'sources'
+    },
+    sprite: { type: 'string' },
+    glyphs: { type: 'string' },
+    transition: { type: 'transition' },
+    layers: {
+        required: true,
+        type: 'array',
+        value: 'layer'
+    }
+};
+var sources = { '*': { type: 'source' } };
+var source = [
+    'source_vector',
+    'source_raster',
+    'source_raster_dem',
+    'source_geojson',
+    'source_video',
+    'source_image'
+];
+var source_vector = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { vector: {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    scheme: {
+        type: 'enum',
+        values: {
+            xyz: {},
+            tms: {}
+        },
+        'default': 'xyz'
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    attribution: { type: 'string' },
+    promoteId: { type: 'promoteId' },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
+};
+var source_raster = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { raster: {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    tileSize: {
+        type: 'number',
+        'default': 512,
+        units: 'pixels'
+    },
+    scheme: {
+        type: 'enum',
+        values: {
+            xyz: {},
+            tms: {}
+        },
+        'default': 'xyz'
+    },
+    attribution: { type: 'string' },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
+};
+var source_raster_dem = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { 'raster-dem': {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    tileSize: {
+        type: 'number',
+        'default': 512,
+        units: 'pixels'
+    },
+    attribution: { type: 'string' },
+    encoding: {
+        type: 'enum',
+        values: {
+            terrarium: {},
+            mapbox: {}
+        },
+        'default': 'mapbox'
+    },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
+};
+var source_geojson = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { geojson: {} }
+    },
+    data: { type: '*' },
+    maxzoom: {
+        type: 'number',
+        'default': 18
+    },
+    attribution: { type: 'string' },
+    buffer: {
+        type: 'number',
+        'default': 128,
+        maximum: 512,
+        minimum: 0
+    },
+    filter: { type: '*' },
+    tolerance: {
+        type: 'number',
+        'default': 0.375
+    },
+    cluster: {
+        type: 'boolean',
+        'default': false
+    },
+    clusterRadius: {
+        type: 'number',
+        'default': 50,
+        minimum: 0
+    },
+    clusterMaxZoom: { type: 'number' },
+    clusterMinPoints: { type: 'number' },
+    clusterProperties: { type: '*' },
+    lineMetrics: {
+        type: 'boolean',
+        'default': false
+    },
+    generateId: {
+        type: 'boolean',
+        'default': false
+    },
+    promoteId: { type: 'promoteId' }
+};
+var source_video = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { video: {} }
+    },
+    urls: {
+        required: true,
+        type: 'array',
+        value: 'string'
+    },
+    coordinates: {
+        required: true,
+        type: 'array',
+        length: 4,
+        value: {
+            type: 'array',
+            length: 2,
+            value: 'number'
+        }
+    }
+};
+var source_image = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { image: {} }
+    },
+    url: {
+        required: true,
+        type: 'string'
+    },
+    coordinates: {
+        required: true,
+        type: 'array',
+        length: 4,
+        value: {
+            type: 'array',
+            length: 2,
+            value: 'number'
+        }
+    }
+};
+var layer = {
+    id: {
+        type: 'string',
+        required: true
+    },
+    type: {
+        type: 'enum',
+        values: {
+            fill: {},
+            line: {},
+            symbol: {},
+            circle: {},
+            heatmap: {},
+            'fill-extrusion': {},
+            raster: {},
+            hillshade: {},
+            background: {}
+        },
+        required: true
+    },
+    metadata: { type: '*' },
+    source: { type: 'string' },
+    'source-layer': { type: 'string' },
+    minzoom: {
+        type: 'number',
+        minimum: 0,
+        maximum: 24
+    },
+    maxzoom: {
+        type: 'number',
+        minimum: 0,
+        maximum: 24
+    },
+    filter: { type: 'filter' },
+    layout: { type: 'layout' },
+    paint: { type: 'paint' }
+};
+var layout$7 = [
+    'layout_fill',
+    'layout_line',
+    'layout_circle',
+    'layout_heatmap',
+    'layout_fill-extrusion',
+    'layout_symbol',
+    'layout_raster',
+    'layout_hillshade',
+    'layout_background'
+];
+var layout_background = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_fill = {
+    'fill-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_circle = {
+    'circle-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_heatmap = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_line = {
+    'line-cap': {
+        type: 'enum',
+        values: {
+            butt: {},
+            round: {},
+            square: {}
+        },
+        'default': 'butt',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-join': {
+        type: 'enum',
+        values: {
+            bevel: {},
+            round: {},
+            miter: {}
+        },
+        'default': 'miter',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-miter-limit': {
+        type: 'number',
+        'default': 2,
+        requires: [{ 'line-join': 'miter' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-round-limit': {
+        type: 'number',
+        'default': 1.05,
+        requires: [{ 'line-join': 'round' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_symbol = {
+    'symbol-placement': {
+        type: 'enum',
+        values: {
+            point: {},
+            line: {},
+            'line-center': {}
+        },
+        'default': 'point',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-spacing': {
+        type: 'number',
+        'default': 250,
+        minimum: 1,
+        units: 'pixels',
+        requires: [{ 'symbol-placement': 'line' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-avoid-edges': {
+        type: 'boolean',
+        'default': false,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'symbol-z-order': {
+        type: 'enum',
+        values: {
+            auto: {},
+            'viewport-y': {},
+            source: {}
+        },
+        'default': 'auto',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-allow-overlap': {
+        type: 'boolean',
+        'default': false,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-ignore-placement': {
+        type: 'boolean',
+        'default': false,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-optional': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'icon-image',
+            'text-field'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-rotation-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-size': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        units: 'factor of the original icon size',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-text-fit': {
+        type: 'enum',
+        values: {
+            none: {},
+            width: {},
+            height: {},
+            both: {}
+        },
+        'default': 'none',
+        requires: [
+            'icon-image',
+            'text-field'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-text-fit-padding': {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            0,
+            0,
+            0,
+            0
+        ],
+        units: 'pixels',
+        requires: [
+            'icon-image',
+            'text-field',
+            {
+                'icon-text-fit': [
+                    'both',
+                    'width',
+                    'height'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-image': {
+        type: 'resolvedImage',
+        tokens: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-padding': {
+        type: 'number',
+        'default': 2,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-keep-upright': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'icon-image',
+            { 'icon-rotation-alignment': 'map' },
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-offset': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-anchor': {
+        type: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        'default': 'center',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-rotation-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-field': {
+        type: 'formatted',
+        'default': '',
+        tokens: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-font': {
+        type: 'array',
+        value: 'string',
+        'default': [
+            'Open Sans Regular',
+            'Arial Unicode MS Regular'
+        ],
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-size': {
+        type: 'number',
+        'default': 16,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-max-width': {
+        type: 'number',
+        'default': 10,
+        minimum: 0,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-line-height': {
+        type: 'number',
+        'default': 1.2,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-letter-spacing': {
+        type: 'number',
+        'default': 0,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-justify': {
+        type: 'enum',
+        values: {
+            auto: {},
+            left: {},
+            center: {},
+            right: {}
+        },
+        'default': 'center',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-radial-offset': {
+        type: 'number',
+        units: 'ems',
+        'default': 0,
+        requires: ['text-field'],
+        'property-type': 'data-driven',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        }
+    },
+    'text-variable-anchor': {
+        type: 'array',
+        value: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        requires: [
+            'text-field',
+            { 'symbol-placement': ['point'] }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-anchor': {
+        type: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        'default': 'center',
+        requires: [
+            'text-field',
+            { '!': 'text-variable-anchor' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-max-angle': {
+        type: 'number',
+        'default': 45,
+        units: 'degrees',
+        requires: [
+            'text-field',
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-writing-mode': {
+        type: 'array',
+        value: 'enum',
+        values: {
+            horizontal: {},
+            vertical: {}
+        },
+        requires: [
+            'text-field',
+            { 'symbol-placement': ['point'] }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-padding': {
+        type: 'number',
+        'default': 2,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-keep-upright': {
+        type: 'boolean',
+        'default': true,
+        requires: [
+            'text-field',
+            { 'text-rotation-alignment': 'map' },
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-transform': {
+        type: 'enum',
+        values: {
+            none: {},
+            uppercase: {},
+            lowercase: {}
+        },
+        'default': 'none',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-offset': {
+        type: 'array',
+        value: 'number',
+        units: 'ems',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        requires: [
+            'text-field',
+            { '!': 'text-radial-offset' }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-allow-overlap': {
+        type: 'boolean',
+        'default': false,
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-ignore-placement': {
+        type: 'boolean',
+        'default': false,
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-optional': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'text-field',
+            'icon-image'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_raster = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_hillshade = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var filter = {
+    type: 'array',
+    value: '*'
+};
+var filter_operator = {
+    type: 'enum',
+    values: {
+        '==': {},
+        '!=': {},
+        '>': {},
+        '>=': {},
+        '<': {},
+        '<=': {},
+        'in': {},
+        '!in': {},
+        all: {},
+        any: {},
+        none: {},
+        has: {},
+        '!has': {},
+        within: {}
+    }
+};
+var geometry_type = {
+    type: 'enum',
+    values: {
+        Point: {},
+        LineString: {},
+        Polygon: {}
+    }
+};
+var function_stop = {
+    type: 'array',
+    minimum: 0,
+    maximum: 24,
+    value: [
+        'number',
+        'color'
+    ],
+    length: 2
+};
+var expression = {
+    type: 'array',
+    value: '*',
+    minimum: 1
+};
+var light = {
+    anchor: {
+        type: 'enum',
+        'default': 'viewport',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'property-type': 'data-constant',
+        transition: false,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        }
+    },
+    position: {
+        type: 'array',
+        'default': [
+            1.15,
+            210,
+            30
+        ],
+        length: 3,
+        value: 'number',
+        'property-type': 'data-constant',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        }
+    },
+    color: {
+        type: 'color',
+        'property-type': 'data-constant',
+        'default': '#ffffff',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        transition: true
+    },
+    intensity: {
+        type: 'number',
+        'property-type': 'data-constant',
+        'default': 0.5,
+        minimum: 0,
+        maximum: 1,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        transition: true
+    }
+};
+var paint$9 = [
+    'paint_fill',
+    'paint_line',
+    'paint_circle',
+    'paint_heatmap',
+    'paint_fill-extrusion',
+    'paint_symbol',
+    'paint_raster',
+    'paint_hillshade',
+    'paint_background'
+];
+var paint_fill = {
+    'fill-antialias': {
+        type: 'boolean',
+        'default': true,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'fill-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-outline-color': {
+        type: 'color',
+        transition: true,
+        requires: [
+            { '!': 'fill-pattern' },
+            { 'fill-antialias': true }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['fill-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'cross-faded-data-driven'
+    }
+};
+var paint_line = {
+    'line-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'line-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['line-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-width': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-gap-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-offset': {
+        type: 'number',
+        'default': 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-dasharray': {
+        type: 'array',
+        value: 'number',
+        minimum: 0,
+        transition: true,
+        units: 'line widths',
+        requires: [{ '!': 'line-pattern' }],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'cross-faded'
+    },
+    'line-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'cross-faded-data-driven'
+    },
+    'line-gradient': {
+        type: 'color',
+        transition: false,
+        requires: [
+            { '!': 'line-dasharray' },
+            { '!': 'line-pattern' },
+            {
+                source: 'geojson',
+                has: { lineMetrics: true }
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['line-progress']
+        },
+        'property-type': 'color-ramp'
+    }
+};
+var paint_circle = {
+    'circle-radius': {
+        type: 'number',
+        'default': 5,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-blur': {
+        type: 'number',
+        'default': 0,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['circle-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-pitch-scale': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'viewport',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-stroke-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-stroke-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-stroke-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    }
+};
+var paint_heatmap = {
+    'heatmap-radius': {
+        type: 'number',
+        'default': 30,
+        minimum: 1,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'heatmap-weight': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'heatmap-intensity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'heatmap-color': {
+        type: 'color',
+        'default': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(0, 0, 255, 0)',
+            0.1,
+            'royalblue',
+            0.3,
+            'cyan',
+            0.5,
+            'lime',
+            0.7,
+            'yellow',
+            1,
+            'red'
+        ],
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: ['heatmap-density']
+        },
+        'property-type': 'color-ramp'
+    },
+    'heatmap-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_symbol = {
+    'icon-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-color': {
+        type: 'color',
+        'default': 'rgba(0, 0, 0, 0)',
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: [
+            'icon-image',
+            'icon-translate'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        overridable: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-color': {
+        type: 'color',
+        'default': 'rgba(0, 0, 0, 0)',
+        transition: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: [
+            'text-field',
+            'text-translate'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_raster = {
+    'raster-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-hue-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        transition: true,
+        units: 'degrees',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-brightness-min': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-brightness-max': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-saturation': {
+        type: 'number',
+        'default': 0,
+        minimum: -1,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-contrast': {
+        type: 'number',
+        'default': 0,
+        minimum: -1,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-resampling': {
+        type: 'enum',
+        values: {
+            linear: {},
+            nearest: {}
+        },
+        'default': 'linear',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-fade-duration': {
+        type: 'number',
+        'default': 300,
+        minimum: 0,
+        transition: false,
+        units: 'milliseconds',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_hillshade = {
+    'hillshade-illumination-direction': {
+        type: 'number',
+        'default': 335,
+        minimum: 0,
+        maximum: 359,
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-illumination-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'viewport',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-exaggeration': {
+        type: 'number',
+        'default': 0.5,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-shadow-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-highlight-color': {
+        type: 'color',
+        'default': '#FFFFFF',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-accent-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_background = {
+    'background-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'background-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'background-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'cross-faded'
+    },
+    'background-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var transition = {
+    duration: {
+        type: 'number',
+        'default': 300,
+        minimum: 0,
+        units: 'milliseconds'
+    },
+    delay: {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        units: 'milliseconds'
+    }
+};
+var promoteId = { '*': { type: 'string' } };
+var spec = {
+    $version: $version,
+    $root: $root,
+    sources: sources,
+    source: source,
+    source_vector: source_vector,
+    source_raster: source_raster,
+    source_raster_dem: source_raster_dem,
+    source_geojson: source_geojson,
+    source_video: source_video,
+    source_image: source_image,
+    layer: layer,
+    layout: layout$7,
+    layout_background: layout_background,
+    layout_fill: layout_fill,
+    layout_circle: layout_circle,
+    layout_heatmap: layout_heatmap,
+    'layout_fill-extrusion': {
+        visibility: {
+            type: 'enum',
+            values: {
+                visible: {},
+                none: {}
+            },
+            'default': 'visible',
+            'property-type': 'constant'
+        }
+    },
+    layout_line: layout_line,
+    layout_symbol: layout_symbol,
+    layout_raster: layout_raster,
+    layout_hillshade: layout_hillshade,
+    filter: filter,
+    filter_operator: filter_operator,
+    geometry_type: geometry_type,
+    'function': {
+        expression: { type: 'expression' },
+        stops: {
+            type: 'array',
+            value: 'function_stop'
+        },
+        base: {
+            type: 'number',
+            'default': 1,
+            minimum: 0
+        },
+        property: {
+            type: 'string',
+            'default': '$zoom'
+        },
+        type: {
+            type: 'enum',
+            values: {
+                identity: {},
+                exponential: {},
+                interval: {},
+                categorical: {}
+            },
+            'default': 'exponential'
+        },
+        colorSpace: {
+            type: 'enum',
+            values: {
+                rgb: {},
+                lab: {},
+                hcl: {}
+            },
+            'default': 'rgb'
+        },
+        'default': {
+            type: '*',
+            required: false
+        }
+    },
+    function_stop: function_stop,
+    expression: expression,
+    light: light,
+    paint: paint$9,
+    paint_fill: paint_fill,
+    'paint_fill-extrusion': {
+        'fill-extrusion-opacity': {
+            type: 'number',
+            'default': 1,
+            minimum: 0,
+            maximum: 1,
+            transition: true,
+            expression: {
+                interpolated: true,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-color': {
+            type: 'color',
+            'default': '#000000',
+            transition: true,
+            requires: [{ '!': 'fill-extrusion-pattern' }],
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-translate': {
+            type: 'array',
+            value: 'number',
+            length: 2,
+            'default': [
+                0,
+                0
+            ],
+            transition: true,
+            units: 'pixels',
+            expression: {
+                interpolated: true,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-translate-anchor': {
+            type: 'enum',
+            values: {
+                map: {},
+                viewport: {}
+            },
+            'default': 'map',
+            requires: ['fill-extrusion-translate'],
+            expression: {
+                interpolated: false,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-pattern': {
+            type: 'resolvedImage',
+            transition: true,
+            expression: {
+                interpolated: false,
+                parameters: [
+                    'zoom',
+                    'feature'
+                ]
+            },
+            'property-type': 'cross-faded-data-driven'
+        },
+        'fill-extrusion-height': {
+            type: 'number',
+            'default': 0,
+            minimum: 0,
+            units: 'meters',
+            transition: true,
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-base': {
+            type: 'number',
+            'default': 0,
+            minimum: 0,
+            units: 'meters',
+            transition: true,
+            requires: ['fill-extrusion-height'],
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-vertical-gradient': {
+            type: 'boolean',
+            'default': true,
+            transition: false,
+            expression: {
+                interpolated: false,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        }
+    },
+    paint_line: paint_line,
+    paint_circle: paint_circle,
+    paint_heatmap: paint_heatmap,
+    paint_symbol: paint_symbol,
+    paint_raster: paint_raster,
+    paint_hillshade: paint_hillshade,
+    paint_background: paint_background,
+    transition: transition,
+    'property-type': {
+        'data-driven': { type: 'property-type' },
+        'cross-faded': { type: 'property-type' },
+        'cross-faded-data-driven': { type: 'property-type' },
+        'color-ramp': { type: 'property-type' },
+        'data-constant': { type: 'property-type' },
+        constant: { type: 'property-type' }
+    },
+    promoteId: promoteId
+};
+
+var ValidationError = function () {
+    function ValidationError(key, value, message, identifier) {
+        this.message = (key ? ''.concat(key, ': ') : '') + message;
+        if (identifier) {
+            this.identifier = identifier;
+        }
+        if (value !== null && value !== undefined && value.__line__) {
+            this.line = value.__line__;
+        }
+    }
+    return ValidationError;
+}();
+
+function validateConstants(options) {
+    var key = options.key;
+    var constants = options.value;
+    if (constants) {
+        return [new ValidationError(key, constants, 'constants have been deprecated as of v8')];
+    } else {
+        return [];
+    }
+}
+
+function extend (output) {
+    var arguments$1 = arguments;
+    var inputs = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        inputs[_i - 1] = arguments$1[_i];
+    }
+    for (var _a = 0, inputs_1 = inputs; _a < inputs_1.length; _a++) {
+        var input = inputs_1[_a];
+        for (var k in input) {
+            output[k] = input[k];
+        }
+    }
+    return output;
+}
+
+function unbundle(value) {
+    if (value instanceof Number || value instanceof String || value instanceof Boolean) {
+        return value.valueOf();
+    } else {
+        return value;
+    }
+}
+function deepUnbundle(value) {
+    if (Array.isArray(value)) {
+        return value.map(deepUnbundle);
+    } else if (value instanceof Object && !(value instanceof Number || value instanceof String || value instanceof Boolean)) {
+        var unbundledValue = {};
+        for (var key in value) {
+            unbundledValue[key] = deepUnbundle(value[key]);
+        }
+        return unbundledValue;
+    }
+    return unbundle(value);
+}
+
+var __extends$g = undefined && undefined.__extends || function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
+            d.__proto__ = b;
+        } || function (d, b) {
+            for (var p in b) {
+                if (Object.prototype.hasOwnProperty.call(b, p)) {
+                    d[p] = b[p];
+                }
+            }
+        };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== 'function' && b !== null) {
+            throw new TypeError('Class extends value ' + String(b) + ' is not a constructor or null');
+        }
+        extendStatics(d, b);
+        function __() {
+            this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+}();
+var ParsingError = function (_super) {
+    __extends$g(ParsingError, _super);
+    function ParsingError(key, message) {
+        var _this = _super.call(this, message) || this;
+        _this.message = message;
+        _this.key = key;
+        return _this;
+    }
+    return ParsingError;
+}(Error);
+
+var Scope = function () {
+    function Scope(parent, bindings) {
+        if (bindings === void 0) {
+            bindings = [];
+        }
+        this.parent = parent;
+        this.bindings = {};
+        for (var _i = 0, bindings_1 = bindings; _i < bindings_1.length; _i++) {
+            var _a = bindings_1[_i], name_1 = _a[0], expression = _a[1];
+            this.bindings[name_1] = expression;
+        }
+    }
+    Scope.prototype.concat = function (bindings) {
+        return new Scope(this, bindings);
+    };
+    Scope.prototype.get = function (name) {
+        if (this.bindings[name]) {
+            return this.bindings[name];
+        }
+        if (this.parent) {
+            return this.parent.get(name);
+        }
+        throw new Error(''.concat(name, ' not found in scope.'));
+    };
+    Scope.prototype.has = function (name) {
+        if (this.bindings[name]) {
+            return true;
+        }
+        return this.parent ? this.parent.has(name) : false;
+    };
+    return Scope;
+}();
+
+var NullType = { kind: 'null' };
+var NumberType = { kind: 'number' };
+var StringType = { kind: 'string' };
+var BooleanType = { kind: 'boolean' };
+var ColorType = { kind: 'color' };
+var ObjectType = { kind: 'object' };
+var ValueType = { kind: 'value' };
+var ErrorType = { kind: 'error' };
+var CollatorType = { kind: 'collator' };
+var FormattedType = { kind: 'formatted' };
+var ResolvedImageType = { kind: 'resolvedImage' };
+function array$1(itemType, N) {
+    return {
+        kind: 'array',
+        itemType: itemType,
+        N: N
+    };
+}
+function toString$1(type) {
+    if (type.kind === 'array') {
+        var itemType = toString$1(type.itemType);
+        return typeof type.N === 'number' ? 'array<'.concat(itemType, ', ').concat(type.N, '>') : type.itemType.kind === 'value' ? 'array' : 'array<'.concat(itemType, '>');
+    } else {
+        return type.kind;
+    }
+}
+var valueMemberTypes = [
+    NullType,
+    NumberType,
+    StringType,
+    BooleanType,
+    ColorType,
+    FormattedType,
+    ObjectType,
+    array$1(ValueType),
+    ResolvedImageType
+];
+function checkSubtype(expected, t) {
+    if (t.kind === 'error') {
+        return null;
+    } else if (expected.kind === 'array') {
+        if (t.kind === 'array' && (t.N === 0 && t.itemType.kind === 'value' || !checkSubtype(expected.itemType, t.itemType)) && (typeof expected.N !== 'number' || expected.N === t.N)) {
+            return null;
+        }
+    } else if (expected.kind === t.kind) {
+        return null;
+    } else if (expected.kind === 'value') {
+        for (var _i = 0, valueMemberTypes_1 = valueMemberTypes; _i < valueMemberTypes_1.length; _i++) {
+            var memberType = valueMemberTypes_1[_i];
+            if (!checkSubtype(memberType, t)) {
+                return null;
+            }
+        }
+    }
+    return 'Expected '.concat(toString$1(expected), ' but found ').concat(toString$1(t), ' instead.');
+}
+function isValidType(provided, allowedTypes) {
+    return allowedTypes.some(function (t) {
+        return t.kind === provided.kind;
+    });
+}
+function isValidNativeType(provided, allowedTypes) {
+    return allowedTypes.some(function (t) {
+        if (t === 'null') {
+            return provided === null;
+        } else if (t === 'array') {
+            return Array.isArray(provided);
+        } else if (t === 'object') {
+            return provided && !Array.isArray(provided) && typeof provided === 'object';
+        } else {
+            return t === typeof provided;
+        }
+    });
+}
 
 var csscolorparser = {};
 
@@ -1550,164 +5484,6 @@ Color.black = new Color(0, 0, 0, 1);
 Color.white = new Color(1, 1, 1, 1);
 Color.transparent = new Color(0, 0, 0, 0);
 Color.red = new Color(1, 0, 0, 1);
-
-function extend (output) {
-    var arguments$1 = arguments;
-    var inputs = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        inputs[_i - 1] = arguments$1[_i];
-    }
-    for (var _a = 0, inputs_1 = inputs; _a < inputs_1.length; _a++) {
-        var input = inputs_1[_a];
-        for (var k in input) {
-            output[k] = input[k];
-        }
-    }
-    return output;
-}
-
-var __extends$i = undefined && undefined.__extends || function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
-            d.__proto__ = b;
-        } || function (d, b) {
-            for (var p in b) {
-                if (Object.prototype.hasOwnProperty.call(b, p)) {
-                    d[p] = b[p];
-                }
-            }
-        };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== 'function' && b !== null) {
-            throw new TypeError('Class extends value ' + String(b) + ' is not a constructor or null');
-        }
-        extendStatics(d, b);
-        function __() {
-            this.constructor = d;
-        }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-}();
-var ParsingError = function (_super) {
-    __extends$i(ParsingError, _super);
-    function ParsingError(key, message) {
-        var _this = _super.call(this, message) || this;
-        _this.message = message;
-        _this.key = key;
-        return _this;
-    }
-    return ParsingError;
-}(Error);
-
-var Scope = function () {
-    function Scope(parent, bindings) {
-        if (bindings === void 0) {
-            bindings = [];
-        }
-        this.parent = parent;
-        this.bindings = {};
-        for (var _i = 0, bindings_1 = bindings; _i < bindings_1.length; _i++) {
-            var _a = bindings_1[_i], name_1 = _a[0], expression = _a[1];
-            this.bindings[name_1] = expression;
-        }
-    }
-    Scope.prototype.concat = function (bindings) {
-        return new Scope(this, bindings);
-    };
-    Scope.prototype.get = function (name) {
-        if (this.bindings[name]) {
-            return this.bindings[name];
-        }
-        if (this.parent) {
-            return this.parent.get(name);
-        }
-        throw new Error(''.concat(name, ' not found in scope.'));
-    };
-    Scope.prototype.has = function (name) {
-        if (this.bindings[name]) {
-            return true;
-        }
-        return this.parent ? this.parent.has(name) : false;
-    };
-    return Scope;
-}();
-
-var NullType = { kind: 'null' };
-var NumberType = { kind: 'number' };
-var StringType = { kind: 'string' };
-var BooleanType = { kind: 'boolean' };
-var ColorType = { kind: 'color' };
-var ObjectType = { kind: 'object' };
-var ValueType = { kind: 'value' };
-var ErrorType = { kind: 'error' };
-var CollatorType = { kind: 'collator' };
-var FormattedType = { kind: 'formatted' };
-var ResolvedImageType = { kind: 'resolvedImage' };
-function array$1(itemType, N) {
-    return {
-        kind: 'array',
-        itemType: itemType,
-        N: N
-    };
-}
-function toString$1(type) {
-    if (type.kind === 'array') {
-        var itemType = toString$1(type.itemType);
-        return typeof type.N === 'number' ? 'array<'.concat(itemType, ', ').concat(type.N, '>') : type.itemType.kind === 'value' ? 'array' : 'array<'.concat(itemType, '>');
-    } else {
-        return type.kind;
-    }
-}
-var valueMemberTypes = [
-    NullType,
-    NumberType,
-    StringType,
-    BooleanType,
-    ColorType,
-    FormattedType,
-    ObjectType,
-    array$1(ValueType),
-    ResolvedImageType
-];
-function checkSubtype(expected, t) {
-    if (t.kind === 'error') {
-        return null;
-    } else if (expected.kind === 'array') {
-        if (t.kind === 'array' && (t.N === 0 && t.itemType.kind === 'value' || !checkSubtype(expected.itemType, t.itemType)) && (typeof expected.N !== 'number' || expected.N === t.N)) {
-            return null;
-        }
-    } else if (expected.kind === t.kind) {
-        return null;
-    } else if (expected.kind === 'value') {
-        for (var _i = 0, valueMemberTypes_1 = valueMemberTypes; _i < valueMemberTypes_1.length; _i++) {
-            var memberType = valueMemberTypes_1[_i];
-            if (!checkSubtype(memberType, t)) {
-                return null;
-            }
-        }
-    }
-    return 'Expected '.concat(toString$1(expected), ' but found ').concat(toString$1(t), ' instead.');
-}
-function isValidType(provided, allowedTypes) {
-    return allowedTypes.some(function (t) {
-        return t.kind === provided.kind;
-    });
-}
-function isValidNativeType(provided, allowedTypes) {
-    return allowedTypes.some(function (t) {
-        if (t === 'null') {
-            return provided === null;
-        } else if (t === 'array') {
-            return Array.isArray(provided);
-        } else if (t === 'object') {
-            return provided && !Array.isArray(provided) && typeof provided === 'object';
-        } else {
-            return t === typeof provided;
-        }
-    });
-}
 
 var Collator = function () {
     function Collator(caseSensitive, diacriticSensitive, locale) {
@@ -5669,4076 +9445,6 @@ function getDefaultValue(spec) {
     }
 }
 
-var registry = {};
-function register(name, klass, options) {
-    if (options === void 0) {
-        options = {};
-    }
-    Object.defineProperty(klass, '_classRegistryKey', {
-        value: name,
-        writeable: false
-    });
-    registry[name] = {
-        klass: klass,
-        omit: options.omit || [],
-        shallow: options.shallow || []
-    };
-}
-register('Object', Object);
-gridIndex.serialize = function serialize(grid, transferables) {
-    var buffer = grid.toArrayBuffer();
-    if (transferables) {
-        transferables.push(buffer);
-    }
-    return { buffer: buffer };
-};
-gridIndex.deserialize = function deserialize(serialized) {
-    return new gridIndex(serialized.buffer);
-};
-register('TransferableGridIndex', gridIndex);
-register('Color', Color);
-register('Error', Error);
-register('ResolvedImage', ResolvedImage);
-register('StylePropertyFunction', StylePropertyFunction);
-register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
-register('ZoomDependentExpression', ZoomDependentExpression);
-register('ZoomConstantExpression', ZoomConstantExpression);
-register('CompoundExpression', CompoundExpression, { omit: ['_evaluate'] });
-for (var name_1 in expressions) {
-    if (expressions[name_1]._classRegistryKey) {
-        continue;
-    }
-    register('Expression_'.concat(name_1), expressions[name_1]);
-}
-function isArrayBuffer(value) {
-    return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
-}
-function serialize(input, transferables) {
-    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
-        return input;
-    }
-    if (isArrayBuffer(input)) {
-        if (transferables) {
-            transferables.push(input);
-        }
-        return input;
-    }
-    if (isImageBitmap(input)) {
-        if (transferables) {
-            transferables.push(input);
-        }
-        return input;
-    }
-    if (ArrayBuffer.isView(input)) {
-        var view = input;
-        if (transferables) {
-            transferables.push(view.buffer);
-        }
-        return view;
-    }
-    if (input instanceof ImageData) {
-        if (transferables) {
-            transferables.push(input.data.buffer);
-        }
-        return input;
-    }
-    if (Array.isArray(input)) {
-        var serialized = [];
-        for (var _i = 0, input_1 = input; _i < input_1.length; _i++) {
-            var item = input_1[_i];
-            serialized.push(serialize(item, transferables));
-        }
-        return serialized;
-    }
-    if (typeof input === 'object') {
-        var klass = input.constructor;
-        var name_2 = klass._classRegistryKey;
-        if (!name_2) {
-            throw new Error('can\'t serialize object of unregistered class');
-        }
-        var properties = klass.serialize ? klass.serialize(input, transferables) : {};
-        if (!klass.serialize) {
-            for (var key in input) {
-                if (!input.hasOwnProperty(key)) {
-                    continue;
-                }
-                if (registry[name_2].omit.indexOf(key) >= 0) {
-                    continue;
-                }
-                var property = input[key];
-                properties[key] = registry[name_2].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
-            }
-            if (input instanceof Error) {
-                properties.message = input.message;
-            }
-        }
-        if (properties.$name) {
-            throw new Error('$name property is reserved for worker serialization logic.');
-        }
-        if (name_2 !== 'Object') {
-            properties.$name = name_2;
-        }
-        return properties;
-    }
-    throw new Error('can\'t serialize object of type '.concat(typeof input));
-}
-function deserialize(input) {
-    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
-        return input;
-    }
-    if (Array.isArray(input)) {
-        return input.map(deserialize);
-    }
-    if (typeof input === 'object') {
-        var name_3 = input.$name || 'Object';
-        if (!registry[name_3]) {
-            throw new Error('can\'t deserialize unregistered class '.concat(name_3));
-        }
-        var klass = registry[name_3].klass;
-        if (!klass) {
-            throw new Error('can\'t deserialize unregistered class '.concat(name_3));
-        }
-        if (klass.deserialize) {
-            return klass.deserialize(input);
-        }
-        var result = Object.create(klass.prototype);
-        for (var _i = 0, _a = Object.keys(input); _i < _a.length; _i++) {
-            var key = _a[_i];
-            if (key === '$name') {
-                continue;
-            }
-            var value = input[key];
-            result[key] = registry[name_3].shallow.indexOf(key) >= 0 ? value : deserialize(value);
-        }
-        return result;
-    }
-    throw new Error('can\'t deserialize object of type '.concat(typeof input));
-}
-
-var Point$2 = function () {
-    function Point(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-    Point.prototype.clone = function () {
-        return new Point(this.x, this.y);
-    };
-    Point.prototype.add = function (p) {
-        return this.clone()._add(p);
-    };
-    Point.prototype.sub = function (p) {
-        return this.clone()._sub(p);
-    };
-    Point.prototype.multByPoint = function (p) {
-        return this.clone()._multByPoint(p);
-    };
-    Point.prototype.divByPoint = function (p) {
-        return this.clone()._divByPoint(p);
-    };
-    Point.prototype.mult = function (k) {
-        return this.clone()._mult(k);
-    };
-    Point.prototype.div = function (k) {
-        return this.clone()._div(k);
-    };
-    Point.prototype.rotate = function (a) {
-        return this.clone()._rotate(a);
-    };
-    Point.prototype.rotateAround = function (a, p) {
-        return this.clone()._rotateAround(a, p);
-    };
-    Point.prototype.matMult = function (m) {
-        return this.clone()._matMult(m);
-    };
-    Point.prototype.unit = function () {
-        return this.clone()._unit();
-    };
-    Point.prototype.perp = function () {
-        return this.clone()._perp();
-    };
-    Point.prototype.round = function () {
-        return this.clone()._round();
-    };
-    Point.prototype.mag = function () {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    };
-    Point.prototype.equals = function (other) {
-        return this.x === other.x && this.y === other.y;
-    };
-    Point.prototype.dist = function (p) {
-        return Math.sqrt(this.distSqr(p));
-    };
-    Point.prototype.distSqr = function (p) {
-        var dx = p.x - this.x;
-        var dy = p.y - this.y;
-        return dx * dx + dy * dy;
-    };
-    Point.prototype.angle = function () {
-        return Math.atan2(this.y, this.x);
-    };
-    Point.prototype.angleTo = function (b) {
-        return Math.atan2(this.y - b.y, this.x - b.x);
-    };
-    Point.prototype.angleWith = function (b) {
-        return this.angleWithSep(b.x, b.y);
-    };
-    Point.prototype.angleWithSep = function (x, y) {
-        return Math.atan2(this.x * y - this.y * x, this.x * x + this.y * y);
-    };
-    Point.prototype._matMult = function (m) {
-        var x = m[0] * this.x + m[1] * this.y;
-        var y = m[2] * this.x + m[3] * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    };
-    Point.prototype._add = function (p) {
-        this.x += p.x;
-        this.y += p.y;
-        return this;
-    };
-    Point.prototype._sub = function (p) {
-        this.x -= p.x;
-        this.y -= p.y;
-        return this;
-    };
-    Point.prototype._mult = function (k) {
-        this.x *= k;
-        this.y *= k;
-        return this;
-    };
-    Point.prototype._div = function (k) {
-        this.x /= k;
-        this.y /= k;
-        return this;
-    };
-    Point.prototype._multByPoint = function (p) {
-        this.x *= p.x;
-        this.y *= p.y;
-        return this;
-    };
-    Point.prototype._divByPoint = function (p) {
-        this.x /= p.x;
-        this.y /= p.y;
-        return this;
-    };
-    Point.prototype._unit = function () {
-        this._div(this.mag());
-        return this;
-    };
-    Point.prototype._perp = function () {
-        var y = this.y;
-        this.y = this.x;
-        this.x = -y;
-        return this;
-    };
-    Point.prototype._rotate = function (angle) {
-        var cos = Math.cos(angle);
-        var sin = Math.sin(angle);
-        var x = cos * this.x - sin * this.y;
-        var y = sin * this.x + cos * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    };
-    Point.prototype._rotateAround = function (angle, p) {
-        var cos = Math.cos(angle);
-        var sin = Math.sin(angle);
-        var x = p.x + cos * (this.x - p.x) - sin * (this.y - p.y);
-        var y = p.y + sin * (this.x - p.x) + cos * (this.y - p.y);
-        this.x = x;
-        this.y = y;
-        return this;
-    };
-    Point.prototype._round = function () {
-        this.x = Math.round(this.x);
-        this.y = Math.round(this.y);
-        return this;
-    };
-    Point.convert = function (a) {
-        if (a instanceof Point) {
-            return a;
-        }
-        if (Array.isArray(a)) {
-            return new Point(a[0], a[1]);
-        }
-        if (typeof a.x === 'number') {
-            return new Point(a.x, a.y);
-        }
-        throw new Error('Unable to convert to point: '.concat(JSON.stringify(a)));
-    };
-    return Point;
-}();
-register('Point', Point$2);
-
-function finallyConstructor(callback) {
-    var constructor = this.constructor;
-    return this.then(function (value) {
-        return constructor.resolve(callback()).then(function () {
-            return value;
-        });
-    }, function (reason) {
-        return constructor.resolve(callback()).then(function () {
-            return constructor.reject(reason);
-        });
-    });
-}
-
-function allSettled(arr) {
-    var P = this;
-    return new P(function (resolve, reject) {
-        if (!(arr && typeof arr.length !== 'undefined')) {
-            return reject(new TypeError(typeof arr + ' ' + arr + ' is not iterable(cannot read property Symbol(Symbol.iterator))'));
-        }
-        var args = Array.prototype.slice.call(arr);
-        if (args.length === 0) {
-            return resolve([]);
-        }
-        var remaining = args.length;
-        function res(i, val) {
-            if (val && (typeof val === 'object' || typeof val === 'function')) {
-                var then = val.then;
-                if (typeof then === 'function') {
-                    then.call(val, function (val) {
-                        res(i, val);
-                    }, function (e) {
-                        args[i] = {
-                            status: 'rejected',
-                            reason: e
-                        };
-                        if (--remaining === 0) {
-                            resolve(args);
-                        }
-                    });
-                    return;
-                }
-            }
-            args[i] = {
-                status: 'fulfilled',
-                value: val
-            };
-            if (--remaining === 0) {
-                resolve(args);
-            }
-        }
-        for (var i = 0; i < args.length; i++) {
-            res(i, args[i]);
-        }
-    });
-}
-
-var setTimeoutFunc = setTimeout;
-var setImmediateFunc = typeof setImmediate !== 'undefined' ? setImmediate : null;
-function isArray(x) {
-    return Boolean(x && typeof x.length !== 'undefined');
-}
-function noop() {
-}
-function bind(fn, thisArg) {
-    return function () {
-        fn.apply(thisArg, arguments);
-    };
-}
-function Promise$1(fn) {
-    if (!(this instanceof Promise$1)) {
-        throw new TypeError('Promises must be constructed via new');
-    }
-    if (typeof fn !== 'function') {
-        throw new TypeError('not a function');
-    }
-    this._state = 0;
-    this._handled = false;
-    this._value = undefined;
-    this._deferreds = [];
-    doResolve(fn, this);
-}
-function handle(self, deferred) {
-    while (self._state === 3) {
-        self = self._value;
-    }
-    if (self._state === 0) {
-        self._deferreds.push(deferred);
-        return;
-    }
-    self._handled = true;
-    Promise$1._immediateFn(function () {
-        var cb = self._state === 1 ? deferred.onFulfilled : deferred.onRejected;
-        if (cb === null) {
-            (self._state === 1 ? resolve : reject)(deferred.promise, self._value);
-            return;
-        }
-        var ret;
-        try {
-            ret = cb(self._value);
-        } catch (e) {
-            reject(deferred.promise, e);
-            return;
-        }
-        resolve(deferred.promise, ret);
-    });
-}
-function resolve(self, newValue) {
-    try {
-        if (newValue === self) {
-            throw new TypeError('A promise cannot be resolved with itself.');
-        }
-        if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
-            var then = newValue.then;
-            if (newValue instanceof Promise$1) {
-                self._state = 3;
-                self._value = newValue;
-                finale(self);
-                return;
-            } else if (typeof then === 'function') {
-                doResolve(bind(then, newValue), self);
-                return;
-            }
-        }
-        self._state = 1;
-        self._value = newValue;
-        finale(self);
-    } catch (e) {
-        reject(self, e);
-    }
-}
-function reject(self, newValue) {
-    self._state = 2;
-    self._value = newValue;
-    finale(self);
-}
-function finale(self) {
-    if (self._state === 2 && self._deferreds.length === 0) {
-        Promise$1._immediateFn(function () {
-            if (!self._handled) {
-                Promise$1._unhandledRejectionFn(self._value);
-            }
-        });
-    }
-    for (var i = 0, len = self._deferreds.length; i < len; i++) {
-        handle(self, self._deferreds[i]);
-    }
-    self._deferreds = null;
-}
-function Handler(onFulfilled, onRejected, promise) {
-    this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
-    this.onRejected = typeof onRejected === 'function' ? onRejected : null;
-    this.promise = promise;
-}
-function doResolve(fn, self) {
-    var done = false;
-    try {
-        fn(function (value) {
-            if (done) {
-                return;
-            }
-            done = true;
-            resolve(self, value);
-        }, function (reason) {
-            if (done) {
-                return;
-            }
-            done = true;
-            reject(self, reason);
-        });
-    } catch (ex) {
-        if (done) {
-            return;
-        }
-        done = true;
-        reject(self, ex);
-    }
-}
-Promise$1.prototype['catch'] = function (onRejected) {
-    return this.then(null, onRejected);
-};
-Promise$1.prototype.then = function (onFulfilled, onRejected) {
-    var prom = new this.constructor(noop);
-    handle(this, new Handler(onFulfilled, onRejected, prom));
-    return prom;
-};
-Promise$1.prototype['finally'] = finallyConstructor;
-Promise$1.all = function (arr) {
-    return new Promise$1(function (resolve, reject) {
-        if (!isArray(arr)) {
-            return reject(new TypeError('Promise.all accepts an array'));
-        }
-        var args = Array.prototype.slice.call(arr);
-        if (args.length === 0) {
-            return resolve([]);
-        }
-        var remaining = args.length;
-        function res(i, val) {
-            try {
-                if (val && (typeof val === 'object' || typeof val === 'function')) {
-                    var then = val.then;
-                    if (typeof then === 'function') {
-                        then.call(val, function (val) {
-                            res(i, val);
-                        }, reject);
-                        return;
-                    }
-                }
-                args[i] = val;
-                if (--remaining === 0) {
-                    resolve(args);
-                }
-            } catch (ex) {
-                reject(ex);
-            }
-        }
-        for (var i = 0; i < args.length; i++) {
-            res(i, args[i]);
-        }
-    });
-};
-Promise$1.allSettled = allSettled;
-Promise$1.resolve = function (value) {
-    if (value && typeof value === 'object' && value.constructor === Promise$1) {
-        return value;
-    }
-    return new Promise$1(function (resolve) {
-        resolve(value);
-    });
-};
-Promise$1.reject = function (value) {
-    return new Promise$1(function (resolve, reject) {
-        reject(value);
-    });
-};
-Promise$1.race = function (arr) {
-    return new Promise$1(function (resolve, reject) {
-        if (!isArray(arr)) {
-            return reject(new TypeError('Promise.race accepts an array'));
-        }
-        for (var i = 0, len = arr.length; i < len; i++) {
-            Promise$1.resolve(arr[i]).then(resolve, reject);
-        }
-    });
-};
-Promise$1._immediateFn = typeof setImmediateFunc === 'function' && function (fn) {
-    setImmediateFunc(fn);
-} || function (fn) {
-    setTimeoutFunc(fn, 0);
-};
-Promise$1._unhandledRejectionFn = function _unhandledRejectionFn(err) {
-    if (typeof console !== 'undefined' && console) {
-        console.warn('Possible Unhandled Promise Rejection:', err);
-    }
-};
-
-var globalNS = function () {
-    if (typeof self !== 'undefined') {
-        return self;
-    }
-    if (typeof window !== 'undefined') {
-        return window;
-    }
-    if (typeof global !== 'undefined') {
-        return global;
-    }
-    throw new Error('unable to locate global object');
-}();
-if (typeof globalNS['Promise'] !== 'function') {
-    globalNS['Promise'] = Promise$1;
-} else {
-    if (!globalNS.Promise.prototype['finally']) {
-        globalNS.Promise.prototype['finally'] = finallyConstructor;
-    }
-    if (!globalNS.Promise.allSettled) {
-        globalNS.Promise.allSettled = allSettled;
-    }
-}
-
-self.fetch || (self.fetch = function (e, n) {
-    return n = n || {}, new Promise(function (t, s) {
-        var r = new XMLHttpRequest(), o = [], u = [], i = {}, a = function () {
-                return {
-                    ok: 2 == (r.status / 100 | 0),
-                    statusText: r.statusText,
-                    status: r.status,
-                    url: r.responseURL,
-                    text: function () {
-                        return Promise.resolve(r.responseText);
-                    },
-                    json: function () {
-                        return Promise.resolve(r.responseText).then(JSON.parse);
-                    },
-                    blob: function () {
-                        return Promise.resolve(new Blob([r.response]));
-                    },
-                    clone: a,
-                    headers: {
-                        keys: function () {
-                            return o;
-                        },
-                        entries: function () {
-                            return u;
-                        },
-                        get: function (e) {
-                            return i[e.toLowerCase()];
-                        },
-                        has: function (e) {
-                            return e.toLowerCase() in i;
-                        }
-                    }
-                };
-            };
-        for (var c in (r.open(n.method || 'get', e, !0), r.onload = function () {
-                r.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm, function (e, n, t) {
-                    o.push(n = n.toLowerCase()), u.push([
-                        n,
-                        t
-                    ]), i[n] = i[n] ? i[n] + ',' + t : t;
-                }), t(a());
-            }, r.onerror = s, r.withCredentials = 'include' == n.credentials, n.headers)) {
-            r.setRequestHeader(c, n.headers[c]);
-        }
-        r.send(n.body || null);
-    });
-});
-
-(function (factory) {
-    typeof define === 'function' && define.amd ? define(factory) : factory();
-}(function () {
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError('Cannot call a class as a function');
-        }
-    }
-    function _defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ('value' in descriptor) {
-                descriptor.writable = true;
-            }
-            Object.defineProperty(target, descriptor.key, descriptor);
-        }
-    }
-    function _createClass(Constructor, protoProps, staticProps) {
-        if (protoProps) {
-            _defineProperties(Constructor.prototype, protoProps);
-        }
-        if (staticProps) {
-            _defineProperties(Constructor, staticProps);
-        }
-        return Constructor;
-    }
-    function _inherits(subClass, superClass) {
-        if (typeof superClass !== 'function' && superClass !== null) {
-            throw new TypeError('Super expression must either be null or a function');
-        }
-        subClass.prototype = Object.create(superClass && superClass.prototype, {
-            constructor: {
-                value: subClass,
-                writable: true,
-                configurable: true
-            }
-        });
-        if (superClass) {
-            _setPrototypeOf(subClass, superClass);
-        }
-    }
-    function _getPrototypeOf(o) {
-        _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
-            return o.__proto__ || Object.getPrototypeOf(o);
-        };
-        return _getPrototypeOf(o);
-    }
-    function _setPrototypeOf(o, p) {
-        _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
-            o.__proto__ = p;
-            return o;
-        };
-        return _setPrototypeOf(o, p);
-    }
-    function _isNativeReflectConstruct() {
-        if (typeof Reflect === 'undefined' || !Reflect.construct) {
-            return false;
-        }
-        if (Reflect.construct.sham) {
-            return false;
-        }
-        if (typeof Proxy === 'function') {
-            return true;
-        }
-        try {
-            Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {
-            }));
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-    function _assertThisInitialized(self) {
-        if (self === void 0) {
-            throw new ReferenceError('this hasn\'t been initialised - super() hasn\'t been called');
-        }
-        return self;
-    }
-    function _possibleConstructorReturn(self, call) {
-        if (call && (typeof call === 'object' || typeof call === 'function')) {
-            return call;
-        }
-        return _assertThisInitialized(self);
-    }
-    function _createSuper(Derived) {
-        var hasNativeReflectConstruct = _isNativeReflectConstruct();
-        return function _createSuperInternal() {
-            var Super = _getPrototypeOf(Derived), result;
-            if (hasNativeReflectConstruct) {
-                var NewTarget = _getPrototypeOf(this).constructor;
-                result = Reflect.construct(Super, arguments, NewTarget);
-            } else {
-                result = Super.apply(this, arguments);
-            }
-            return _possibleConstructorReturn(this, result);
-        };
-    }
-    function _superPropBase(object, property) {
-        while (!Object.prototype.hasOwnProperty.call(object, property)) {
-            object = _getPrototypeOf(object);
-            if (object === null) {
-                break;
-            }
-        }
-        return object;
-    }
-    function _get(target, property, receiver) {
-        if (typeof Reflect !== 'undefined' && Reflect.get) {
-            _get = Reflect.get;
-        } else {
-            _get = function _get(target, property, receiver) {
-                var base = _superPropBase(target, property);
-                if (!base) {
-                    return;
-                }
-                var desc = Object.getOwnPropertyDescriptor(base, property);
-                if (desc.get) {
-                    return desc.get.call(receiver);
-                }
-                return desc.value;
-            };
-        }
-        return _get(target, property, receiver || target);
-    }
-    var Emitter = function () {
-        function Emitter() {
-            _classCallCheck(this, Emitter);
-            Object.defineProperty(this, 'listeners', {
-                value: {},
-                writable: true,
-                configurable: true
-            });
-        }
-        _createClass(Emitter, [
-            {
-                key: 'addEventListener',
-                value: function addEventListener(type, callback, options) {
-                    if (!(type in this.listeners)) {
-                        this.listeners[type] = [];
-                    }
-                    this.listeners[type].push({
-                        callback: callback,
-                        options: options
-                    });
-                }
-            },
-            {
-                key: 'removeEventListener',
-                value: function removeEventListener(type, callback) {
-                    if (!(type in this.listeners)) {
-                        return;
-                    }
-                    var stack = this.listeners[type];
-                    for (var i = 0, l = stack.length; i < l; i++) {
-                        if (stack[i].callback === callback) {
-                            stack.splice(i, 1);
-                            return;
-                        }
-                    }
-                }
-            },
-            {
-                key: 'dispatchEvent',
-                value: function dispatchEvent(event) {
-                    if (!(event.type in this.listeners)) {
-                        return;
-                    }
-                    var stack = this.listeners[event.type];
-                    var stackToCall = stack.slice();
-                    for (var i = 0, l = stackToCall.length; i < l; i++) {
-                        var listener = stackToCall[i];
-                        try {
-                            listener.callback.call(this, event);
-                        } catch (e) {
-                            Promise.resolve().then(function () {
-                                throw e;
-                            });
-                        }
-                        if (listener.options && listener.options.once) {
-                            this.removeEventListener(event.type, listener.callback);
-                        }
-                    }
-                    return !event.defaultPrevented;
-                }
-            }
-        ]);
-        return Emitter;
-    }();
-    var AbortSignal = function (_Emitter) {
-        _inherits(AbortSignal, _Emitter);
-        var _super = _createSuper(AbortSignal);
-        function AbortSignal() {
-            var _this;
-            _classCallCheck(this, AbortSignal);
-            _this = _super.call(this);
-            if (!_this.listeners) {
-                Emitter.call(_assertThisInitialized(_this));
-            }
-            Object.defineProperty(_assertThisInitialized(_this), 'aborted', {
-                value: false,
-                writable: true,
-                configurable: true
-            });
-            Object.defineProperty(_assertThisInitialized(_this), 'onabort', {
-                value: null,
-                writable: true,
-                configurable: true
-            });
-            return _this;
-        }
-        _createClass(AbortSignal, [
-            {
-                key: 'toString',
-                value: function toString() {
-                    return '[object AbortSignal]';
-                }
-            },
-            {
-                key: 'dispatchEvent',
-                value: function dispatchEvent(event) {
-                    if (event.type === 'abort') {
-                        this.aborted = true;
-                        if (typeof this.onabort === 'function') {
-                            this.onabort.call(this, event);
-                        }
-                    }
-                    _get(_getPrototypeOf(AbortSignal.prototype), 'dispatchEvent', this).call(this, event);
-                }
-            }
-        ]);
-        return AbortSignal;
-    }(Emitter);
-    var AbortController = function () {
-        function AbortController() {
-            _classCallCheck(this, AbortController);
-            Object.defineProperty(this, 'signal', {
-                value: new AbortSignal(),
-                writable: true,
-                configurable: true
-            });
-        }
-        _createClass(AbortController, [
-            {
-                key: 'abort',
-                value: function abort() {
-                    var event;
-                    try {
-                        event = new Event('abort');
-                    } catch (e) {
-                        if (typeof document !== 'undefined') {
-                            if (!document.createEvent) {
-                                event = document.createEventObject();
-                                event.type = 'abort';
-                            } else {
-                                event = document.createEvent('Event');
-                                event.initEvent('abort', false, false);
-                            }
-                        } else {
-                            event = {
-                                type: 'abort',
-                                bubbles: false,
-                                cancelable: false
-                            };
-                        }
-                    }
-                    this.signal.dispatchEvent(event);
-                }
-            },
-            {
-                key: 'toString',
-                value: function toString() {
-                    return '[object AbortController]';
-                }
-            }
-        ]);
-        return AbortController;
-    }();
-    if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-        AbortController.prototype[Symbol.toStringTag] = 'AbortController';
-        AbortSignal.prototype[Symbol.toStringTag] = 'AbortSignal';
-    }
-    function polyfillNeeded(self) {
-        if (self.__FORCE_INSTALL_ABORTCONTROLLER_POLYFILL) {
-            console.log('__FORCE_INSTALL_ABORTCONTROLLER_POLYFILL=true is set, will force install polyfill');
-            return true;
-        }
-        return typeof self.Request === 'function' && !self.Request.prototype.hasOwnProperty('signal') || !self.AbortController;
-    }
-    function abortableFetchDecorator(patchTargets) {
-        if ('function' === typeof patchTargets) {
-            patchTargets = { fetch: patchTargets };
-        }
-        var _patchTargets = patchTargets, fetch = _patchTargets.fetch, _patchTargets$Request = _patchTargets.Request, NativeRequest = _patchTargets$Request === void 0 ? fetch.Request : _patchTargets$Request, NativeAbortController = _patchTargets.AbortController, _patchTargets$__FORCE = _patchTargets.__FORCE_INSTALL_ABORTCONTROLLER_POLYFILL, __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL = _patchTargets$__FORCE === void 0 ? false : _patchTargets$__FORCE;
-        if (!polyfillNeeded({
-                fetch: fetch,
-                Request: NativeRequest,
-                AbortController: NativeAbortController,
-                __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL: __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL
-            })) {
-            return {
-                fetch: fetch,
-                Request: Request
-            };
-        }
-        var Request = NativeRequest;
-        if (Request && !Request.prototype.hasOwnProperty('signal') || __FORCE_INSTALL_ABORTCONTROLLER_POLYFILL) {
-            Request = function Request(input, init) {
-                var signal;
-                if (init && init.signal) {
-                    signal = init.signal;
-                    delete init.signal;
-                }
-                var request = new NativeRequest(input, init);
-                if (signal) {
-                    Object.defineProperty(request, 'signal', {
-                        writable: false,
-                        enumerable: false,
-                        configurable: true,
-                        value: signal
-                    });
-                }
-                return request;
-            };
-            Request.prototype = NativeRequest.prototype;
-        }
-        var realFetch = fetch;
-        var abortableFetch = function abortableFetch(input, init) {
-            var signal = Request && Request.prototype.isPrototypeOf(input) ? input.signal : init ? init.signal : undefined;
-            if (signal) {
-                var abortError;
-                try {
-                    abortError = new DOMException('Aborted', 'AbortError');
-                } catch (err) {
-                    abortError = new Error('Aborted');
-                    abortError.name = 'AbortError';
-                }
-                if (signal.aborted) {
-                    return Promise.reject(abortError);
-                }
-                var cancellation = new Promise(function (_, reject) {
-                    signal.addEventListener('abort', function () {
-                        return reject(abortError);
-                    }, { once: true });
-                });
-                if (init && init.signal) {
-                    delete init.signal;
-                }
-                return Promise.race([
-                    cancellation,
-                    realFetch(input, init)
-                ]);
-            }
-            return realFetch(input, init);
-        };
-        return {
-            fetch: abortableFetch,
-            Request: Request
-        };
-    }
-    (function (self) {
-        if (!polyfillNeeded(self)) {
-            return;
-        }
-        if (!self.fetch) {
-            console.warn('fetch() is not available, cannot install abortcontroller-polyfill');
-            return;
-        }
-        var _abortableFetch = abortableFetchDecorator(self), fetch = _abortableFetch.fetch, Request = _abortableFetch.Request;
-        self.fetch = fetch;
-        self.Request = Request;
-        Object.defineProperty(self, 'AbortController', {
-            writable: true,
-            enumerable: false,
-            configurable: true,
-            value: AbortController
-        });
-        Object.defineProperty(self, 'AbortSignal', {
-            writable: true,
-            enumerable: false,
-            configurable: true,
-            value: AbortSignal
-        });
-    }(typeof self !== 'undefined' ? self : global));
-}));
-
-var config = {
-    MAX_PARALLEL_IMAGE_REQUESTS: 16,
-    REGISTERED_PROTOCOLS: {}
-};
-
-var CACHE_NAME = 'mapbox-tiles';
-var cacheLimit = 500;
-var cacheCheckThreshold = 50;
-var MIN_TIME_UNTIL_EXPIRY = 1000 * 60 * 7;
-var sharedCache;
-function cacheOpen() {
-    if (typeof caches !== 'undefined' && !sharedCache) {
-        sharedCache = caches.open(CACHE_NAME);
-    }
-}
-var responseConstructorSupportsReadableStream;
-function prepareBody(response, callback) {
-    if (responseConstructorSupportsReadableStream === undefined) {
-        try {
-            new Response(new ReadableStream());
-            responseConstructorSupportsReadableStream = true;
-        } catch (e) {
-            responseConstructorSupportsReadableStream = false;
-        }
-    }
-    if (responseConstructorSupportsReadableStream) {
-        callback(response.body);
-    } else {
-        response.blob().then(callback);
-    }
-}
-function cachePut(request, response, requestTime) {
-    cacheOpen();
-    if (!sharedCache) {
-        return;
-    }
-    var options = {
-        status: response.status,
-        statusText: response.statusText,
-        headers: new Headers()
-    };
-    response.headers.forEach(function (v, k) {
-        return options.headers.set(k, v);
-    });
-    var cacheControl = parseCacheControl(response.headers.get('Cache-Control') || '');
-    if (cacheControl['no-store']) {
-        return;
-    }
-    if (cacheControl['max-age']) {
-        options.headers.set('Expires', new Date(requestTime + cacheControl['max-age'] * 1000).toUTCString());
-    }
-    var timeUntilExpiry = new Date(options.headers.get('Expires')).getTime() - requestTime;
-    if (timeUntilExpiry < MIN_TIME_UNTIL_EXPIRY) {
-        return;
-    }
-    prepareBody(response, function (body) {
-        var clonedResponse = new Response(body, options);
-        cacheOpen();
-        if (!sharedCache) {
-            return;
-        }
-        sharedCache.then(function (cache) {
-            return cache.put(stripQueryParameters(request.url), clonedResponse);
-        }).catch(function (e) {
-            return warnOnce(e.message);
-        });
-    });
-}
-function stripQueryParameters(url) {
-    var start = url.indexOf('?');
-    return start < 0 ? url : url.slice(0, start);
-}
-var globalEntryCounter = Infinity;
-function cacheEntryPossiblyAdded(dispatcher) {
-    globalEntryCounter++;
-    if (globalEntryCounter > cacheCheckThreshold) {
-        dispatcher.getActor().send('enforceCacheSizeLimit', cacheLimit);
-        globalEntryCounter = 0;
-    }
-}
-function enforceCacheSizeLimit(limit) {
-    cacheOpen();
-    if (!sharedCache) {
-        return;
-    }
-    sharedCache.then(function (cache) {
-        cache.keys().then(function (keys) {
-            for (var i = 0; i < keys.length - limit; i++) {
-                cache.delete(keys[i]);
-            }
-        });
-    });
-}
-function clearTileCache(callback) {
-    var promise = caches.delete(CACHE_NAME);
-    if (callback) {
-        promise.catch(callback).then(function () {
-            return callback();
-        });
-    }
-}
-function setCacheLimits(limit, checkThreshold) {
-    cacheLimit = limit;
-    cacheCheckThreshold = checkThreshold;
-}
-
-var exported = {
-    supported: false,
-    testSupport: testSupport
-};
-var glForTesting;
-var webpCheckComplete = false;
-var webpImgTest;
-var webpImgTestOnloadComplete = false;
-if (typeof document !== 'undefined') {
-    webpImgTest = document.createElement('img');
-    webpImgTest.onload = function () {
-        if (glForTesting) {
-            testWebpTextureUpload(glForTesting);
-        }
-        glForTesting = null;
-        webpImgTestOnloadComplete = true;
-    };
-    webpImgTest.onerror = function () {
-        webpCheckComplete = true;
-        glForTesting = null;
-    };
-    webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
-}
-function testSupport(gl) {
-    if (webpCheckComplete || !webpImgTest) {
-        return;
-    }
-    if (webpImgTestOnloadComplete) {
-        testWebpTextureUpload(gl);
-    } else {
-        glForTesting = gl;
-    }
-}
-function testWebpTextureUpload(gl) {
-    var texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    try {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, webpImgTest);
-        if (gl.isContextLost()) {
-            return;
-        }
-        exported.supported = true;
-    } catch (e) {
-    }
-    gl.deleteTexture(texture);
-    webpCheckComplete = true;
-}
-
-var __extends$h = undefined && undefined.__extends || function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
-            d.__proto__ = b;
-        } || function (d, b) {
-            for (var p in b) {
-                if (Object.prototype.hasOwnProperty.call(b, p)) {
-                    d[p] = b[p];
-                }
-            }
-        };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== 'function' && b !== null) {
-            throw new TypeError('Class extends value ' + String(b) + ' is not a constructor or null');
-        }
-        extendStatics(d, b);
-        function __() {
-            this.constructor = d;
-        }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-}();
-var ResourceType = {
-    Unknown: 'Unknown',
-    Style: 'Style',
-    Source: 'Source',
-    Tile: 'Tile',
-    Glyphs: 'Glyphs',
-    SpriteImage: 'SpriteImage',
-    SpriteJSON: 'SpriteJSON',
-    Image: 'Image'
-};
-if (typeof Object.freeze == 'function') {
-    Object.freeze(ResourceType);
-}
-var AJAXError = function (_super) {
-    __extends$h(AJAXError, _super);
-    function AJAXError(message, status, url) {
-        var _this = _super.call(this, message) || this;
-        _this.status = status;
-        _this.url = url;
-        _this.name = _this.constructor.name;
-        _this.message = message;
-        return _this;
-    }
-    AJAXError.prototype.toString = function () {
-        return ''.concat(this.name, ': ').concat(this.message, ' (').concat(this.status, '): ').concat(this.url);
-    };
-    return AJAXError;
-}(Error);
-var getReferrer = isWorker() ? function () {
-    return self.worker && self.worker.referrer;
-} : function () {
-    return (window.location.protocol === 'blob:' ? window.parent : window).location.href;
-};
-var isFileURL = function (url) {
-    return /^file:/.test(url) || /^file:/.test(getReferrer()) && !/^\w+:/.test(url);
-};
-function makeFetchRequest(requestParameters, callback) {
-    var controller = new AbortController();
-    var request = new Request(requestParameters.url, {
-        method: requestParameters.method || 'GET',
-        body: requestParameters.body,
-        credentials: requestParameters.credentials,
-        headers: requestParameters.headers,
-        referrer: getReferrer(),
-        signal: controller.signal
-    });
-    var complete = false;
-    var aborted = false;
-    if (requestParameters.type === 'json') {
-        request.headers.set('Accept', 'application/json');
-    }
-    var validateOrFetch = function (err, cachedResponse, responseIsFresh) {
-        if (aborted) {
-            return;
-        }
-        if (err) {
-            if (err.message !== 'SecurityError') {
-                warnOnce(err);
-            }
-        }
-        if (cachedResponse && responseIsFresh) {
-            return finishRequest(cachedResponse);
-        }
-        var requestTime = Date.now();
-        fetch(request).then(function (response) {
-            if (response.ok) {
-                var cacheableResponse = null;
-                return finishRequest(response, cacheableResponse, requestTime);
-            } else {
-                return callback(new AJAXError(response.statusText, response.status, requestParameters.url));
-            }
-        }).catch(function (error) {
-            if (error.code === 20) {
-                return;
-            }
-            callback(new Error(error.message));
-        });
-    };
-    var finishRequest = function (response, cacheableResponse, requestTime) {
-        (requestParameters.type === 'arrayBuffer' ? response.arrayBuffer() : requestParameters.type === 'json' ? response.json() : response.text()).then(function (result) {
-            if (aborted) {
-                return;
-            }
-            if (cacheableResponse && requestTime) {
-                cachePut(request, cacheableResponse, requestTime);
-            }
-            complete = true;
-            callback(null, result, response.headers.get('Cache-Control'), response.headers.get('Expires'));
-        }).catch(function (err) {
-            if (!aborted) {
-                callback(new Error(err.message));
-            }
-        });
-    };
-    {
-        validateOrFetch(null, null);
-    }
-    return {
-        cancel: function () {
-            aborted = true;
-            if (!complete) {
-                controller.abort();
-            }
-        }
-    };
-}
-function makeXMLHttpRequest(requestParameters, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open(requestParameters.method || 'GET', requestParameters.url, true);
-    if (requestParameters.type === 'arrayBuffer') {
-        xhr.responseType = 'arraybuffer';
-    }
-    for (var k in requestParameters.headers) {
-        xhr.setRequestHeader(k, requestParameters.headers[k]);
-    }
-    if (requestParameters.type === 'json') {
-        xhr.responseType = 'text';
-        xhr.setRequestHeader('Accept', 'application/json');
-    }
-    xhr.withCredentials = requestParameters.credentials === 'include';
-    xhr.onerror = function () {
-        callback(new Error(xhr.statusText));
-    };
-    xhr.onload = function () {
-        if ((xhr.status >= 200 && xhr.status < 300 || xhr.status === 0) && xhr.response !== null) {
-            var data = xhr.response;
-            if (requestParameters.type === 'json') {
-                try {
-                    data = JSON.parse(xhr.response);
-                } catch (err) {
-                    return callback(err);
-                }
-            }
-            callback(null, data, xhr.getResponseHeader('Cache-Control'), xhr.getResponseHeader('Expires'));
-        } else {
-            callback(new AJAXError(xhr.statusText, xhr.status, requestParameters.url));
-        }
-    };
-    xhr.send(requestParameters.body);
-    return {
-        cancel: function () {
-            return xhr.abort();
-        }
-    };
-}
-var makeRequest = function (requestParameters, callback) {
-    if (/:\/\//.test(requestParameters.url) && !/^https?:|^file:/.test(requestParameters.url)) {
-        if (isWorker() && self.worker && self.worker.actor) {
-            return self.worker.actor.send('getResource', requestParameters, callback);
-        }
-        if (!isWorker()) {
-            var protocol = requestParameters.url.substring(0, requestParameters.url.indexOf('://'));
-            var action = config.REGISTERED_PROTOCOLS[protocol] || makeFetchRequest;
-            return action(requestParameters, callback);
-        }
-    }
-    if (!isFileURL(requestParameters.url)) {
-        if (fetch && Request && AbortController && Object.prototype.hasOwnProperty.call(Request.prototype, 'signal')) {
-            return makeFetchRequest(requestParameters, callback);
-        }
-        if (isWorker() && self.worker && self.worker.actor) {
-            var queueOnMainThread = true;
-            return self.worker.actor.send('getResource', requestParameters, callback, undefined, queueOnMainThread);
-        }
-    }
-    return makeXMLHttpRequest(requestParameters, callback);
-};
-var getJSON = function (requestParameters, callback) {
-    return makeRequest(extend$1(requestParameters, { type: 'json' }), callback);
-};
-var getArrayBuffer = function (requestParameters, callback) {
-    return makeRequest(extend$1(requestParameters, { type: 'arrayBuffer' }), callback);
-};
-function sameOrigin(url) {
-    var a = window.document.createElement('a');
-    a.href = url;
-    return a.protocol === window.document.location.protocol && a.host === window.document.location.host;
-}
-var transparentPngUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=';
-function arrayBufferToImage(data, callback, cacheControl, expires) {
-    var img = new Image();
-    img.onload = function () {
-        callback(null, img);
-        URL.revokeObjectURL(img.src);
-        img.onload = null;
-        window.requestAnimationFrame(function () {
-            img.src = transparentPngUrl;
-        });
-    };
-    img.onerror = function () {
-        return callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
-    };
-    var blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
-    img.cacheControl = cacheControl;
-    img.expires = expires;
-    img.src = data.byteLength ? URL.createObjectURL(blob) : transparentPngUrl;
-}
-function arrayBufferToImageBitmap(data, callback) {
-    var blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
-    createImageBitmap(blob).then(function (imgBitmap) {
-        callback(null, imgBitmap);
-    }).catch(function (e) {
-        callback(new Error('Could not load image because of '.concat(e.message, '. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.')));
-    });
-}
-function arrayBufferToCanvasImageSource(data, callback, cacheControl, expires) {
-    var imageBitmapSupported = typeof createImageBitmap === 'function';
-    if (imageBitmapSupported) {
-        arrayBufferToImageBitmap(data, callback);
-    } else {
-        arrayBufferToImage(data, callback, cacheControl, expires);
-    }
-}
-var imageQueue, numImageRequests;
-var resetImageRequestQueue = function () {
-    imageQueue = [];
-    numImageRequests = 0;
-};
-resetImageRequestQueue();
-var getImage = function (requestParameters, callback) {
-    if (exported.supported) {
-        if (!requestParameters.headers) {
-            requestParameters.headers = {};
-        }
-        requestParameters.headers.accept = 'image/webp,*/*';
-    }
-    if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
-        var queued = {
-            requestParameters: requestParameters,
-            callback: callback,
-            cancelled: false,
-            cancel: function () {
-                this.cancelled = true;
-            }
-        };
-        imageQueue.push(queued);
-        return queued;
-    }
-    numImageRequests++;
-    var advanced = false;
-    var advanceImageRequestQueue = function () {
-        if (advanced) {
-            return;
-        }
-        advanced = true;
-        numImageRequests--;
-        while (imageQueue.length && numImageRequests < config.MAX_PARALLEL_IMAGE_REQUESTS) {
-            var request_1 = imageQueue.shift();
-            var requestParameters_1 = request_1.requestParameters, callback_1 = request_1.callback, cancelled = request_1.cancelled;
-            if (!cancelled) {
-                request_1.cancel = getImage(requestParameters_1, callback_1).cancel;
-            }
-        }
-    };
-    var request = getArrayBuffer(requestParameters, function (err, data, cacheControl, expires) {
-        advanceImageRequestQueue();
-        if (err) {
-            callback(err);
-        } else if (data) {
-            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
-        }
-    });
-    return {
-        cancel: function () {
-            request.cancel();
-            advanceImageRequestQueue();
-        }
-    };
-};
-var getVideo = function (urls, callback) {
-    var video = window.document.createElement('video');
-    video.muted = true;
-    video.onloadstart = function () {
-        callback(null, video);
-    };
-    for (var i = 0; i < urls.length; i++) {
-        var s = window.document.createElement('source');
-        if (!sameOrigin(urls[i])) {
-            video.crossOrigin = 'Anonymous';
-        }
-        s.src = urls[i];
-        video.appendChild(s);
-    }
-    return {
-        cancel: function () {
-        }
-    };
-};
-
-var __extends$g = undefined && undefined.__extends || function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
-            d.__proto__ = b;
-        } || function (d, b) {
-            for (var p in b) {
-                if (Object.prototype.hasOwnProperty.call(b, p)) {
-                    d[p] = b[p];
-                }
-            }
-        };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== 'function' && b !== null) {
-            throw new TypeError('Class extends value ' + String(b) + ' is not a constructor or null');
-        }
-        extendStatics(d, b);
-        function __() {
-            this.constructor = d;
-        }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-}();
-function _addEventListener(type, listener, listenerList) {
-    var listenerExists = listenerList[type] && listenerList[type].indexOf(listener) !== -1;
-    if (!listenerExists) {
-        listenerList[type] = listenerList[type] || [];
-        listenerList[type].push(listener);
-    }
-}
-function _removeEventListener(type, listener, listenerList) {
-    if (listenerList && listenerList[type]) {
-        var index = listenerList[type].indexOf(listener);
-        if (index !== -1) {
-            listenerList[type].splice(index, 1);
-        }
-    }
-}
-var Event$1 = function () {
-    function Event(type, data) {
-        if (data === void 0) {
-            data = {};
-        }
-        extend$1(this, data);
-        this.type = type;
-    }
-    return Event;
-}();
-var ErrorEvent = function (_super) {
-    __extends$g(ErrorEvent, _super);
-    function ErrorEvent(error, data) {
-        if (data === void 0) {
-            data = {};
-        }
-        return _super.call(this, 'error', extend$1({ error: error }, data)) || this;
-    }
-    return ErrorEvent;
-}(Event$1);
-var Evented = function () {
-    function Evented() {
-    }
-    Evented.prototype.on = function (type, listener) {
-        this._listeners = this._listeners || {};
-        _addEventListener(type, listener, this._listeners);
-        return this;
-    };
-    Evented.prototype.off = function (type, listener) {
-        _removeEventListener(type, listener, this._listeners);
-        _removeEventListener(type, listener, this._oneTimeListeners);
-        return this;
-    };
-    Evented.prototype.once = function (type, listener) {
-        this._oneTimeListeners = this._oneTimeListeners || {};
-        _addEventListener(type, listener, this._oneTimeListeners);
-        return this;
-    };
-    Evented.prototype.fire = function (event, properties) {
-        if (typeof event === 'string') {
-            event = new Event$1(event, properties || {});
-        }
-        var type = event.type;
-        if (this.listens(type)) {
-            event.target = this;
-            var listeners = this._listeners && this._listeners[type] ? this._listeners[type].slice() : [];
-            for (var _i = 0, listeners_1 = listeners; _i < listeners_1.length; _i++) {
-                var listener = listeners_1[_i];
-                listener.call(this, event);
-            }
-            var oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
-            for (var _a = 0, oneTimeListeners_1 = oneTimeListeners; _a < oneTimeListeners_1.length; _a++) {
-                var listener = oneTimeListeners_1[_a];
-                _removeEventListener(type, listener, this._oneTimeListeners);
-                listener.call(this, event);
-            }
-            var parent_1 = this._eventedParent;
-            if (parent_1) {
-                extend$1(event, typeof this._eventedParentData === 'function' ? this._eventedParentData() : this._eventedParentData);
-                parent_1.fire(event);
-            }
-        } else if (event instanceof ErrorEvent) {
-            console.error(event.error);
-        }
-        return this;
-    };
-    Evented.prototype.listens = function (type) {
-        return this._listeners && this._listeners[type] && this._listeners[type].length > 0 || this._oneTimeListeners && this._oneTimeListeners[type] && this._oneTimeListeners[type].length > 0 || this._eventedParent && this._eventedParent.listens(type);
-    };
-    Evented.prototype.setEventedParent = function (parent, data) {
-        this._eventedParent = parent;
-        this._eventedParentData = data;
-        return this;
-    };
-    return Evented;
-}();
-
-var $version = 8;
-var $root = {
-    version: {
-        required: true,
-        type: 'enum',
-        values: [8]
-    },
-    name: { type: 'string' },
-    metadata: { type: '*' },
-    center: {
-        type: 'array',
-        value: 'number'
-    },
-    zoom: { type: 'number' },
-    bearing: {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        units: 'degrees'
-    },
-    pitch: {
-        type: 'number',
-        'default': 0,
-        units: 'degrees'
-    },
-    light: { type: 'light' },
-    sources: {
-        required: true,
-        type: 'sources'
-    },
-    sprite: { type: 'string' },
-    glyphs: { type: 'string' },
-    transition: { type: 'transition' },
-    layers: {
-        required: true,
-        type: 'array',
-        value: 'layer'
-    }
-};
-var sources = { '*': { type: 'source' } };
-var source = [
-    'source_vector',
-    'source_raster',
-    'source_raster_dem',
-    'source_geojson',
-    'source_video',
-    'source_image'
-];
-var source_vector = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { vector: {} }
-    },
-    url: { type: 'string' },
-    tiles: {
-        type: 'array',
-        value: 'string'
-    },
-    bounds: {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            -180,
-            -85.051129,
-            180,
-            85.051129
-        ]
-    },
-    scheme: {
-        type: 'enum',
-        values: {
-            xyz: {},
-            tms: {}
-        },
-        'default': 'xyz'
-    },
-    minzoom: {
-        type: 'number',
-        'default': 0
-    },
-    maxzoom: {
-        type: 'number',
-        'default': 22
-    },
-    attribution: { type: 'string' },
-    promoteId: { type: 'promoteId' },
-    volatile: {
-        type: 'boolean',
-        'default': false
-    },
-    '*': { type: '*' }
-};
-var source_raster = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { raster: {} }
-    },
-    url: { type: 'string' },
-    tiles: {
-        type: 'array',
-        value: 'string'
-    },
-    bounds: {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            -180,
-            -85.051129,
-            180,
-            85.051129
-        ]
-    },
-    minzoom: {
-        type: 'number',
-        'default': 0
-    },
-    maxzoom: {
-        type: 'number',
-        'default': 22
-    },
-    tileSize: {
-        type: 'number',
-        'default': 512,
-        units: 'pixels'
-    },
-    scheme: {
-        type: 'enum',
-        values: {
-            xyz: {},
-            tms: {}
-        },
-        'default': 'xyz'
-    },
-    attribution: { type: 'string' },
-    volatile: {
-        type: 'boolean',
-        'default': false
-    },
-    '*': { type: '*' }
-};
-var source_raster_dem = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { 'raster-dem': {} }
-    },
-    url: { type: 'string' },
-    tiles: {
-        type: 'array',
-        value: 'string'
-    },
-    bounds: {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            -180,
-            -85.051129,
-            180,
-            85.051129
-        ]
-    },
-    minzoom: {
-        type: 'number',
-        'default': 0
-    },
-    maxzoom: {
-        type: 'number',
-        'default': 22
-    },
-    tileSize: {
-        type: 'number',
-        'default': 512,
-        units: 'pixels'
-    },
-    attribution: { type: 'string' },
-    encoding: {
-        type: 'enum',
-        values: {
-            terrarium: {},
-            mapbox: {}
-        },
-        'default': 'mapbox'
-    },
-    volatile: {
-        type: 'boolean',
-        'default': false
-    },
-    '*': { type: '*' }
-};
-var source_geojson = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { geojson: {} }
-    },
-    data: { type: '*' },
-    maxzoom: {
-        type: 'number',
-        'default': 18
-    },
-    attribution: { type: 'string' },
-    buffer: {
-        type: 'number',
-        'default': 128,
-        maximum: 512,
-        minimum: 0
-    },
-    filter: { type: '*' },
-    tolerance: {
-        type: 'number',
-        'default': 0.375
-    },
-    cluster: {
-        type: 'boolean',
-        'default': false
-    },
-    clusterRadius: {
-        type: 'number',
-        'default': 50,
-        minimum: 0
-    },
-    clusterMaxZoom: { type: 'number' },
-    clusterMinPoints: { type: 'number' },
-    clusterProperties: { type: '*' },
-    lineMetrics: {
-        type: 'boolean',
-        'default': false
-    },
-    generateId: {
-        type: 'boolean',
-        'default': false
-    },
-    promoteId: { type: 'promoteId' }
-};
-var source_video = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { video: {} }
-    },
-    urls: {
-        required: true,
-        type: 'array',
-        value: 'string'
-    },
-    coordinates: {
-        required: true,
-        type: 'array',
-        length: 4,
-        value: {
-            type: 'array',
-            length: 2,
-            value: 'number'
-        }
-    }
-};
-var source_image = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { image: {} }
-    },
-    url: {
-        required: true,
-        type: 'string'
-    },
-    coordinates: {
-        required: true,
-        type: 'array',
-        length: 4,
-        value: {
-            type: 'array',
-            length: 2,
-            value: 'number'
-        }
-    }
-};
-var layer = {
-    id: {
-        type: 'string',
-        required: true
-    },
-    type: {
-        type: 'enum',
-        values: {
-            fill: {},
-            line: {},
-            symbol: {},
-            circle: {},
-            heatmap: {},
-            'fill-extrusion': {},
-            raster: {},
-            hillshade: {},
-            background: {}
-        },
-        required: true
-    },
-    metadata: { type: '*' },
-    source: { type: 'string' },
-    'source-layer': { type: 'string' },
-    minzoom: {
-        type: 'number',
-        minimum: 0,
-        maximum: 24
-    },
-    maxzoom: {
-        type: 'number',
-        minimum: 0,
-        maximum: 24
-    },
-    filter: { type: 'filter' },
-    layout: { type: 'layout' },
-    paint: { type: 'paint' }
-};
-var layout$7 = [
-    'layout_fill',
-    'layout_line',
-    'layout_circle',
-    'layout_heatmap',
-    'layout_fill-extrusion',
-    'layout_symbol',
-    'layout_raster',
-    'layout_hillshade',
-    'layout_background'
-];
-var layout_background = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_fill = {
-    'fill-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_circle = {
-    'circle-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_heatmap = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_line = {
-    'line-cap': {
-        type: 'enum',
-        values: {
-            butt: {},
-            round: {},
-            square: {}
-        },
-        'default': 'butt',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-join': {
-        type: 'enum',
-        values: {
-            bevel: {},
-            round: {},
-            miter: {}
-        },
-        'default': 'miter',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-miter-limit': {
-        type: 'number',
-        'default': 2,
-        requires: [{ 'line-join': 'miter' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-round-limit': {
-        type: 'number',
-        'default': 1.05,
-        requires: [{ 'line-join': 'round' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_symbol = {
-    'symbol-placement': {
-        type: 'enum',
-        values: {
-            point: {},
-            line: {},
-            'line-center': {}
-        },
-        'default': 'point',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'symbol-spacing': {
-        type: 'number',
-        'default': 250,
-        minimum: 1,
-        units: 'pixels',
-        requires: [{ 'symbol-placement': 'line' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'symbol-avoid-edges': {
-        type: 'boolean',
-        'default': false,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'symbol-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'symbol-z-order': {
-        type: 'enum',
-        values: {
-            auto: {},
-            'viewport-y': {},
-            source: {}
-        },
-        'default': 'auto',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-allow-overlap': {
-        type: 'boolean',
-        'default': false,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-ignore-placement': {
-        type: 'boolean',
-        'default': false,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-optional': {
-        type: 'boolean',
-        'default': false,
-        requires: [
-            'icon-image',
-            'text-field'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-rotation-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-size': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        units: 'factor of the original icon size',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-text-fit': {
-        type: 'enum',
-        values: {
-            none: {},
-            width: {},
-            height: {},
-            both: {}
-        },
-        'default': 'none',
-        requires: [
-            'icon-image',
-            'text-field'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-text-fit-padding': {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            0,
-            0,
-            0,
-            0
-        ],
-        units: 'pixels',
-        requires: [
-            'icon-image',
-            'text-field',
-            {
-                'icon-text-fit': [
-                    'both',
-                    'width',
-                    'height'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-image': {
-        type: 'resolvedImage',
-        tokens: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-rotate': {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        units: 'degrees',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-padding': {
-        type: 'number',
-        'default': 2,
-        minimum: 0,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-keep-upright': {
-        type: 'boolean',
-        'default': false,
-        requires: [
-            'icon-image',
-            { 'icon-rotation-alignment': 'map' },
-            {
-                'symbol-placement': [
-                    'line',
-                    'line-center'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-offset': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-anchor': {
-        type: 'enum',
-        values: {
-            center: {},
-            left: {},
-            right: {},
-            top: {},
-            bottom: {},
-            'top-left': {},
-            'top-right': {},
-            'bottom-left': {},
-            'bottom-right': {}
-        },
-        'default': 'center',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-pitch-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-pitch-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-rotation-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-field': {
-        type: 'formatted',
-        'default': '',
-        tokens: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-font': {
-        type: 'array',
-        value: 'string',
-        'default': [
-            'Open Sans Regular',
-            'Arial Unicode MS Regular'
-        ],
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-size': {
-        type: 'number',
-        'default': 16,
-        minimum: 0,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-max-width': {
-        type: 'number',
-        'default': 10,
-        minimum: 0,
-        units: 'ems',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-line-height': {
-        type: 'number',
-        'default': 1.2,
-        units: 'ems',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-letter-spacing': {
-        type: 'number',
-        'default': 0,
-        units: 'ems',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-justify': {
-        type: 'enum',
-        values: {
-            auto: {},
-            left: {},
-            center: {},
-            right: {}
-        },
-        'default': 'center',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-radial-offset': {
-        type: 'number',
-        units: 'ems',
-        'default': 0,
-        requires: ['text-field'],
-        'property-type': 'data-driven',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        }
-    },
-    'text-variable-anchor': {
-        type: 'array',
-        value: 'enum',
-        values: {
-            center: {},
-            left: {},
-            right: {},
-            top: {},
-            bottom: {},
-            'top-left': {},
-            'top-right': {},
-            'bottom-left': {},
-            'bottom-right': {}
-        },
-        requires: [
-            'text-field',
-            { 'symbol-placement': ['point'] }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-anchor': {
-        type: 'enum',
-        values: {
-            center: {},
-            left: {},
-            right: {},
-            top: {},
-            bottom: {},
-            'top-left': {},
-            'top-right': {},
-            'bottom-left': {},
-            'bottom-right': {}
-        },
-        'default': 'center',
-        requires: [
-            'text-field',
-            { '!': 'text-variable-anchor' }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-max-angle': {
-        type: 'number',
-        'default': 45,
-        units: 'degrees',
-        requires: [
-            'text-field',
-            {
-                'symbol-placement': [
-                    'line',
-                    'line-center'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-writing-mode': {
-        type: 'array',
-        value: 'enum',
-        values: {
-            horizontal: {},
-            vertical: {}
-        },
-        requires: [
-            'text-field',
-            { 'symbol-placement': ['point'] }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-rotate': {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        units: 'degrees',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-padding': {
-        type: 'number',
-        'default': 2,
-        minimum: 0,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-keep-upright': {
-        type: 'boolean',
-        'default': true,
-        requires: [
-            'text-field',
-            { 'text-rotation-alignment': 'map' },
-            {
-                'symbol-placement': [
-                    'line',
-                    'line-center'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-transform': {
-        type: 'enum',
-        values: {
-            none: {},
-            uppercase: {},
-            lowercase: {}
-        },
-        'default': 'none',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-offset': {
-        type: 'array',
-        value: 'number',
-        units: 'ems',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        requires: [
-            'text-field',
-            { '!': 'text-radial-offset' }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-allow-overlap': {
-        type: 'boolean',
-        'default': false,
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-ignore-placement': {
-        type: 'boolean',
-        'default': false,
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-optional': {
-        type: 'boolean',
-        'default': false,
-        requires: [
-            'text-field',
-            'icon-image'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_raster = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_hillshade = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var filter = {
-    type: 'array',
-    value: '*'
-};
-var filter_operator = {
-    type: 'enum',
-    values: {
-        '==': {},
-        '!=': {},
-        '>': {},
-        '>=': {},
-        '<': {},
-        '<=': {},
-        'in': {},
-        '!in': {},
-        all: {},
-        any: {},
-        none: {},
-        has: {},
-        '!has': {},
-        within: {}
-    }
-};
-var geometry_type = {
-    type: 'enum',
-    values: {
-        Point: {},
-        LineString: {},
-        Polygon: {}
-    }
-};
-var function_stop = {
-    type: 'array',
-    minimum: 0,
-    maximum: 24,
-    value: [
-        'number',
-        'color'
-    ],
-    length: 2
-};
-var expression = {
-    type: 'array',
-    value: '*',
-    minimum: 1
-};
-var light = {
-    anchor: {
-        type: 'enum',
-        'default': 'viewport',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'property-type': 'data-constant',
-        transition: false,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        }
-    },
-    position: {
-        type: 'array',
-        'default': [
-            1.15,
-            210,
-            30
-        ],
-        length: 3,
-        value: 'number',
-        'property-type': 'data-constant',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        }
-    },
-    color: {
-        type: 'color',
-        'property-type': 'data-constant',
-        'default': '#ffffff',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        transition: true
-    },
-    intensity: {
-        type: 'number',
-        'property-type': 'data-constant',
-        'default': 0.5,
-        minimum: 0,
-        maximum: 1,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        transition: true
-    }
-};
-var paint$9 = [
-    'paint_fill',
-    'paint_line',
-    'paint_circle',
-    'paint_heatmap',
-    'paint_fill-extrusion',
-    'paint_symbol',
-    'paint_raster',
-    'paint_hillshade',
-    'paint_background'
-];
-var paint_fill = {
-    'fill-antialias': {
-        type: 'boolean',
-        'default': true,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'fill-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'fill-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: [{ '!': 'fill-pattern' }],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'fill-outline-color': {
-        type: 'color',
-        transition: true,
-        requires: [
-            { '!': 'fill-pattern' },
-            { 'fill-antialias': true }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'fill-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'fill-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: ['fill-translate'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'fill-pattern': {
-        type: 'resolvedImage',
-        transition: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'cross-faded-data-driven'
-    }
-};
-var paint_line = {
-    'line-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: [{ '!': 'line-pattern' }],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: ['line-translate'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-width': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-gap-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-offset': {
-        type: 'number',
-        'default': 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-blur': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-dasharray': {
-        type: 'array',
-        value: 'number',
-        minimum: 0,
-        transition: true,
-        units: 'line widths',
-        requires: [{ '!': 'line-pattern' }],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'cross-faded'
-    },
-    'line-pattern': {
-        type: 'resolvedImage',
-        transition: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'cross-faded-data-driven'
-    },
-    'line-gradient': {
-        type: 'color',
-        transition: false,
-        requires: [
-            { '!': 'line-dasharray' },
-            { '!': 'line-pattern' },
-            {
-                source: 'geojson',
-                has: { lineMetrics: true }
-            }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: ['line-progress']
-        },
-        'property-type': 'color-ramp'
-    }
-};
-var paint_circle = {
-    'circle-radius': {
-        type: 'number',
-        'default': 5,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-blur': {
-        type: 'number',
-        'default': 0,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: ['circle-translate'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-pitch-scale': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-pitch-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'viewport',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-stroke-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-stroke-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-stroke-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    }
-};
-var paint_heatmap = {
-    'heatmap-radius': {
-        type: 'number',
-        'default': 30,
-        minimum: 1,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'heatmap-weight': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        transition: false,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'heatmap-intensity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'heatmap-color': {
-        type: 'color',
-        'default': [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0,
-            'rgba(0, 0, 255, 0)',
-            0.1,
-            'royalblue',
-            0.3,
-            'cyan',
-            0.5,
-            'lime',
-            0.7,
-            'yellow',
-            1,
-            'red'
-        ],
-        transition: false,
-        expression: {
-            interpolated: true,
-            parameters: ['heatmap-density']
-        },
-        'property-type': 'color-ramp'
-    },
-    'heatmap-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_symbol = {
-    'icon-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-halo-color': {
-        type: 'color',
-        'default': 'rgba(0, 0, 0, 0)',
-        transition: true,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-halo-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-halo-blur': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: [
-            'icon-image',
-            'icon-translate'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        overridable: true,
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-halo-color': {
-        type: 'color',
-        'default': 'rgba(0, 0, 0, 0)',
-        transition: true,
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-halo-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-halo-blur': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: [
-            'text-field',
-            'text-translate'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_raster = {
-    'raster-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-hue-rotate': {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        transition: true,
-        units: 'degrees',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-brightness-min': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-brightness-max': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-saturation': {
-        type: 'number',
-        'default': 0,
-        minimum: -1,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-contrast': {
-        type: 'number',
-        'default': 0,
-        minimum: -1,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-resampling': {
-        type: 'enum',
-        values: {
-            linear: {},
-            nearest: {}
-        },
-        'default': 'linear',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-fade-duration': {
-        type: 'number',
-        'default': 300,
-        minimum: 0,
-        transition: false,
-        units: 'milliseconds',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_hillshade = {
-    'hillshade-illumination-direction': {
-        type: 'number',
-        'default': 335,
-        minimum: 0,
-        maximum: 359,
-        transition: false,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-illumination-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'viewport',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-exaggeration': {
-        type: 'number',
-        'default': 0.5,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-shadow-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-highlight-color': {
-        type: 'color',
-        'default': '#FFFFFF',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-accent-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_background = {
-    'background-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: [{ '!': 'background-pattern' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'background-pattern': {
-        type: 'resolvedImage',
-        transition: true,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'cross-faded'
-    },
-    'background-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var transition = {
-    duration: {
-        type: 'number',
-        'default': 300,
-        minimum: 0,
-        units: 'milliseconds'
-    },
-    delay: {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        units: 'milliseconds'
-    }
-};
-var promoteId = { '*': { type: 'string' } };
-var spec = {
-    $version: $version,
-    $root: $root,
-    sources: sources,
-    source: source,
-    source_vector: source_vector,
-    source_raster: source_raster,
-    source_raster_dem: source_raster_dem,
-    source_geojson: source_geojson,
-    source_video: source_video,
-    source_image: source_image,
-    layer: layer,
-    layout: layout$7,
-    layout_background: layout_background,
-    layout_fill: layout_fill,
-    layout_circle: layout_circle,
-    layout_heatmap: layout_heatmap,
-    'layout_fill-extrusion': {
-        visibility: {
-            type: 'enum',
-            values: {
-                visible: {},
-                none: {}
-            },
-            'default': 'visible',
-            'property-type': 'constant'
-        }
-    },
-    layout_line: layout_line,
-    layout_symbol: layout_symbol,
-    layout_raster: layout_raster,
-    layout_hillshade: layout_hillshade,
-    filter: filter,
-    filter_operator: filter_operator,
-    geometry_type: geometry_type,
-    'function': {
-        expression: { type: 'expression' },
-        stops: {
-            type: 'array',
-            value: 'function_stop'
-        },
-        base: {
-            type: 'number',
-            'default': 1,
-            minimum: 0
-        },
-        property: {
-            type: 'string',
-            'default': '$zoom'
-        },
-        type: {
-            type: 'enum',
-            values: {
-                identity: {},
-                exponential: {},
-                interval: {},
-                categorical: {}
-            },
-            'default': 'exponential'
-        },
-        colorSpace: {
-            type: 'enum',
-            values: {
-                rgb: {},
-                lab: {},
-                hcl: {}
-            },
-            'default': 'rgb'
-        },
-        'default': {
-            type: '*',
-            required: false
-        }
-    },
-    function_stop: function_stop,
-    expression: expression,
-    light: light,
-    paint: paint$9,
-    paint_fill: paint_fill,
-    'paint_fill-extrusion': {
-        'fill-extrusion-opacity': {
-            type: 'number',
-            'default': 1,
-            minimum: 0,
-            maximum: 1,
-            transition: true,
-            expression: {
-                interpolated: true,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        },
-        'fill-extrusion-color': {
-            type: 'color',
-            'default': '#000000',
-            transition: true,
-            requires: [{ '!': 'fill-extrusion-pattern' }],
-            expression: {
-                interpolated: true,
-                parameters: [
-                    'zoom',
-                    'feature',
-                    'feature-state'
-                ]
-            },
-            'property-type': 'data-driven'
-        },
-        'fill-extrusion-translate': {
-            type: 'array',
-            value: 'number',
-            length: 2,
-            'default': [
-                0,
-                0
-            ],
-            transition: true,
-            units: 'pixels',
-            expression: {
-                interpolated: true,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        },
-        'fill-extrusion-translate-anchor': {
-            type: 'enum',
-            values: {
-                map: {},
-                viewport: {}
-            },
-            'default': 'map',
-            requires: ['fill-extrusion-translate'],
-            expression: {
-                interpolated: false,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        },
-        'fill-extrusion-pattern': {
-            type: 'resolvedImage',
-            transition: true,
-            expression: {
-                interpolated: false,
-                parameters: [
-                    'zoom',
-                    'feature'
-                ]
-            },
-            'property-type': 'cross-faded-data-driven'
-        },
-        'fill-extrusion-height': {
-            type: 'number',
-            'default': 0,
-            minimum: 0,
-            units: 'meters',
-            transition: true,
-            expression: {
-                interpolated: true,
-                parameters: [
-                    'zoom',
-                    'feature',
-                    'feature-state'
-                ]
-            },
-            'property-type': 'data-driven'
-        },
-        'fill-extrusion-base': {
-            type: 'number',
-            'default': 0,
-            minimum: 0,
-            units: 'meters',
-            transition: true,
-            requires: ['fill-extrusion-height'],
-            expression: {
-                interpolated: true,
-                parameters: [
-                    'zoom',
-                    'feature',
-                    'feature-state'
-                ]
-            },
-            'property-type': 'data-driven'
-        },
-        'fill-extrusion-vertical-gradient': {
-            type: 'boolean',
-            'default': true,
-            transition: false,
-            expression: {
-                interpolated: false,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        }
-    },
-    paint_line: paint_line,
-    paint_circle: paint_circle,
-    paint_heatmap: paint_heatmap,
-    paint_symbol: paint_symbol,
-    paint_raster: paint_raster,
-    paint_hillshade: paint_hillshade,
-    paint_background: paint_background,
-    transition: transition,
-    'property-type': {
-        'data-driven': { type: 'property-type' },
-        'cross-faded': { type: 'property-type' },
-        'cross-faded-data-driven': { type: 'property-type' },
-        'color-ramp': { type: 'property-type' },
-        'data-constant': { type: 'property-type' },
-        constant: { type: 'property-type' }
-    },
-    promoteId: promoteId
-};
-
-var ValidationError = function () {
-    function ValidationError(key, value, message, identifier) {
-        this.message = (key ? ''.concat(key, ': ') : '') + message;
-        if (identifier) {
-            this.identifier = identifier;
-        }
-        if (value !== null && value !== undefined && value.__line__) {
-            this.line = value.__line__;
-        }
-    }
-    return ValidationError;
-}();
-
-function validateConstants(options) {
-    var key = options.key;
-    var constants = options.value;
-    if (constants) {
-        return [new ValidationError(key, constants, 'constants have been deprecated as of v8')];
-    } else {
-        return [];
-    }
-}
-
-function unbundle(value) {
-    if (value instanceof Number || value instanceof String || value instanceof Boolean) {
-        return value.valueOf();
-    } else {
-        return value;
-    }
-}
-function deepUnbundle(value) {
-    if (Array.isArray(value)) {
-        return value.map(deepUnbundle);
-    } else if (value instanceof Object && !(value instanceof Number || value instanceof String || value instanceof Boolean)) {
-        var unbundledValue = {};
-        for (var key in value) {
-            unbundledValue[key] = deepUnbundle(value[key]);
-        }
-        return unbundledValue;
-    }
-    return unbundle(value);
-}
-
 function validateObject(options) {
     var key = options.key;
     var object = options.value;
@@ -10843,6 +10549,290 @@ function emitValidationErrors(emitter, errors) {
         }
     }
     return hasErrors;
+}
+
+var NUM_PARAMS = 3;
+var TransferableGridIndex = function () {
+    function TransferableGridIndex(extent, n, padding) {
+        var cells = this.cells = [];
+        if (extent instanceof ArrayBuffer) {
+            this.arrayBuffer = extent;
+            var array = new Int32Array(this.arrayBuffer);
+            extent = array[0];
+            n = array[1];
+            padding = array[2];
+            this.d = n + 2 * padding;
+            for (var k = 0; k < this.d * this.d; k++) {
+                var start = array[NUM_PARAMS + k];
+                var end = array[NUM_PARAMS + k + 1];
+                cells.push(start === end ? null : array.subarray(start, end));
+            }
+            var keysOffset = array[NUM_PARAMS + cells.length];
+            var bboxesOffset = array[NUM_PARAMS + cells.length + 1];
+            this.keys = array.subarray(keysOffset, bboxesOffset);
+            this.bboxes = array.subarray(bboxesOffset);
+            this.insert = this._insertReadonly;
+        } else {
+            this.d = n + 2 * padding;
+            for (var i = 0; i < this.d * this.d; i++) {
+                cells.push([]);
+            }
+            this.keys = [];
+            this.bboxes = [];
+        }
+        this.n = n;
+        this.extent = extent;
+        this.padding = padding;
+        this.scale = n / extent;
+        this.uid = 0;
+        var p = padding / n * extent;
+        this.min = -p;
+        this.max = extent + p;
+    }
+    TransferableGridIndex.prototype.insert = function (key, x1, y1, x2, y2) {
+        this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++, undefined, undefined);
+        this.keys.push(key);
+        this.bboxes.push(x1);
+        this.bboxes.push(y1);
+        this.bboxes.push(x2);
+        this.bboxes.push(y2);
+    };
+    TransferableGridIndex.prototype._insertReadonly = function () {
+        throw new Error('Cannot insert into a GridIndex created from an ArrayBuffer.');
+    };
+    TransferableGridIndex.prototype._insertCell = function (x1, y1, x2, y2, cellIndex, uid) {
+        this.cells[cellIndex].push(uid);
+    };
+    TransferableGridIndex.prototype.query = function (x1, y1, x2, y2, intersectionTest) {
+        var min = this.min;
+        var max = this.max;
+        if (x1 <= min && y1 <= min && max <= x2 && max <= y2 && !intersectionTest) {
+            return Array.prototype.slice.call(this.keys);
+        } else {
+            var result = [];
+            var seenUids = {};
+            this._forEachCell(x1, y1, x2, y2, this._queryCell, result, seenUids, intersectionTest);
+            return result;
+        }
+    };
+    TransferableGridIndex.prototype._queryCell = function (x1, y1, x2, y2, cellIndex, result, seenUids, intersectionTest) {
+        var cell = this.cells[cellIndex];
+        if (cell !== null) {
+            var keys = this.keys;
+            var bboxes = this.bboxes;
+            for (var u = 0; u < cell.length; u++) {
+                var uid = cell[u];
+                if (seenUids[uid] === undefined) {
+                    var offset = uid * 4;
+                    if (intersectionTest ? intersectionTest(bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) : x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1]) {
+                        seenUids[uid] = true;
+                        result.push(keys[uid]);
+                    } else {
+                        seenUids[uid] = false;
+                    }
+                }
+            }
+        }
+    };
+    TransferableGridIndex.prototype._forEachCell = function (x1, y1, x2, y2, fn, arg1, arg2, intersectionTest) {
+        var cx1 = this._convertToCellCoord(x1);
+        var cy1 = this._convertToCellCoord(y1);
+        var cx2 = this._convertToCellCoord(x2);
+        var cy2 = this._convertToCellCoord(y2);
+        for (var x = cx1; x <= cx2; x++) {
+            for (var y = cy1; y <= cy2; y++) {
+                var cellIndex = this.d * y + x;
+                if (intersectionTest && !intersectionTest(this._convertFromCellCoord(x), this._convertFromCellCoord(y), this._convertFromCellCoord(x + 1), this._convertFromCellCoord(y + 1))) {
+                    continue;
+                }
+                if (fn.call(this, x1, y1, x2, y2, cellIndex, arg1, arg2, intersectionTest)) {
+                    return;
+                }
+            }
+        }
+    };
+    TransferableGridIndex.prototype._convertFromCellCoord = function (x) {
+        return (x - this.padding) / this.scale;
+    };
+    TransferableGridIndex.prototype._convertToCellCoord = function (x) {
+        return Math.max(0, Math.min(this.d - 1, Math.floor(x * this.scale) + this.padding));
+    };
+    TransferableGridIndex.prototype.toArrayBuffer = function () {
+        if (this.arrayBuffer) {
+            return this.arrayBuffer;
+        }
+        var cells = this.cells;
+        var metadataLength = NUM_PARAMS + this.cells.length + 1 + 1;
+        var totalCellLength = 0;
+        for (var i = 0; i < this.cells.length; i++) {
+            totalCellLength += this.cells[i].length;
+        }
+        var array = new Int32Array(metadataLength + totalCellLength + this.keys.length + this.bboxes.length);
+        array[0] = this.extent;
+        array[1] = this.n;
+        array[2] = this.padding;
+        var offset = metadataLength;
+        for (var k = 0; k < cells.length; k++) {
+            var cell = cells[k];
+            array[NUM_PARAMS + k] = offset;
+            array.set(cell, offset);
+            offset += cell.length;
+        }
+        array[NUM_PARAMS + cells.length] = offset;
+        array.set(this.keys, offset);
+        offset += this.keys.length;
+        array[NUM_PARAMS + cells.length + 1] = offset;
+        array.set(this.bboxes, offset);
+        offset += this.bboxes.length;
+        return array.buffer;
+    };
+    TransferableGridIndex.serialize = function (grid, transferables) {
+        var buffer = grid.toArrayBuffer();
+        if (transferables) {
+            transferables.push(buffer);
+        }
+        return { buffer: buffer };
+    };
+    TransferableGridIndex.deserialize = function (serialized) {
+        return new TransferableGridIndex(serialized.buffer);
+    };
+    return TransferableGridIndex;
+}();
+
+var registry = {};
+function register(name, klass, options) {
+    if (options === void 0) {
+        options = {};
+    }
+    Object.defineProperty(klass, '_classRegistryKey', {
+        value: name,
+        writeable: false
+    });
+    registry[name] = {
+        klass: klass,
+        omit: options.omit || [],
+        shallow: options.shallow || []
+    };
+}
+register('Object', Object);
+register('TransferableGridIndex', TransferableGridIndex);
+register('Color', Color);
+register('Error', Error);
+register('ResolvedImage', ResolvedImage);
+register('StylePropertyFunction', StylePropertyFunction);
+register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
+register('ZoomDependentExpression', ZoomDependentExpression);
+register('ZoomConstantExpression', ZoomConstantExpression);
+register('CompoundExpression', CompoundExpression, { omit: ['_evaluate'] });
+for (var name_1 in expressions) {
+    if (expressions[name_1]._classRegistryKey) {
+        continue;
+    }
+    register('Expression_'.concat(name_1), expressions[name_1]);
+}
+function isArrayBuffer(value) {
+    return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
+}
+function serialize(input, transferables) {
+    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
+        return input;
+    }
+    if (isArrayBuffer(input)) {
+        if (transferables) {
+            transferables.push(input);
+        }
+        return input;
+    }
+    if (isImageBitmap(input)) {
+        if (transferables) {
+            transferables.push(input);
+        }
+        return input;
+    }
+    if (ArrayBuffer.isView(input)) {
+        var view = input;
+        if (transferables) {
+            transferables.push(view.buffer);
+        }
+        return view;
+    }
+    if (input instanceof ImageData) {
+        if (transferables) {
+            transferables.push(input.data.buffer);
+        }
+        return input;
+    }
+    if (Array.isArray(input)) {
+        var serialized = [];
+        for (var _i = 0, input_1 = input; _i < input_1.length; _i++) {
+            var item = input_1[_i];
+            serialized.push(serialize(item, transferables));
+        }
+        return serialized;
+    }
+    if (typeof input === 'object') {
+        var klass = input.constructor;
+        var name_2 = klass._classRegistryKey;
+        if (!name_2) {
+            throw new Error('can\'t serialize object of unregistered class');
+        }
+        var properties = klass.serialize ? klass.serialize(input, transferables) : {};
+        if (!klass.serialize) {
+            for (var key in input) {
+                if (!input.hasOwnProperty(key)) {
+                    continue;
+                }
+                if (registry[name_2].omit.indexOf(key) >= 0) {
+                    continue;
+                }
+                var property = input[key];
+                properties[key] = registry[name_2].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
+            }
+            if (input instanceof Error) {
+                properties.message = input.message;
+            }
+        }
+        if (properties.$name) {
+            throw new Error('$name property is reserved for worker serialization logic.');
+        }
+        if (name_2 !== 'Object') {
+            properties.$name = name_2;
+        }
+        return properties;
+    }
+    throw new Error('can\'t serialize object of type '.concat(typeof input));
+}
+function deserialize(input) {
+    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
+        return input;
+    }
+    if (Array.isArray(input)) {
+        return input.map(deserialize);
+    }
+    if (typeof input === 'object') {
+        var name_3 = input.$name || 'Object';
+        if (!registry[name_3]) {
+            throw new Error('can\'t deserialize unregistered class '.concat(name_3));
+        }
+        var klass = registry[name_3].klass;
+        if (!klass) {
+            throw new Error('can\'t deserialize unregistered class '.concat(name_3));
+        }
+        if (klass.deserialize) {
+            return klass.deserialize(input);
+        }
+        var result = Object.create(klass.prototype);
+        for (var _i = 0, _a = Object.keys(input); _i < _a.length; _i++) {
+            var key = _a[_i];
+            if (key === '$name') {
+                continue;
+            }
+            var value = input[key];
+            result[key] = registry[name_3].shallow.indexOf(key) >= 0 ? value : deserialize(value);
+        }
+        return result;
+    }
+    throw new Error('can\'t deserialize object of type '.concat(typeof input));
 }
 
 var ZoomHistory = function () {
@@ -12939,7 +12929,7 @@ var CollisionBoxStruct = function (_super) {
     });
     Object.defineProperty(CollisionBoxStruct.prototype, 'anchorPoint', {
         get: function () {
-            return new Point$2(this.anchorPointX, this.anchorPointY);
+            return new pointGeometry(this.anchorPointX, this.anchorPointY);
         },
         enumerable: false,
         configurable: true
@@ -13391,6 +13381,139 @@ var FeatureIndexArray = function (_super) {
     return FeatureIndexArray;
 }(StructArrayLayout1ul2ui8);
 register('FeatureIndexArray', FeatureIndexArray);
+var PosArray = function (_super) {
+    __extends$d(PosArray, _super);
+    function PosArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PosArray;
+}(StructArrayLayout2i4);
+var RasterBoundsArray = function (_super) {
+    __extends$d(RasterBoundsArray, _super);
+    function RasterBoundsArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return RasterBoundsArray;
+}(StructArrayLayout4i8);
+var CircleLayoutArray = function (_super) {
+    __extends$d(CircleLayoutArray, _super);
+    function CircleLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CircleLayoutArray;
+}(StructArrayLayout2i4);
+var FillLayoutArray = function (_super) {
+    __extends$d(FillLayoutArray, _super);
+    function FillLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return FillLayoutArray;
+}(StructArrayLayout2i4);
+var FillExtrusionLayoutArray = function (_super) {
+    __extends$d(FillExtrusionLayoutArray, _super);
+    function FillExtrusionLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return FillExtrusionLayoutArray;
+}(StructArrayLayout2i4i12);
+(function (_super) {
+    __extends$d(HeatmapLayoutArray, _super);
+    function HeatmapLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return HeatmapLayoutArray;
+})(StructArrayLayout2i4);
+var LineLayoutArray = function (_super) {
+    __extends$d(LineLayoutArray, _super);
+    function LineLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineLayoutArray;
+}(StructArrayLayout2i4ub8);
+var LineExtLayoutArray = function (_super) {
+    __extends$d(LineExtLayoutArray, _super);
+    function LineExtLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineExtLayoutArray;
+}(StructArrayLayout2f8);
+var PatternLayoutArray = function (_super) {
+    __extends$d(PatternLayoutArray, _super);
+    function PatternLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PatternLayoutArray;
+}(StructArrayLayout10ui20);
+var SymbolLayoutArray = function (_super) {
+    __extends$d(SymbolLayoutArray, _super);
+    function SymbolLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SymbolLayoutArray;
+}(StructArrayLayout4i4ui4i24);
+var SymbolDynamicLayoutArray = function (_super) {
+    __extends$d(SymbolDynamicLayoutArray, _super);
+    function SymbolDynamicLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SymbolDynamicLayoutArray;
+}(StructArrayLayout3f12);
+var SymbolOpacityArray = function (_super) {
+    __extends$d(SymbolOpacityArray, _super);
+    function SymbolOpacityArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return SymbolOpacityArray;
+}(StructArrayLayout1ul4);
+var CollisionBoxLayoutArray = function (_super) {
+    __extends$d(CollisionBoxLayoutArray, _super);
+    function CollisionBoxLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CollisionBoxLayoutArray;
+}(StructArrayLayout2i2i2i12);
+var CollisionCircleLayoutArray = function (_super) {
+    __extends$d(CollisionCircleLayoutArray, _super);
+    function CollisionCircleLayoutArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CollisionCircleLayoutArray;
+}(StructArrayLayout2f1f2i16);
+var CollisionVertexArray = function (_super) {
+    __extends$d(CollisionVertexArray, _super);
+    function CollisionVertexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return CollisionVertexArray;
+}(StructArrayLayout2ub2f12);
+var QuadTriangleArray = function (_super) {
+    __extends$d(QuadTriangleArray, _super);
+    function QuadTriangleArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return QuadTriangleArray;
+}(StructArrayLayout3ui6);
+var TriangleIndexArray = function (_super) {
+    __extends$d(TriangleIndexArray, _super);
+    function TriangleIndexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return TriangleIndexArray;
+}(StructArrayLayout3ui6);
+var LineIndexArray = function (_super) {
+    __extends$d(LineIndexArray, _super);
+    function LineIndexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineIndexArray;
+}(StructArrayLayout2ui4);
+var LineStripIndexArray = function (_super) {
+    __extends$d(LineStripIndexArray, _super);
+    function LineStripIndexArray() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return LineStripIndexArray;
+}(StructArrayLayout1ui2);
 
 var layout$6 = createLayout([{
         name: 'a_pos',
@@ -14318,16 +14441,16 @@ function paintAttributeNames(property, type) {
 function getLayoutException(property) {
     var propertyExceptions = {
         'line-pattern': {
-            'source': StructArrayLayout10ui20,
-            'composite': StructArrayLayout10ui20
+            'source': PatternLayoutArray,
+            'composite': PatternLayoutArray
         },
         'fill-pattern': {
-            'source': StructArrayLayout10ui20,
-            'composite': StructArrayLayout10ui20
+            'source': PatternLayoutArray,
+            'composite': PatternLayoutArray
         },
         'fill-extrusion-pattern': {
-            'source': StructArrayLayout10ui20,
-            'composite': StructArrayLayout10ui20
+            'source': PatternLayoutArray,
+            'composite': PatternLayoutArray
         }
     };
     return propertyExceptions[property];
@@ -14400,8 +14523,8 @@ var CircleBucket = function () {
         });
         this.index = options.index;
         this.hasPattern = false;
-        this.layoutVertexArray = new StructArrayLayout2i4();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new CircleLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.segments = new SegmentVector();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.stateDependentLayerIds = this.layers.filter(function (l) {
@@ -14672,10 +14795,10 @@ function polygonIntersectsBox(ring, boxX1, boxY1, boxX2, boxY2) {
         }
     }
     var corners = [
-        new Point$2(boxX1, boxY1),
-        new Point$2(boxX1, boxY2),
-        new Point$2(boxX2, boxY2),
-        new Point$2(boxX2, boxY1)
+        new pointGeometry(boxX1, boxY1),
+        new pointGeometry(boxX1, boxY2),
+        new pointGeometry(boxX2, boxY2),
+        new pointGeometry(boxX2, boxY1)
     ];
     if (ring.length > 2) {
         for (var _a = 0, corners_1 = corners; _a < corners_1.length; _a++) {
@@ -14719,7 +14842,7 @@ function translate$1(queryGeometry, translate, translateAnchor, bearing, pixelsT
     if (!translate[0] && !translate[1]) {
         return queryGeometry;
     }
-    var pt = Point$2.convert(translate)._mult(pixelsToTileUnits);
+    var pt = pointGeometry.convert(translate)._mult(pixelsToTileUnits);
     if (translateAnchor === 'viewport') {
         pt._rotate(-bearing);
     }
@@ -15208,7 +15331,7 @@ var CircleStyleLayer = function (_super) {
 }(StyleLayer);
 function projectPoint(p, pixelPosMatrix) {
     var point = transformMat4(create(), fromValues(p.x, p.y, 0, 1), pixelPosMatrix);
-    return new Point$2(point[0] / point[3], point[1] / point[3]);
+    return new pointGeometry(point[0] / point[3], point[1] / point[3]);
 }
 function projectQueryGeometry$1(queryGeometry, pixelPosMatrix) {
     return queryGeometry.map(function (p) {
@@ -16178,9 +16301,9 @@ var FillBucket = function () {
         this.index = options.index;
         this.hasPattern = false;
         this.patternFeatures = [];
-        this.layoutVertexArray = new StructArrayLayout2i4();
-        this.indexArray = new StructArrayLayout3ui6();
-        this.indexArray2 = new StructArrayLayout2ui4();
+        this.layoutVertexArray = new FillLayoutArray();
+        this.indexArray = new TriangleIndexArray();
+        this.indexArray2 = new LineIndexArray();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.segments = new SegmentVector();
         this.segments2 = new SegmentVector();
@@ -16406,150 +16529,6 @@ var layout$2 = createLayout([
 var members$2 = layout$2.members;
 
 var vectorTile = {};
-
-var pointGeometry = Point$1;
-function Point$1(x, y) {
-    this.x = x;
-    this.y = y;
-}
-Point$1.prototype = {
-    clone: function () {
-        return new Point$1(this.x, this.y);
-    },
-    add: function (p) {
-        return this.clone()._add(p);
-    },
-    sub: function (p) {
-        return this.clone()._sub(p);
-    },
-    multByPoint: function (p) {
-        return this.clone()._multByPoint(p);
-    },
-    divByPoint: function (p) {
-        return this.clone()._divByPoint(p);
-    },
-    mult: function (k) {
-        return this.clone()._mult(k);
-    },
-    div: function (k) {
-        return this.clone()._div(k);
-    },
-    rotate: function (a) {
-        return this.clone()._rotate(a);
-    },
-    rotateAround: function (a, p) {
-        return this.clone()._rotateAround(a, p);
-    },
-    matMult: function (m) {
-        return this.clone()._matMult(m);
-    },
-    unit: function () {
-        return this.clone()._unit();
-    },
-    perp: function () {
-        return this.clone()._perp();
-    },
-    round: function () {
-        return this.clone()._round();
-    },
-    mag: function () {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    },
-    equals: function (other) {
-        return this.x === other.x && this.y === other.y;
-    },
-    dist: function (p) {
-        return Math.sqrt(this.distSqr(p));
-    },
-    distSqr: function (p) {
-        var dx = p.x - this.x, dy = p.y - this.y;
-        return dx * dx + dy * dy;
-    },
-    angle: function () {
-        return Math.atan2(this.y, this.x);
-    },
-    angleTo: function (b) {
-        return Math.atan2(this.y - b.y, this.x - b.x);
-    },
-    angleWith: function (b) {
-        return this.angleWithSep(b.x, b.y);
-    },
-    angleWithSep: function (x, y) {
-        return Math.atan2(this.x * y - this.y * x, this.x * x + this.y * y);
-    },
-    _matMult: function (m) {
-        var x = m[0] * this.x + m[1] * this.y, y = m[2] * this.x + m[3] * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    },
-    _add: function (p) {
-        this.x += p.x;
-        this.y += p.y;
-        return this;
-    },
-    _sub: function (p) {
-        this.x -= p.x;
-        this.y -= p.y;
-        return this;
-    },
-    _mult: function (k) {
-        this.x *= k;
-        this.y *= k;
-        return this;
-    },
-    _div: function (k) {
-        this.x /= k;
-        this.y /= k;
-        return this;
-    },
-    _multByPoint: function (p) {
-        this.x *= p.x;
-        this.y *= p.y;
-        return this;
-    },
-    _divByPoint: function (p) {
-        this.x /= p.x;
-        this.y /= p.y;
-        return this;
-    },
-    _unit: function () {
-        this._div(this.mag());
-        return this;
-    },
-    _perp: function () {
-        var y = this.y;
-        this.y = this.x;
-        this.x = -y;
-        return this;
-    },
-    _rotate: function (angle) {
-        var cos = Math.cos(angle), sin = Math.sin(angle), x = cos * this.x - sin * this.y, y = sin * this.x + cos * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    },
-    _rotateAround: function (angle, p) {
-        var cos = Math.cos(angle), sin = Math.sin(angle), x = p.x + cos * (this.x - p.x) - sin * (this.y - p.y), y = p.y + sin * (this.x - p.x) + cos * (this.y - p.y);
-        this.x = x;
-        this.y = y;
-        return this;
-    },
-    _round: function () {
-        this.x = Math.round(this.x);
-        this.y = Math.round(this.y);
-        return this;
-    }
-};
-Point$1.convert = function (a) {
-    if (a instanceof Point$1) {
-        return a;
-    }
-    if (Array.isArray(a)) {
-        return new Point$1(a[0], a[1]);
-    }
-    return a;
-};
 
 var Point = pointGeometry;
 var vectortilefeature = VectorTileFeature$1;
@@ -16828,8 +16807,8 @@ var FillExtrusionBucket = function () {
         });
         this.index = options.index;
         this.hasPattern = false;
-        this.layoutVertexArray = new StructArrayLayout2i4i12();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new FillExtrusionLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.segments = new SegmentVector();
         this.stateDependentLayerIds = this.layers.filter(function (l) {
@@ -17044,7 +17023,7 @@ var __extends$6 = undefined && undefined.__extends || function () {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     return Point3D;
-})(Point$2);
+})(pointGeometry);
 var FillExtrusionStyleLayer = function (_super) {
     __extends$6(FillExtrusionStyleLayer, _super);
     function FillExtrusionStyleLayer(layer) {
@@ -17173,10 +17152,10 @@ function projectExtrusion(geometry, zBase, zTop, m) {
             var topY = sY + topYZ;
             var topZ = sZ + topZZ;
             var topW = sW + topWZ;
-            var b = new Point$2(baseX / baseW, baseY / baseW);
+            var b = new pointGeometry(baseX / baseW, baseY / baseW);
             b.z = baseZ / baseW;
             ringBase.push(b);
-            var t = new Point$2(topX / topW, topY / topW);
+            var t = new pointGeometry(topX / topW, topY / topW);
             t.z = topZ / topW;
             ringTop.push(t);
         }
@@ -17194,7 +17173,7 @@ function projectQueryGeometry(queryGeometry, pixelPosMatrix, transform, z) {
         var p = queryGeometry_1[_i];
         var v = fromValues(p.x, p.y, z, 1);
         transformMat4(v, v, pixelPosMatrix);
-        projectedQueryGeometry.push(new Point$2(v[0] / v[3], v[1] / v[3]));
+        projectedQueryGeometry.push(new pointGeometry(v[0] / v[3], v[1] / v[3]));
     }
     return projectedQueryGeometry;
 }
@@ -17252,9 +17231,9 @@ var LineBucket = function () {
         this.layers.forEach(function (layer) {
             _this.gradients[layer.id] = {};
         });
-        this.layoutVertexArray = new StructArrayLayout2i4ub8();
-        this.layoutVertexArray2 = new StructArrayLayout2f8();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new LineLayoutArray();
+        this.layoutVertexArray2 = new LineExtLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
         this.segments = new SegmentVector();
         this.maxLineLength = 0;
@@ -17702,7 +17681,7 @@ function getLineWidth(lineWidth, lineGapWidth) {
 }
 function offsetLine(rings, offset) {
     var newRings = [];
-    var zero = new Point$2(0, 0);
+    var zero = new pointGeometry(0, 0);
     for (var k = 0; k < rings.length; k++) {
         var ring = rings[k];
         var newRing = [];
@@ -19958,7 +19937,7 @@ var Anchor = function (_super) {
         return new Anchor(this.x, this.y, this.angle, this.segment);
     };
     return Anchor;
-}(Point$2);
+}(pointGeometry);
 register('Anchor', Anchor);
 
 function checkMaxAngle(line, anchor, labelLength, windowSize, maxAngle) {
@@ -20090,30 +20069,30 @@ function clipLine(lines, x1, y1, x2, y2) {
             if (p0.x < x1 && p1.x < x1) {
                 continue;
             } else if (p0.x < x1) {
-                p0 = new Point$2(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
+                p0 = new pointGeometry(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
             } else if (p1.x < x1) {
-                p1 = new Point$2(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
+                p1 = new pointGeometry(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
             }
             if (p0.y < y1 && p1.y < y1) {
                 continue;
             } else if (p0.y < y1) {
-                p0 = new Point$2(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
+                p0 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
             } else if (p1.y < y1) {
-                p1 = new Point$2(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
+                p1 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
             }
             if (p0.x >= x2 && p1.x >= x2) {
                 continue;
             } else if (p0.x >= x2) {
-                p0 = new Point$2(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
+                p0 = new pointGeometry(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
             } else if (p1.x >= x2) {
-                p1 = new Point$2(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
+                p1 = new pointGeometry(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
             }
             if (p0.y >= y2 && p1.y >= y2) {
                 continue;
             } else if (p0.y >= y2) {
-                p0 = new Point$2(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
+                p0 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
             } else if (p1.y >= y2) {
-                p1 = new Point$2(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
+                p1 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
             }
             if (!clippedLine || !p0.equals(clippedLine[clippedLine.length - 1])) {
                 clippedLine = [p0];
@@ -20190,12 +20169,12 @@ function getIconQuads(shapedIcon, iconRotate, isSDFIcon, hasIconTextFit) {
         var rightPx = getPxOffset(right.fixed - fixedOffsetX, fixedContentWidth, right.stretch, stretchWidth);
         var bottomEm = getEmOffset(bottom.stretch - stretchOffsetY, stretchContentHeight, iconHeight, shapedIcon.top);
         var bottomPx = getPxOffset(bottom.fixed - fixedOffsetY, fixedContentHeight, bottom.stretch, stretchHeight);
-        var tl = new Point$2(leftEm, topEm);
-        var tr = new Point$2(rightEm, topEm);
-        var br = new Point$2(rightEm, bottomEm);
-        var bl = new Point$2(leftEm, bottomEm);
-        var pixelOffsetTL = new Point$2(leftPx / pixelRatio, topPx / pixelRatio);
-        var pixelOffsetBR = new Point$2(rightPx / pixelRatio, bottomPx / pixelRatio);
+        var tl = new pointGeometry(leftEm, topEm);
+        var tr = new pointGeometry(rightEm, topEm);
+        var br = new pointGeometry(rightEm, bottomEm);
+        var bl = new pointGeometry(leftEm, bottomEm);
+        var pixelOffsetTL = new pointGeometry(leftPx / pixelRatio, topPx / pixelRatio);
+        var pixelOffsetBR = new pointGeometry(rightPx / pixelRatio, bottomPx / pixelRatio);
         var angle = iconRotate * Math.PI / 180;
         if (angle) {
             var sin = Math.sin(angle), cos = Math.cos(angle), matrix = [
@@ -20364,17 +20343,17 @@ function getGlyphQuads(anchor, shaping, textOffset, layer, alongLine, feature, i
             var y1 = (-positionedGlyph.metrics.top - rectBuffer) * positionedGlyph.scale + builtInOffset[1];
             var x2 = x1 + textureRect.w * positionedGlyph.scale / pixelRatio;
             var y2 = y1 + textureRect.h * positionedGlyph.scale / pixelRatio;
-            var tl = new Point$2(x1, y1);
-            var tr = new Point$2(x2, y1);
-            var bl = new Point$2(x1, y2);
-            var br = new Point$2(x2, y2);
+            var tl = new pointGeometry(x1, y1);
+            var tr = new pointGeometry(x2, y1);
+            var bl = new pointGeometry(x1, y2);
+            var br = new pointGeometry(x2, y2);
             if (rotateVerticalGlyph) {
-                var center = new Point$2(-halfAdvance, halfAdvance - SHAPING_DEFAULT_OFFSET);
+                var center = new pointGeometry(-halfAdvance, halfAdvance - SHAPING_DEFAULT_OFFSET);
                 var verticalRotation = -Math.PI / 2;
                 var xHalfWidthOffsetCorrection = ONE_EM / 2 - halfAdvance;
                 var yImageOffsetCorrection = positionedGlyph.imageName ? xHalfWidthOffsetCorrection : 0;
-                var halfWidthOffsetCorrection = new Point$2(5 - SHAPING_DEFAULT_OFFSET - xHalfWidthOffsetCorrection, -yImageOffsetCorrection);
-                var verticalOffsetCorrection = new (Point$2.bind.apply(Point$2, __spreadArray([void 0], verticalizedLabelOffset, false)))();
+                var halfWidthOffsetCorrection = new pointGeometry(5 - SHAPING_DEFAULT_OFFSET - xHalfWidthOffsetCorrection, -yImageOffsetCorrection);
+                var verticalOffsetCorrection = new (pointGeometry.bind.apply(pointGeometry, __spreadArray([void 0], verticalizedLabelOffset, false)))();
                 tl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
                 tr._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
                 bl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
@@ -20392,8 +20371,8 @@ function getGlyphQuads(anchor, shaping, textOffset, layer, alongLine, feature, i
                 bl._matMult(matrix);
                 br._matMult(matrix);
             }
-            var pixelOffsetTL = new Point$2(0, 0);
-            var pixelOffsetBR = new Point$2(0, 0);
+            var pixelOffsetTL = new pointGeometry(0, 0);
+            var pixelOffsetBR = new pointGeometry(0, 0);
             var minFontScaleX = 0;
             var minFontScaleY = 0;
             quads.push({
@@ -20445,10 +20424,10 @@ var CollisionFeature = function () {
                 y2 += collisionPadding[3] * boxScale;
             }
             if (rotate) {
-                var tl = new Point$2(x1, y1);
-                var tr = new Point$2(x2, y1);
-                var bl = new Point$2(x1, y2);
-                var br = new Point$2(x2, y2);
+                var tl = new pointGeometry(x1, y1);
+                var tr = new pointGeometry(x2, y1);
+                var bl = new pointGeometry(x1, y2);
+                var br = new pointGeometry(x2, y2);
                 var rotateRadians = rotate * Math.PI / 180;
                 tl._rotate(rotateRadians);
                 tr._rotate(rotateRadians);
@@ -20573,7 +20552,7 @@ function findPoleOfInaccessibility (polygonRings, precision, debug) {
     var h = cellSize / 2;
     var cellQueue = new TinyQueue([], compareMax);
     if (cellSize === 0) {
-        return new Point$2(minX, minY);
+        return new pointGeometry(minX, minY);
     }
     for (var x = minX; x < maxX; x += cellSize) {
         for (var y = minY; y < maxY; y += cellSize) {
@@ -20610,7 +20589,7 @@ function compareMax(a, b) {
     return b.max - a.max;
 }
 function Cell(x, y, h, polygon) {
-    this.p = new Point$2(x, y);
+    this.p = new pointGeometry(x, y);
     this.h = h;
     this.d = pointToPolygonDist(this.p, polygon);
     this.max = this.d + this.h * Math.SQRT2;
@@ -21138,12 +21117,12 @@ function containsRTLText(formattedText) {
 }
 var SymbolBuffers = function () {
     function SymbolBuffers(programConfigurations) {
-        this.layoutVertexArray = new StructArrayLayout4i4ui4i24();
-        this.indexArray = new StructArrayLayout3ui6();
+        this.layoutVertexArray = new SymbolLayoutArray();
+        this.indexArray = new TriangleIndexArray();
         this.programConfigurations = programConfigurations;
         this.segments = new SegmentVector();
-        this.dynamicLayoutVertexArray = new StructArrayLayout3f12();
-        this.opacityVertexArray = new StructArrayLayout1ul4();
+        this.dynamicLayoutVertexArray = new SymbolDynamicLayoutArray();
+        this.opacityVertexArray = new SymbolOpacityArray();
         this.placedSymbolArray = new PlacedSymbolArray();
     }
     SymbolBuffers.prototype.isEmpty = function () {
@@ -21184,7 +21163,7 @@ var CollisionBuffers = function () {
         this.layoutAttributes = layoutAttributes;
         this.indexArray = new IndexArray();
         this.segments = new SegmentVector();
-        this.collisionVertexArray = new StructArrayLayout2ub2f12();
+        this.collisionVertexArray = new CollisionVertexArray();
     }
     CollisionBuffers.prototype.upload = function (context) {
         this.layoutVertexBuffer = context.createVertexBuffer(this.layoutVertexArray, this.layoutAttributes);
@@ -21466,10 +21445,10 @@ var SymbolBucket = function () {
         var collisionVertexArray = arrays.collisionVertexArray;
         var anchorX = symbolInstance.anchorX;
         var anchorY = symbolInstance.anchorY;
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x1, y1));
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x2, y1));
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x2, y2));
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x1, y2));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x1, y1));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x2, y1));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x2, y2));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x1, y2));
         segment.vertexLength += 4;
         var indexArray = arrays.indexArray;
         indexArray.emplaceBack(index, index + 1);
@@ -21492,8 +21471,8 @@ var SymbolBucket = function () {
         if (this.hasDebugData()) {
             this.destroyDebugData();
         }
-        this.textCollisionBox = new CollisionBuffers(StructArrayLayout2i2i2i12, collisionBoxLayout.members, StructArrayLayout2ui4);
-        this.iconCollisionBox = new CollisionBuffers(StructArrayLayout2i2i2i12, collisionBoxLayout.members, StructArrayLayout2ui4);
+        this.textCollisionBox = new CollisionBuffers(CollisionBoxLayoutArray, collisionBoxLayout.members, LineIndexArray);
+        this.iconCollisionBox = new CollisionBuffers(CollisionBoxLayoutArray, collisionBoxLayout.members, LineIndexArray);
         for (var i = 0; i < this.symbolInstances.length; i++) {
             var symbolInstance = this.symbolInstances.get(i);
             this.addDebugCollisionBoxes(symbolInstance.textBoxStartIndex, symbolInstance.textBoxEndIndex, symbolInstance, true);
@@ -22547,7 +22526,7 @@ var CanonicalTileID = function () {
     };
     CanonicalTileID.prototype.getTilePoint = function (coord) {
         var tilesAtZoom = Math.pow(2, this.z);
-        return new Point$2((coord.x * tilesAtZoom - this.x) * EXTENT, (coord.y * tilesAtZoom - this.y) * EXTENT);
+        return new pointGeometry((coord.x * tilesAtZoom - this.x) * EXTENT, (coord.y * tilesAtZoom - this.y) * EXTENT);
     };
     CanonicalTileID.prototype.toString = function () {
         return ''.concat(this.z, '/').concat(this.x, '/').concat(this.y);
@@ -22842,8 +22821,8 @@ var FeatureIndex = function () {
         this.x = tileID.canonical.x;
         this.y = tileID.canonical.y;
         this.z = tileID.canonical.z;
-        this.grid = new gridIndex(EXTENT, 16, 0);
-        this.grid3D = new gridIndex(EXTENT, 16, 0);
+        this.grid = new TransferableGridIndex(EXTENT, 16, 0);
+        this.grid3D = new TransferableGridIndex(EXTENT, 16, 0);
         this.featureIndexArray = new FeatureIndexArray();
         this.promoteId = promoteId;
     }
@@ -23089,6 +23068,7 @@ exports.Actor = Actor;
 exports.AlphaImage = AlphaImage;
 exports.CanonicalTileID = CanonicalTileID;
 exports.CollisionBoxArray = CollisionBoxArray;
+exports.CollisionCircleLayoutArray = CollisionCircleLayoutArray;
 exports.Color = Color;
 exports.DEMData = DEMData;
 exports.DataConstantProperty = DataConstantProperty;
@@ -23105,24 +23085,23 @@ exports.GeoJSONFeature = GeoJSONFeature;
 exports.ImageAtlas = ImageAtlas;
 exports.ImagePosition = ImagePosition;
 exports.LineBucket = LineBucket;
+exports.LineStripIndexArray = LineStripIndexArray;
 exports.LngLat = LngLat;
 exports.LngLatBounds = LngLatBounds;
 exports.MercatorCoordinate = MercatorCoordinate;
 exports.ONE_EM = ONE_EM;
 exports.OverscaledTileID = OverscaledTileID;
-exports.Point = Point$2;
+exports.PosArray = PosArray;
 exports.Properties = Properties;
+exports.QuadTriangleArray = QuadTriangleArray;
 exports.RGBAImage = RGBAImage;
+exports.RasterBoundsArray = RasterBoundsArray;
 exports.RequestPerformance = RequestPerformance;
 exports.ResourceType = ResourceType;
 exports.SegmentVector = SegmentVector;
-exports.StructArrayLayout1ui2 = StructArrayLayout1ui2;
-exports.StructArrayLayout2f1f2i16 = StructArrayLayout2f1f2i16;
-exports.StructArrayLayout2i4 = StructArrayLayout2i4;
-exports.StructArrayLayout3ui6 = StructArrayLayout3ui6;
-exports.StructArrayLayout4i8 = StructArrayLayout4i8;
 exports.SymbolBucket = SymbolBucket;
 exports.Transitionable = Transitionable;
+exports.TriangleIndexArray = TriangleIndexArray;
 exports.Uniform1f = Uniform1f;
 exports.Uniform1i = Uniform1i;
 exports.Uniform2f = Uniform2f;
@@ -23772,7 +23751,7 @@ var FeatureWrapper$1 = function () {
             var geometry = [];
             for (var _i = 0, _a = this._feature.geometry; _i < _a.length; _i++) {
                 var point = _a[_i];
-                geometry.push([new performance.Point(point[0], point[1])]);
+                geometry.push([new performance.pointGeometry(point[0], point[1])]);
             }
             return geometry;
         } else {
@@ -23782,7 +23761,7 @@ var FeatureWrapper$1 = function () {
                 var newRing = [];
                 for (var _d = 0, ring_1 = ring; _d < ring_1.length; _d++) {
                     var point = ring_1[_d];
-                    newRing.push(new performance.Point(point[0], point[1]));
+                    newRing.push(new performance.pointGeometry(point[0], point[1]));
                 }
                 geometry.push(newRing);
             }
@@ -25960,13 +25939,13 @@ var DOM = function () {
     };
     DOM.mousePos = function (el, e) {
         var rect = el.getBoundingClientRect();
-        return new performance.Point(e.clientX - rect.left - el.clientLeft, e.clientY - rect.top - el.clientTop);
+        return new performance.pointGeometry(e.clientX - rect.left - el.clientLeft, e.clientY - rect.top - el.clientTop);
     };
     DOM.touchPos = function (el, touches) {
         var rect = el.getBoundingClientRect();
         var points = [];
         for (var i = 0; i < touches.length; i++) {
-            points.push(new performance.Point(touches[i].clientX - rect.left - el.clientLeft, touches[i].clientY - rect.top - el.clientTop));
+            points.push(new performance.pointGeometry(touches[i].clientX - rect.left - el.clientLeft, touches[i].clientY - rect.top - el.clientTop));
         }
         return points;
     };
@@ -27307,7 +27286,6 @@ function loadTileJSON (options, requestManager, callback) {
                 'minzoom',
                 'maxzoom',
                 'attribution',
-                'maplibreLogo',
                 'bounds',
                 'scheme',
                 'tileSize',
@@ -27914,7 +27892,7 @@ var GeoJSONSource = function (_super) {
                 generateId: options.generateId || false
             },
             superclusterOptions: {
-                maxZoom: options.clusterMaxZoom !== undefined ? Math.min(options.clusterMaxZoom, _this.maxzoom - 1) : _this.maxzoom - 1,
+                maxZoom: options.clusterMaxZoom !== undefined ? options.clusterMaxZoom : _this.maxzoom - 1,
                 minPoints: Math.max(2, options.clusterMinPoints || 2),
                 extent: performance.EXTENT,
                 radius: (options.clusterRadius || 50) * scale,
@@ -28174,7 +28152,7 @@ var ImageSource = function (_super) {
         var tileCoords = cornerCoords.map(function (coord) {
             return _this.tileID.getTilePoint(coord)._round();
         });
-        this._boundsArray = new performance.StructArrayLayout4i8();
+        this._boundsArray = new performance.RasterBoundsArray();
         this._boundsArray.emplaceBack(tileCoords[0].x, tileCoords[0].y, 0, 0);
         this._boundsArray.emplaceBack(tileCoords[1].x, tileCoords[1].y, performance.EXTENT, 0);
         this._boundsArray.emplaceBack(tileCoords[3].x, tileCoords[3].y, 0, performance.EXTENT);
@@ -28559,10 +28537,10 @@ var create = function (id, specification, dispatcher, eventedParent) {
     ], source);
     return source;
 };
-var getType = function (name) {
+var getSourceType = function (name) {
     return sourceTypes[name];
 };
-var setType = function (name, type) {
+var setSourceType = function (name, type) {
     sourceTypes[name] = type;
 };
 
@@ -29454,8 +29432,8 @@ var SourceCache = function (_super) {
             return renderables.sort(function (a_, b_) {
                 var a = a_.tileID;
                 var b = b_.tileID;
-                var rotatedA = new performance.Point(a.canonical.x, a.canonical.y)._rotate(_this.transform.angle);
-                var rotatedB = new performance.Point(b.canonical.x, b.canonical.y)._rotate(_this.transform.angle);
+                var rotatedA = new performance.pointGeometry(a.canonical.x, a.canonical.y)._rotate(_this.transform.angle);
+                var rotatedB = new performance.pointGeometry(b.canonical.x, b.canonical.y)._rotate(_this.transform.angle);
                 return a.overscaledZ - b.overscaledZ || rotatedB.y - rotatedA.y || rotatedB.x - rotatedA.x;
             }).map(function (tile) {
                 return tile.tileID.key;
@@ -30824,7 +30802,7 @@ function project(point, matrix) {
     xyTransformMat4(pos, pos, matrix);
     var w = pos[3];
     return {
-        point: new performance.Point(pos[0] / w, pos[1] / w),
+        point: new performance.pointGeometry(pos[0] / w, pos[1] / w),
         signedDistanceFromCamera: w
     };
 }
@@ -30867,7 +30845,7 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         var perspectiveRatio = getPerspectiveRatio(painter.transform.cameraToCenterDistance, cameraToAnchorDistance);
         var fontSize = performance.evaluateSizeForFeature(sizeData, partiallyEvaluatedSize, symbol);
         var pitchScaledFontSize = pitchWithMap ? fontSize / perspectiveRatio : fontSize * perspectiveRatio;
-        var tileAnchorPoint = new performance.Point(symbol.anchorX, symbol.anchorY);
+        var tileAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         var anchorPoint = project(tileAnchorPoint, labelPlaneMatrix).point;
         var projectionCache = {};
         var placeUnflipped = placeGlyphsAlongLine(symbol, pitchScaledFontSize, false, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio);
@@ -30944,7 +30922,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         if (keepUpright && !flip) {
             var a = project(tileAnchorPoint, posMatrix).point;
             var tileVertexIndex = symbol.lineStartIndex + symbol.segment + 1;
-            var tileSegmentEnd = new performance.Point(lineVertexArray.getx(tileVertexIndex), lineVertexArray.gety(tileVertexIndex));
+            var tileSegmentEnd = new performance.pointGeometry(lineVertexArray.getx(tileVertexIndex), lineVertexArray.gety(tileVertexIndex));
             var projectedVertex = project(tileSegmentEnd, posMatrix);
             var b = projectedVertex.signedDistanceFromCamera > 0 ? projectedVertex.point : projectTruncatedLineSegment(tileAnchorPoint, tileSegmentEnd, a, 1, posMatrix);
             var orientationChange = requiresOrientationChange(symbol.writingMode, a, b, aspectRatio);
@@ -30996,13 +30974,13 @@ function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoin
         pathVertices.push(current);
         current = projectionCache[currentIndex];
         if (current === undefined) {
-            var currentVertex = new performance.Point(lineVertexArray.getx(currentIndex), lineVertexArray.gety(currentIndex));
+            var currentVertex = new performance.pointGeometry(lineVertexArray.getx(currentIndex), lineVertexArray.gety(currentIndex));
             var projection = project(currentVertex, labelPlaneMatrix);
             if (projection.signedDistanceFromCamera > 0) {
                 current = projectionCache[currentIndex] = projection.point;
             } else {
                 var previousLineVertexIndex = currentIndex - dir;
-                var previousTilePoint = distanceToPrev === 0 ? tileAnchorPoint : new performance.Point(lineVertexArray.getx(previousLineVertexIndex), lineVertexArray.gety(previousLineVertexIndex));
+                var previousTilePoint = distanceToPrev === 0 ? tileAnchorPoint : new performance.pointGeometry(lineVertexArray.getx(previousLineVertexIndex), lineVertexArray.gety(previousLineVertexIndex));
                 current = projectTruncatedLineSegment(previousTilePoint, currentVertex, prev, absOffsetX - distanceToPrev + 1, labelPlaneMatrix);
             }
         }
@@ -31093,7 +31071,7 @@ var CollisionIndex = function () {
     };
     CollisionIndex.prototype.placeCollisionCircles = function (allowOverlap, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding) {
         var placedCollisionCircles = [];
-        var tileUnitAnchorPoint = new performance.Point(symbol.anchorX, symbol.anchorY);
+        var tileUnitAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         var screenAnchorPoint = project(tileUnitAnchorPoint, posMatrix);
         var perspectiveRatio = getPerspectiveRatio(this.transform.cameraToCenterDistance, screenAnchorPoint.signedDistanceFromCamera);
         var labelPlaneFontSize = pitchWithMap ? fontSize / perspectiveRatio : fontSize * perspectiveRatio;
@@ -31108,8 +31086,8 @@ var CollisionIndex = function () {
         var entirelyOffscreen = true;
         if (firstAndLastGlyph) {
             var radius = circlePixelDiameter * 0.5 * perspectiveRatio + textPixelPadding;
-            var screenPlaneMin = new performance.Point(-viewportPadding, -viewportPadding);
-            var screenPlaneMax = new performance.Point(this.screenRightBoundary, this.screenBottomBoundary);
+            var screenPlaneMin = new performance.pointGeometry(-viewportPadding, -viewportPadding);
+            var screenPlaneMax = new performance.pointGeometry(this.screenRightBoundary, this.screenBottomBoundary);
             var interpolator = new PathInterpolator();
             var first = firstAndLastGlyph.first;
             var last = firstAndLastGlyph.last;
@@ -31206,7 +31184,7 @@ var CollisionIndex = function () {
         var maxY = -Infinity;
         for (var _i = 0, viewportQueryGeometry_1 = viewportQueryGeometry; _i < viewportQueryGeometry_1.length; _i++) {
             var point = viewportQueryGeometry_1[_i];
-            var gridPoint = new performance.Point(point.x + viewportPadding, point.y + viewportPadding);
+            var gridPoint = new performance.pointGeometry(point.x + viewportPadding, point.y + viewportPadding);
             minX = Math.min(minX, gridPoint.x);
             minY = Math.min(minY, gridPoint.y);
             maxX = Math.max(maxX, gridPoint.x);
@@ -31226,10 +31204,10 @@ var CollisionIndex = function () {
                 continue;
             }
             var bbox = [
-                new performance.Point(feature.x1, feature.y1),
-                new performance.Point(feature.x2, feature.y1),
-                new performance.Point(feature.x2, feature.y2),
-                new performance.Point(feature.x1, feature.y2)
+                new performance.pointGeometry(feature.x1, feature.y1),
+                new performance.pointGeometry(feature.x2, feature.y1),
+                new performance.pointGeometry(feature.x2, feature.y2),
+                new performance.pointGeometry(feature.x1, feature.y2)
             ];
             if (!performance.polygonIntersectsPolygon(query, bbox)) {
                 continue;
@@ -31265,7 +31243,7 @@ var CollisionIndex = function () {
     CollisionIndex.prototype.projectAndGetPerspectiveRatio = function (posMatrix, x, y) {
         var p = performance.fromValues(x, y, 0, 1);
         xyTransformMat4(p, p, posMatrix);
-        var a = new performance.Point((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
+        var a = new performance.pointGeometry((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
         return {
             point: a,
             perspectiveRatio: 0.5 + 0.5 * (this.transform.cameraToCenterDistance / p[3])
@@ -31375,11 +31353,11 @@ function calculateVariableLayoutShift(anchor, width, height, textOffset, textBox
     var shiftX = -(horizontalAlign - 0.5) * width;
     var shiftY = -(verticalAlign - 0.5) * height;
     var offset = performance.evaluateVariableOffset(anchor, textOffset);
-    return new performance.Point(shiftX + offset[0] * textBoxScale, shiftY + offset[1] * textBoxScale);
+    return new performance.pointGeometry(shiftX + offset[0] * textBoxScale, shiftY + offset[1] * textBoxScale);
 }
 function shiftVariableCollisionBox(collisionBox, shiftX, shiftY, rotateWithMap, pitchWithMap, angle) {
     var x1 = collisionBox.x1, x2 = collisionBox.x2, y1 = collisionBox.y1, y2 = collisionBox.y2, anchorPointX = collisionBox.anchorPointX, anchorPointY = collisionBox.anchorPointY;
-    var rotatedOffset = new performance.Point(shiftX, shiftY);
+    var rotatedOffset = new performance.pointGeometry(shiftX, shiftY);
     if (rotateWithMap) {
         rotatedOffset._rotate(pitchWithMap ? angle : -angle);
     }
@@ -31954,7 +31932,7 @@ var Placement = function () {
             if (bucket.hasIconCollisionBoxData() || bucket.hasTextCollisionBoxData()) {
                 var collisionArrays = bucket.collisionArrays[s];
                 if (collisionArrays) {
-                    var shift = new performance.Point(0, 0);
+                    var shift = new performance.pointGeometry(0, 0);
                     if (collisionArrays.textBox || collisionArrays.verticalTextBox) {
                         var used = true;
                         if (variablePlacement) {
@@ -33367,8 +33345,8 @@ var Style = function (_super) {
     };
     return Style;
 }(performance.Evented);
-Style.getSourceType = getType;
-Style.setSourceType = setType;
+Style.getSourceType = getSourceType;
+Style.setSourceType = setSourceType;
 Style.registerForPluginStateChange = performance.registerForPluginStateChange;
 
 var posAttributes = performance.createLayout([{
@@ -35647,7 +35625,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
         return;
     }
     var circleProgram = painter.useProgram('collisionCircle');
-    var vertexData = new performance.StructArrayLayout2f1f2i16();
+    var vertexData = new performance.CollisionCircleLayoutArray();
     vertexData.resize(circleCount * 4);
     vertexData._trim();
     var vertexOffset = 0;
@@ -35680,7 +35658,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
 }
 function createQuadTriangles(quadCount) {
     var triCount = quadCount * 2;
-    var array = new performance.StructArrayLayout3ui6();
+    var array = new performance.QuadTriangleArray();
     array.resize(triCount);
     array._trim();
     for (var i = 0; i < triCount; i++) {
@@ -35722,7 +35700,7 @@ function calculateVariableRenderShift(anchor, width, height, textOffset, textBox
     var shiftX = -(horizontalAlign - 0.5) * width;
     var shiftY = -(verticalAlign - 0.5) * height;
     var variableOffset = performance.evaluateVariableOffset(anchor, textOffset);
-    return new performance.Point((shiftX / textBoxScale + variableOffset[0]) * renderTextSize, (shiftY / textBoxScale + variableOffset[1]) * renderTextSize);
+    return new performance.pointGeometry((shiftX / textBoxScale + variableOffset[0]) * renderTextSize, (shiftY / textBoxScale + variableOffset[1]) * renderTextSize);
 }
 function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlignment, pitchAlignment, variableOffsets) {
     var tr = painter.transform;
@@ -35759,7 +35737,7 @@ function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, var
         if (!variableOffset) {
             hideGlyphs(symbol.numGlyphs, dynamicTextLayoutVertexArray);
         } else {
-            var tileAnchor = new performance.Point(symbol.anchorX, symbol.anchorY);
+            var tileAnchor = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
             var projectedAnchor = project(tileAnchor, pitchWithMap ? posMatrix : labelPlaneMatrix);
             var perspectiveRatio = getPerspectiveRatio(transform.cameraToCenterDistance, projectedAnchor.signedDistanceFromCamera);
             var renderTextSize = symbolSize.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
@@ -36686,42 +36664,42 @@ var Painter = function () {
     };
     Painter.prototype.setup = function () {
         var context = this.context;
-        var tileExtentArray = new performance.StructArrayLayout2i4();
+        var tileExtentArray = new performance.PosArray();
         tileExtentArray.emplaceBack(0, 0);
         tileExtentArray.emplaceBack(performance.EXTENT, 0);
         tileExtentArray.emplaceBack(0, performance.EXTENT);
         tileExtentArray.emplaceBack(performance.EXTENT, performance.EXTENT);
         this.tileExtentBuffer = context.createVertexBuffer(tileExtentArray, posAttributes.members);
         this.tileExtentSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 2);
-        var debugArray = new performance.StructArrayLayout2i4();
+        var debugArray = new performance.PosArray();
         debugArray.emplaceBack(0, 0);
         debugArray.emplaceBack(performance.EXTENT, 0);
         debugArray.emplaceBack(0, performance.EXTENT);
         debugArray.emplaceBack(performance.EXTENT, performance.EXTENT);
         this.debugBuffer = context.createVertexBuffer(debugArray, posAttributes.members);
         this.debugSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 5);
-        var rasterBoundsArray = new performance.StructArrayLayout4i8();
+        var rasterBoundsArray = new performance.RasterBoundsArray();
         rasterBoundsArray.emplaceBack(0, 0, 0, 0);
         rasterBoundsArray.emplaceBack(performance.EXTENT, 0, performance.EXTENT, 0);
         rasterBoundsArray.emplaceBack(0, performance.EXTENT, 0, performance.EXTENT);
         rasterBoundsArray.emplaceBack(performance.EXTENT, performance.EXTENT, performance.EXTENT, performance.EXTENT);
         this.rasterBoundsBuffer = context.createVertexBuffer(rasterBoundsArray, rasterBoundsAttributes.members);
         this.rasterBoundsSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 2);
-        var viewportArray = new performance.StructArrayLayout2i4();
+        var viewportArray = new performance.PosArray();
         viewportArray.emplaceBack(0, 0);
         viewportArray.emplaceBack(1, 0);
         viewportArray.emplaceBack(0, 1);
         viewportArray.emplaceBack(1, 1);
         this.viewportBuffer = context.createVertexBuffer(viewportArray, posAttributes.members);
         this.viewportSegments = performance.SegmentVector.simpleSegment(0, 0, 4, 2);
-        var tileLineStripIndices = new performance.StructArrayLayout1ui2();
+        var tileLineStripIndices = new performance.LineStripIndexArray();
         tileLineStripIndices.emplaceBack(0);
         tileLineStripIndices.emplaceBack(1);
         tileLineStripIndices.emplaceBack(3);
         tileLineStripIndices.emplaceBack(2);
         tileLineStripIndices.emplaceBack(0);
         this.tileBorderIndexBuffer = context.createIndexBuffer(tileLineStripIndices);
-        var quadTriangleIndices = new performance.StructArrayLayout3ui6();
+        var quadTriangleIndices = new performance.TriangleIndexArray();
         quadTriangleIndices.emplaceBack(0, 1, 2);
         quadTriangleIndices.emplaceBack(2, 1, 3);
         this.quadTriangleIndexBuffer = context.createIndexBuffer(quadTriangleIndices);
@@ -37331,7 +37309,7 @@ var EdgeInsets = function () {
     EdgeInsets.prototype.getCenter = function (width, height) {
         var x = performance.clamp((this.left + width - this.right) / 2, 0, width);
         var y = performance.clamp((this.top + height - this.bottom) / 2, 0, height);
-        return new performance.Point(x, y);
+        return new performance.pointGeometry(x, y);
     };
     EdgeInsets.prototype.equals = function (other) {
         return this.top === other.top && this.bottom === other.bottom && this.left === other.left && this.right === other.right;
@@ -37475,7 +37453,7 @@ var Transform = function () {
     });
     Object.defineProperty(Transform.prototype, 'size', {
         get: function () {
-            return new performance.Point(this.width, this.height);
+            return new performance.pointGeometry(this.width, this.height);
         },
         enumerable: false,
         configurable: true
@@ -37604,10 +37582,10 @@ var Transform = function () {
     Transform.prototype.getVisibleUnwrappedCoordinates = function (tileID) {
         var result = [new performance.UnwrappedTileID(0, tileID)];
         if (this._renderWorldCopies) {
-            var utl = this.pointCoordinate(new performance.Point(0, 0));
-            var utr = this.pointCoordinate(new performance.Point(this.width, 0));
-            var ubl = this.pointCoordinate(new performance.Point(this.width, this.height));
-            var ubr = this.pointCoordinate(new performance.Point(0, this.height));
+            var utl = this.pointCoordinate(new performance.pointGeometry(0, 0));
+            var utr = this.pointCoordinate(new performance.pointGeometry(this.width, 0));
+            var ubl = this.pointCoordinate(new performance.pointGeometry(this.width, this.height));
+            var ubr = this.pointCoordinate(new performance.pointGeometry(0, this.height));
             var w0 = Math.floor(Math.min(utl.x, utr.x, ubl.x, ubr.x));
             var w1 = Math.floor(Math.max(utl.x, utr.x, ubl.x, ubr.x));
             var extraWorldCopy = 1;
@@ -37741,7 +37719,7 @@ var Transform = function () {
     };
     Transform.prototype.project = function (lnglat) {
         var lat = performance.clamp(lnglat.lat, -this.maxValidLatitude, this.maxValidLatitude);
-        return new performance.Point(performance.mercatorXfromLng(lnglat.lng) * this.worldSize, performance.mercatorYfromLat(lat) * this.worldSize);
+        return new performance.pointGeometry(performance.mercatorXfromLng(lnglat.lng) * this.worldSize, performance.mercatorYfromLat(lat) * this.worldSize);
     };
     Transform.prototype.unproject = function (point) {
         return new performance.MercatorCoordinate(point.x / this.worldSize, point.y / this.worldSize).toLngLat();
@@ -37810,10 +37788,10 @@ var Transform = function () {
             1
         ];
         performance.transformMat4(p, p, this.pixelMatrix);
-        return new performance.Point(p[0] / p[3], p[1] / p[3]);
+        return new performance.pointGeometry(p[0] / p[3], p[1] / p[3]);
     };
     Transform.prototype.getBounds = function () {
-        return new performance.LngLatBounds().extend(this.pointLocation(new performance.Point(0, 0))).extend(this.pointLocation(new performance.Point(this.width, 0))).extend(this.pointLocation(new performance.Point(this.width, this.height))).extend(this.pointLocation(new performance.Point(0, this.height)));
+        return new performance.LngLatBounds().extend(this.pointLocation(new performance.pointGeometry(0, 0))).extend(this.pointLocation(new performance.pointGeometry(this.width, 0))).extend(this.pointLocation(new performance.pointGeometry(this.width, this.height))).extend(this.pointLocation(new performance.pointGeometry(0, this.height)));
     };
     Transform.prototype.getMaxBounds = function () {
         if (!this.latRange || this.latRange.length !== 2 || !this.lngRange || this.lngRange.length !== 2) {
@@ -37902,7 +37880,7 @@ var Transform = function () {
         var point = this.point;
         var s = Math.max(sx || 0, sy || 0);
         if (s) {
-            this.center = this.unproject(new performance.Point(sx ? (maxX + minX) / 2 : point.x, sy ? (maxY + minY) / 2 : point.y));
+            this.center = this.unproject(new performance.pointGeometry(sx ? (maxX + minX) / 2 : point.x, sy ? (maxY + minY) / 2 : point.y));
             this.zoom += this.scaleZoom(s);
             this._unmodified = unmodified;
             this._constraining = false;
@@ -37927,7 +37905,7 @@ var Transform = function () {
             }
         }
         if (x2 !== undefined || y2 !== undefined) {
-            this.center = this.unproject(new performance.Point(x2 !== undefined ? x2 : point.x, y2 !== undefined ? y2 : point.y));
+            this.center = this.unproject(new performance.pointGeometry(x2 !== undefined ? x2 : point.x, y2 !== undefined ? y2 : point.y));
         }
         this._unmodified = unmodified;
         this._constraining = false;
@@ -38022,7 +38000,7 @@ var Transform = function () {
         if (!this.pixelMatrixInverse) {
             return 1;
         }
-        var coord = this.pointCoordinate(new performance.Point(0, 0));
+        var coord = this.pointCoordinate(new performance.pointGeometry(0, 0));
         var p = performance.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, 0, 1);
         var topPoint = performance.transformMat4(p, p, this.pixelMatrix);
         return topPoint[3] / this.cameraToCenterDistance;
@@ -38030,7 +38008,7 @@ var Transform = function () {
     Transform.prototype.getCameraPoint = function () {
         var pitch = this._pitch;
         var yOffset = Math.tan(pitch) * (this.cameraToCenterDistance || 1);
-        return this.centerPoint.add(new performance.Point(0, yOffset));
+        return this.centerPoint.add(new performance.pointGeometry(0, yOffset));
     };
     Transform.prototype.getCameraQueryGeometry = function (queryGeometry) {
         var c = this.getCameraPoint();
@@ -38052,11 +38030,11 @@ var Transform = function () {
                 maxY = Math.max(maxY, p.y);
             }
             return [
-                new performance.Point(minX, minY),
-                new performance.Point(maxX, minY),
-                new performance.Point(maxX, maxY),
-                new performance.Point(minX, maxY),
-                new performance.Point(minX, minY)
+                new performance.pointGeometry(minX, minY),
+                new performance.pointGeometry(maxX, minY),
+                new performance.pointGeometry(maxX, maxY),
+                new performance.pointGeometry(minX, maxY),
+                new performance.pointGeometry(minX, minY)
             ];
         }
     };
@@ -38235,7 +38213,7 @@ var HandlerInertia = function () {
             zoom: 0,
             bearing: 0,
             pitch: 0,
-            pan: new performance.Point(0, 0),
+            pan: new performance.pointGeometry(0, 0),
             pinchAround: undefined,
             around: undefined
         };
@@ -38369,7 +38347,7 @@ var MapTouchEvent = function (_super) {
         });
         var point = points.reduce(function (prev, curr, i, arr) {
             return prev.add(curr.div(arr.length));
-        }, new performance.Point(0, 0));
+        }, new performance.pointGeometry(0, 0));
         var lngLat = map.unproject(point);
         _this = _super.call(this, type, {
             points: points,
@@ -38633,7 +38611,7 @@ function indexTouches(touches, points) {
 }
 
 function getCentroid(points) {
-    var sum = new performance.Point(0, 0);
+    var sum = new performance.pointGeometry(0, 0);
     for (var _i = 0, points_1 = points; _i < points_1.length; _i++) {
         var point = points_1[_i];
         sum._add(point);
@@ -38993,7 +38971,7 @@ var TouchPanHandler = function () {
     TouchPanHandler.prototype.reset = function () {
         this._active = false;
         this._touches = {};
-        this._sum = new performance.Point(0, 0);
+        this._sum = new performance.pointGeometry(0, 0);
     };
     TouchPanHandler.prototype.touchstart = function (e, points, mapTouches) {
         return this._calculateTransform(e, points, mapTouches);
@@ -39019,8 +38997,8 @@ var TouchPanHandler = function () {
             this._active = true;
         }
         var touches = indexTouches(mapTouches, points);
-        var touchPointSum = new performance.Point(0, 0);
-        var touchDeltaSum = new performance.Point(0, 0);
+        var touchPointSum = new performance.pointGeometry(0, 0);
+        var touchDeltaSum = new performance.pointGeometry(0, 0);
         var touchDeltaCount = 0;
         for (var identifier in touches) {
             var point = touches[identifier];
@@ -40206,7 +40184,7 @@ var HandlerManager = function () {
         for (var _i = 0, _a = this._changes; _i < _a.length; _i++) {
             var _b = _a[_i], change = _b[0], eventsInProgress = _b[1], deactivatedHandlers = _b[2];
             if (change.panDelta) {
-                combined.panDelta = (combined.panDelta || new performance.Point(0, 0))._add(change.panDelta);
+                combined.panDelta = (combined.panDelta || new performance.pointGeometry(0, 0))._add(change.panDelta);
             }
             if (change.zoomDelta) {
                 combined.zoomDelta = (combined.zoomDelta || 0) + change.zoomDelta;
@@ -40396,7 +40374,7 @@ var Camera = function (_super) {
         return this.jumpTo({ center: center }, eventData);
     };
     Camera.prototype.panBy = function (offset, options, eventData) {
-        offset = performance.Point.convert(offset).mult(-1);
+        offset = performance.pointGeometry.convert(offset).mult(-1);
         return this.panTo(this.transform.center, performance.extend({ offset: offset }, options), eventData);
     };
     Camera.prototype.panTo = function (lnglat, options, eventData) {
@@ -40498,8 +40476,8 @@ var Camera = function (_super) {
         var p1world = tr.project(performance.LngLat.convert(p1));
         var p0rotated = p0world.rotate(-bearing * Math.PI / 180);
         var p1rotated = p1world.rotate(-bearing * Math.PI / 180);
-        var upperRight = new performance.Point(Math.max(p0rotated.x, p1rotated.x), Math.max(p0rotated.y, p1rotated.y));
-        var lowerLeft = new performance.Point(Math.min(p0rotated.x, p1rotated.x), Math.min(p0rotated.y, p1rotated.y));
+        var upperRight = new performance.pointGeometry(Math.max(p0rotated.x, p1rotated.x), Math.max(p0rotated.y, p1rotated.y));
+        var lowerLeft = new performance.pointGeometry(Math.min(p0rotated.x, p1rotated.x), Math.min(p0rotated.y, p1rotated.y));
         var size = upperRight.sub(lowerLeft);
         var scaleX = (tr.width - (edgePadding.left + edgePadding.right + options.padding.left + options.padding.right)) / size.x;
         var scaleY = (tr.height - (edgePadding.top + edgePadding.bottom + options.padding.top + options.padding.bottom)) / size.y;
@@ -40508,10 +40486,10 @@ var Camera = function (_super) {
             return undefined;
         }
         var zoom = Math.min(tr.scaleZoom(tr.scale * Math.min(scaleX, scaleY)), options.maxZoom);
-        var offset = performance.Point.convert(options.offset);
+        var offset = performance.pointGeometry.convert(options.offset);
         var paddingOffsetX = (options.padding.left - options.padding.right) / 2;
         var paddingOffsetY = (options.padding.top - options.padding.bottom) / 2;
-        var paddingOffset = new performance.Point(paddingOffsetX, paddingOffsetY);
+        var paddingOffset = new performance.pointGeometry(paddingOffsetX, paddingOffsetY);
         var rotatedPaddingOffset = paddingOffset.rotate(bearing * Math.PI / 180);
         var offsetAtInitialZoom = offset.add(rotatedPaddingOffset);
         var offsetAtFinalZoom = offsetAtInitialZoom.mult(tr.scale / tr.zoomScale(zoom));
@@ -40526,7 +40504,7 @@ var Camera = function (_super) {
         return this._fitInternal(this.cameraForBounds(bounds, options), options, eventData);
     };
     Camera.prototype.fitScreenCoordinates = function (p0, p1, bearing, options, eventData) {
-        return this._fitInternal(this._cameraForBoxAndBearing(this.transform.pointLocation(performance.Point.convert(p0)), this.transform.pointLocation(performance.Point.convert(p1)), bearing, options), options, eventData);
+        return this._fitInternal(this._cameraForBoxAndBearing(this.transform.pointLocation(performance.pointGeometry.convert(p0)), this.transform.pointLocation(performance.pointGeometry.convert(p1)), bearing, options), options, eventData);
     };
     Camera.prototype._fitInternal = function (calculatedOptions, options, eventData) {
         if (!calculatedOptions) {
@@ -40585,7 +40563,7 @@ var Camera = function (_super) {
             options.duration = 0;
         }
         var tr = this.transform, startZoom = this.getZoom(), startBearing = this.getBearing(), startPitch = this.getPitch(), startPadding = this.getPadding(), zoom = 'zoom' in options ? +options.zoom : startZoom, bearing = 'bearing' in options ? this._normalizeBearing(options.bearing, startBearing) : startBearing, pitch = 'pitch' in options ? +options.pitch : startPitch, padding = 'padding' in options ? options.padding : tr.padding;
-        var offsetAsPoint = performance.Point.convert(options.offset);
+        var offsetAsPoint = performance.pointGeometry.convert(options.offset);
         var pointAtOffset = tr.centerPoint.add(offsetAsPoint);
         var locationAtOffset = tr.pointLocation(pointAtOffset);
         var center = performance.LngLat.convert(options.center || locationAtOffset);
@@ -40721,7 +40699,7 @@ var Camera = function (_super) {
         var pitch = 'pitch' in options ? +options.pitch : startPitch;
         var padding = 'padding' in options ? options.padding : tr.padding;
         var scale = tr.zoomScale(zoom - startZoom);
-        var offsetAsPoint = performance.Point.convert(options.offset);
+        var offsetAsPoint = performance.pointGeometry.convert(options.offset);
         var pointAtOffset = tr.centerPoint.add(offsetAsPoint);
         var locationAtOffset = tr.pointLocation(pointAtOffset);
         var center = performance.LngLat.convert(options.center || locationAtOffset);
@@ -41006,12 +40984,22 @@ var AttributionControl = function () {
 }();
 
 var LogoControl = function () {
-    function LogoControl() {
-        performance.bindAll(['_updateLogo'], this);
-        performance.bindAll(['_updateCompact'], this);
+    function LogoControl(options) {
+        if (options === void 0) {
+            options = {};
+        }
+        this.options = options;
+        performance.bindAll([
+            '_updateLogo',
+            '_updateCompact'
+        ], this);
     }
+    LogoControl.prototype.getDefaultPosition = function () {
+        return 'bottom-left';
+    };
     LogoControl.prototype.onAdd = function (map) {
         this._map = map;
+        this._compact = this.options && this.options.compact;
         this._container = DOM.create('div', 'maplibregl-ctrl mapboxgl-ctrl');
         var anchor = DOM.create('a', 'maplibregl-ctrl-logo mapboxgl-ctrl-logo');
         anchor.target = '_blank';
@@ -41020,45 +41008,25 @@ var LogoControl = function () {
         anchor.setAttribute('aria-label', this._map._getUIString('LogoControl.Title'));
         anchor.setAttribute('rel', 'noopener nofollow');
         this._container.appendChild(anchor);
-        this._container.style.display = 'none';
-        this._map.on('sourcedata', this._updateLogo);
-        this._updateLogo(undefined);
+        this._container.style.display = 'block';
         this._map.on('resize', this._updateCompact);
         this._updateCompact();
         return this._container;
     };
     LogoControl.prototype.onRemove = function () {
         DOM.remove(this._container);
-        this._map.off('sourcedata', this._updateLogo);
         this._map.off('resize', this._updateCompact);
-    };
-    LogoControl.prototype.getDefaultPosition = function () {
-        return 'bottom-left';
-    };
-    LogoControl.prototype._updateLogo = function (e) {
-        if (!e || e.sourceDataType === 'metadata') {
-            this._container.style.display = this._logoRequired() ? 'block' : 'none';
-        }
-    };
-    LogoControl.prototype._logoRequired = function () {
-        if (!this._map.style) {
-            return;
-        }
-        var sourceCaches = this._map.style.sourceCaches;
-        for (var id in sourceCaches) {
-            var source = sourceCaches[id].getSource();
-            if (source.maplibreLogo) {
-                return true;
-            }
-        }
-        return false;
+        this._map = undefined;
+        this._compact = undefined;
     };
     LogoControl.prototype._updateCompact = function () {
         var containerChildren = this._container.children;
         if (containerChildren.length) {
             var anchor = containerChildren[0];
-            if (this._map.getCanvasContainer().offsetWidth < 250) {
-                anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
+            if (this._map.getCanvasContainer().offsetWidth <= 640 || this._compact) {
+                if (this._compact !== false) {
+                    anchor.classList.add('maplibregl-compact', 'mapboxgl-compact');
+                }
             } else {
                 anchor.classList.remove('maplibregl-compact', 'mapboxgl-compact');
             }
@@ -41196,6 +41164,7 @@ var defaultOptions$4 = {
     pitchWithRotate: true,
     hash: false,
     attributionControl: true,
+    maplibreLogo: false,
     failIfMajorPerformanceCaveat: false,
     preserveDrawingBuffer: false,
     trackResize: true,
@@ -41306,7 +41275,9 @@ var Map = function (_super) {
         if (options.attributionControl) {
             _this.addControl(new AttributionControl({ customAttribution: options.customAttribution }));
         }
-        _this.addControl(new LogoControl(), options.logoPosition);
+        if (options.maplibreLogo) {
+            _this.addControl(new LogoControl(), options.logoPosition);
+        }
         _this.on('style.load', function () {
             if (_this.transform.unmodified) {
                 _this.jumpTo(_this.style.stylesheet);
@@ -41468,7 +41439,7 @@ var Map = function (_super) {
         return this.transform.locationPoint(performance.LngLat.convert(lnglat));
     };
     Map.prototype.unproject = function (point) {
-        return this.transform.pointLocation(performance.Point.convert(point));
+        return this.transform.pointLocation(performance.pointGeometry.convert(point));
     };
     Map.prototype.isMoving = function () {
         return this._moving || this.handlers.isMoving();
@@ -41595,7 +41566,7 @@ var Map = function (_super) {
         if (!this.style) {
             return [];
         }
-        if (options === undefined && geometry !== undefined && !(geometry instanceof performance.Point) && !Array.isArray(geometry)) {
+        if (options === undefined && geometry !== undefined && !(geometry instanceof performance.pointGeometry) && !Array.isArray(geometry)) {
             options = geometry;
             geometry = undefined;
         }
@@ -41611,16 +41582,16 @@ var Map = function (_super) {
             ]
         ];
         var queryGeometry;
-        if (geometry instanceof performance.Point || typeof geometry[0] === 'number') {
-            queryGeometry = [performance.Point.convert(geometry)];
+        if (geometry instanceof performance.pointGeometry || typeof geometry[0] === 'number') {
+            queryGeometry = [performance.pointGeometry.convert(geometry)];
         } else {
-            var tl = performance.Point.convert(geometry[0]);
-            var br = performance.Point.convert(geometry[1]);
+            var tl = performance.pointGeometry.convert(geometry[0]);
+            var br = performance.pointGeometry.convert(geometry[1]);
             queryGeometry = [
                 tl,
-                new performance.Point(br.x, tl.y),
+                new performance.pointGeometry(br.x, tl.y),
                 br,
-                new performance.Point(tl.x, br.y),
+                new performance.pointGeometry(tl.x, br.y),
                 tl
             ];
         }
@@ -42672,13 +42643,13 @@ var Marker = function (_super) {
             svg.setAttributeNS(null, 'height', ''.concat(defaultHeight * _this._scale, 'px'));
             svg.setAttributeNS(null, 'width', ''.concat(defaultWidth * _this._scale, 'px'));
             _this._element.appendChild(svg);
-            _this._offset = performance.Point.convert(options && options.offset || [
+            _this._offset = performance.pointGeometry.convert(options && options.offset || [
                 0,
                 -14
             ]);
         } else {
             _this._element = options.element;
-            _this._offset = performance.Point.convert(options && options.offset || [
+            _this._offset = performance.pointGeometry.convert(options && options.offset || [
                 0,
                 0
             ]);
@@ -42857,7 +42828,7 @@ var Marker = function (_super) {
         return this._offset;
     };
     Marker.prototype.setOffset = function (offset) {
-        this._offset = performance.Point.convert(offset);
+        this._offset = performance.pointGeometry.convert(offset);
         this._update();
         return this;
     };
@@ -43789,22 +43760,22 @@ var Popup = function (_super) {
 }(performance.Evented);
 function normalizeOffset(offset) {
     if (!offset) {
-        return normalizeOffset(new performance.Point(0, 0));
+        return normalizeOffset(new performance.pointGeometry(0, 0));
     } else if (typeof offset === 'number') {
         var cornerOffset = Math.round(Math.sqrt(0.5 * Math.pow(offset, 2)));
         return {
-            'center': new performance.Point(0, 0),
-            'top': new performance.Point(0, offset),
-            'top-left': new performance.Point(cornerOffset, cornerOffset),
-            'top-right': new performance.Point(-cornerOffset, cornerOffset),
-            'bottom': new performance.Point(0, -offset),
-            'bottom-left': new performance.Point(cornerOffset, -cornerOffset),
-            'bottom-right': new performance.Point(-cornerOffset, -cornerOffset),
-            'left': new performance.Point(offset, 0),
-            'right': new performance.Point(-offset, 0)
+            'center': new performance.pointGeometry(0, 0),
+            'top': new performance.pointGeometry(0, offset),
+            'top-left': new performance.pointGeometry(cornerOffset, cornerOffset),
+            'top-right': new performance.pointGeometry(-cornerOffset, cornerOffset),
+            'bottom': new performance.pointGeometry(0, -offset),
+            'bottom-left': new performance.pointGeometry(cornerOffset, -cornerOffset),
+            'bottom-right': new performance.pointGeometry(-cornerOffset, -cornerOffset),
+            'left': new performance.pointGeometry(offset, 0),
+            'right': new performance.pointGeometry(-offset, 0)
         };
-    } else if (offset instanceof performance.Point || Array.isArray(offset)) {
-        var convertedOffset = performance.Point.convert(offset);
+    } else if (offset instanceof performance.pointGeometry || Array.isArray(offset)) {
+        var convertedOffset = performance.pointGeometry.convert(offset);
         return {
             'center': convertedOffset,
             'top': convertedOffset,
@@ -43818,39 +43789,39 @@ function normalizeOffset(offset) {
         };
     } else {
         return {
-            'center': performance.Point.convert(offset['center'] || [
+            'center': performance.pointGeometry.convert(offset['center'] || [
                 0,
                 0
             ]),
-            'top': performance.Point.convert(offset['top'] || [
+            'top': performance.pointGeometry.convert(offset['top'] || [
                 0,
                 0
             ]),
-            'top-left': performance.Point.convert(offset['top-left'] || [
+            'top-left': performance.pointGeometry.convert(offset['top-left'] || [
                 0,
                 0
             ]),
-            'top-right': performance.Point.convert(offset['top-right'] || [
+            'top-right': performance.pointGeometry.convert(offset['top-right'] || [
                 0,
                 0
             ]),
-            'bottom': performance.Point.convert(offset['bottom'] || [
+            'bottom': performance.pointGeometry.convert(offset['bottom'] || [
                 0,
                 0
             ]),
-            'bottom-left': performance.Point.convert(offset['bottom-left'] || [
+            'bottom-left': performance.pointGeometry.convert(offset['bottom-left'] || [
                 0,
                 0
             ]),
-            'bottom-right': performance.Point.convert(offset['bottom-right'] || [
+            'bottom-right': performance.pointGeometry.convert(offset['bottom-right'] || [
                 0,
                 0
             ]),
-            'left': performance.Point.convert(offset['left'] || [
+            'left': performance.pointGeometry.convert(offset['left'] || [
                 0,
                 0
             ]),
-            'right': performance.Point.convert(offset['right'] || [
+            'right': performance.pointGeometry.convert(offset['right'] || [
                 0,
                 0
             ])
@@ -43866,6 +43837,7 @@ var exported = {
     NavigationControl: NavigationControl,
     GeolocateControl: GeolocateControl,
     AttributionControl: AttributionControl,
+    LogoControl: LogoControl,
     ScaleControl: ScaleControl,
     FullscreenControl: FullscreenControl,
     Popup: Popup,
@@ -43873,7 +43845,7 @@ var exported = {
     Style: Style,
     LngLat: performance.LngLat,
     LngLatBounds: performance.LngLatBounds,
-    Point: performance.Point,
+    Point: performance.pointGeometry,
     MercatorCoordinate: performance.MercatorCoordinate,
     Evented: performance.Evented,
     config: performance.config,
