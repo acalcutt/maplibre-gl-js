@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.2/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.3/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -306,148 +306,3221 @@ const exported$1 = {
     }
 };
 
-const NUM_PARAMS = 3;
-class TransferableGridIndex {
-    constructor(extent, n, padding) {
-        const cells = this.cells = [];
-        if (extent instanceof ArrayBuffer) {
-            this.arrayBuffer = extent;
-            const array = new Int32Array(this.arrayBuffer);
-            extent = array[0];
-            n = array[1];
-            padding = array[2];
-            this.d = n + 2 * padding;
-            for (let k = 0; k < this.d * this.d; k++) {
-                const start = array[NUM_PARAMS + k];
-                const end = array[NUM_PARAMS + k + 1];
-                cells.push(start === end ? null : array.subarray(start, end));
-            }
-            const keysOffset = array[NUM_PARAMS + cells.length];
-            const bboxesOffset = array[NUM_PARAMS + cells.length + 1];
-            this.keys = array.subarray(keysOffset, bboxesOffset);
-            this.bboxes = array.subarray(bboxesOffset);
-            this.insert = this._insertReadonly;
-        } else {
-            this.d = n + 2 * padding;
-            for (let i = 0; i < this.d * this.d; i++) {
-                cells.push([]);
-            }
-            this.keys = [];
-            this.bboxes = [];
+var pointGeometry = Point$1;
+function Point$1(x, y) {
+    this.x = x;
+    this.y = y;
+}
+Point$1.prototype = {
+    clone: function () {
+        return new Point$1(this.x, this.y);
+    },
+    add: function (p) {
+        return this.clone()._add(p);
+    },
+    sub: function (p) {
+        return this.clone()._sub(p);
+    },
+    multByPoint: function (p) {
+        return this.clone()._multByPoint(p);
+    },
+    divByPoint: function (p) {
+        return this.clone()._divByPoint(p);
+    },
+    mult: function (k) {
+        return this.clone()._mult(k);
+    },
+    div: function (k) {
+        return this.clone()._div(k);
+    },
+    rotate: function (a) {
+        return this.clone()._rotate(a);
+    },
+    rotateAround: function (a, p) {
+        return this.clone()._rotateAround(a, p);
+    },
+    matMult: function (m) {
+        return this.clone()._matMult(m);
+    },
+    unit: function () {
+        return this.clone()._unit();
+    },
+    perp: function () {
+        return this.clone()._perp();
+    },
+    round: function () {
+        return this.clone()._round();
+    },
+    mag: function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    },
+    equals: function (other) {
+        return this.x === other.x && this.y === other.y;
+    },
+    dist: function (p) {
+        return Math.sqrt(this.distSqr(p));
+    },
+    distSqr: function (p) {
+        var dx = p.x - this.x, dy = p.y - this.y;
+        return dx * dx + dy * dy;
+    },
+    angle: function () {
+        return Math.atan2(this.y, this.x);
+    },
+    angleTo: function (b) {
+        return Math.atan2(this.y - b.y, this.x - b.x);
+    },
+    angleWith: function (b) {
+        return this.angleWithSep(b.x, b.y);
+    },
+    angleWithSep: function (x, y) {
+        return Math.atan2(this.x * y - this.y * x, this.x * x + this.y * y);
+    },
+    _matMult: function (m) {
+        var x = m[0] * this.x + m[1] * this.y, y = m[2] * this.x + m[3] * this.y;
+        this.x = x;
+        this.y = y;
+        return this;
+    },
+    _add: function (p) {
+        this.x += p.x;
+        this.y += p.y;
+        return this;
+    },
+    _sub: function (p) {
+        this.x -= p.x;
+        this.y -= p.y;
+        return this;
+    },
+    _mult: function (k) {
+        this.x *= k;
+        this.y *= k;
+        return this;
+    },
+    _div: function (k) {
+        this.x /= k;
+        this.y /= k;
+        return this;
+    },
+    _multByPoint: function (p) {
+        this.x *= p.x;
+        this.y *= p.y;
+        return this;
+    },
+    _divByPoint: function (p) {
+        this.x /= p.x;
+        this.y /= p.y;
+        return this;
+    },
+    _unit: function () {
+        this._div(this.mag());
+        return this;
+    },
+    _perp: function () {
+        var y = this.y;
+        this.y = this.x;
+        this.x = -y;
+        return this;
+    },
+    _rotate: function (angle) {
+        var cos = Math.cos(angle), sin = Math.sin(angle), x = cos * this.x - sin * this.y, y = sin * this.x + cos * this.y;
+        this.x = x;
+        this.y = y;
+        return this;
+    },
+    _rotateAround: function (angle, p) {
+        var cos = Math.cos(angle), sin = Math.sin(angle), x = p.x + cos * (this.x - p.x) - sin * (this.y - p.y), y = p.y + sin * (this.x - p.x) + cos * (this.y - p.y);
+        this.x = x;
+        this.y = y;
+        return this;
+    },
+    _round: function () {
+        this.x = Math.round(this.x);
+        this.y = Math.round(this.y);
+        return this;
+    }
+};
+Point$1.convert = function (a) {
+    if (a instanceof Point$1) {
+        return a;
+    }
+    if (Array.isArray(a)) {
+        return new Point$1(a[0], a[1]);
+    }
+    return a;
+};
+
+const config = {
+    MAX_PARALLEL_IMAGE_REQUESTS: 16,
+    REGISTERED_PROTOCOLS: {}
+};
+
+const CACHE_NAME = 'mapbox-tiles';
+let cacheLimit = 500;
+let cacheCheckThreshold = 50;
+const MIN_TIME_UNTIL_EXPIRY = 1000 * 60 * 7;
+let sharedCache;
+function cacheOpen() {
+    if (typeof caches !== 'undefined' && !sharedCache) {
+        sharedCache = caches.open(CACHE_NAME);
+    }
+}
+let responseConstructorSupportsReadableStream;
+function prepareBody(response, callback) {
+    if (responseConstructorSupportsReadableStream === undefined) {
+        try {
+            new Response(new ReadableStream());
+            responseConstructorSupportsReadableStream = true;
+        } catch (e) {
+            responseConstructorSupportsReadableStream = false;
         }
-        this.n = n;
-        this.extent = extent;
-        this.padding = padding;
-        this.scale = n / extent;
-        this.uid = 0;
-        const p = padding / n * extent;
-        this.min = -p;
-        this.max = extent + p;
     }
-    insert(key, x1, y1, x2, y2) {
-        this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++, undefined, undefined);
-        this.keys.push(key);
-        this.bboxes.push(x1);
-        this.bboxes.push(y1);
-        this.bboxes.push(x2);
-        this.bboxes.push(y2);
+    if (responseConstructorSupportsReadableStream) {
+        callback(response.body);
+    } else {
+        response.blob().then(callback);
     }
-    _insertReadonly() {
-        throw new Error('Cannot insert into a GridIndex created from an ArrayBuffer.');
+}
+function cachePut(request, response, requestTime) {
+    cacheOpen();
+    if (!sharedCache)
+        return;
+    const options = {
+        status: response.status,
+        statusText: response.statusText,
+        headers: new Headers()
+    };
+    response.headers.forEach((v, k) => options.headers.set(k, v));
+    const cacheControl = parseCacheControl(response.headers.get('Cache-Control') || '');
+    if (cacheControl['no-store']) {
+        return;
     }
-    _insertCell(x1, y1, x2, y2, cellIndex, uid) {
-        this.cells[cellIndex].push(uid);
+    if (cacheControl['max-age']) {
+        options.headers.set('Expires', new Date(requestTime + cacheControl['max-age'] * 1000).toUTCString());
     }
-    query(x1, y1, x2, y2, intersectionTest) {
-        const min = this.min;
-        const max = this.max;
-        if (x1 <= min && y1 <= min && max <= x2 && max <= y2 && !intersectionTest) {
-            return Array.prototype.slice.call(this.keys);
-        } else {
-            const result = [];
-            const seenUids = {};
-            this._forEachCell(x1, y1, x2, y2, this._queryCell, result, seenUids, intersectionTest);
-            return result;
+    const timeUntilExpiry = new Date(options.headers.get('Expires')).getTime() - requestTime;
+    if (timeUntilExpiry < MIN_TIME_UNTIL_EXPIRY)
+        return;
+    prepareBody(response, body => {
+        const clonedResponse = new Response(body, options);
+        cacheOpen();
+        if (!sharedCache)
+            return;
+        sharedCache.then(cache => cache.put(stripQueryParameters(request.url), clonedResponse)).catch(e => warnOnce(e.message));
+    });
+}
+function stripQueryParameters(url) {
+    const start = url.indexOf('?');
+    return start < 0 ? url : url.slice(0, start);
+}
+let globalEntryCounter = Infinity;
+function cacheEntryPossiblyAdded(dispatcher) {
+    globalEntryCounter++;
+    if (globalEntryCounter > cacheCheckThreshold) {
+        dispatcher.getActor().send('enforceCacheSizeLimit', cacheLimit);
+        globalEntryCounter = 0;
+    }
+}
+function enforceCacheSizeLimit(limit) {
+    cacheOpen();
+    if (!sharedCache)
+        return;
+    sharedCache.then(cache => {
+        cache.keys().then(keys => {
+            for (let i = 0; i < keys.length - limit; i++) {
+                cache.delete(keys[i]);
+            }
+        });
+    });
+}
+function clearTileCache(callback) {
+    const promise = caches.delete(CACHE_NAME);
+    if (callback) {
+        promise.catch(callback).then(() => callback());
+    }
+}
+function setCacheLimits(limit, checkThreshold) {
+    cacheLimit = limit;
+    cacheCheckThreshold = checkThreshold;
+}
+
+const exported = {
+    supported: false,
+    testSupport
+};
+let glForTesting;
+let webpCheckComplete = false;
+let webpImgTest;
+let webpImgTestOnloadComplete = false;
+if (typeof document !== 'undefined') {
+    webpImgTest = document.createElement('img');
+    webpImgTest.onload = function () {
+        if (glForTesting)
+            testWebpTextureUpload(glForTesting);
+        glForTesting = null;
+        webpImgTestOnloadComplete = true;
+    };
+    webpImgTest.onerror = function () {
+        webpCheckComplete = true;
+        glForTesting = null;
+    };
+    webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
+}
+function testSupport(gl) {
+    if (webpCheckComplete || !webpImgTest)
+        return;
+    if (webpImgTestOnloadComplete) {
+        testWebpTextureUpload(gl);
+    } else {
+        glForTesting = gl;
+    }
+}
+function testWebpTextureUpload(gl) {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    try {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, webpImgTest);
+        if (gl.isContextLost())
+            return;
+        exported.supported = true;
+    } catch (e) {
+    }
+    gl.deleteTexture(texture);
+    webpCheckComplete = true;
+}
+
+const ResourceType = {
+    Unknown: 'Unknown',
+    Style: 'Style',
+    Source: 'Source',
+    Tile: 'Tile',
+    Glyphs: 'Glyphs',
+    SpriteImage: 'SpriteImage',
+    SpriteJSON: 'SpriteJSON',
+    Image: 'Image'
+};
+if (typeof Object.freeze == 'function') {
+    Object.freeze(ResourceType);
+}
+class AJAXError extends Error {
+    constructor(message, status, url) {
+        super(message);
+        this.status = status;
+        this.url = url;
+        this.name = this.constructor.name;
+        this.message = message;
+    }
+    toString() {
+        return `${ this.name }: ${ this.message } (${ this.status }): ${ this.url }`;
+    }
+}
+const getReferrer = isWorker() ? () => self.worker && self.worker.referrer : () => (window.location.protocol === 'blob:' ? window.parent : window).location.href;
+const isFileURL = url => /^file:/.test(url) || /^file:/.test(getReferrer()) && !/^\w+:/.test(url);
+function makeFetchRequest(requestParameters, callback) {
+    const controller = new AbortController();
+    const request = new Request(requestParameters.url, {
+        method: requestParameters.method || 'GET',
+        body: requestParameters.body,
+        credentials: requestParameters.credentials,
+        headers: requestParameters.headers,
+        referrer: getReferrer(),
+        signal: controller.signal
+    });
+    let complete = false;
+    let aborted = false;
+    if (requestParameters.type === 'json') {
+        request.headers.set('Accept', 'application/json');
+    }
+    const validateOrFetch = (err, cachedResponse, responseIsFresh) => {
+        if (aborted)
+            return;
+        if (err) {
+            if (err.message !== 'SecurityError') {
+                warnOnce(err);
+            }
         }
+        if (cachedResponse && responseIsFresh) {
+            return finishRequest(cachedResponse);
+        }
+        const requestTime = Date.now();
+        fetch(request).then(response => {
+            if (response.ok) {
+                const cacheableResponse = null;
+                return finishRequest(response, cacheableResponse, requestTime);
+            } else {
+                return callback(new AJAXError(response.statusText, response.status, requestParameters.url));
+            }
+        }).catch(error => {
+            if (error.code === 20) {
+                return;
+            }
+            callback(new Error(error.message));
+        });
+    };
+    const finishRequest = (response, cacheableResponse, requestTime) => {
+        (requestParameters.type === 'arrayBuffer' ? response.arrayBuffer() : requestParameters.type === 'json' ? response.json() : response.text()).then(result => {
+            if (aborted)
+                return;
+            if (cacheableResponse && requestTime) {
+                cachePut(request, cacheableResponse, requestTime);
+            }
+            complete = true;
+            callback(null, result, response.headers.get('Cache-Control'), response.headers.get('Expires'));
+        }).catch(err => {
+            if (!aborted)
+                callback(new Error(err.message));
+        });
+    };
+    {
+        validateOrFetch(null, null);
     }
-    _queryCell(x1, y1, x2, y2, cellIndex, result, seenUids, intersectionTest) {
-        const cell = this.cells[cellIndex];
-        if (cell !== null) {
-            const keys = this.keys;
-            const bboxes = this.bboxes;
-            for (let u = 0; u < cell.length; u++) {
-                const uid = cell[u];
-                if (seenUids[uid] === undefined) {
-                    const offset = uid * 4;
-                    if (intersectionTest ? intersectionTest(bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) : x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1]) {
-                        seenUids[uid] = true;
-                        result.push(keys[uid]);
-                    } else {
-                        seenUids[uid] = false;
-                    }
+    return {
+        cancel: () => {
+            aborted = true;
+            if (!complete)
+                controller.abort();
+        }
+    };
+}
+function makeXMLHttpRequest(requestParameters, callback) {
+    const xhr = new XMLHttpRequest();
+    xhr.open(requestParameters.method || 'GET', requestParameters.url, true);
+    if (requestParameters.type === 'arrayBuffer') {
+        xhr.responseType = 'arraybuffer';
+    }
+    for (const k in requestParameters.headers) {
+        xhr.setRequestHeader(k, requestParameters.headers[k]);
+    }
+    if (requestParameters.type === 'json') {
+        xhr.responseType = 'text';
+        xhr.setRequestHeader('Accept', 'application/json');
+    }
+    xhr.withCredentials = requestParameters.credentials === 'include';
+    xhr.onerror = () => {
+        callback(new Error(xhr.statusText));
+    };
+    xhr.onload = () => {
+        if ((xhr.status >= 200 && xhr.status < 300 || xhr.status === 0) && xhr.response !== null) {
+            let data = xhr.response;
+            if (requestParameters.type === 'json') {
+                try {
+                    data = JSON.parse(xhr.response);
+                } catch (err) {
+                    return callback(err);
                 }
             }
+            callback(null, data, xhr.getResponseHeader('Cache-Control'), xhr.getResponseHeader('Expires'));
+        } else {
+            callback(new AJAXError(xhr.statusText, xhr.status, requestParameters.url));
+        }
+    };
+    xhr.send(requestParameters.body);
+    return { cancel: () => xhr.abort() };
+}
+const makeRequest = function (requestParameters, callback) {
+    if (/:\/\//.test(requestParameters.url) && !/^https?:|^file:/.test(requestParameters.url)) {
+        if (isWorker() && self.worker && self.worker.actor) {
+            return self.worker.actor.send('getResource', requestParameters, callback);
+        }
+        if (!isWorker()) {
+            const protocol = requestParameters.url.substring(0, requestParameters.url.indexOf('://'));
+            const action = config.REGISTERED_PROTOCOLS[protocol] || makeFetchRequest;
+            return action(requestParameters, callback);
         }
     }
-    _forEachCell(x1, y1, x2, y2, fn, arg1, arg2, intersectionTest) {
-        const cx1 = this._convertToCellCoord(x1);
-        const cy1 = this._convertToCellCoord(y1);
-        const cx2 = this._convertToCellCoord(x2);
-        const cy2 = this._convertToCellCoord(y2);
-        for (let x = cx1; x <= cx2; x++) {
-            for (let y = cy1; y <= cy2; y++) {
-                const cellIndex = this.d * y + x;
-                if (intersectionTest && !intersectionTest(this._convertFromCellCoord(x), this._convertFromCellCoord(y), this._convertFromCellCoord(x + 1), this._convertFromCellCoord(y + 1)))
-                    continue;
-                if (fn.call(this, x1, y1, x2, y2, cellIndex, arg1, arg2, intersectionTest))
-                    return;
+    if (!isFileURL(requestParameters.url)) {
+        if (fetch && Request && AbortController && Object.prototype.hasOwnProperty.call(Request.prototype, 'signal')) {
+            return makeFetchRequest(requestParameters, callback);
+        }
+        if (isWorker() && self.worker && self.worker.actor) {
+            const queueOnMainThread = true;
+            return self.worker.actor.send('getResource', requestParameters, callback, undefined, queueOnMainThread);
+        }
+    }
+    return makeXMLHttpRequest(requestParameters, callback);
+};
+const getJSON = function (requestParameters, callback) {
+    return makeRequest(extend$1(requestParameters, { type: 'json' }), callback);
+};
+const getArrayBuffer = function (requestParameters, callback) {
+    return makeRequest(extend$1(requestParameters, { type: 'arrayBuffer' }), callback);
+};
+function sameOrigin(url) {
+    const a = window.document.createElement('a');
+    a.href = url;
+    return a.protocol === window.document.location.protocol && a.host === window.document.location.host;
+}
+const transparentPngUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=';
+function arrayBufferToImage(data, callback, cacheControl, expires) {
+    const img = new Image();
+    img.onload = () => {
+        callback(null, img);
+        URL.revokeObjectURL(img.src);
+        img.onload = null;
+        window.requestAnimationFrame(() => {
+            img.src = transparentPngUrl;
+        });
+    };
+    img.onerror = () => callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
+    const blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
+    img.cacheControl = cacheControl;
+    img.expires = expires;
+    img.src = data.byteLength ? URL.createObjectURL(blob) : transparentPngUrl;
+}
+function arrayBufferToImageBitmap(data, callback) {
+    const blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
+    createImageBitmap(blob).then(imgBitmap => {
+        callback(null, imgBitmap);
+    }).catch(e => {
+        callback(new Error(`Could not load image because of ${ e.message }. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.`));
+    });
+}
+function arrayBufferToCanvasImageSource(data, callback, cacheControl, expires) {
+    const imageBitmapSupported = typeof createImageBitmap === 'function';
+    if (imageBitmapSupported) {
+        arrayBufferToImageBitmap(data, callback);
+    } else {
+        arrayBufferToImage(data, callback, cacheControl, expires);
+    }
+}
+let imageQueue, numImageRequests;
+const resetImageRequestQueue = () => {
+    imageQueue = [];
+    numImageRequests = 0;
+};
+resetImageRequestQueue();
+const getImage = function (requestParameters, callback) {
+    if (exported.supported) {
+        if (!requestParameters.headers) {
+            requestParameters.headers = {};
+        }
+        requestParameters.headers.accept = 'image/webp,*/*';
+    }
+    if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
+        const queued = {
+            requestParameters,
+            callback,
+            cancelled: false,
+            cancel() {
+                this.cancelled = true;
+            }
+        };
+        imageQueue.push(queued);
+        return queued;
+    }
+    numImageRequests++;
+    let advanced = false;
+    const advanceImageRequestQueue = () => {
+        if (advanced)
+            return;
+        advanced = true;
+        numImageRequests--;
+        while (imageQueue.length && numImageRequests < config.MAX_PARALLEL_IMAGE_REQUESTS) {
+            const request = imageQueue.shift();
+            const {requestParameters, callback, cancelled} = request;
+            if (!cancelled) {
+                request.cancel = getImage(requestParameters, callback).cancel;
+            }
+        }
+    };
+    const request = getArrayBuffer(requestParameters, (err, data, cacheControl, expires) => {
+        advanceImageRequestQueue();
+        if (err) {
+            callback(err);
+        } else if (data) {
+            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
+        }
+    });
+    return {
+        cancel: () => {
+            request.cancel();
+            advanceImageRequestQueue();
+        }
+    };
+};
+const getVideo = function (urls, callback) {
+    const video = window.document.createElement('video');
+    video.muted = true;
+    video.onloadstart = function () {
+        callback(null, video);
+    };
+    for (let i = 0; i < urls.length; i++) {
+        const s = window.document.createElement('source');
+        if (!sameOrigin(urls[i])) {
+            video.crossOrigin = 'Anonymous';
+        }
+        s.src = urls[i];
+        video.appendChild(s);
+    }
+    return {
+        cancel: () => {
+        }
+    };
+};
+
+function _addEventListener(type, listener, listenerList) {
+    const listenerExists = listenerList[type] && listenerList[type].indexOf(listener) !== -1;
+    if (!listenerExists) {
+        listenerList[type] = listenerList[type] || [];
+        listenerList[type].push(listener);
+    }
+}
+function _removeEventListener(type, listener, listenerList) {
+    if (listenerList && listenerList[type]) {
+        const index = listenerList[type].indexOf(listener);
+        if (index !== -1) {
+            listenerList[type].splice(index, 1);
+        }
+    }
+}
+class Event {
+    constructor(type, data = {}) {
+        extend$1(this, data);
+        this.type = type;
+    }
+}
+class ErrorEvent extends Event {
+    constructor(error, data = {}) {
+        super('error', extend$1({ error }, data));
+    }
+}
+class Evented {
+    on(type, listener) {
+        this._listeners = this._listeners || {};
+        _addEventListener(type, listener, this._listeners);
+        return this;
+    }
+    off(type, listener) {
+        _removeEventListener(type, listener, this._listeners);
+        _removeEventListener(type, listener, this._oneTimeListeners);
+        return this;
+    }
+    once(type, listener) {
+        this._oneTimeListeners = this._oneTimeListeners || {};
+        _addEventListener(type, listener, this._oneTimeListeners);
+        return this;
+    }
+    fire(event, properties) {
+        if (typeof event === 'string') {
+            event = new Event(event, properties || {});
+        }
+        const type = event.type;
+        if (this.listens(type)) {
+            event.target = this;
+            const listeners = this._listeners && this._listeners[type] ? this._listeners[type].slice() : [];
+            for (const listener of listeners) {
+                listener.call(this, event);
+            }
+            const oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
+            for (const listener of oneTimeListeners) {
+                _removeEventListener(type, listener, this._oneTimeListeners);
+                listener.call(this, event);
+            }
+            const parent = this._eventedParent;
+            if (parent) {
+                extend$1(event, typeof this._eventedParentData === 'function' ? this._eventedParentData() : this._eventedParentData);
+                parent.fire(event);
+            }
+        } else if (event instanceof ErrorEvent) {
+            console.error(event.error);
+        }
+        return this;
+    }
+    listens(type) {
+        return this._listeners && this._listeners[type] && this._listeners[type].length > 0 || this._oneTimeListeners && this._oneTimeListeners[type] && this._oneTimeListeners[type].length > 0 || this._eventedParent && this._eventedParent.listens(type);
+    }
+    setEventedParent(parent, data) {
+        this._eventedParent = parent;
+        this._eventedParentData = data;
+        return this;
+    }
+}
+
+var $version = 8;
+var $root = {
+    version: {
+        required: true,
+        type: 'enum',
+        values: [8]
+    },
+    name: { type: 'string' },
+    metadata: { type: '*' },
+    center: {
+        type: 'array',
+        value: 'number'
+    },
+    zoom: { type: 'number' },
+    bearing: {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees'
+    },
+    pitch: {
+        type: 'number',
+        'default': 0,
+        units: 'degrees'
+    },
+    light: { type: 'light' },
+    sources: {
+        required: true,
+        type: 'sources'
+    },
+    sprite: { type: 'string' },
+    glyphs: { type: 'string' },
+    transition: { type: 'transition' },
+    layers: {
+        required: true,
+        type: 'array',
+        value: 'layer'
+    }
+};
+var sources = { '*': { type: 'source' } };
+var source = [
+    'source_vector',
+    'source_raster',
+    'source_raster_dem',
+    'source_geojson',
+    'source_video',
+    'source_image'
+];
+var source_vector = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { vector: {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    scheme: {
+        type: 'enum',
+        values: {
+            xyz: {},
+            tms: {}
+        },
+        'default': 'xyz'
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    attribution: { type: 'string' },
+    promoteId: { type: 'promoteId' },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
+};
+var source_raster = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { raster: {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    tileSize: {
+        type: 'number',
+        'default': 512,
+        units: 'pixels'
+    },
+    scheme: {
+        type: 'enum',
+        values: {
+            xyz: {},
+            tms: {}
+        },
+        'default': 'xyz'
+    },
+    attribution: { type: 'string' },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
+};
+var source_raster_dem = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { 'raster-dem': {} }
+    },
+    url: { type: 'string' },
+    tiles: {
+        type: 'array',
+        value: 'string'
+    },
+    bounds: {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            -180,
+            -85.051129,
+            180,
+            85.051129
+        ]
+    },
+    minzoom: {
+        type: 'number',
+        'default': 0
+    },
+    maxzoom: {
+        type: 'number',
+        'default': 22
+    },
+    tileSize: {
+        type: 'number',
+        'default': 512,
+        units: 'pixels'
+    },
+    attribution: { type: 'string' },
+    encoding: {
+        type: 'enum',
+        values: {
+            terrarium: {},
+            mtk: {},
+            mapbox: {}
+        },
+        'default': 'mapbox'
+    },
+    volatile: {
+        type: 'boolean',
+        'default': false
+    },
+    '*': { type: '*' }
+};
+var source_geojson = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { geojson: {} }
+    },
+    data: { type: '*' },
+    maxzoom: {
+        type: 'number',
+        'default': 18
+    },
+    attribution: { type: 'string' },
+    buffer: {
+        type: 'number',
+        'default': 128,
+        maximum: 512,
+        minimum: 0
+    },
+    filter: { type: '*' },
+    tolerance: {
+        type: 'number',
+        'default': 0.375
+    },
+    cluster: {
+        type: 'boolean',
+        'default': false
+    },
+    clusterRadius: {
+        type: 'number',
+        'default': 50,
+        minimum: 0
+    },
+    clusterMaxZoom: { type: 'number' },
+    clusterMinPoints: { type: 'number' },
+    clusterProperties: { type: '*' },
+    lineMetrics: {
+        type: 'boolean',
+        'default': false
+    },
+    generateId: {
+        type: 'boolean',
+        'default': false
+    },
+    promoteId: { type: 'promoteId' }
+};
+var source_video = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { video: {} }
+    },
+    urls: {
+        required: true,
+        type: 'array',
+        value: 'string'
+    },
+    coordinates: {
+        required: true,
+        type: 'array',
+        length: 4,
+        value: {
+            type: 'array',
+            length: 2,
+            value: 'number'
+        }
+    }
+};
+var source_image = {
+    type: {
+        required: true,
+        type: 'enum',
+        values: { image: {} }
+    },
+    url: {
+        required: true,
+        type: 'string'
+    },
+    coordinates: {
+        required: true,
+        type: 'array',
+        length: 4,
+        value: {
+            type: 'array',
+            length: 2,
+            value: 'number'
+        }
+    }
+};
+var layer = {
+    id: {
+        type: 'string',
+        required: true
+    },
+    type: {
+        type: 'enum',
+        values: {
+            fill: {},
+            line: {},
+            symbol: {},
+            circle: {},
+            heatmap: {},
+            'fill-extrusion': {},
+            raster: {},
+            hillshade: {},
+            background: {}
+        },
+        required: true
+    },
+    metadata: { type: '*' },
+    source: { type: 'string' },
+    'source-layer': { type: 'string' },
+    minzoom: {
+        type: 'number',
+        minimum: 0,
+        maximum: 24
+    },
+    maxzoom: {
+        type: 'number',
+        minimum: 0,
+        maximum: 24
+    },
+    filter: { type: 'filter' },
+    layout: { type: 'layout' },
+    paint: { type: 'paint' }
+};
+var layout$7 = [
+    'layout_fill',
+    'layout_line',
+    'layout_circle',
+    'layout_heatmap',
+    'layout_fill-extrusion',
+    'layout_symbol',
+    'layout_raster',
+    'layout_hillshade',
+    'layout_background'
+];
+var layout_background = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_fill = {
+    'fill-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_circle = {
+    'circle-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_heatmap = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_line = {
+    'line-cap': {
+        type: 'enum',
+        values: {
+            butt: {},
+            round: {},
+            square: {}
+        },
+        'default': 'butt',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-join': {
+        type: 'enum',
+        values: {
+            bevel: {},
+            round: {},
+            miter: {}
+        },
+        'default': 'miter',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-miter-limit': {
+        type: 'number',
+        'default': 2,
+        requires: [{ 'line-join': 'miter' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-round-limit': {
+        type: 'number',
+        'default': 1.05,
+        requires: [{ 'line-join': 'round' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_symbol = {
+    'symbol-placement': {
+        type: 'enum',
+        values: {
+            point: {},
+            line: {},
+            'line-center': {}
+        },
+        'default': 'point',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-spacing': {
+        type: 'number',
+        'default': 250,
+        minimum: 1,
+        units: 'pixels',
+        requires: [{ 'symbol-placement': 'line' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-avoid-edges': {
+        type: 'boolean',
+        'default': false,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'symbol-sort-key': {
+        type: 'number',
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'symbol-z-order': {
+        type: 'enum',
+        values: {
+            auto: {},
+            'viewport-y': {},
+            source: {}
+        },
+        'default': 'auto',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-allow-overlap': {
+        type: 'boolean',
+        'default': false,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-ignore-placement': {
+        type: 'boolean',
+        'default': false,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-optional': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'icon-image',
+            'text-field'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-rotation-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-size': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        units: 'factor of the original icon size',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-text-fit': {
+        type: 'enum',
+        values: {
+            none: {},
+            width: {},
+            height: {},
+            both: {}
+        },
+        'default': 'none',
+        requires: [
+            'icon-image',
+            'text-field'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-text-fit-padding': {
+        type: 'array',
+        value: 'number',
+        length: 4,
+        'default': [
+            0,
+            0,
+            0,
+            0
+        ],
+        units: 'pixels',
+        requires: [
+            'icon-image',
+            'text-field',
+            {
+                'icon-text-fit': [
+                    'both',
+                    'width',
+                    'height'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-image': {
+        type: 'resolvedImage',
+        tokens: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-padding': {
+        type: 'number',
+        'default': 2,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-keep-upright': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'icon-image',
+            { 'icon-rotation-alignment': 'map' },
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-offset': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-anchor': {
+        type: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        'default': 'center',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-rotation-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {},
+            auto: {}
+        },
+        'default': 'auto',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-field': {
+        type: 'formatted',
+        'default': '',
+        tokens: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-font': {
+        type: 'array',
+        value: 'string',
+        'default': [
+            'Open Sans Regular',
+            'Arial Unicode MS Regular'
+        ],
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-size': {
+        type: 'number',
+        'default': 16,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-max-width': {
+        type: 'number',
+        'default': 10,
+        minimum: 0,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-line-height': {
+        type: 'number',
+        'default': 1.2,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-letter-spacing': {
+        type: 'number',
+        'default': 0,
+        units: 'ems',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-justify': {
+        type: 'enum',
+        values: {
+            auto: {},
+            left: {},
+            center: {},
+            right: {}
+        },
+        'default': 'center',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-radial-offset': {
+        type: 'number',
+        units: 'ems',
+        'default': 0,
+        requires: ['text-field'],
+        'property-type': 'data-driven',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        }
+    },
+    'text-variable-anchor': {
+        type: 'array',
+        value: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        requires: [
+            'text-field',
+            { 'symbol-placement': ['point'] }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-anchor': {
+        type: 'enum',
+        values: {
+            center: {},
+            left: {},
+            right: {},
+            top: {},
+            bottom: {},
+            'top-left': {},
+            'top-right': {},
+            'bottom-left': {},
+            'bottom-right': {}
+        },
+        'default': 'center',
+        requires: [
+            'text-field',
+            { '!': 'text-variable-anchor' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-max-angle': {
+        type: 'number',
+        'default': 45,
+        units: 'degrees',
+        requires: [
+            'text-field',
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-writing-mode': {
+        type: 'array',
+        value: 'enum',
+        values: {
+            horizontal: {},
+            vertical: {}
+        },
+        requires: [
+            'text-field',
+            { 'symbol-placement': ['point'] }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        units: 'degrees',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-padding': {
+        type: 'number',
+        'default': 2,
+        minimum: 0,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-keep-upright': {
+        type: 'boolean',
+        'default': true,
+        requires: [
+            'text-field',
+            { 'text-rotation-alignment': 'map' },
+            {
+                'symbol-placement': [
+                    'line',
+                    'line-center'
+                ]
+            }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-transform': {
+        type: 'enum',
+        values: {
+            none: {},
+            uppercase: {},
+            lowercase: {}
+        },
+        'default': 'none',
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-offset': {
+        type: 'array',
+        value: 'number',
+        units: 'ems',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        requires: [
+            'text-field',
+            { '!': 'text-radial-offset' }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-allow-overlap': {
+        type: 'boolean',
+        'default': false,
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-ignore-placement': {
+        type: 'boolean',
+        'default': false,
+        requires: ['text-field'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-optional': {
+        type: 'boolean',
+        'default': false,
+        requires: [
+            'text-field',
+            'icon-image'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_raster = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var layout_hillshade = {
+    visibility: {
+        type: 'enum',
+        values: {
+            visible: {},
+            none: {}
+        },
+        'default': 'visible',
+        'property-type': 'constant'
+    }
+};
+var filter = {
+    type: 'array',
+    value: '*'
+};
+var filter_operator = {
+    type: 'enum',
+    values: {
+        '==': {},
+        '!=': {},
+        '>': {},
+        '>=': {},
+        '<': {},
+        '<=': {},
+        'in': {},
+        '!in': {},
+        all: {},
+        any: {},
+        none: {},
+        has: {},
+        '!has': {},
+        within: {}
+    }
+};
+var geometry_type = {
+    type: 'enum',
+    values: {
+        Point: {},
+        LineString: {},
+        Polygon: {}
+    }
+};
+var function_stop = {
+    type: 'array',
+    minimum: 0,
+    maximum: 24,
+    value: [
+        'number',
+        'color'
+    ],
+    length: 2
+};
+var expression = {
+    type: 'array',
+    value: '*',
+    minimum: 1
+};
+var light = {
+    anchor: {
+        type: 'enum',
+        'default': 'viewport',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'property-type': 'data-constant',
+        transition: false,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        }
+    },
+    position: {
+        type: 'array',
+        'default': [
+            1.15,
+            210,
+            30
+        ],
+        length: 3,
+        value: 'number',
+        'property-type': 'data-constant',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        }
+    },
+    color: {
+        type: 'color',
+        'property-type': 'data-constant',
+        'default': '#ffffff',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        transition: true
+    },
+    intensity: {
+        type: 'number',
+        'property-type': 'data-constant',
+        'default': 0.5,
+        minimum: 0,
+        maximum: 1,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        transition: true
+    }
+};
+var paint$9 = [
+    'paint_fill',
+    'paint_line',
+    'paint_circle',
+    'paint_heatmap',
+    'paint_fill-extrusion',
+    'paint_symbol',
+    'paint_raster',
+    'paint_hillshade',
+    'paint_background'
+];
+var paint_fill = {
+    'fill-antialias': {
+        type: 'boolean',
+        'default': true,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'fill-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-outline-color': {
+        type: 'color',
+        transition: true,
+        requires: [
+            { '!': 'fill-pattern' },
+            { 'fill-antialias': true }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'fill-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['fill-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'fill-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'cross-faded-data-driven'
+    }
+};
+var paint_line = {
+    'line-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'line-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['line-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'line-width': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-gap-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-offset': {
+        type: 'number',
+        'default': 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'line-dasharray': {
+        type: 'array',
+        value: 'number',
+        minimum: 0,
+        transition: true,
+        units: 'line widths',
+        requires: [{ '!': 'line-pattern' }],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'cross-faded'
+    },
+    'line-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: [
+                'zoom',
+                'feature'
+            ]
+        },
+        'property-type': 'cross-faded-data-driven'
+    },
+    'line-gradient': {
+        type: 'color',
+        transition: false,
+        requires: [
+            { '!': 'line-dasharray' },
+            { '!': 'line-pattern' },
+            {
+                source: 'geojson',
+                has: { lineMetrics: true }
+            }
+        ],
+        expression: {
+            interpolated: true,
+            parameters: ['line-progress']
+        },
+        'property-type': 'color-ramp'
+    }
+};
+var paint_circle = {
+    'circle-radius': {
+        type: 'number',
+        'default': 5,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-blur': {
+        type: 'number',
+        'default': 0,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: ['circle-translate'],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-pitch-scale': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-pitch-alignment': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'viewport',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'circle-stroke-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-stroke-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'circle-stroke-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    }
+};
+var paint_heatmap = {
+    'heatmap-radius': {
+        type: 'number',
+        'default': 30,
+        minimum: 1,
+        transition: true,
+        units: 'pixels',
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'heatmap-weight': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'heatmap-intensity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'heatmap-color': {
+        type: 'color',
+        'default': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(0, 0, 255, 0)',
+            0.1,
+            'royalblue',
+            0.3,
+            'cyan',
+            0.5,
+            'lime',
+            0.7,
+            'yellow',
+            1,
+            'red'
+        ],
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: ['heatmap-density']
+        },
+        'property-type': 'color-ramp'
+    },
+    'heatmap-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_symbol = {
+    'icon-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-color': {
+        type: 'color',
+        'default': 'rgba(0, 0, 0, 0)',
+        transition: true,
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-halo-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'icon-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        requires: ['icon-image'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: [
+            'icon-image',
+            'icon-translate'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        overridable: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-color': {
+        type: 'color',
+        'default': 'rgba(0, 0, 0, 0)',
+        transition: true,
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-width': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-halo-blur': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: [
+                'zoom',
+                'feature',
+                'feature-state'
+            ]
+        },
+        'property-type': 'data-driven'
+    },
+    'text-translate': {
+        type: 'array',
+        value: 'number',
+        length: 2,
+        'default': [
+            0,
+            0
+        ],
+        transition: true,
+        units: 'pixels',
+        requires: ['text-field'],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-translate-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'map',
+        requires: [
+            'text-field',
+            'text-translate'
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_raster = {
+    'raster-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-hue-rotate': {
+        type: 'number',
+        'default': 0,
+        period: 360,
+        transition: true,
+        units: 'degrees',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-brightness-min': {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-brightness-max': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-saturation': {
+        type: 'number',
+        'default': 0,
+        minimum: -1,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-contrast': {
+        type: 'number',
+        'default': 0,
+        minimum: -1,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-resampling': {
+        type: 'enum',
+        values: {
+            linear: {},
+            nearest: {}
+        },
+        'default': 'linear',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'raster-fade-duration': {
+        type: 'number',
+        'default': 300,
+        minimum: 0,
+        transition: false,
+        units: 'milliseconds',
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_hillshade = {
+    'hillshade-illumination-direction': {
+        type: 'number',
+        'default': 335,
+        minimum: 0,
+        maximum: 359,
+        transition: false,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-illumination-anchor': {
+        type: 'enum',
+        values: {
+            map: {},
+            viewport: {}
+        },
+        'default': 'viewport',
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-exaggeration': {
+        type: 'number',
+        'default': 0.5,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-shadow-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-highlight-color': {
+        type: 'color',
+        'default': '#FFFFFF',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'hillshade-accent-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var paint_background = {
+    'background-color': {
+        type: 'color',
+        'default': '#000000',
+        transition: true,
+        requires: [{ '!': 'background-pattern' }],
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'background-pattern': {
+        type: 'resolvedImage',
+        transition: true,
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'cross-faded'
+    },
+    'background-opacity': {
+        type: 'number',
+        'default': 1,
+        minimum: 0,
+        maximum: 1,
+        transition: true,
+        expression: {
+            interpolated: true,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    }
+};
+var transition = {
+    duration: {
+        type: 'number',
+        'default': 300,
+        minimum: 0,
+        units: 'milliseconds'
+    },
+    delay: {
+        type: 'number',
+        'default': 0,
+        minimum: 0,
+        units: 'milliseconds'
+    }
+};
+var promoteId = { '*': { type: 'string' } };
+var spec = {
+    $version: $version,
+    $root: $root,
+    sources: sources,
+    source: source,
+    source_vector: source_vector,
+    source_raster: source_raster,
+    source_raster_dem: source_raster_dem,
+    source_geojson: source_geojson,
+    source_video: source_video,
+    source_image: source_image,
+    layer: layer,
+    layout: layout$7,
+    layout_background: layout_background,
+    layout_fill: layout_fill,
+    layout_circle: layout_circle,
+    layout_heatmap: layout_heatmap,
+    'layout_fill-extrusion': {
+        visibility: {
+            type: 'enum',
+            values: {
+                visible: {},
+                none: {}
+            },
+            'default': 'visible',
+            'property-type': 'constant'
+        }
+    },
+    layout_line: layout_line,
+    layout_symbol: layout_symbol,
+    layout_raster: layout_raster,
+    layout_hillshade: layout_hillshade,
+    filter: filter,
+    filter_operator: filter_operator,
+    geometry_type: geometry_type,
+    'function': {
+        expression: { type: 'expression' },
+        stops: {
+            type: 'array',
+            value: 'function_stop'
+        },
+        base: {
+            type: 'number',
+            'default': 1,
+            minimum: 0
+        },
+        property: {
+            type: 'string',
+            'default': '$zoom'
+        },
+        type: {
+            type: 'enum',
+            values: {
+                identity: {},
+                exponential: {},
+                interval: {},
+                categorical: {}
+            },
+            'default': 'exponential'
+        },
+        colorSpace: {
+            type: 'enum',
+            values: {
+                rgb: {},
+                lab: {},
+                hcl: {}
+            },
+            'default': 'rgb'
+        },
+        'default': {
+            type: '*',
+            required: false
+        }
+    },
+    function_stop: function_stop,
+    expression: expression,
+    light: light,
+    paint: paint$9,
+    paint_fill: paint_fill,
+    'paint_fill-extrusion': {
+        'fill-extrusion-opacity': {
+            type: 'number',
+            'default': 1,
+            minimum: 0,
+            maximum: 1,
+            transition: true,
+            expression: {
+                interpolated: true,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-color': {
+            type: 'color',
+            'default': '#000000',
+            transition: true,
+            requires: [{ '!': 'fill-extrusion-pattern' }],
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-translate': {
+            type: 'array',
+            value: 'number',
+            length: 2,
+            'default': [
+                0,
+                0
+            ],
+            transition: true,
+            units: 'pixels',
+            expression: {
+                interpolated: true,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-translate-anchor': {
+            type: 'enum',
+            values: {
+                map: {},
+                viewport: {}
+            },
+            'default': 'map',
+            requires: ['fill-extrusion-translate'],
+            expression: {
+                interpolated: false,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        },
+        'fill-extrusion-pattern': {
+            type: 'resolvedImage',
+            transition: true,
+            expression: {
+                interpolated: false,
+                parameters: [
+                    'zoom',
+                    'feature'
+                ]
+            },
+            'property-type': 'cross-faded-data-driven'
+        },
+        'fill-extrusion-height': {
+            type: 'number',
+            'default': 0,
+            minimum: 0,
+            units: 'meters',
+            transition: true,
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-base': {
+            type: 'number',
+            'default': 0,
+            minimum: 0,
+            units: 'meters',
+            transition: true,
+            requires: ['fill-extrusion-height'],
+            expression: {
+                interpolated: true,
+                parameters: [
+                    'zoom',
+                    'feature',
+                    'feature-state'
+                ]
+            },
+            'property-type': 'data-driven'
+        },
+        'fill-extrusion-vertical-gradient': {
+            type: 'boolean',
+            'default': true,
+            transition: false,
+            expression: {
+                interpolated: false,
+                parameters: ['zoom']
+            },
+            'property-type': 'data-constant'
+        }
+    },
+    paint_line: paint_line,
+    paint_circle: paint_circle,
+    paint_heatmap: paint_heatmap,
+    paint_symbol: paint_symbol,
+    paint_raster: paint_raster,
+    paint_hillshade: paint_hillshade,
+    paint_background: paint_background,
+    transition: transition,
+    'property-type': {
+        'data-driven': { type: 'property-type' },
+        'cross-faded': { type: 'property-type' },
+        'cross-faded-data-driven': { type: 'property-type' },
+        'color-ramp': { type: 'property-type' },
+        'data-constant': { type: 'property-type' },
+        constant: { type: 'property-type' }
+    },
+    promoteId: promoteId
+};
+
+class ValidationError {
+    constructor(key, value, message, identifier) {
+        this.message = (key ? `${ key }: ` : '') + message;
+        if (identifier)
+            this.identifier = identifier;
+        if (value !== null && value !== undefined && value.__line__) {
+            this.line = value.__line__;
+        }
+    }
+}
+
+function validateConstants(options) {
+    const key = options.key;
+    const constants = options.value;
+    if (constants) {
+        return [new ValidationError(key, constants, 'constants have been deprecated as of v8')];
+    } else {
+        return [];
+    }
+}
+
+function extend (output, ...inputs) {
+    for (const input of inputs) {
+        for (const k in input) {
+            output[k] = input[k];
+        }
+    }
+    return output;
+}
+
+function unbundle(value) {
+    if (value instanceof Number || value instanceof String || value instanceof Boolean) {
+        return value.valueOf();
+    } else {
+        return value;
+    }
+}
+function deepUnbundle(value) {
+    if (Array.isArray(value)) {
+        return value.map(deepUnbundle);
+    } else if (value instanceof Object && !(value instanceof Number || value instanceof String || value instanceof Boolean)) {
+        const unbundledValue = {};
+        for (const key in value) {
+            unbundledValue[key] = deepUnbundle(value[key]);
+        }
+        return unbundledValue;
+    }
+    return unbundle(value);
+}
+
+class ParsingError extends Error {
+    constructor(key, message) {
+        super(message);
+        this.message = message;
+        this.key = key;
+    }
+}
+
+class Scope {
+    constructor(parent, bindings = []) {
+        this.parent = parent;
+        this.bindings = {};
+        for (const [name, expression] of bindings) {
+            this.bindings[name] = expression;
+        }
+    }
+    concat(bindings) {
+        return new Scope(this, bindings);
+    }
+    get(name) {
+        if (this.bindings[name]) {
+            return this.bindings[name];
+        }
+        if (this.parent) {
+            return this.parent.get(name);
+        }
+        throw new Error(`${ name } not found in scope.`);
+    }
+    has(name) {
+        if (this.bindings[name])
+            return true;
+        return this.parent ? this.parent.has(name) : false;
+    }
+}
+
+const NullType = { kind: 'null' };
+const NumberType = { kind: 'number' };
+const StringType = { kind: 'string' };
+const BooleanType = { kind: 'boolean' };
+const ColorType = { kind: 'color' };
+const ObjectType = { kind: 'object' };
+const ValueType = { kind: 'value' };
+const ErrorType = { kind: 'error' };
+const CollatorType = { kind: 'collator' };
+const FormattedType = { kind: 'formatted' };
+const ResolvedImageType = { kind: 'resolvedImage' };
+function array$1(itemType, N) {
+    return {
+        kind: 'array',
+        itemType,
+        N
+    };
+}
+function toString$1(type) {
+    if (type.kind === 'array') {
+        const itemType = toString$1(type.itemType);
+        return typeof type.N === 'number' ? `array<${ itemType }, ${ type.N }>` : type.itemType.kind === 'value' ? 'array' : `array<${ itemType }>`;
+    } else {
+        return type.kind;
+    }
+}
+const valueMemberTypes = [
+    NullType,
+    NumberType,
+    StringType,
+    BooleanType,
+    ColorType,
+    FormattedType,
+    ObjectType,
+    array$1(ValueType),
+    ResolvedImageType
+];
+function checkSubtype(expected, t) {
+    if (t.kind === 'error') {
+        return null;
+    } else if (expected.kind === 'array') {
+        if (t.kind === 'array' && (t.N === 0 && t.itemType.kind === 'value' || !checkSubtype(expected.itemType, t.itemType)) && (typeof expected.N !== 'number' || expected.N === t.N)) {
+            return null;
+        }
+    } else if (expected.kind === t.kind) {
+        return null;
+    } else if (expected.kind === 'value') {
+        for (const memberType of valueMemberTypes) {
+            if (!checkSubtype(memberType, t)) {
+                return null;
             }
         }
     }
-    _convertFromCellCoord(x) {
-        return (x - this.padding) / this.scale;
-    }
-    _convertToCellCoord(x) {
-        return Math.max(0, Math.min(this.d - 1, Math.floor(x * this.scale) + this.padding));
-    }
-    toArrayBuffer() {
-        if (this.arrayBuffer)
-            return this.arrayBuffer;
-        const cells = this.cells;
-        const metadataLength = NUM_PARAMS + this.cells.length + 1 + 1;
-        let totalCellLength = 0;
-        for (let i = 0; i < this.cells.length; i++) {
-            totalCellLength += this.cells[i].length;
+    return `Expected ${ toString$1(expected) } but found ${ toString$1(t) } instead.`;
+}
+function isValidType(provided, allowedTypes) {
+    return allowedTypes.some(t => t.kind === provided.kind);
+}
+function isValidNativeType(provided, allowedTypes) {
+    return allowedTypes.some(t => {
+        if (t === 'null') {
+            return provided === null;
+        } else if (t === 'array') {
+            return Array.isArray(provided);
+        } else if (t === 'object') {
+            return provided && !Array.isArray(provided) && typeof provided === 'object';
+        } else {
+            return t === typeof provided;
         }
-        const array = new Int32Array(metadataLength + totalCellLength + this.keys.length + this.bboxes.length);
-        array[0] = this.extent;
-        array[1] = this.n;
-        array[2] = this.padding;
-        let offset = metadataLength;
-        for (let k = 0; k < cells.length; k++) {
-            const cell = cells[k];
-            array[NUM_PARAMS + k] = offset;
-            array.set(cell, offset);
-            offset += cell.length;
-        }
-        array[NUM_PARAMS + cells.length] = offset;
-        array.set(this.keys, offset);
-        offset += this.keys.length;
-        array[NUM_PARAMS + cells.length + 1] = offset;
-        array.set(this.bboxes, offset);
-        offset += this.bboxes.length;
-        return array.buffer;
-    }
-    static serialize(grid, transferables) {
-        const buffer = grid.toArrayBuffer();
-        if (transferables) {
-            transferables.push(buffer);
-        }
-        return { buffer };
-    }
-    static deserialize(serialized) {
-        return new TransferableGridIndex(serialized.buffer);
-    }
+    });
 }
 
 var csscolorparser = {};
@@ -1501,122 +4574,6 @@ Color.black = new Color(0, 0, 0, 1);
 Color.white = new Color(1, 1, 1, 1);
 Color.transparent = new Color(0, 0, 0, 0);
 Color.red = new Color(1, 0, 0, 1);
-
-function extend (output, ...inputs) {
-    for (const input of inputs) {
-        for (const k in input) {
-            output[k] = input[k];
-        }
-    }
-    return output;
-}
-
-class ParsingError extends Error {
-    constructor(key, message) {
-        super(message);
-        this.message = message;
-        this.key = key;
-    }
-}
-
-class Scope {
-    constructor(parent, bindings = []) {
-        this.parent = parent;
-        this.bindings = {};
-        for (const [name, expression] of bindings) {
-            this.bindings[name] = expression;
-        }
-    }
-    concat(bindings) {
-        return new Scope(this, bindings);
-    }
-    get(name) {
-        if (this.bindings[name]) {
-            return this.bindings[name];
-        }
-        if (this.parent) {
-            return this.parent.get(name);
-        }
-        throw new Error(`${ name } not found in scope.`);
-    }
-    has(name) {
-        if (this.bindings[name])
-            return true;
-        return this.parent ? this.parent.has(name) : false;
-    }
-}
-
-const NullType = { kind: 'null' };
-const NumberType = { kind: 'number' };
-const StringType = { kind: 'string' };
-const BooleanType = { kind: 'boolean' };
-const ColorType = { kind: 'color' };
-const ObjectType = { kind: 'object' };
-const ValueType = { kind: 'value' };
-const ErrorType = { kind: 'error' };
-const CollatorType = { kind: 'collator' };
-const FormattedType = { kind: 'formatted' };
-const ResolvedImageType = { kind: 'resolvedImage' };
-function array$1(itemType, N) {
-    return {
-        kind: 'array',
-        itemType,
-        N
-    };
-}
-function toString$1(type) {
-    if (type.kind === 'array') {
-        const itemType = toString$1(type.itemType);
-        return typeof type.N === 'number' ? `array<${ itemType }, ${ type.N }>` : type.itemType.kind === 'value' ? 'array' : `array<${ itemType }>`;
-    } else {
-        return type.kind;
-    }
-}
-const valueMemberTypes = [
-    NullType,
-    NumberType,
-    StringType,
-    BooleanType,
-    ColorType,
-    FormattedType,
-    ObjectType,
-    array$1(ValueType),
-    ResolvedImageType
-];
-function checkSubtype(expected, t) {
-    if (t.kind === 'error') {
-        return null;
-    } else if (expected.kind === 'array') {
-        if (t.kind === 'array' && (t.N === 0 && t.itemType.kind === 'value' || !checkSubtype(expected.itemType, t.itemType)) && (typeof expected.N !== 'number' || expected.N === t.N)) {
-            return null;
-        }
-    } else if (expected.kind === t.kind) {
-        return null;
-    } else if (expected.kind === 'value') {
-        for (const memberType of valueMemberTypes) {
-            if (!checkSubtype(memberType, t)) {
-                return null;
-            }
-        }
-    }
-    return `Expected ${ toString$1(expected) } but found ${ toString$1(t) } instead.`;
-}
-function isValidType(provided, allowedTypes) {
-    return allowedTypes.some(t => t.kind === provided.kind);
-}
-function isValidNativeType(provided, allowedTypes) {
-    return allowedTypes.some(t => {
-        if (t === 'null') {
-            return provided === null;
-        } else if (t === 'array') {
-            return Array.isArray(provided);
-        } else if (t === 'object') {
-            return provided && !Array.isArray(provided) && typeof provided === 'object';
-        } else {
-            return t === typeof provided;
-        }
-    });
-}
 
 class Collator {
     constructor(caseSensitive, diacriticSensitive, locale) {
@@ -5153,3245 +8110,6 @@ function getDefaultValue(spec) {
     }
 }
 
-const registry = {};
-function register(name, klass, options = {}) {
-    Object.defineProperty(klass, '_classRegistryKey', {
-        value: name,
-        writeable: false
-    });
-    registry[name] = {
-        klass,
-        omit: options.omit || [],
-        shallow: options.shallow || []
-    };
-}
-register('Object', Object);
-register('TransferableGridIndex', TransferableGridIndex);
-register('Color', Color);
-register('Error', Error);
-register('ResolvedImage', ResolvedImage);
-register('StylePropertyFunction', StylePropertyFunction);
-register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
-register('ZoomDependentExpression', ZoomDependentExpression);
-register('ZoomConstantExpression', ZoomConstantExpression);
-register('CompoundExpression', CompoundExpression, { omit: ['_evaluate'] });
-for (const name in expressions) {
-    if (expressions[name]._classRegistryKey)
-        continue;
-    register(`Expression_${ name }`, expressions[name]);
-}
-function isArrayBuffer(value) {
-    return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
-}
-function serialize(input, transferables) {
-    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
-        return input;
-    }
-    if (isArrayBuffer(input)) {
-        if (transferables) {
-            transferables.push(input);
-        }
-        return input;
-    }
-    if (isImageBitmap(input)) {
-        if (transferables) {
-            transferables.push(input);
-        }
-        return input;
-    }
-    if (ArrayBuffer.isView(input)) {
-        const view = input;
-        if (transferables) {
-            transferables.push(view.buffer);
-        }
-        return view;
-    }
-    if (input instanceof ImageData) {
-        if (transferables) {
-            transferables.push(input.data.buffer);
-        }
-        return input;
-    }
-    if (Array.isArray(input)) {
-        const serialized = [];
-        for (const item of input) {
-            serialized.push(serialize(item, transferables));
-        }
-        return serialized;
-    }
-    if (typeof input === 'object') {
-        const klass = input.constructor;
-        const name = klass._classRegistryKey;
-        if (!name) {
-            throw new Error('can\'t serialize object of unregistered class');
-        }
-        const properties = klass.serialize ? klass.serialize(input, transferables) : {};
-        if (!klass.serialize) {
-            for (const key in input) {
-                if (!input.hasOwnProperty(key))
-                    continue;
-                if (registry[name].omit.indexOf(key) >= 0)
-                    continue;
-                const property = input[key];
-                properties[key] = registry[name].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
-            }
-            if (input instanceof Error) {
-                properties.message = input.message;
-            }
-        }
-        if (properties.$name) {
-            throw new Error('$name property is reserved for worker serialization logic.');
-        }
-        if (name !== 'Object') {
-            properties.$name = name;
-        }
-        return properties;
-    }
-    throw new Error(`can't serialize object of type ${ typeof input }`);
-}
-function deserialize(input) {
-    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
-        return input;
-    }
-    if (Array.isArray(input)) {
-        return input.map(deserialize);
-    }
-    if (typeof input === 'object') {
-        const name = input.$name || 'Object';
-        if (!registry[name]) {
-            throw new Error(`can't deserialize unregistered class ${ name }`);
-        }
-        const {klass} = registry[name];
-        if (!klass) {
-            throw new Error(`can't deserialize unregistered class ${ name }`);
-        }
-        if (klass.deserialize) {
-            return klass.deserialize(input);
-        }
-        const result = Object.create(klass.prototype);
-        for (const key of Object.keys(input)) {
-            if (key === '$name')
-                continue;
-            const value = input[key];
-            result[key] = registry[name].shallow.indexOf(key) >= 0 ? value : deserialize(value);
-        }
-        return result;
-    }
-    throw new Error(`can't deserialize object of type ${ typeof input }`);
-}
-
-class Point$2 {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-    clone() {
-        return new Point$2(this.x, this.y);
-    }
-    add(p) {
-        return this.clone()._add(p);
-    }
-    sub(p) {
-        return this.clone()._sub(p);
-    }
-    multByPoint(p) {
-        return this.clone()._multByPoint(p);
-    }
-    divByPoint(p) {
-        return this.clone()._divByPoint(p);
-    }
-    mult(k) {
-        return this.clone()._mult(k);
-    }
-    div(k) {
-        return this.clone()._div(k);
-    }
-    rotate(a) {
-        return this.clone()._rotate(a);
-    }
-    rotateAround(a, p) {
-        return this.clone()._rotateAround(a, p);
-    }
-    matMult(m) {
-        return this.clone()._matMult(m);
-    }
-    unit() {
-        return this.clone()._unit();
-    }
-    perp() {
-        return this.clone()._perp();
-    }
-    round() {
-        return this.clone()._round();
-    }
-    mag() {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    }
-    equals(other) {
-        return this.x === other.x && this.y === other.y;
-    }
-    dist(p) {
-        return Math.sqrt(this.distSqr(p));
-    }
-    distSqr(p) {
-        const dx = p.x - this.x;
-        const dy = p.y - this.y;
-        return dx * dx + dy * dy;
-    }
-    angle() {
-        return Math.atan2(this.y, this.x);
-    }
-    angleTo(b) {
-        return Math.atan2(this.y - b.y, this.x - b.x);
-    }
-    angleWith(b) {
-        return this.angleWithSep(b.x, b.y);
-    }
-    angleWithSep(x, y) {
-        return Math.atan2(this.x * y - this.y * x, this.x * x + this.y * y);
-    }
-    _matMult(m) {
-        const x = m[0] * this.x + m[1] * this.y;
-        const y = m[2] * this.x + m[3] * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    _add(p) {
-        this.x += p.x;
-        this.y += p.y;
-        return this;
-    }
-    _sub(p) {
-        this.x -= p.x;
-        this.y -= p.y;
-        return this;
-    }
-    _mult(k) {
-        this.x *= k;
-        this.y *= k;
-        return this;
-    }
-    _div(k) {
-        this.x /= k;
-        this.y /= k;
-        return this;
-    }
-    _multByPoint(p) {
-        this.x *= p.x;
-        this.y *= p.y;
-        return this;
-    }
-    _divByPoint(p) {
-        this.x /= p.x;
-        this.y /= p.y;
-        return this;
-    }
-    _unit() {
-        this._div(this.mag());
-        return this;
-    }
-    _perp() {
-        const y = this.y;
-        this.y = this.x;
-        this.x = -y;
-        return this;
-    }
-    _rotate(angle) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const x = cos * this.x - sin * this.y;
-        const y = sin * this.x + cos * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    _rotateAround(angle, p) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const x = p.x + cos * (this.x - p.x) - sin * (this.y - p.y);
-        const y = p.y + sin * (this.x - p.x) + cos * (this.y - p.y);
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    _round() {
-        this.x = Math.round(this.x);
-        this.y = Math.round(this.y);
-        return this;
-    }
-    static convert(a) {
-        if (a instanceof Point$2) {
-            return a;
-        }
-        if (Array.isArray(a)) {
-            return new Point$2(a[0], a[1]);
-        }
-        if (typeof a.x === 'number') {
-            return new Point$2(a.x, a.y);
-        }
-        throw new Error(`Unable to convert to point: ${ JSON.stringify(a) }`);
-    }
-}
-register('Point', Point$2);
-
-const config = {
-    MAX_PARALLEL_IMAGE_REQUESTS: 16,
-    REGISTERED_PROTOCOLS: {}
-};
-
-const CACHE_NAME = 'mapbox-tiles';
-let cacheLimit = 500;
-let cacheCheckThreshold = 50;
-const MIN_TIME_UNTIL_EXPIRY = 1000 * 60 * 7;
-let sharedCache;
-function cacheOpen() {
-    if (typeof caches !== 'undefined' && !sharedCache) {
-        sharedCache = caches.open(CACHE_NAME);
-    }
-}
-let responseConstructorSupportsReadableStream;
-function prepareBody(response, callback) {
-    if (responseConstructorSupportsReadableStream === undefined) {
-        try {
-            new Response(new ReadableStream());
-            responseConstructorSupportsReadableStream = true;
-        } catch (e) {
-            responseConstructorSupportsReadableStream = false;
-        }
-    }
-    if (responseConstructorSupportsReadableStream) {
-        callback(response.body);
-    } else {
-        response.blob().then(callback);
-    }
-}
-function cachePut(request, response, requestTime) {
-    cacheOpen();
-    if (!sharedCache)
-        return;
-    const options = {
-        status: response.status,
-        statusText: response.statusText,
-        headers: new Headers()
-    };
-    response.headers.forEach((v, k) => options.headers.set(k, v));
-    const cacheControl = parseCacheControl(response.headers.get('Cache-Control') || '');
-    if (cacheControl['no-store']) {
-        return;
-    }
-    if (cacheControl['max-age']) {
-        options.headers.set('Expires', new Date(requestTime + cacheControl['max-age'] * 1000).toUTCString());
-    }
-    const timeUntilExpiry = new Date(options.headers.get('Expires')).getTime() - requestTime;
-    if (timeUntilExpiry < MIN_TIME_UNTIL_EXPIRY)
-        return;
-    prepareBody(response, body => {
-        const clonedResponse = new Response(body, options);
-        cacheOpen();
-        if (!sharedCache)
-            return;
-        sharedCache.then(cache => cache.put(stripQueryParameters(request.url), clonedResponse)).catch(e => warnOnce(e.message));
-    });
-}
-function stripQueryParameters(url) {
-    const start = url.indexOf('?');
-    return start < 0 ? url : url.slice(0, start);
-}
-let globalEntryCounter = Infinity;
-function cacheEntryPossiblyAdded(dispatcher) {
-    globalEntryCounter++;
-    if (globalEntryCounter > cacheCheckThreshold) {
-        dispatcher.getActor().send('enforceCacheSizeLimit', cacheLimit);
-        globalEntryCounter = 0;
-    }
-}
-function enforceCacheSizeLimit(limit) {
-    cacheOpen();
-    if (!sharedCache)
-        return;
-    sharedCache.then(cache => {
-        cache.keys().then(keys => {
-            for (let i = 0; i < keys.length - limit; i++) {
-                cache.delete(keys[i]);
-            }
-        });
-    });
-}
-function clearTileCache(callback) {
-    const promise = caches.delete(CACHE_NAME);
-    if (callback) {
-        promise.catch(callback).then(() => callback());
-    }
-}
-function setCacheLimits(limit, checkThreshold) {
-    cacheLimit = limit;
-    cacheCheckThreshold = checkThreshold;
-}
-
-const exported = {
-    supported: false,
-    testSupport
-};
-let glForTesting;
-let webpCheckComplete = false;
-let webpImgTest;
-let webpImgTestOnloadComplete = false;
-if (typeof document !== 'undefined') {
-    webpImgTest = document.createElement('img');
-    webpImgTest.onload = function () {
-        if (glForTesting)
-            testWebpTextureUpload(glForTesting);
-        glForTesting = null;
-        webpImgTestOnloadComplete = true;
-    };
-    webpImgTest.onerror = function () {
-        webpCheckComplete = true;
-        glForTesting = null;
-    };
-    webpImgTest.src = 'data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAQAAAAfQ//73v/+BiOh/AAA=';
-}
-function testSupport(gl) {
-    if (webpCheckComplete || !webpImgTest)
-        return;
-    if (webpImgTestOnloadComplete) {
-        testWebpTextureUpload(gl);
-    } else {
-        glForTesting = gl;
-    }
-}
-function testWebpTextureUpload(gl) {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    try {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, webpImgTest);
-        if (gl.isContextLost())
-            return;
-        exported.supported = true;
-    } catch (e) {
-    }
-    gl.deleteTexture(texture);
-    webpCheckComplete = true;
-}
-
-const ResourceType = {
-    Unknown: 'Unknown',
-    Style: 'Style',
-    Source: 'Source',
-    Tile: 'Tile',
-    Glyphs: 'Glyphs',
-    SpriteImage: 'SpriteImage',
-    SpriteJSON: 'SpriteJSON',
-    Image: 'Image'
-};
-if (typeof Object.freeze == 'function') {
-    Object.freeze(ResourceType);
-}
-class AJAXError extends Error {
-    constructor(message, status, url) {
-        super(message);
-        this.status = status;
-        this.url = url;
-        this.name = this.constructor.name;
-        this.message = message;
-    }
-    toString() {
-        return `${ this.name }: ${ this.message } (${ this.status }): ${ this.url }`;
-    }
-}
-const getReferrer = isWorker() ? () => self.worker && self.worker.referrer : () => (window.location.protocol === 'blob:' ? window.parent : window).location.href;
-const isFileURL = url => /^file:/.test(url) || /^file:/.test(getReferrer()) && !/^\w+:/.test(url);
-function makeFetchRequest(requestParameters, callback) {
-    const controller = new AbortController();
-    const request = new Request(requestParameters.url, {
-        method: requestParameters.method || 'GET',
-        body: requestParameters.body,
-        credentials: requestParameters.credentials,
-        headers: requestParameters.headers,
-        referrer: getReferrer(),
-        signal: controller.signal
-    });
-    let complete = false;
-    let aborted = false;
-    if (requestParameters.type === 'json') {
-        request.headers.set('Accept', 'application/json');
-    }
-    const validateOrFetch = (err, cachedResponse, responseIsFresh) => {
-        if (aborted)
-            return;
-        if (err) {
-            if (err.message !== 'SecurityError') {
-                warnOnce(err);
-            }
-        }
-        if (cachedResponse && responseIsFresh) {
-            return finishRequest(cachedResponse);
-        }
-        const requestTime = Date.now();
-        fetch(request).then(response => {
-            if (response.ok) {
-                const cacheableResponse = null;
-                return finishRequest(response, cacheableResponse, requestTime);
-            } else {
-                return callback(new AJAXError(response.statusText, response.status, requestParameters.url));
-            }
-        }).catch(error => {
-            if (error.code === 20) {
-                return;
-            }
-            callback(new Error(error.message));
-        });
-    };
-    const finishRequest = (response, cacheableResponse, requestTime) => {
-        (requestParameters.type === 'arrayBuffer' ? response.arrayBuffer() : requestParameters.type === 'json' ? response.json() : response.text()).then(result => {
-            if (aborted)
-                return;
-            if (cacheableResponse && requestTime) {
-                cachePut(request, cacheableResponse, requestTime);
-            }
-            complete = true;
-            callback(null, result, response.headers.get('Cache-Control'), response.headers.get('Expires'));
-        }).catch(err => {
-            if (!aborted)
-                callback(new Error(err.message));
-        });
-    };
-    {
-        validateOrFetch(null, null);
-    }
-    return {
-        cancel: () => {
-            aborted = true;
-            if (!complete)
-                controller.abort();
-        }
-    };
-}
-function makeXMLHttpRequest(requestParameters, callback) {
-    const xhr = new XMLHttpRequest();
-    xhr.open(requestParameters.method || 'GET', requestParameters.url, true);
-    if (requestParameters.type === 'arrayBuffer') {
-        xhr.responseType = 'arraybuffer';
-    }
-    for (const k in requestParameters.headers) {
-        xhr.setRequestHeader(k, requestParameters.headers[k]);
-    }
-    if (requestParameters.type === 'json') {
-        xhr.responseType = 'text';
-        xhr.setRequestHeader('Accept', 'application/json');
-    }
-    xhr.withCredentials = requestParameters.credentials === 'include';
-    xhr.onerror = () => {
-        callback(new Error(xhr.statusText));
-    };
-    xhr.onload = () => {
-        if ((xhr.status >= 200 && xhr.status < 300 || xhr.status === 0) && xhr.response !== null) {
-            let data = xhr.response;
-            if (requestParameters.type === 'json') {
-                try {
-                    data = JSON.parse(xhr.response);
-                } catch (err) {
-                    return callback(err);
-                }
-            }
-            callback(null, data, xhr.getResponseHeader('Cache-Control'), xhr.getResponseHeader('Expires'));
-        } else {
-            callback(new AJAXError(xhr.statusText, xhr.status, requestParameters.url));
-        }
-    };
-    xhr.send(requestParameters.body);
-    return { cancel: () => xhr.abort() };
-}
-const makeRequest = function (requestParameters, callback) {
-    if (/:\/\//.test(requestParameters.url) && !/^https?:|^file:/.test(requestParameters.url)) {
-        if (isWorker() && self.worker && self.worker.actor) {
-            return self.worker.actor.send('getResource', requestParameters, callback);
-        }
-        if (!isWorker()) {
-            const protocol = requestParameters.url.substring(0, requestParameters.url.indexOf('://'));
-            const action = config.REGISTERED_PROTOCOLS[protocol] || makeFetchRequest;
-            return action(requestParameters, callback);
-        }
-    }
-    if (!isFileURL(requestParameters.url)) {
-        if (fetch && Request && AbortController && Object.prototype.hasOwnProperty.call(Request.prototype, 'signal')) {
-            return makeFetchRequest(requestParameters, callback);
-        }
-        if (isWorker() && self.worker && self.worker.actor) {
-            const queueOnMainThread = true;
-            return self.worker.actor.send('getResource', requestParameters, callback, undefined, queueOnMainThread);
-        }
-    }
-    return makeXMLHttpRequest(requestParameters, callback);
-};
-const getJSON = function (requestParameters, callback) {
-    return makeRequest(extend$1(requestParameters, { type: 'json' }), callback);
-};
-const getArrayBuffer = function (requestParameters, callback) {
-    return makeRequest(extend$1(requestParameters, { type: 'arrayBuffer' }), callback);
-};
-function sameOrigin(url) {
-    const a = window.document.createElement('a');
-    a.href = url;
-    return a.protocol === window.document.location.protocol && a.host === window.document.location.host;
-}
-const transparentPngUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=';
-function arrayBufferToImage(data, callback, cacheControl, expires) {
-    const img = new Image();
-    img.onload = () => {
-        callback(null, img);
-        URL.revokeObjectURL(img.src);
-        img.onload = null;
-        window.requestAnimationFrame(() => {
-            img.src = transparentPngUrl;
-        });
-    };
-    img.onerror = () => callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
-    const blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
-    img.cacheControl = cacheControl;
-    img.expires = expires;
-    img.src = data.byteLength ? URL.createObjectURL(blob) : transparentPngUrl;
-}
-function arrayBufferToImageBitmap(data, callback) {
-    const blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
-    createImageBitmap(blob).then(imgBitmap => {
-        callback(null, imgBitmap);
-    }).catch(e => {
-        callback(new Error(`Could not load image because of ${ e.message }. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.`));
-    });
-}
-function arrayBufferToCanvasImageSource(data, callback, cacheControl, expires) {
-    const imageBitmapSupported = typeof createImageBitmap === 'function';
-    if (imageBitmapSupported) {
-        arrayBufferToImageBitmap(data, callback);
-    } else {
-        arrayBufferToImage(data, callback, cacheControl, expires);
-    }
-}
-let imageQueue, numImageRequests;
-const resetImageRequestQueue = () => {
-    imageQueue = [];
-    numImageRequests = 0;
-};
-resetImageRequestQueue();
-const getImage = function (requestParameters, callback) {
-    if (exported.supported) {
-        if (!requestParameters.headers) {
-            requestParameters.headers = {};
-        }
-        requestParameters.headers.accept = 'image/webp,*/*';
-    }
-    if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
-        const queued = {
-            requestParameters,
-            callback,
-            cancelled: false,
-            cancel() {
-                this.cancelled = true;
-            }
-        };
-        imageQueue.push(queued);
-        return queued;
-    }
-    numImageRequests++;
-    let advanced = false;
-    const advanceImageRequestQueue = () => {
-        if (advanced)
-            return;
-        advanced = true;
-        numImageRequests--;
-        while (imageQueue.length && numImageRequests < config.MAX_PARALLEL_IMAGE_REQUESTS) {
-            const request = imageQueue.shift();
-            const {requestParameters, callback, cancelled} = request;
-            if (!cancelled) {
-                request.cancel = getImage(requestParameters, callback).cancel;
-            }
-        }
-    };
-    const request = getArrayBuffer(requestParameters, (err, data, cacheControl, expires) => {
-        advanceImageRequestQueue();
-        if (err) {
-            callback(err);
-        } else if (data) {
-            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
-        }
-    });
-    return {
-        cancel: () => {
-            request.cancel();
-            advanceImageRequestQueue();
-        }
-    };
-};
-const getVideo = function (urls, callback) {
-    const video = window.document.createElement('video');
-    video.muted = true;
-    video.onloadstart = function () {
-        callback(null, video);
-    };
-    for (let i = 0; i < urls.length; i++) {
-        const s = window.document.createElement('source');
-        if (!sameOrigin(urls[i])) {
-            video.crossOrigin = 'Anonymous';
-        }
-        s.src = urls[i];
-        video.appendChild(s);
-    }
-    return {
-        cancel: () => {
-        }
-    };
-};
-
-function _addEventListener(type, listener, listenerList) {
-    const listenerExists = listenerList[type] && listenerList[type].indexOf(listener) !== -1;
-    if (!listenerExists) {
-        listenerList[type] = listenerList[type] || [];
-        listenerList[type].push(listener);
-    }
-}
-function _removeEventListener(type, listener, listenerList) {
-    if (listenerList && listenerList[type]) {
-        const index = listenerList[type].indexOf(listener);
-        if (index !== -1) {
-            listenerList[type].splice(index, 1);
-        }
-    }
-}
-class Event {
-    constructor(type, data = {}) {
-        extend$1(this, data);
-        this.type = type;
-    }
-}
-class ErrorEvent extends Event {
-    constructor(error, data = {}) {
-        super('error', extend$1({ error }, data));
-    }
-}
-class Evented {
-    on(type, listener) {
-        this._listeners = this._listeners || {};
-        _addEventListener(type, listener, this._listeners);
-        return this;
-    }
-    off(type, listener) {
-        _removeEventListener(type, listener, this._listeners);
-        _removeEventListener(type, listener, this._oneTimeListeners);
-        return this;
-    }
-    once(type, listener) {
-        this._oneTimeListeners = this._oneTimeListeners || {};
-        _addEventListener(type, listener, this._oneTimeListeners);
-        return this;
-    }
-    fire(event, properties) {
-        if (typeof event === 'string') {
-            event = new Event(event, properties || {});
-        }
-        const type = event.type;
-        if (this.listens(type)) {
-            event.target = this;
-            const listeners = this._listeners && this._listeners[type] ? this._listeners[type].slice() : [];
-            for (const listener of listeners) {
-                listener.call(this, event);
-            }
-            const oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
-            for (const listener of oneTimeListeners) {
-                _removeEventListener(type, listener, this._oneTimeListeners);
-                listener.call(this, event);
-            }
-            const parent = this._eventedParent;
-            if (parent) {
-                extend$1(event, typeof this._eventedParentData === 'function' ? this._eventedParentData() : this._eventedParentData);
-                parent.fire(event);
-            }
-        } else if (event instanceof ErrorEvent) {
-            console.error(event.error);
-        }
-        return this;
-    }
-    listens(type) {
-        return this._listeners && this._listeners[type] && this._listeners[type].length > 0 || this._oneTimeListeners && this._oneTimeListeners[type] && this._oneTimeListeners[type].length > 0 || this._eventedParent && this._eventedParent.listens(type);
-    }
-    setEventedParent(parent, data) {
-        this._eventedParent = parent;
-        this._eventedParentData = data;
-        return this;
-    }
-}
-
-var $version = 8;
-var $root = {
-    version: {
-        required: true,
-        type: 'enum',
-        values: [8]
-    },
-    name: { type: 'string' },
-    metadata: { type: '*' },
-    center: {
-        type: 'array',
-        value: 'number'
-    },
-    zoom: { type: 'number' },
-    bearing: {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        units: 'degrees'
-    },
-    pitch: {
-        type: 'number',
-        'default': 0,
-        units: 'degrees'
-    },
-    light: { type: 'light' },
-    sources: {
-        required: true,
-        type: 'sources'
-    },
-    sprite: { type: 'string' },
-    glyphs: { type: 'string' },
-    transition: { type: 'transition' },
-    layers: {
-        required: true,
-        type: 'array',
-        value: 'layer'
-    }
-};
-var sources = { '*': { type: 'source' } };
-var source = [
-    'source_vector',
-    'source_raster',
-    'source_raster_dem',
-    'source_geojson',
-    'source_video',
-    'source_image'
-];
-var source_vector = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { vector: {} }
-    },
-    url: { type: 'string' },
-    tiles: {
-        type: 'array',
-        value: 'string'
-    },
-    bounds: {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            -180,
-            -85.051129,
-            180,
-            85.051129
-        ]
-    },
-    scheme: {
-        type: 'enum',
-        values: {
-            xyz: {},
-            tms: {}
-        },
-        'default': 'xyz'
-    },
-    minzoom: {
-        type: 'number',
-        'default': 0
-    },
-    maxzoom: {
-        type: 'number',
-        'default': 22
-    },
-    attribution: { type: 'string' },
-    promoteId: { type: 'promoteId' },
-    volatile: {
-        type: 'boolean',
-        'default': false
-    },
-    '*': { type: '*' }
-};
-var source_raster = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { raster: {} }
-    },
-    url: { type: 'string' },
-    tiles: {
-        type: 'array',
-        value: 'string'
-    },
-    bounds: {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            -180,
-            -85.051129,
-            180,
-            85.051129
-        ]
-    },
-    minzoom: {
-        type: 'number',
-        'default': 0
-    },
-    maxzoom: {
-        type: 'number',
-        'default': 22
-    },
-    tileSize: {
-        type: 'number',
-        'default': 512,
-        units: 'pixels'
-    },
-    scheme: {
-        type: 'enum',
-        values: {
-            xyz: {},
-            tms: {}
-        },
-        'default': 'xyz'
-    },
-    attribution: { type: 'string' },
-    volatile: {
-        type: 'boolean',
-        'default': false
-    },
-    '*': { type: '*' }
-};
-var source_raster_dem = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { 'raster-dem': {} }
-    },
-    url: { type: 'string' },
-    tiles: {
-        type: 'array',
-        value: 'string'
-    },
-    bounds: {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            -180,
-            -85.051129,
-            180,
-            85.051129
-        ]
-    },
-    minzoom: {
-        type: 'number',
-        'default': 0
-    },
-    maxzoom: {
-        type: 'number',
-        'default': 22
-    },
-    tileSize: {
-        type: 'number',
-        'default': 512,
-        units: 'pixels'
-    },
-    attribution: { type: 'string' },
-    encoding: {
-        type: 'enum',
-        values: {
-            terrarium: {},
-            mtk: {},
-            mapbox: {}
-        },
-        'default': 'mapbox'
-    },
-    volatile: {
-        type: 'boolean',
-        'default': false
-    },
-    '*': { type: '*' }
-};
-var source_geojson = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { geojson: {} }
-    },
-    data: { type: '*' },
-    maxzoom: {
-        type: 'number',
-        'default': 18
-    },
-    attribution: { type: 'string' },
-    buffer: {
-        type: 'number',
-        'default': 128,
-        maximum: 512,
-        minimum: 0
-    },
-    filter: { type: '*' },
-    tolerance: {
-        type: 'number',
-        'default': 0.375
-    },
-    cluster: {
-        type: 'boolean',
-        'default': false
-    },
-    clusterRadius: {
-        type: 'number',
-        'default': 50,
-        minimum: 0
-    },
-    clusterMaxZoom: { type: 'number' },
-    clusterMinPoints: { type: 'number' },
-    clusterProperties: { type: '*' },
-    lineMetrics: {
-        type: 'boolean',
-        'default': false
-    },
-    generateId: {
-        type: 'boolean',
-        'default': false
-    },
-    promoteId: { type: 'promoteId' }
-};
-var source_video = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { video: {} }
-    },
-    urls: {
-        required: true,
-        type: 'array',
-        value: 'string'
-    },
-    coordinates: {
-        required: true,
-        type: 'array',
-        length: 4,
-        value: {
-            type: 'array',
-            length: 2,
-            value: 'number'
-        }
-    }
-};
-var source_image = {
-    type: {
-        required: true,
-        type: 'enum',
-        values: { image: {} }
-    },
-    url: {
-        required: true,
-        type: 'string'
-    },
-    coordinates: {
-        required: true,
-        type: 'array',
-        length: 4,
-        value: {
-            type: 'array',
-            length: 2,
-            value: 'number'
-        }
-    }
-};
-var layer = {
-    id: {
-        type: 'string',
-        required: true
-    },
-    type: {
-        type: 'enum',
-        values: {
-            fill: {},
-            line: {},
-            symbol: {},
-            circle: {},
-            heatmap: {},
-            'fill-extrusion': {},
-            raster: {},
-            hillshade: {},
-            background: {}
-        },
-        required: true
-    },
-    metadata: { type: '*' },
-    source: { type: 'string' },
-    'source-layer': { type: 'string' },
-    minzoom: {
-        type: 'number',
-        minimum: 0,
-        maximum: 24
-    },
-    maxzoom: {
-        type: 'number',
-        minimum: 0,
-        maximum: 24
-    },
-    filter: { type: 'filter' },
-    layout: { type: 'layout' },
-    paint: { type: 'paint' }
-};
-var layout$7 = [
-    'layout_fill',
-    'layout_line',
-    'layout_circle',
-    'layout_heatmap',
-    'layout_fill-extrusion',
-    'layout_symbol',
-    'layout_raster',
-    'layout_hillshade',
-    'layout_background'
-];
-var layout_background = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_fill = {
-    'fill-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_circle = {
-    'circle-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_heatmap = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_line = {
-    'line-cap': {
-        type: 'enum',
-        values: {
-            butt: {},
-            round: {},
-            square: {}
-        },
-        'default': 'butt',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-join': {
-        type: 'enum',
-        values: {
-            bevel: {},
-            round: {},
-            miter: {}
-        },
-        'default': 'miter',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-miter-limit': {
-        type: 'number',
-        'default': 2,
-        requires: [{ 'line-join': 'miter' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-round-limit': {
-        type: 'number',
-        'default': 1.05,
-        requires: [{ 'line-join': 'round' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_symbol = {
-    'symbol-placement': {
-        type: 'enum',
-        values: {
-            point: {},
-            line: {},
-            'line-center': {}
-        },
-        'default': 'point',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'symbol-spacing': {
-        type: 'number',
-        'default': 250,
-        minimum: 1,
-        units: 'pixels',
-        requires: [{ 'symbol-placement': 'line' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'symbol-avoid-edges': {
-        type: 'boolean',
-        'default': false,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'symbol-sort-key': {
-        type: 'number',
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'symbol-z-order': {
-        type: 'enum',
-        values: {
-            auto: {},
-            'viewport-y': {},
-            source: {}
-        },
-        'default': 'auto',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-allow-overlap': {
-        type: 'boolean',
-        'default': false,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-ignore-placement': {
-        type: 'boolean',
-        'default': false,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-optional': {
-        type: 'boolean',
-        'default': false,
-        requires: [
-            'icon-image',
-            'text-field'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-rotation-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-size': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        units: 'factor of the original icon size',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-text-fit': {
-        type: 'enum',
-        values: {
-            none: {},
-            width: {},
-            height: {},
-            both: {}
-        },
-        'default': 'none',
-        requires: [
-            'icon-image',
-            'text-field'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-text-fit-padding': {
-        type: 'array',
-        value: 'number',
-        length: 4,
-        'default': [
-            0,
-            0,
-            0,
-            0
-        ],
-        units: 'pixels',
-        requires: [
-            'icon-image',
-            'text-field',
-            {
-                'icon-text-fit': [
-                    'both',
-                    'width',
-                    'height'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-image': {
-        type: 'resolvedImage',
-        tokens: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-rotate': {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        units: 'degrees',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-padding': {
-        type: 'number',
-        'default': 2,
-        minimum: 0,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-keep-upright': {
-        type: 'boolean',
-        'default': false,
-        requires: [
-            'icon-image',
-            { 'icon-rotation-alignment': 'map' },
-            {
-                'symbol-placement': [
-                    'line',
-                    'line-center'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-offset': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-anchor': {
-        type: 'enum',
-        values: {
-            center: {},
-            left: {},
-            right: {},
-            top: {},
-            bottom: {},
-            'top-left': {},
-            'top-right': {},
-            'bottom-left': {},
-            'bottom-right': {}
-        },
-        'default': 'center',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-pitch-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-pitch-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-rotation-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {},
-            auto: {}
-        },
-        'default': 'auto',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-field': {
-        type: 'formatted',
-        'default': '',
-        tokens: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-font': {
-        type: 'array',
-        value: 'string',
-        'default': [
-            'Open Sans Regular',
-            'Arial Unicode MS Regular'
-        ],
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-size': {
-        type: 'number',
-        'default': 16,
-        minimum: 0,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-max-width': {
-        type: 'number',
-        'default': 10,
-        minimum: 0,
-        units: 'ems',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-line-height': {
-        type: 'number',
-        'default': 1.2,
-        units: 'ems',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-letter-spacing': {
-        type: 'number',
-        'default': 0,
-        units: 'ems',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-justify': {
-        type: 'enum',
-        values: {
-            auto: {},
-            left: {},
-            center: {},
-            right: {}
-        },
-        'default': 'center',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-radial-offset': {
-        type: 'number',
-        units: 'ems',
-        'default': 0,
-        requires: ['text-field'],
-        'property-type': 'data-driven',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        }
-    },
-    'text-variable-anchor': {
-        type: 'array',
-        value: 'enum',
-        values: {
-            center: {},
-            left: {},
-            right: {},
-            top: {},
-            bottom: {},
-            'top-left': {},
-            'top-right': {},
-            'bottom-left': {},
-            'bottom-right': {}
-        },
-        requires: [
-            'text-field',
-            { 'symbol-placement': ['point'] }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-anchor': {
-        type: 'enum',
-        values: {
-            center: {},
-            left: {},
-            right: {},
-            top: {},
-            bottom: {},
-            'top-left': {},
-            'top-right': {},
-            'bottom-left': {},
-            'bottom-right': {}
-        },
-        'default': 'center',
-        requires: [
-            'text-field',
-            { '!': 'text-variable-anchor' }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-max-angle': {
-        type: 'number',
-        'default': 45,
-        units: 'degrees',
-        requires: [
-            'text-field',
-            {
-                'symbol-placement': [
-                    'line',
-                    'line-center'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-writing-mode': {
-        type: 'array',
-        value: 'enum',
-        values: {
-            horizontal: {},
-            vertical: {}
-        },
-        requires: [
-            'text-field',
-            { 'symbol-placement': ['point'] }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-rotate': {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        units: 'degrees',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-padding': {
-        type: 'number',
-        'default': 2,
-        minimum: 0,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-keep-upright': {
-        type: 'boolean',
-        'default': true,
-        requires: [
-            'text-field',
-            { 'text-rotation-alignment': 'map' },
-            {
-                'symbol-placement': [
-                    'line',
-                    'line-center'
-                ]
-            }
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-transform': {
-        type: 'enum',
-        values: {
-            none: {},
-            uppercase: {},
-            lowercase: {}
-        },
-        'default': 'none',
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-offset': {
-        type: 'array',
-        value: 'number',
-        units: 'ems',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        requires: [
-            'text-field',
-            { '!': 'text-radial-offset' }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-allow-overlap': {
-        type: 'boolean',
-        'default': false,
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-ignore-placement': {
-        type: 'boolean',
-        'default': false,
-        requires: ['text-field'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-optional': {
-        type: 'boolean',
-        'default': false,
-        requires: [
-            'text-field',
-            'icon-image'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_raster = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var layout_hillshade = {
-    visibility: {
-        type: 'enum',
-        values: {
-            visible: {},
-            none: {}
-        },
-        'default': 'visible',
-        'property-type': 'constant'
-    }
-};
-var filter = {
-    type: 'array',
-    value: '*'
-};
-var filter_operator = {
-    type: 'enum',
-    values: {
-        '==': {},
-        '!=': {},
-        '>': {},
-        '>=': {},
-        '<': {},
-        '<=': {},
-        'in': {},
-        '!in': {},
-        all: {},
-        any: {},
-        none: {},
-        has: {},
-        '!has': {},
-        within: {}
-    }
-};
-var geometry_type = {
-    type: 'enum',
-    values: {
-        Point: {},
-        LineString: {},
-        Polygon: {}
-    }
-};
-var function_stop = {
-    type: 'array',
-    minimum: 0,
-    maximum: 24,
-    value: [
-        'number',
-        'color'
-    ],
-    length: 2
-};
-var expression = {
-    type: 'array',
-    value: '*',
-    minimum: 1
-};
-var light = {
-    anchor: {
-        type: 'enum',
-        'default': 'viewport',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'property-type': 'data-constant',
-        transition: false,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        }
-    },
-    position: {
-        type: 'array',
-        'default': [
-            1.15,
-            210,
-            30
-        ],
-        length: 3,
-        value: 'number',
-        'property-type': 'data-constant',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        }
-    },
-    color: {
-        type: 'color',
-        'property-type': 'data-constant',
-        'default': '#ffffff',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        transition: true
-    },
-    intensity: {
-        type: 'number',
-        'property-type': 'data-constant',
-        'default': 0.5,
-        minimum: 0,
-        maximum: 1,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        transition: true
-    }
-};
-var paint$9 = [
-    'paint_fill',
-    'paint_line',
-    'paint_circle',
-    'paint_heatmap',
-    'paint_fill-extrusion',
-    'paint_symbol',
-    'paint_raster',
-    'paint_hillshade',
-    'paint_background'
-];
-var paint_fill = {
-    'fill-antialias': {
-        type: 'boolean',
-        'default': true,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'fill-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'fill-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: [{ '!': 'fill-pattern' }],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'fill-outline-color': {
-        type: 'color',
-        transition: true,
-        requires: [
-            { '!': 'fill-pattern' },
-            { 'fill-antialias': true }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'fill-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'fill-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: ['fill-translate'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'fill-pattern': {
-        type: 'resolvedImage',
-        transition: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'cross-faded-data-driven'
-    }
-};
-var paint_line = {
-    'line-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: [{ '!': 'line-pattern' }],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: ['line-translate'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'line-width': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-gap-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-offset': {
-        type: 'number',
-        'default': 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-blur': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'line-dasharray': {
-        type: 'array',
-        value: 'number',
-        minimum: 0,
-        transition: true,
-        units: 'line widths',
-        requires: [{ '!': 'line-pattern' }],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'cross-faded'
-    },
-    'line-pattern': {
-        type: 'resolvedImage',
-        transition: true,
-        expression: {
-            interpolated: false,
-            parameters: [
-                'zoom',
-                'feature'
-            ]
-        },
-        'property-type': 'cross-faded-data-driven'
-    },
-    'line-gradient': {
-        type: 'color',
-        transition: false,
-        requires: [
-            { '!': 'line-dasharray' },
-            { '!': 'line-pattern' },
-            {
-                source: 'geojson',
-                has: { lineMetrics: true }
-            }
-        ],
-        expression: {
-            interpolated: true,
-            parameters: ['line-progress']
-        },
-        'property-type': 'color-ramp'
-    }
-};
-var paint_circle = {
-    'circle-radius': {
-        type: 'number',
-        'default': 5,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-blur': {
-        type: 'number',
-        'default': 0,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: ['circle-translate'],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-pitch-scale': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-pitch-alignment': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'viewport',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'circle-stroke-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-stroke-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'circle-stroke-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    }
-};
-var paint_heatmap = {
-    'heatmap-radius': {
-        type: 'number',
-        'default': 30,
-        minimum: 1,
-        transition: true,
-        units: 'pixels',
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'heatmap-weight': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        transition: false,
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'heatmap-intensity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'heatmap-color': {
-        type: 'color',
-        'default': [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0,
-            'rgba(0, 0, 255, 0)',
-            0.1,
-            'royalblue',
-            0.3,
-            'cyan',
-            0.5,
-            'lime',
-            0.7,
-            'yellow',
-            1,
-            'red'
-        ],
-        transition: false,
-        expression: {
-            interpolated: true,
-            parameters: ['heatmap-density']
-        },
-        'property-type': 'color-ramp'
-    },
-    'heatmap-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_symbol = {
-    'icon-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-halo-color': {
-        type: 'color',
-        'default': 'rgba(0, 0, 0, 0)',
-        transition: true,
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-halo-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-halo-blur': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'icon-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        requires: ['icon-image'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'icon-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: [
-            'icon-image',
-            'icon-translate'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        overridable: true,
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-halo-color': {
-        type: 'color',
-        'default': 'rgba(0, 0, 0, 0)',
-        transition: true,
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-halo-width': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-halo-blur': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        transition: true,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: [
-                'zoom',
-                'feature',
-                'feature-state'
-            ]
-        },
-        'property-type': 'data-driven'
-    },
-    'text-translate': {
-        type: 'array',
-        value: 'number',
-        length: 2,
-        'default': [
-            0,
-            0
-        ],
-        transition: true,
-        units: 'pixels',
-        requires: ['text-field'],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'text-translate-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'map',
-        requires: [
-            'text-field',
-            'text-translate'
-        ],
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_raster = {
-    'raster-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-hue-rotate': {
-        type: 'number',
-        'default': 0,
-        period: 360,
-        transition: true,
-        units: 'degrees',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-brightness-min': {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-brightness-max': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-saturation': {
-        type: 'number',
-        'default': 0,
-        minimum: -1,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-contrast': {
-        type: 'number',
-        'default': 0,
-        minimum: -1,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-resampling': {
-        type: 'enum',
-        values: {
-            linear: {},
-            nearest: {}
-        },
-        'default': 'linear',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'raster-fade-duration': {
-        type: 'number',
-        'default': 300,
-        minimum: 0,
-        transition: false,
-        units: 'milliseconds',
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_hillshade = {
-    'hillshade-illumination-direction': {
-        type: 'number',
-        'default': 335,
-        minimum: 0,
-        maximum: 359,
-        transition: false,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-illumination-anchor': {
-        type: 'enum',
-        values: {
-            map: {},
-            viewport: {}
-        },
-        'default': 'viewport',
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-exaggeration': {
-        type: 'number',
-        'default': 0.5,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-shadow-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-highlight-color': {
-        type: 'color',
-        'default': '#FFFFFF',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'hillshade-accent-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var paint_background = {
-    'background-color': {
-        type: 'color',
-        'default': '#000000',
-        transition: true,
-        requires: [{ '!': 'background-pattern' }],
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    },
-    'background-pattern': {
-        type: 'resolvedImage',
-        transition: true,
-        expression: {
-            interpolated: false,
-            parameters: ['zoom']
-        },
-        'property-type': 'cross-faded'
-    },
-    'background-opacity': {
-        type: 'number',
-        'default': 1,
-        minimum: 0,
-        maximum: 1,
-        transition: true,
-        expression: {
-            interpolated: true,
-            parameters: ['zoom']
-        },
-        'property-type': 'data-constant'
-    }
-};
-var transition = {
-    duration: {
-        type: 'number',
-        'default': 300,
-        minimum: 0,
-        units: 'milliseconds'
-    },
-    delay: {
-        type: 'number',
-        'default': 0,
-        minimum: 0,
-        units: 'milliseconds'
-    }
-};
-var promoteId = { '*': { type: 'string' } };
-var spec = {
-    $version: $version,
-    $root: $root,
-    sources: sources,
-    source: source,
-    source_vector: source_vector,
-    source_raster: source_raster,
-    source_raster_dem: source_raster_dem,
-    source_geojson: source_geojson,
-    source_video: source_video,
-    source_image: source_image,
-    layer: layer,
-    layout: layout$7,
-    layout_background: layout_background,
-    layout_fill: layout_fill,
-    layout_circle: layout_circle,
-    layout_heatmap: layout_heatmap,
-    'layout_fill-extrusion': {
-        visibility: {
-            type: 'enum',
-            values: {
-                visible: {},
-                none: {}
-            },
-            'default': 'visible',
-            'property-type': 'constant'
-        }
-    },
-    layout_line: layout_line,
-    layout_symbol: layout_symbol,
-    layout_raster: layout_raster,
-    layout_hillshade: layout_hillshade,
-    filter: filter,
-    filter_operator: filter_operator,
-    geometry_type: geometry_type,
-    'function': {
-        expression: { type: 'expression' },
-        stops: {
-            type: 'array',
-            value: 'function_stop'
-        },
-        base: {
-            type: 'number',
-            'default': 1,
-            minimum: 0
-        },
-        property: {
-            type: 'string',
-            'default': '$zoom'
-        },
-        type: {
-            type: 'enum',
-            values: {
-                identity: {},
-                exponential: {},
-                interval: {},
-                categorical: {}
-            },
-            'default': 'exponential'
-        },
-        colorSpace: {
-            type: 'enum',
-            values: {
-                rgb: {},
-                lab: {},
-                hcl: {}
-            },
-            'default': 'rgb'
-        },
-        'default': {
-            type: '*',
-            required: false
-        }
-    },
-    function_stop: function_stop,
-    expression: expression,
-    light: light,
-    paint: paint$9,
-    paint_fill: paint_fill,
-    'paint_fill-extrusion': {
-        'fill-extrusion-opacity': {
-            type: 'number',
-            'default': 1,
-            minimum: 0,
-            maximum: 1,
-            transition: true,
-            expression: {
-                interpolated: true,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        },
-        'fill-extrusion-color': {
-            type: 'color',
-            'default': '#000000',
-            transition: true,
-            requires: [{ '!': 'fill-extrusion-pattern' }],
-            expression: {
-                interpolated: true,
-                parameters: [
-                    'zoom',
-                    'feature',
-                    'feature-state'
-                ]
-            },
-            'property-type': 'data-driven'
-        },
-        'fill-extrusion-translate': {
-            type: 'array',
-            value: 'number',
-            length: 2,
-            'default': [
-                0,
-                0
-            ],
-            transition: true,
-            units: 'pixels',
-            expression: {
-                interpolated: true,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        },
-        'fill-extrusion-translate-anchor': {
-            type: 'enum',
-            values: {
-                map: {},
-                viewport: {}
-            },
-            'default': 'map',
-            requires: ['fill-extrusion-translate'],
-            expression: {
-                interpolated: false,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        },
-        'fill-extrusion-pattern': {
-            type: 'resolvedImage',
-            transition: true,
-            expression: {
-                interpolated: false,
-                parameters: [
-                    'zoom',
-                    'feature'
-                ]
-            },
-            'property-type': 'cross-faded-data-driven'
-        },
-        'fill-extrusion-height': {
-            type: 'number',
-            'default': 0,
-            minimum: 0,
-            units: 'meters',
-            transition: true,
-            expression: {
-                interpolated: true,
-                parameters: [
-                    'zoom',
-                    'feature',
-                    'feature-state'
-                ]
-            },
-            'property-type': 'data-driven'
-        },
-        'fill-extrusion-base': {
-            type: 'number',
-            'default': 0,
-            minimum: 0,
-            units: 'meters',
-            transition: true,
-            requires: ['fill-extrusion-height'],
-            expression: {
-                interpolated: true,
-                parameters: [
-                    'zoom',
-                    'feature',
-                    'feature-state'
-                ]
-            },
-            'property-type': 'data-driven'
-        },
-        'fill-extrusion-vertical-gradient': {
-            type: 'boolean',
-            'default': true,
-            transition: false,
-            expression: {
-                interpolated: false,
-                parameters: ['zoom']
-            },
-            'property-type': 'data-constant'
-        }
-    },
-    paint_line: paint_line,
-    paint_circle: paint_circle,
-    paint_heatmap: paint_heatmap,
-    paint_symbol: paint_symbol,
-    paint_raster: paint_raster,
-    paint_hillshade: paint_hillshade,
-    paint_background: paint_background,
-    transition: transition,
-    'property-type': {
-        'data-driven': { type: 'property-type' },
-        'cross-faded': { type: 'property-type' },
-        'cross-faded-data-driven': { type: 'property-type' },
-        'color-ramp': { type: 'property-type' },
-        'data-constant': { type: 'property-type' },
-        constant: { type: 'property-type' }
-    },
-    promoteId: promoteId
-};
-
-class ValidationError {
-    constructor(key, value, message, identifier) {
-        this.message = (key ? `${ key }: ` : '') + message;
-        if (identifier)
-            this.identifier = identifier;
-        if (value !== null && value !== undefined && value.__line__) {
-            this.line = value.__line__;
-        }
-    }
-}
-
-function validateConstants(options) {
-    const key = options.key;
-    const constants = options.value;
-    if (constants) {
-        return [new ValidationError(key, constants, 'constants have been deprecated as of v8')];
-    } else {
-        return [];
-    }
-}
-
-function unbundle(value) {
-    if (value instanceof Number || value instanceof String || value instanceof Boolean) {
-        return value.valueOf();
-    } else {
-        return value;
-    }
-}
-function deepUnbundle(value) {
-    if (Array.isArray(value)) {
-        return value.map(deepUnbundle);
-    } else if (value instanceof Object && !(value instanceof Number || value instanceof String || value instanceof Boolean)) {
-        const unbundledValue = {};
-        for (const key in value) {
-            unbundledValue[key] = deepUnbundle(value[key]);
-        }
-        return unbundledValue;
-    }
-    return unbundle(value);
-}
-
 function validateObject(options) {
     const key = options.key;
     const object = options.value;
@@ -9469,6 +9187,277 @@ function emitValidationErrors(emitter, errors) {
         }
     }
     return hasErrors;
+}
+
+const NUM_PARAMS = 3;
+class TransferableGridIndex {
+    constructor(extent, n, padding) {
+        const cells = this.cells = [];
+        if (extent instanceof ArrayBuffer) {
+            this.arrayBuffer = extent;
+            const array = new Int32Array(this.arrayBuffer);
+            extent = array[0];
+            n = array[1];
+            padding = array[2];
+            this.d = n + 2 * padding;
+            for (let k = 0; k < this.d * this.d; k++) {
+                const start = array[NUM_PARAMS + k];
+                const end = array[NUM_PARAMS + k + 1];
+                cells.push(start === end ? null : array.subarray(start, end));
+            }
+            const keysOffset = array[NUM_PARAMS + cells.length];
+            const bboxesOffset = array[NUM_PARAMS + cells.length + 1];
+            this.keys = array.subarray(keysOffset, bboxesOffset);
+            this.bboxes = array.subarray(bboxesOffset);
+            this.insert = this._insertReadonly;
+        } else {
+            this.d = n + 2 * padding;
+            for (let i = 0; i < this.d * this.d; i++) {
+                cells.push([]);
+            }
+            this.keys = [];
+            this.bboxes = [];
+        }
+        this.n = n;
+        this.extent = extent;
+        this.padding = padding;
+        this.scale = n / extent;
+        this.uid = 0;
+        const p = padding / n * extent;
+        this.min = -p;
+        this.max = extent + p;
+    }
+    insert(key, x1, y1, x2, y2) {
+        this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++, undefined, undefined);
+        this.keys.push(key);
+        this.bboxes.push(x1);
+        this.bboxes.push(y1);
+        this.bboxes.push(x2);
+        this.bboxes.push(y2);
+    }
+    _insertReadonly() {
+        throw new Error('Cannot insert into a GridIndex created from an ArrayBuffer.');
+    }
+    _insertCell(x1, y1, x2, y2, cellIndex, uid) {
+        this.cells[cellIndex].push(uid);
+    }
+    query(x1, y1, x2, y2, intersectionTest) {
+        const min = this.min;
+        const max = this.max;
+        if (x1 <= min && y1 <= min && max <= x2 && max <= y2 && !intersectionTest) {
+            return Array.prototype.slice.call(this.keys);
+        } else {
+            const result = [];
+            const seenUids = {};
+            this._forEachCell(x1, y1, x2, y2, this._queryCell, result, seenUids, intersectionTest);
+            return result;
+        }
+    }
+    _queryCell(x1, y1, x2, y2, cellIndex, result, seenUids, intersectionTest) {
+        const cell = this.cells[cellIndex];
+        if (cell !== null) {
+            const keys = this.keys;
+            const bboxes = this.bboxes;
+            for (let u = 0; u < cell.length; u++) {
+                const uid = cell[u];
+                if (seenUids[uid] === undefined) {
+                    const offset = uid * 4;
+                    if (intersectionTest ? intersectionTest(bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) : x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1]) {
+                        seenUids[uid] = true;
+                        result.push(keys[uid]);
+                    } else {
+                        seenUids[uid] = false;
+                    }
+                }
+            }
+        }
+    }
+    _forEachCell(x1, y1, x2, y2, fn, arg1, arg2, intersectionTest) {
+        const cx1 = this._convertToCellCoord(x1);
+        const cy1 = this._convertToCellCoord(y1);
+        const cx2 = this._convertToCellCoord(x2);
+        const cy2 = this._convertToCellCoord(y2);
+        for (let x = cx1; x <= cx2; x++) {
+            for (let y = cy1; y <= cy2; y++) {
+                const cellIndex = this.d * y + x;
+                if (intersectionTest && !intersectionTest(this._convertFromCellCoord(x), this._convertFromCellCoord(y), this._convertFromCellCoord(x + 1), this._convertFromCellCoord(y + 1)))
+                    continue;
+                if (fn.call(this, x1, y1, x2, y2, cellIndex, arg1, arg2, intersectionTest))
+                    return;
+            }
+        }
+    }
+    _convertFromCellCoord(x) {
+        return (x - this.padding) / this.scale;
+    }
+    _convertToCellCoord(x) {
+        return Math.max(0, Math.min(this.d - 1, Math.floor(x * this.scale) + this.padding));
+    }
+    toArrayBuffer() {
+        if (this.arrayBuffer)
+            return this.arrayBuffer;
+        const cells = this.cells;
+        const metadataLength = NUM_PARAMS + this.cells.length + 1 + 1;
+        let totalCellLength = 0;
+        for (let i = 0; i < this.cells.length; i++) {
+            totalCellLength += this.cells[i].length;
+        }
+        const array = new Int32Array(metadataLength + totalCellLength + this.keys.length + this.bboxes.length);
+        array[0] = this.extent;
+        array[1] = this.n;
+        array[2] = this.padding;
+        let offset = metadataLength;
+        for (let k = 0; k < cells.length; k++) {
+            const cell = cells[k];
+            array[NUM_PARAMS + k] = offset;
+            array.set(cell, offset);
+            offset += cell.length;
+        }
+        array[NUM_PARAMS + cells.length] = offset;
+        array.set(this.keys, offset);
+        offset += this.keys.length;
+        array[NUM_PARAMS + cells.length + 1] = offset;
+        array.set(this.bboxes, offset);
+        offset += this.bboxes.length;
+        return array.buffer;
+    }
+    static serialize(grid, transferables) {
+        const buffer = grid.toArrayBuffer();
+        if (transferables) {
+            transferables.push(buffer);
+        }
+        return { buffer };
+    }
+    static deserialize(serialized) {
+        return new TransferableGridIndex(serialized.buffer);
+    }
+}
+
+const registry = {};
+function register(name, klass, options = {}) {
+    Object.defineProperty(klass, '_classRegistryKey', {
+        value: name,
+        writeable: false
+    });
+    registry[name] = {
+        klass,
+        omit: options.omit || [],
+        shallow: options.shallow || []
+    };
+}
+register('Object', Object);
+register('TransferableGridIndex', TransferableGridIndex);
+register('Color', Color);
+register('Error', Error);
+register('ResolvedImage', ResolvedImage);
+register('StylePropertyFunction', StylePropertyFunction);
+register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
+register('ZoomDependentExpression', ZoomDependentExpression);
+register('ZoomConstantExpression', ZoomConstantExpression);
+register('CompoundExpression', CompoundExpression, { omit: ['_evaluate'] });
+for (const name in expressions) {
+    if (expressions[name]._classRegistryKey)
+        continue;
+    register(`Expression_${ name }`, expressions[name]);
+}
+function isArrayBuffer(value) {
+    return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
+}
+function serialize(input, transferables) {
+    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
+        return input;
+    }
+    if (isArrayBuffer(input)) {
+        if (transferables) {
+            transferables.push(input);
+        }
+        return input;
+    }
+    if (isImageBitmap(input)) {
+        if (transferables) {
+            transferables.push(input);
+        }
+        return input;
+    }
+    if (ArrayBuffer.isView(input)) {
+        const view = input;
+        if (transferables) {
+            transferables.push(view.buffer);
+        }
+        return view;
+    }
+    if (input instanceof ImageData) {
+        if (transferables) {
+            transferables.push(input.data.buffer);
+        }
+        return input;
+    }
+    if (Array.isArray(input)) {
+        const serialized = [];
+        for (const item of input) {
+            serialized.push(serialize(item, transferables));
+        }
+        return serialized;
+    }
+    if (typeof input === 'object') {
+        const klass = input.constructor;
+        const name = klass._classRegistryKey;
+        if (!name) {
+            throw new Error('can\'t serialize object of unregistered class');
+        }
+        const properties = klass.serialize ? klass.serialize(input, transferables) : {};
+        if (!klass.serialize) {
+            for (const key in input) {
+                if (!input.hasOwnProperty(key))
+                    continue;
+                if (registry[name].omit.indexOf(key) >= 0)
+                    continue;
+                const property = input[key];
+                properties[key] = registry[name].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
+            }
+            if (input instanceof Error) {
+                properties.message = input.message;
+            }
+        }
+        if (properties.$name) {
+            throw new Error('$name property is reserved for worker serialization logic.');
+        }
+        if (name !== 'Object') {
+            properties.$name = name;
+        }
+        return properties;
+    }
+    throw new Error(`can't serialize object of type ${ typeof input }`);
+}
+function deserialize(input) {
+    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
+        return input;
+    }
+    if (Array.isArray(input)) {
+        return input.map(deserialize);
+    }
+    if (typeof input === 'object') {
+        const name = input.$name || 'Object';
+        if (!registry[name]) {
+            throw new Error(`can't deserialize unregistered class ${ name }`);
+        }
+        const {klass} = registry[name];
+        if (!klass) {
+            throw new Error(`can't deserialize unregistered class ${ name }`);
+        }
+        if (klass.deserialize) {
+            return klass.deserialize(input);
+        }
+        const result = Object.create(klass.prototype);
+        for (const key of Object.keys(input)) {
+            if (key === '$name')
+                continue;
+            const value = input[key];
+            result[key] = registry[name].shallow.indexOf(key) >= 0 ? value : deserialize(value);
+        }
+        return result;
+    }
+    throw new Error(`can't deserialize object of type ${ typeof input }`);
 }
 
 class ZoomHistory {
@@ -11123,7 +11112,7 @@ class CollisionBoxStruct extends Struct {
         return this._structArray.uint16[this._pos2 + 9];
     }
     get anchorPoint() {
-        return new Point$2(this.anchorPointX, this.anchorPointY);
+        return new pointGeometry(this.anchorPointX, this.anchorPointY);
     }
 }
 CollisionBoxStruct.prototype.size = 20;
@@ -12515,10 +12504,10 @@ function polygonIntersectsBox(ring, boxX1, boxY1, boxX2, boxY2) {
             return true;
     }
     const corners = [
-        new Point$2(boxX1, boxY1),
-        new Point$2(boxX1, boxY2),
-        new Point$2(boxX2, boxY2),
-        new Point$2(boxX2, boxY1)
+        new pointGeometry(boxX1, boxY1),
+        new pointGeometry(boxX1, boxY2),
+        new pointGeometry(boxX2, boxY2),
+        new pointGeometry(boxX2, boxY1)
     ];
     if (ring.length > 2) {
         for (const corner of corners) {
@@ -12558,7 +12547,7 @@ function translate$1(queryGeometry, translate, translateAnchor, bearing, pixelsT
     if (!translate[0] && !translate[1]) {
         return queryGeometry;
     }
-    const pt = Point$2.convert(translate)._mult(pixelsToTileUnits);
+    const pt = pointGeometry.convert(translate)._mult(pixelsToTileUnits);
     if (translateAnchor === 'viewport') {
         pt._rotate(-bearing);
     }
@@ -13067,7 +13056,7 @@ class CircleStyleLayer extends StyleLayer {
 }
 function projectPoint(p, pixelPosMatrix) {
     const point = transformMat4(create(), fromValues(p.x, p.y, 0, 1), pixelPosMatrix);
-    return new Point$2(point[0] / point[3], point[1] / point[3]);
+    return new pointGeometry(point[0] / point[3], point[1] / point[3]);
 }
 function projectQueryGeometry$1(queryGeometry, pixelPosMatrix) {
     return queryGeometry.map(p => {
@@ -14089,150 +14078,6 @@ const {members: members$2, size: size$2, alignment: alignment$2} = layout$2;
 
 var vectorTile = {};
 
-var pointGeometry = Point$1;
-function Point$1(x, y) {
-    this.x = x;
-    this.y = y;
-}
-Point$1.prototype = {
-    clone: function () {
-        return new Point$1(this.x, this.y);
-    },
-    add: function (p) {
-        return this.clone()._add(p);
-    },
-    sub: function (p) {
-        return this.clone()._sub(p);
-    },
-    multByPoint: function (p) {
-        return this.clone()._multByPoint(p);
-    },
-    divByPoint: function (p) {
-        return this.clone()._divByPoint(p);
-    },
-    mult: function (k) {
-        return this.clone()._mult(k);
-    },
-    div: function (k) {
-        return this.clone()._div(k);
-    },
-    rotate: function (a) {
-        return this.clone()._rotate(a);
-    },
-    rotateAround: function (a, p) {
-        return this.clone()._rotateAround(a, p);
-    },
-    matMult: function (m) {
-        return this.clone()._matMult(m);
-    },
-    unit: function () {
-        return this.clone()._unit();
-    },
-    perp: function () {
-        return this.clone()._perp();
-    },
-    round: function () {
-        return this.clone()._round();
-    },
-    mag: function () {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    },
-    equals: function (other) {
-        return this.x === other.x && this.y === other.y;
-    },
-    dist: function (p) {
-        return Math.sqrt(this.distSqr(p));
-    },
-    distSqr: function (p) {
-        var dx = p.x - this.x, dy = p.y - this.y;
-        return dx * dx + dy * dy;
-    },
-    angle: function () {
-        return Math.atan2(this.y, this.x);
-    },
-    angleTo: function (b) {
-        return Math.atan2(this.y - b.y, this.x - b.x);
-    },
-    angleWith: function (b) {
-        return this.angleWithSep(b.x, b.y);
-    },
-    angleWithSep: function (x, y) {
-        return Math.atan2(this.x * y - this.y * x, this.x * x + this.y * y);
-    },
-    _matMult: function (m) {
-        var x = m[0] * this.x + m[1] * this.y, y = m[2] * this.x + m[3] * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    },
-    _add: function (p) {
-        this.x += p.x;
-        this.y += p.y;
-        return this;
-    },
-    _sub: function (p) {
-        this.x -= p.x;
-        this.y -= p.y;
-        return this;
-    },
-    _mult: function (k) {
-        this.x *= k;
-        this.y *= k;
-        return this;
-    },
-    _div: function (k) {
-        this.x /= k;
-        this.y /= k;
-        return this;
-    },
-    _multByPoint: function (p) {
-        this.x *= p.x;
-        this.y *= p.y;
-        return this;
-    },
-    _divByPoint: function (p) {
-        this.x /= p.x;
-        this.y /= p.y;
-        return this;
-    },
-    _unit: function () {
-        this._div(this.mag());
-        return this;
-    },
-    _perp: function () {
-        var y = this.y;
-        this.y = this.x;
-        this.x = -y;
-        return this;
-    },
-    _rotate: function (angle) {
-        var cos = Math.cos(angle), sin = Math.sin(angle), x = cos * this.x - sin * this.y, y = sin * this.x + cos * this.y;
-        this.x = x;
-        this.y = y;
-        return this;
-    },
-    _rotateAround: function (angle, p) {
-        var cos = Math.cos(angle), sin = Math.sin(angle), x = p.x + cos * (this.x - p.x) - sin * (this.y - p.y), y = p.y + sin * (this.x - p.x) + cos * (this.y - p.y);
-        this.x = x;
-        this.y = y;
-        return this;
-    },
-    _round: function () {
-        this.x = Math.round(this.x);
-        this.y = Math.round(this.y);
-        return this;
-    }
-};
-Point$1.convert = function (a) {
-    if (a instanceof Point$1) {
-        return a;
-    }
-    if (Array.isArray(a)) {
-        return new Point$1(a[0], a[1]);
-    }
-    return a;
-};
-
 var Point = pointGeometry;
 var vectortilefeature = VectorTileFeature$1;
 function VectorTileFeature$1(pbf, end, extent, keys, values) {
@@ -14795,10 +14640,10 @@ function projectExtrusion(geometry, zBase, zTop, m) {
             const topY = sY + topYZ;
             const topZ = sZ + topZZ;
             const topW = sW + topWZ;
-            const b = new Point$2(baseX / baseW, baseY / baseW);
+            const b = new pointGeometry(baseX / baseW, baseY / baseW);
             b.z = baseZ / baseW;
             ringBase.push(b);
-            const t = new Point$2(topX / topW, topY / topW);
+            const t = new pointGeometry(topX / topW, topY / topW);
             t.z = topZ / topW;
             ringTop.push(t);
         }
@@ -14815,7 +14660,7 @@ function projectQueryGeometry(queryGeometry, pixelPosMatrix, transform, z) {
     for (const p of queryGeometry) {
         const v = fromValues(p.x, p.y, z, 1);
         transformMat4(v, v, pixelPosMatrix);
-        projectedQueryGeometry.push(new Point$2(v[0] / v[3], v[1] / v[3]));
+        projectedQueryGeometry.push(new pointGeometry(v[0] / v[3], v[1] / v[3]));
     }
     return projectedQueryGeometry;
 }
@@ -15264,7 +15109,7 @@ function getLineWidth(lineWidth, lineGapWidth) {
 }
 function offsetLine(rings, offset) {
     const newRings = [];
-    const zero = new Point$2(0, 0);
+    const zero = new pointGeometry(0, 0);
     for (let k = 0; k < rings.length; k++) {
         const ring = rings[k];
         const newRing = [];
@@ -17384,7 +17229,7 @@ evaluateSizeForZoom: evaluateSizeForZoom,
 SIZE_PACK_FACTOR: SIZE_PACK_FACTOR
 });
 
-class Anchor extends Point$2 {
+class Anchor extends pointGeometry {
     constructor(x, y, angle, segment) {
         super(x, y);
         this.angle = angle;
@@ -17523,30 +17368,30 @@ function clipLine(lines, x1, y1, x2, y2) {
             if (p0.x < x1 && p1.x < x1) {
                 continue;
             } else if (p0.x < x1) {
-                p0 = new Point$2(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
+                p0 = new pointGeometry(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
             } else if (p1.x < x1) {
-                p1 = new Point$2(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
+                p1 = new pointGeometry(x1, p0.y + (p1.y - p0.y) * ((x1 - p0.x) / (p1.x - p0.x)))._round();
             }
             if (p0.y < y1 && p1.y < y1) {
                 continue;
             } else if (p0.y < y1) {
-                p0 = new Point$2(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
+                p0 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
             } else if (p1.y < y1) {
-                p1 = new Point$2(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
+                p1 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y1 - p0.y) / (p1.y - p0.y)), y1)._round();
             }
             if (p0.x >= x2 && p1.x >= x2) {
                 continue;
             } else if (p0.x >= x2) {
-                p0 = new Point$2(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
+                p0 = new pointGeometry(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
             } else if (p1.x >= x2) {
-                p1 = new Point$2(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
+                p1 = new pointGeometry(x2, p0.y + (p1.y - p0.y) * ((x2 - p0.x) / (p1.x - p0.x)))._round();
             }
             if (p0.y >= y2 && p1.y >= y2) {
                 continue;
             } else if (p0.y >= y2) {
-                p0 = new Point$2(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
+                p0 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
             } else if (p1.y >= y2) {
-                p1 = new Point$2(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
+                p1 = new pointGeometry(p0.x + (p1.x - p0.x) * ((y2 - p0.y) / (p1.y - p0.y)), y2)._round();
             }
             if (!clippedLine || !p0.equals(clippedLine[clippedLine.length - 1])) {
                 clippedLine = [p0];
@@ -17608,12 +17453,12 @@ function getIconQuads(shapedIcon, iconRotate, isSDFIcon, hasIconTextFit) {
         const rightPx = getPxOffset(right.fixed - fixedOffsetX, fixedContentWidth, right.stretch, stretchWidth);
         const bottomEm = getEmOffset(bottom.stretch - stretchOffsetY, stretchContentHeight, iconHeight, shapedIcon.top);
         const bottomPx = getPxOffset(bottom.fixed - fixedOffsetY, fixedContentHeight, bottom.stretch, stretchHeight);
-        const tl = new Point$2(leftEm, topEm);
-        const tr = new Point$2(rightEm, topEm);
-        const br = new Point$2(rightEm, bottomEm);
-        const bl = new Point$2(leftEm, bottomEm);
-        const pixelOffsetTL = new Point$2(leftPx / pixelRatio, topPx / pixelRatio);
-        const pixelOffsetBR = new Point$2(rightPx / pixelRatio, bottomPx / pixelRatio);
+        const tl = new pointGeometry(leftEm, topEm);
+        const tr = new pointGeometry(rightEm, topEm);
+        const br = new pointGeometry(rightEm, bottomEm);
+        const bl = new pointGeometry(leftEm, bottomEm);
+        const pixelOffsetTL = new pointGeometry(leftPx / pixelRatio, topPx / pixelRatio);
+        const pixelOffsetBR = new pointGeometry(rightPx / pixelRatio, bottomPx / pixelRatio);
         const angle = iconRotate * Math.PI / 180;
         if (angle) {
             const sin = Math.sin(angle), cos = Math.cos(angle), matrix = [
@@ -17777,17 +17622,17 @@ function getGlyphQuads(anchor, shaping, textOffset, layer, alongLine, feature, i
             const y1 = (-positionedGlyph.metrics.top - rectBuffer) * positionedGlyph.scale + builtInOffset[1];
             const x2 = x1 + textureRect.w * positionedGlyph.scale / pixelRatio;
             const y2 = y1 + textureRect.h * positionedGlyph.scale / pixelRatio;
-            const tl = new Point$2(x1, y1);
-            const tr = new Point$2(x2, y1);
-            const bl = new Point$2(x1, y2);
-            const br = new Point$2(x2, y2);
+            const tl = new pointGeometry(x1, y1);
+            const tr = new pointGeometry(x2, y1);
+            const bl = new pointGeometry(x1, y2);
+            const br = new pointGeometry(x2, y2);
             if (rotateVerticalGlyph) {
-                const center = new Point$2(-halfAdvance, halfAdvance - SHAPING_DEFAULT_OFFSET);
+                const center = new pointGeometry(-halfAdvance, halfAdvance - SHAPING_DEFAULT_OFFSET);
                 const verticalRotation = -Math.PI / 2;
                 const xHalfWidthOffsetCorrection = ONE_EM / 2 - halfAdvance;
                 const yImageOffsetCorrection = positionedGlyph.imageName ? xHalfWidthOffsetCorrection : 0;
-                const halfWidthOffsetCorrection = new Point$2(5 - SHAPING_DEFAULT_OFFSET - xHalfWidthOffsetCorrection, -yImageOffsetCorrection);
-                const verticalOffsetCorrection = new Point$2(...verticalizedLabelOffset);
+                const halfWidthOffsetCorrection = new pointGeometry(5 - SHAPING_DEFAULT_OFFSET - xHalfWidthOffsetCorrection, -yImageOffsetCorrection);
+                const verticalOffsetCorrection = new pointGeometry(...verticalizedLabelOffset);
                 tl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
                 tr._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
                 bl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
@@ -17805,8 +17650,8 @@ function getGlyphQuads(anchor, shaping, textOffset, layer, alongLine, feature, i
                 bl._matMult(matrix);
                 br._matMult(matrix);
             }
-            const pixelOffsetTL = new Point$2(0, 0);
-            const pixelOffsetBR = new Point$2(0, 0);
+            const pixelOffsetTL = new pointGeometry(0, 0);
+            const pixelOffsetBR = new pointGeometry(0, 0);
             const minFontScaleX = 0;
             const minFontScaleY = 0;
             quads.push({
@@ -17858,10 +17703,10 @@ class CollisionFeature {
                 y2 += collisionPadding[3] * boxScale;
             }
             if (rotate) {
-                const tl = new Point$2(x1, y1);
-                const tr = new Point$2(x2, y1);
-                const bl = new Point$2(x1, y2);
-                const br = new Point$2(x2, y2);
+                const tl = new pointGeometry(x1, y1);
+                const tr = new pointGeometry(x2, y1);
+                const bl = new pointGeometry(x1, y2);
+                const br = new pointGeometry(x2, y2);
                 const rotateRadians = rotate * Math.PI / 180;
                 tl._rotate(rotateRadians);
                 tr._rotate(rotateRadians);
@@ -17965,7 +17810,7 @@ function findPoleOfInaccessibility (polygonRings, precision = 1, debug = false) 
     let h = cellSize / 2;
     const cellQueue = new TinyQueue([], compareMax);
     if (cellSize === 0)
-        return new Point$2(minX, minY);
+        return new pointGeometry(minX, minY);
     for (let x = minX; x < maxX; x += cellSize) {
         for (let y = minY; y < maxY; y += cellSize) {
             cellQueue.push(new Cell(x + h, y + h, h, polygonRings));
@@ -17999,7 +17844,7 @@ function compareMax(a, b) {
     return b.max - a.max;
 }
 function Cell(x, y, h, polygon) {
-    this.p = new Point$2(x, y);
+    this.p = new pointGeometry(x, y);
     this.h = h;
     this.d = pointToPolygonDist(this.p, polygon);
     this.max = this.d + this.h * Math.SQRT2;
@@ -18807,10 +18652,10 @@ class SymbolBucket {
         const collisionVertexArray = arrays.collisionVertexArray;
         const anchorX = symbolInstance.anchorX;
         const anchorY = symbolInstance.anchorY;
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x1, y1));
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x2, y1));
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x2, y2));
-        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new Point$2(x1, y2));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x1, y1));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x2, y1));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x2, y2));
+        this._addCollisionDebugVertex(layoutVertexArray, collisionVertexArray, boxAnchorPoint, anchorX, anchorY, new pointGeometry(x1, y2));
         segment.vertexLength += 4;
         const indexArray = arrays.indexArray;
         indexArray.emplaceBack(index, index + 1);
@@ -19745,7 +19590,7 @@ class CanonicalTileID {
     }
     getTilePoint(coord) {
         const tilesAtZoom = Math.pow(2, this.z);
-        return new Point$2((coord.x * tilesAtZoom - this.x) * EXTENT, (coord.y * tilesAtZoom - this.y) * EXTENT);
+        return new pointGeometry((coord.x * tilesAtZoom - this.x) * EXTENT, (coord.y * tilesAtZoom - this.y) * EXTENT);
     }
     toString() {
         return `${ this.z }/${ this.x }/${ this.y }`;
@@ -20312,7 +20157,6 @@ exports.LngLatBounds = LngLatBounds;
 exports.MercatorCoordinate = MercatorCoordinate;
 exports.ONE_EM = ONE_EM;
 exports.OverscaledTileID = OverscaledTileID;
-exports.Point = Point$2;
 exports.PosArray = PosArray;
 exports.Properties = Properties;
 exports.QuadTriangleArray = QuadTriangleArray;
@@ -20931,7 +20775,7 @@ class FeatureWrapper$1 {
         if (this._feature.type === 1) {
             const geometry = [];
             for (const point of this._feature.geometry) {
-                geometry.push([new performance.Point(point[0], point[1])]);
+                geometry.push([new performance.pointGeometry(point[0], point[1])]);
             }
             return geometry;
         } else {
@@ -20939,7 +20783,7 @@ class FeatureWrapper$1 {
             for (const ring of this._feature.geometry) {
                 const newRing = [];
                 for (const point of ring) {
-                    newRing.push(new performance.Point(point[0], point[1]));
+                    newRing.push(new performance.pointGeometry(point[0], point[1]));
                 }
                 geometry.push(newRing);
             }
@@ -22944,13 +22788,13 @@ class DOM {
     }
     static mousePos(el, e) {
         const rect = el.getBoundingClientRect();
-        return new performance.Point(e.clientX - rect.left - el.clientLeft, e.clientY - rect.top - el.clientTop);
+        return new performance.pointGeometry(e.clientX - rect.left - el.clientLeft, e.clientY - rect.top - el.clientTop);
     }
     static touchPos(el, touches) {
         const rect = el.getBoundingClientRect();
         const points = [];
         for (let i = 0; i < touches.length; i++) {
-            points.push(new performance.Point(touches[i].clientX - rect.left - el.clientLeft, touches[i].clientY - rect.top - el.clientTop));
+            points.push(new performance.pointGeometry(touches[i].clientX - rect.left - el.clientLeft, touches[i].clientY - rect.top - el.clientTop));
         }
         return points;
     }
@@ -26010,8 +25854,8 @@ class SourceCache extends performance.Evented {
             return renderables.sort((a_, b_) => {
                 const a = a_.tileID;
                 const b = b_.tileID;
-                const rotatedA = new performance.Point(a.canonical.x, a.canonical.y)._rotate(this.transform.angle);
-                const rotatedB = new performance.Point(b.canonical.x, b.canonical.y)._rotate(this.transform.angle);
+                const rotatedA = new performance.pointGeometry(a.canonical.x, a.canonical.y)._rotate(this.transform.angle);
+                const rotatedB = new performance.pointGeometry(b.canonical.x, b.canonical.y)._rotate(this.transform.angle);
                 return a.overscaledZ - b.overscaledZ || rotatedB.y - rotatedA.y || rotatedB.x - rotatedA.x;
             }).map(tile => tile.tileID.key);
         }
@@ -27700,7 +27544,7 @@ function project(point, matrix, getElevation) {
     performance.transformMat4(pos, pos, matrix);
     const w = pos[3];
     return {
-        point: new performance.Point(pos[0] / w, pos[1] / w),
+        point: new performance.pointGeometry(pos[0] / w, pos[1] / w),
         signedDistanceFromCamera: w
     };
 }
@@ -27743,7 +27587,7 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         const perspectiveRatio = getPerspectiveRatio(painter.transform.cameraToCenterDistance, cameraToAnchorDistance);
         const fontSize = performance.evaluateSizeForFeature(sizeData, partiallyEvaluatedSize, symbol);
         const pitchScaledFontSize = pitchWithMap ? fontSize / perspectiveRatio : fontSize * perspectiveRatio;
-        const tileAnchorPoint = new performance.Point(symbol.anchorX, symbol.anchorY);
+        const tileAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         const anchorPoint = project(tileAnchorPoint, labelPlaneMatrix, getElevation).point;
         const projectionCache = {};
         const placeUnflipped = placeGlyphsAlongLine(symbol, pitchScaledFontSize, false, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation);
@@ -27818,7 +27662,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         if (keepUpright && !flip) {
             const a = project(tileAnchorPoint, posMatrix, getElevation).point;
             const tileVertexIndex = symbol.lineStartIndex + symbol.segment + 1;
-            const tileSegmentEnd = new performance.Point(lineVertexArray.getx(tileVertexIndex), lineVertexArray.gety(tileVertexIndex));
+            const tileSegmentEnd = new performance.pointGeometry(lineVertexArray.getx(tileVertexIndex), lineVertexArray.gety(tileVertexIndex));
             const projectedVertex = project(tileSegmentEnd, posMatrix, getElevation);
             const b = projectedVertex.signedDistanceFromCamera > 0 ? projectedVertex.point : projectTruncatedLineSegment(tileAnchorPoint, tileSegmentEnd, a, 1, posMatrix, getElevation);
             const orientationChange = requiresOrientationChange(symbol.writingMode, a, b, aspectRatio);
@@ -27866,13 +27710,13 @@ function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoin
         pathVertices.push(current);
         current = projectionCache[currentIndex];
         if (current === undefined) {
-            const currentVertex = new performance.Point(lineVertexArray.getx(currentIndex), lineVertexArray.gety(currentIndex));
+            const currentVertex = new performance.pointGeometry(lineVertexArray.getx(currentIndex), lineVertexArray.gety(currentIndex));
             const projection = project(currentVertex, labelPlaneMatrix, getElevation);
             if (projection.signedDistanceFromCamera > 0) {
                 current = projectionCache[currentIndex] = projection.point;
             } else {
                 const previousLineVertexIndex = currentIndex - dir;
-                const previousTilePoint = distanceToPrev === 0 ? tileAnchorPoint : new performance.Point(lineVertexArray.getx(previousLineVertexIndex), lineVertexArray.gety(previousLineVertexIndex));
+                const previousTilePoint = distanceToPrev === 0 ? tileAnchorPoint : new performance.pointGeometry(lineVertexArray.getx(previousLineVertexIndex), lineVertexArray.gety(previousLineVertexIndex));
                 current = projectTruncatedLineSegment(previousTilePoint, currentVertex, prev, absOffsetX - distanceToPrev + 1, labelPlaneMatrix, getElevation);
             }
         }
@@ -27950,7 +27794,7 @@ class CollisionIndex {
     }
     placeCollisionCircles(allowOverlap, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding, getElevation) {
         const placedCollisionCircles = [];
-        const tileUnitAnchorPoint = new performance.Point(symbol.anchorX, symbol.anchorY);
+        const tileUnitAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         const screenAnchorPoint = project(tileUnitAnchorPoint, posMatrix, getElevation);
         const perspectiveRatio = getPerspectiveRatio(this.transform.cameraToCenterDistance, screenAnchorPoint.signedDistanceFromCamera);
         const labelPlaneFontSize = pitchWithMap ? fontSize / perspectiveRatio : fontSize * perspectiveRatio;
@@ -27965,8 +27809,8 @@ class CollisionIndex {
         let entirelyOffscreen = true;
         if (firstAndLastGlyph) {
             const radius = circlePixelDiameter * 0.5 * perspectiveRatio + textPixelPadding;
-            const screenPlaneMin = new performance.Point(-viewportPadding, -viewportPadding);
-            const screenPlaneMax = new performance.Point(this.screenRightBoundary, this.screenBottomBoundary);
+            const screenPlaneMin = new performance.pointGeometry(-viewportPadding, -viewportPadding);
+            const screenPlaneMax = new performance.pointGeometry(this.screenRightBoundary, this.screenBottomBoundary);
             const interpolator = new PathInterpolator();
             const first = firstAndLastGlyph.first;
             const last = firstAndLastGlyph.last;
@@ -28055,7 +27899,7 @@ class CollisionIndex {
         let maxX = -Infinity;
         let maxY = -Infinity;
         for (const point of viewportQueryGeometry) {
-            const gridPoint = new performance.Point(point.x + viewportPadding, point.y + viewportPadding);
+            const gridPoint = new performance.pointGeometry(point.x + viewportPadding, point.y + viewportPadding);
             minX = Math.min(minX, gridPoint.x);
             minY = Math.min(minY, gridPoint.y);
             maxX = Math.max(maxX, gridPoint.x);
@@ -28074,10 +27918,10 @@ class CollisionIndex {
                 continue;
             }
             const bbox = [
-                new performance.Point(feature.x1, feature.y1),
-                new performance.Point(feature.x2, feature.y1),
-                new performance.Point(feature.x2, feature.y2),
-                new performance.Point(feature.x1, feature.y2)
+                new performance.pointGeometry(feature.x1, feature.y1),
+                new performance.pointGeometry(feature.x2, feature.y1),
+                new performance.pointGeometry(feature.x2, feature.y2),
+                new performance.pointGeometry(feature.x1, feature.y2)
             ];
             if (!performance.polygonIntersectsPolygon(query, bbox)) {
                 continue;
@@ -28113,7 +27957,7 @@ class CollisionIndex {
     projectAndGetPerspectiveRatio(posMatrix, x, y, getElevation) {
         const p = performance.fromValues(x, y, getElevation(x, y), 1);
         performance.transformMat4(p, p, posMatrix);
-        const a = new performance.Point((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
+        const a = new performance.pointGeometry((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
         return {
             point: a,
             perspectiveRatio: 0.5 + 0.5 * (this.transform.cameraToCenterDistance / p[3])
@@ -28216,11 +28060,11 @@ function calculateVariableLayoutShift(anchor, width, height, textOffset, textBox
     const shiftX = -(horizontalAlign - 0.5) * width;
     const shiftY = -(verticalAlign - 0.5) * height;
     const offset = performance.evaluateVariableOffset(anchor, textOffset);
-    return new performance.Point(shiftX + offset[0] * textBoxScale, shiftY + offset[1] * textBoxScale);
+    return new performance.pointGeometry(shiftX + offset[0] * textBoxScale, shiftY + offset[1] * textBoxScale);
 }
 function shiftVariableCollisionBox(collisionBox, shiftX, shiftY, rotateWithMap, pitchWithMap, angle) {
     const {x1, x2, y1, y2, anchorPointX, anchorPointY} = collisionBox;
-    const rotatedOffset = new performance.Point(shiftX, shiftY);
+    const rotatedOffset = new performance.pointGeometry(shiftX, shiftY);
     if (rotateWithMap) {
         rotatedOffset._rotate(pitchWithMap ? angle : -angle);
     }
@@ -28790,7 +28634,7 @@ class Placement {
             if (bucket.hasIconCollisionBoxData() || bucket.hasTextCollisionBoxData()) {
                 const collisionArrays = bucket.collisionArrays[s];
                 if (collisionArrays) {
-                    let shift = new performance.Point(0, 0);
+                    let shift = new performance.pointGeometry(0, 0);
                     if (collisionArrays.textBox || collisionArrays.verticalTextBox) {
                         let used = true;
                         if (variablePlacement) {
@@ -32214,7 +32058,7 @@ function calculateVariableRenderShift(anchor, width, height, textOffset, textBox
     const shiftX = -(horizontalAlign - 0.5) * width;
     const shiftY = -(verticalAlign - 0.5) * height;
     const variableOffset = performance.evaluateVariableOffset(anchor, textOffset);
-    return new performance.Point((shiftX / textBoxScale + variableOffset[0]) * renderTextSize, (shiftY / textBoxScale + variableOffset[1]) * renderTextSize);
+    return new performance.pointGeometry((shiftX / textBoxScale + variableOffset[0]) * renderTextSize, (shiftY / textBoxScale + variableOffset[1]) * renderTextSize);
 }
 function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlignment, pitchAlignment, variableOffsets) {
     const tr = painter.transform;
@@ -32250,7 +32094,7 @@ function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, var
         if (!variableOffset) {
             hideGlyphs(symbol.numGlyphs, dynamicTextLayoutVertexArray);
         } else {
-            const tileAnchor = new performance.Point(symbol.anchorX, symbol.anchorY);
+            const tileAnchor = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
             const projectedAnchor = project(tileAnchor, pitchWithMap ? posMatrix : labelPlaneMatrix, getElevation);
             const perspectiveRatio = getPerspectiveRatio(transform.cameraToCenterDistance, projectedAnchor.signedDistanceFromCamera);
             let renderTextSize = symbolSize.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
@@ -33987,7 +33831,7 @@ class EdgeInsets {
     getCenter(width, height) {
         const x = performance.clamp((this.left + width - this.right) / 2, 0, width);
         const y = performance.clamp((this.top + height - this.bottom) / 2, 0, height);
-        return new performance.Point(x, y);
+        return new performance.pointGeometry(x, y);
     }
     equals(other) {
         return this.top === other.top && this.bottom === other.bottom && this.left === other.left && this.right === other.right;
@@ -34101,7 +33945,7 @@ class Transform {
         return this.centerPoint._sub(this.size._div(2));
     }
     get size() {
-        return new performance.Point(this.width, this.height);
+        return new performance.pointGeometry(this.width, this.height);
     }
     get bearing() {
         return -this.angle / Math.PI * 180;
@@ -34206,10 +34050,10 @@ class Transform {
     getVisibleUnwrappedCoordinates(tileID) {
         const result = [new performance.UnwrappedTileID(0, tileID)];
         if (this._renderWorldCopies) {
-            const utl = this.pointCoordinate(new performance.Point(0, 0));
-            const utr = this.pointCoordinate(new performance.Point(this.width, 0));
-            const ubl = this.pointCoordinate(new performance.Point(this.width, this.height));
-            const ubr = this.pointCoordinate(new performance.Point(0, this.height));
+            const utl = this.pointCoordinate(new performance.pointGeometry(0, 0));
+            const utr = this.pointCoordinate(new performance.pointGeometry(this.width, 0));
+            const ubl = this.pointCoordinate(new performance.pointGeometry(this.width, this.height));
+            const ubr = this.pointCoordinate(new performance.pointGeometry(0, this.height));
             const w0 = Math.floor(Math.min(utl.x, utr.x, ubl.x, ubr.x));
             const w1 = Math.floor(Math.max(utl.x, utr.x, ubl.x, ubr.x));
             const extraWorldCopy = 1;
@@ -34343,7 +34187,7 @@ class Transform {
     }
     project(lnglat) {
         const lat = performance.clamp(lnglat.lat, -this.maxValidLatitude, this.maxValidLatitude);
-        return new performance.Point(performance.mercatorXfromLng(lnglat.lng) * this.worldSize, performance.mercatorYfromLat(lat) * this.worldSize);
+        return new performance.pointGeometry(performance.mercatorXfromLng(lnglat.lng) * this.worldSize, performance.mercatorYfromLat(lat) * this.worldSize);
     }
     unproject(point) {
         return new performance.MercatorCoordinate(point.x / this.worldSize, point.y / this.worldSize).toLngLat();
@@ -34463,10 +34307,10 @@ class Transform {
     coordinatePoint(coord, elevation = 0) {
         const p = performance.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, elevation, 1);
         performance.transformMat4(p, p, this.pixelMatrix2);
-        return new performance.Point(p[0] / p[3], p[1] / p[3]);
+        return new performance.pointGeometry(p[0] / p[3], p[1] / p[3]);
     }
     getBounds() {
-        return new performance.LngLatBounds().extend(this.pointLocation(new performance.Point(0, 0))).extend(this.pointLocation(new performance.Point(this.width, 0))).extend(this.pointLocation(new performance.Point(this.width, this.height))).extend(this.pointLocation(new performance.Point(0, this.height)));
+        return new performance.LngLatBounds().extend(this.pointLocation(new performance.pointGeometry(0, 0))).extend(this.pointLocation(new performance.pointGeometry(this.width, 0))).extend(this.pointLocation(new performance.pointGeometry(this.width, this.height))).extend(this.pointLocation(new performance.pointGeometry(0, this.height)));
     }
     getMaxBounds() {
         if (!this.latRange || this.latRange.length !== 2 || !this.lngRange || this.lngRange.length !== 2)
@@ -34550,7 +34394,7 @@ class Transform {
         const point = this.point;
         const s = Math.max(sx || 0, sy || 0);
         if (s) {
-            this.center = this.unproject(new performance.Point(sx ? (maxX + minX) / 2 : point.x, sy ? (maxY + minY) / 2 : point.y));
+            this.center = this.unproject(new performance.pointGeometry(sx ? (maxX + minX) / 2 : point.x, sy ? (maxY + minY) / 2 : point.y));
             this.zoom += this.scaleZoom(s);
             this._unmodified = unmodified;
             this._constraining = false;
@@ -34571,7 +34415,7 @@ class Transform {
                 x2 = maxX - w2;
         }
         if (x2 !== undefined || y2 !== undefined) {
-            this.center = this.unproject(new performance.Point(x2 !== undefined ? x2 : point.x, y2 !== undefined ? y2 : point.y));
+            this.center = this.unproject(new performance.pointGeometry(x2 !== undefined ? x2 : point.x, y2 !== undefined ? y2 : point.y));
         }
         this._unmodified = unmodified;
         this._constraining = false;
@@ -34674,7 +34518,7 @@ class Transform {
     maxPitchScaleFactor() {
         if (!this.pixelMatrixInverse)
             return 1;
-        const coord = this.pointCoordinate(new performance.Point(0, 0));
+        const coord = this.pointCoordinate(new performance.pointGeometry(0, 0));
         const p = performance.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, 0, 1);
         const topPoint = performance.transformMat4(p, p, this.pixelMatrix);
         return topPoint[3] / this.cameraToCenterDistance;
@@ -34682,7 +34526,7 @@ class Transform {
     getCameraPoint() {
         const pitch = this._pitch;
         const yOffset = Math.tan(pitch) * (this.cameraToCenterDistance || 1);
-        return this.centerPoint.add(new performance.Point(0, yOffset));
+        return this.centerPoint.add(new performance.pointGeometry(0, yOffset));
     }
     getCameraQueryGeometry(queryGeometry) {
         const c = this.getCameraPoint();
@@ -34703,11 +34547,11 @@ class Transform {
                 maxY = Math.max(maxY, p.y);
             }
             return [
-                new performance.Point(minX, minY),
-                new performance.Point(maxX, minY),
-                new performance.Point(maxX, maxY),
-                new performance.Point(minX, maxY),
-                new performance.Point(minX, minY)
+                new performance.pointGeometry(minX, minY),
+                new performance.pointGeometry(maxX, minY),
+                new performance.pointGeometry(maxX, maxY),
+                new performance.pointGeometry(minX, maxY),
+                new performance.pointGeometry(minX, minY)
             ];
         }
     }
@@ -34874,7 +34718,7 @@ class HandlerInertia {
             zoom: 0,
             bearing: 0,
             pitch: 0,
-            pan: new performance.Point(0, 0),
+            pan: new performance.pointGeometry(0, 0),
             pinchAround: undefined,
             around: undefined
         };
@@ -34964,7 +34808,7 @@ class MapTouchEvent extends performance.Event {
         const lngLats = points.map(t => map.unproject(t));
         const point = points.reduce((prev, curr, i, arr) => {
             return prev.add(curr.div(arr.length));
-        }, new performance.Point(0, 0));
+        }, new performance.pointGeometry(0, 0));
         const lngLat = map.unproject(point);
         super(type, {
             points,
@@ -35198,7 +35042,7 @@ function indexTouches(touches, points) {
 }
 
 function getCentroid(points) {
-    const sum = new performance.Point(0, 0);
+    const sum = new performance.pointGeometry(0, 0);
     for (const point of points) {
         sum._add(point);
     }
@@ -35497,7 +35341,7 @@ class TouchPanHandler {
     reset() {
         this._active = false;
         this._touches = {};
-        this._sum = new performance.Point(0, 0);
+        this._sum = new performance.pointGeometry(0, 0);
     }
     touchstart(e, points, mapTouches) {
         return this._calculateTransform(e, points, mapTouches);
@@ -35521,8 +35365,8 @@ class TouchPanHandler {
         if (mapTouches.length > 0)
             this._active = true;
         const touches = indexTouches(mapTouches, points);
-        const touchPointSum = new performance.Point(0, 0);
-        const touchDeltaSum = new performance.Point(0, 0);
+        const touchPointSum = new performance.pointGeometry(0, 0);
+        const touchDeltaSum = new performance.pointGeometry(0, 0);
         let touchDeltaCount = 0;
         for (const identifier in touches) {
             const point = touches[identifier];
@@ -36588,7 +36432,7 @@ class HandlerManager {
         const combinedDeactivatedHandlers = {};
         for (const [change, eventsInProgress, deactivatedHandlers] of this._changes) {
             if (change.panDelta)
-                combined.panDelta = (combined.panDelta || new performance.Point(0, 0))._add(change.panDelta);
+                combined.panDelta = (combined.panDelta || new performance.pointGeometry(0, 0))._add(change.panDelta);
             if (change.zoomDelta)
                 combined.zoomDelta = (combined.zoomDelta || 0) + change.zoomDelta;
             if (change.bearingDelta)
@@ -36741,7 +36585,7 @@ class Camera extends performance.Evented {
         return this.jumpTo({ center }, eventData);
     }
     panBy(offset, options, eventData) {
-        offset = performance.Point.convert(offset).mult(-1);
+        offset = performance.pointGeometry.convert(offset).mult(-1);
         return this.panTo(this.transform.center, performance.extend({ offset }, options), eventData);
     }
     panTo(lnglat, options, eventData) {
@@ -36843,8 +36687,8 @@ class Camera extends performance.Evented {
         const p1world = tr.project(performance.LngLat.convert(p1));
         const p0rotated = p0world.rotate(-bearing * Math.PI / 180);
         const p1rotated = p1world.rotate(-bearing * Math.PI / 180);
-        const upperRight = new performance.Point(Math.max(p0rotated.x, p1rotated.x), Math.max(p0rotated.y, p1rotated.y));
-        const lowerLeft = new performance.Point(Math.min(p0rotated.x, p1rotated.x), Math.min(p0rotated.y, p1rotated.y));
+        const upperRight = new performance.pointGeometry(Math.max(p0rotated.x, p1rotated.x), Math.max(p0rotated.y, p1rotated.y));
+        const lowerLeft = new performance.pointGeometry(Math.min(p0rotated.x, p1rotated.x), Math.min(p0rotated.y, p1rotated.y));
         const size = upperRight.sub(lowerLeft);
         const scaleX = (tr.width - (edgePadding.left + edgePadding.right + options.padding.left + options.padding.right)) / size.x;
         const scaleY = (tr.height - (edgePadding.top + edgePadding.bottom + options.padding.top + options.padding.bottom)) / size.y;
@@ -36853,10 +36697,10 @@ class Camera extends performance.Evented {
             return undefined;
         }
         const zoom = Math.min(tr.scaleZoom(tr.scale * Math.min(scaleX, scaleY)), options.maxZoom);
-        const offset = performance.Point.convert(options.offset);
+        const offset = performance.pointGeometry.convert(options.offset);
         const paddingOffsetX = (options.padding.left - options.padding.right) / 2;
         const paddingOffsetY = (options.padding.top - options.padding.bottom) / 2;
-        const paddingOffset = new performance.Point(paddingOffsetX, paddingOffsetY);
+        const paddingOffset = new performance.pointGeometry(paddingOffsetX, paddingOffsetY);
         const rotatedPaddingOffset = paddingOffset.rotate(bearing * Math.PI / 180);
         const offsetAtInitialZoom = offset.add(rotatedPaddingOffset);
         const offsetAtFinalZoom = offsetAtInitialZoom.mult(tr.scale / tr.zoomScale(zoom));
@@ -36871,7 +36715,7 @@ class Camera extends performance.Evented {
         return this._fitInternal(this.cameraForBounds(bounds, options), options, eventData);
     }
     fitScreenCoordinates(p0, p1, bearing, options, eventData) {
-        return this._fitInternal(this._cameraForBoxAndBearing(this.transform.pointLocation(performance.Point.convert(p0)), this.transform.pointLocation(performance.Point.convert(p1)), bearing, options), options, eventData);
+        return this._fitInternal(this._cameraForBoxAndBearing(this.transform.pointLocation(performance.pointGeometry.convert(p0)), this.transform.pointLocation(performance.pointGeometry.convert(p1)), bearing, options), options, eventData);
     }
     _fitInternal(calculatedOptions, options, eventData) {
         if (!calculatedOptions)
@@ -36927,7 +36771,7 @@ class Camera extends performance.Evented {
         if (options.animate === false || !options.essential && performance.exported.prefersReducedMotion)
             options.duration = 0;
         const tr = this.transform, startZoom = this.getZoom(), startBearing = this.getBearing(), startPitch = this.getPitch(), startPadding = this.getPadding(), zoom = 'zoom' in options ? +options.zoom : startZoom, bearing = 'bearing' in options ? this._normalizeBearing(options.bearing, startBearing) : startBearing, pitch = 'pitch' in options ? +options.pitch : startPitch, padding = 'padding' in options ? options.padding : tr.padding;
-        const offsetAsPoint = performance.Point.convert(options.offset);
+        const offsetAsPoint = performance.pointGeometry.convert(options.offset);
         let pointAtOffset = tr.centerPoint.add(offsetAsPoint);
         const locationAtOffset = tr.pointLocation(pointAtOffset);
         const center = performance.LngLat.convert(options.center || locationAtOffset);
@@ -37059,7 +36903,7 @@ class Camera extends performance.Evented {
         const pitch = 'pitch' in options ? +options.pitch : startPitch;
         const padding = 'padding' in options ? options.padding : tr.padding;
         const scale = tr.zoomScale(zoom - startZoom);
-        const offsetAsPoint = performance.Point.convert(options.offset);
+        const offsetAsPoint = performance.pointGeometry.convert(options.offset);
         let pointAtOffset = tr.centerPoint.add(offsetAsPoint);
         const locationAtOffset = tr.pointLocation(pointAtOffset);
         const center = performance.LngLat.convert(options.center || locationAtOffset);
@@ -37739,7 +37583,7 @@ class Map extends Camera {
         return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
     }
     unproject(point) {
-        return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.pointLocation3D(performance.Point.convert(point)) : this.transform.pointLocation(performance.Point.convert(point));
+        return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
     }
     isMoving() {
         return this._moving || this.handlers.isMoving();
@@ -37863,7 +37707,7 @@ class Map extends Camera {
         if (!this.style) {
             return [];
         }
-        if (options === undefined && geometry !== undefined && !(geometry instanceof performance.Point) && !Array.isArray(geometry)) {
+        if (options === undefined && geometry !== undefined && !(geometry instanceof performance.pointGeometry) && !Array.isArray(geometry)) {
             options = geometry;
             geometry = undefined;
         }
@@ -37879,16 +37723,16 @@ class Map extends Camera {
             ]
         ];
         let queryGeometry;
-        if (geometry instanceof performance.Point || typeof geometry[0] === 'number') {
-            queryGeometry = [performance.Point.convert(geometry)];
+        if (geometry instanceof performance.pointGeometry || typeof geometry[0] === 'number') {
+            queryGeometry = [performance.pointGeometry.convert(geometry)];
         } else {
-            const tl = performance.Point.convert(geometry[0]);
-            const br = performance.Point.convert(geometry[1]);
+            const tl = performance.pointGeometry.convert(geometry[0]);
+            const br = performance.pointGeometry.convert(geometry[1]);
             queryGeometry = [
                 tl,
-                new performance.Point(br.x, tl.y),
+                new performance.pointGeometry(br.x, tl.y),
                 br,
-                new performance.Point(tl.x, br.y),
+                new performance.pointGeometry(tl.x, br.y),
                 tl
             ];
         }
@@ -38855,13 +38699,13 @@ class Marker extends performance.Evented {
             svg.setAttributeNS(null, 'height', `${ defaultHeight * this._scale }px`);
             svg.setAttributeNS(null, 'width', `${ defaultWidth * this._scale }px`);
             this._element.appendChild(svg);
-            this._offset = performance.Point.convert(options && options.offset || [
+            this._offset = performance.pointGeometry.convert(options && options.offset || [
                 0,
                 -14
             ]);
         } else {
             this._element = options.element;
-            this._offset = performance.Point.convert(options && options.offset || [
+            this._offset = performance.pointGeometry.convert(options && options.offset || [
                 0,
                 0
             ]);
@@ -39042,7 +38886,7 @@ class Marker extends performance.Evented {
         return this._offset;
     }
     setOffset(offset) {
-        this._offset = performance.Point.convert(offset);
+        this._offset = performance.pointGeometry.convert(offset);
         this._update();
         return this;
     }
@@ -39947,22 +39791,22 @@ class Popup extends performance.Evented {
 }
 function normalizeOffset(offset) {
     if (!offset) {
-        return normalizeOffset(new performance.Point(0, 0));
+        return normalizeOffset(new performance.pointGeometry(0, 0));
     } else if (typeof offset === 'number') {
         const cornerOffset = Math.round(Math.sqrt(0.5 * Math.pow(offset, 2)));
         return {
-            'center': new performance.Point(0, 0),
-            'top': new performance.Point(0, offset),
-            'top-left': new performance.Point(cornerOffset, cornerOffset),
-            'top-right': new performance.Point(-cornerOffset, cornerOffset),
-            'bottom': new performance.Point(0, -offset),
-            'bottom-left': new performance.Point(cornerOffset, -cornerOffset),
-            'bottom-right': new performance.Point(-cornerOffset, -cornerOffset),
-            'left': new performance.Point(offset, 0),
-            'right': new performance.Point(-offset, 0)
+            'center': new performance.pointGeometry(0, 0),
+            'top': new performance.pointGeometry(0, offset),
+            'top-left': new performance.pointGeometry(cornerOffset, cornerOffset),
+            'top-right': new performance.pointGeometry(-cornerOffset, cornerOffset),
+            'bottom': new performance.pointGeometry(0, -offset),
+            'bottom-left': new performance.pointGeometry(cornerOffset, -cornerOffset),
+            'bottom-right': new performance.pointGeometry(-cornerOffset, -cornerOffset),
+            'left': new performance.pointGeometry(offset, 0),
+            'right': new performance.pointGeometry(-offset, 0)
         };
-    } else if (offset instanceof performance.Point || Array.isArray(offset)) {
-        const convertedOffset = performance.Point.convert(offset);
+    } else if (offset instanceof performance.pointGeometry || Array.isArray(offset)) {
+        const convertedOffset = performance.pointGeometry.convert(offset);
         return {
             'center': convertedOffset,
             'top': convertedOffset,
@@ -39976,39 +39820,39 @@ function normalizeOffset(offset) {
         };
     } else {
         return {
-            'center': performance.Point.convert(offset['center'] || [
+            'center': performance.pointGeometry.convert(offset['center'] || [
                 0,
                 0
             ]),
-            'top': performance.Point.convert(offset['top'] || [
+            'top': performance.pointGeometry.convert(offset['top'] || [
                 0,
                 0
             ]),
-            'top-left': performance.Point.convert(offset['top-left'] || [
+            'top-left': performance.pointGeometry.convert(offset['top-left'] || [
                 0,
                 0
             ]),
-            'top-right': performance.Point.convert(offset['top-right'] || [
+            'top-right': performance.pointGeometry.convert(offset['top-right'] || [
                 0,
                 0
             ]),
-            'bottom': performance.Point.convert(offset['bottom'] || [
+            'bottom': performance.pointGeometry.convert(offset['bottom'] || [
                 0,
                 0
             ]),
-            'bottom-left': performance.Point.convert(offset['bottom-left'] || [
+            'bottom-left': performance.pointGeometry.convert(offset['bottom-left'] || [
                 0,
                 0
             ]),
-            'bottom-right': performance.Point.convert(offset['bottom-right'] || [
+            'bottom-right': performance.pointGeometry.convert(offset['bottom-right'] || [
                 0,
                 0
             ]),
-            'left': performance.Point.convert(offset['left'] || [
+            'left': performance.pointGeometry.convert(offset['left'] || [
                 0,
                 0
             ]),
-            'right': performance.Point.convert(offset['right'] || [
+            'right': performance.pointGeometry.convert(offset['right'] || [
                 0,
                 0
             ])
@@ -40033,7 +39877,7 @@ const exported = {
     Style,
     LngLat: performance.LngLat,
     LngLatBounds: performance.LngLatBounds,
-    Point: performance.Point,
+    Point: performance.pointGeometry,
     MercatorCoordinate: performance.MercatorCoordinate,
     Evented: performance.Evented,
     config: performance.config,
