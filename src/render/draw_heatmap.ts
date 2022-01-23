@@ -18,54 +18,66 @@ import type {OverscaledTileID} from '../source/tile_id';
 export default drawHeatmap;
 
 function drawHeatmap(painter: Painter, sourceCache: SourceCache, layer: HeatmapStyleLayer, coords: Array<OverscaledTileID>) {
-    if (layer.paint.get('heatmap-opacity') === 0) {
-        return;
-    }
+    if (layer.paint.get('heatmap-opacity') === 0) {return;}
 
-    if (painter.renderPass === 'offscreen') {
-        const context = painter.context;
-        const gl = context.gl;
+    const context = painter.context;
+    const gl = context.gl;
 
-        // Allow kernels to be drawn across boundaries, so that
-        // large kernels are not clipped to tiles
-        const stencilMode = StencilMode.disabled;
-        // Turn on additive blending for kernels, which is a key aspect of kernel density estimation formula
-        const colorMode = new ColorMode([gl.ONE, gl.ONE], Color.transparent, [true, true, true, true]);
+    bindFramebuffer(context, painter, layer);
+    context.clear({color: Color.transparent});
 
-        bindFramebuffer(context, painter, layer);
-
-        context.clear({color: Color.transparent});
-
-        for (let i = 0; i < coords.length; i++) {
-            const coord = coords[i];
-
+    for (const coord of coords) {
+        const tile = sourceCache.getTile(coord);
+        if (painter.renderPass === 'offscreen') {
             // Skip tiles that have uncovered parents to avoid flickering; we don't need
             // to use complex tile masking here because the change between zoom levels is subtle,
             // so it's fine to simply render the parent until all its 4 children are loaded
             if (sourceCache.hasRenderableParent(coord)) continue;
-
-            const tile = sourceCache.getTile(coord);
-            const bucket: HeatmapBucket = (tile.getBucket(layer) as any);
-            if (!bucket) continue;
-
-            const programConfiguration = bucket.programConfigurations.get(layer.id);
-            const program = painter.useProgram('heatmap', programConfiguration);
-            const {zoom} = painter.transform;
-            const terrain = painter.style.terrainSourceCache.getTerrain(coord);
-
-            program.draw(context, gl.TRIANGLES, DepthMode.disabled, stencilMode, colorMode, CullFaceMode.disabled,
-                heatmapUniformValues(coord.posMatrix, tile, zoom, layer.paint.get('heatmap-intensity')),
-                terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer,
-                bucket.segments, layer.paint, painter.transform.zoom,
-                programConfiguration);
+            // Turn on additive blending for kernels, which is a key aspect of kernel density estimation formula
+            const colorMode = new ColorMode([gl.ONE, gl.ONE], Color.transparent, [true, true, true, true]);
+            prepareHeatmap(painter, coord, tile, layer);
+        } else if (painter.renderPass === 'translucent') {
+            painter.context.setColorMode(painter.colorModeForRenderPass());
+            renderTextureToMap(painter, coord, tile, layer);
         }
-
-        context.viewport.set([0, 0, painter.width, painter.height]);
-
-    } else if (painter.renderPass === 'translucent') {
-        painter.context.setColorMode(painter.colorModeForRenderPass());
-        renderTextureToMap(painter, layer);
     }
+    if (painter.renderPass === 'offscreen') {context.viewport.set([0, 0, painter.width, painter.height]);}
+
+    
+}
+
+function prepareHeatmap(painter, coord, tile, layer) {
+    const context = painter.context;
+    const gl = context.gl;
+    const stencilMode = StencilMode.disabled;
+    // Turn on additive blending for kernels, which is a key aspect of kernel density estimation formula
+    const colorMode = new ColorMode([gl.ONE, gl.ONE], Color.transparent, [true, true, true, true]);
+
+    const bucket: HeatmapBucket = (tile.getBucket(layer) as any);
+    if (!bucket) return;
+
+    const programConfiguration = bucket.programConfigurations.get(layer.id);
+    const program = painter.useProgram('circle', programConfiguration);
+    const layoutVertexBuffer = bucket.layoutVertexBuffer;
+    const indexBuffer = bucket.indexBuffer;
+    const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    const uniformValues = heatmapUniformValues(painter, coord, tile, layer);
+
+    program.draw(context,
+        gl.TRIANGLES,
+        DepthMode.disabled,
+        stencilMode,
+        colorMode,
+        CullFaceMode.disabled,
+        uniformValues,
+        terrain,
+        layer.id,
+        bucket.layoutVertexBuffer,
+        indexBuffer,
+        bucket.segments,
+        layer.paint,
+        painter.transform.zoom,
+        programConfiguration);
 }
 
 function bindFramebuffer(context, painter, layer) {
@@ -104,7 +116,7 @@ function bindTextureToFramebuffer(context, painter, texture, fbo) {
     fbo.colorAttachment.set(texture);
 }
 
-function renderTextureToMap(painter, layer) {
+function renderTextureToMap(painter, coord, tile, layer) {
     const context = painter.context;
     const gl = context.gl;
 
@@ -122,10 +134,12 @@ function renderTextureToMap(painter, layer) {
         colorRampTexture = layer.colorRampTexture = new Texture(context, layer.colorRamp, gl.RGBA);
     }
     colorRampTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+    const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
 
     painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES,
         DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled,
-        heatmapTextureUniformValues(painter, layer, 0, 1), false,
+        heatmapTextureUniformValues(painter, tile, layer, 0, 1, terrainCoord), terrain,
         layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer,
         painter.viewportSegments, layer.paint, painter.transform.zoom);
 }
