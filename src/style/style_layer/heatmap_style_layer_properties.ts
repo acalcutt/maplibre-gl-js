@@ -28,10 +28,6 @@ export type HeatmapPaintProps = {
     "heatmap-intensity": DataConstantProperty<number>,
     "heatmap-color": ColorRampProperty,
     "heatmap-opacity": DataConstantProperty<number>,
-    "heatmap-translate": DataConstantProperty<[number, number]>,
-    "heatmap-translate-anchor": DataConstantProperty<"map" | "viewport">,
-    "heatmap-pitch-scale": DataConstantProperty<"map" | "viewport">,
-    "heatmap-pitch-alignment": DataConstantProperty<"map" | "viewport">,
 };
 
 export type HeatmapPaintPropsPossiblyEvaluated = {
@@ -40,10 +36,6 @@ export type HeatmapPaintPropsPossiblyEvaluated = {
     "heatmap-intensity": number,
     "heatmap-color": ColorRampProperty,
     "heatmap-opacity": number,
-    "heatmap-translate": [number, number],
-    "heatmap-translate-anchor": "map" | "viewport",
-    "heatmap-pitch-scale": "map" | "viewport",
-    "heatmap-pitch-alignment": "map" | "viewport",
 };
 
 const paint: Properties<HeatmapPaintProps> = new Properties({
@@ -52,10 +44,6 @@ const paint: Properties<HeatmapPaintProps> = new Properties({
     "heatmap-intensity": new DataConstantProperty(styleSpec["paint_heatmap"]["heatmap-intensity"] as any as StylePropertySpecification),
     "heatmap-color": new ColorRampProperty(styleSpec["paint_heatmap"]["heatmap-color"] as any as StylePropertySpecification),
     "heatmap-opacity": new DataConstantProperty(styleSpec["paint_heatmap"]["heatmap-opacity"] as any as StylePropertySpecification),
-    "heatmap-translate": new DataConstantProperty(styleSpec["paint_heatmap"]["heatmap-translate"] as any as StylePropertySpecification),
-    "heatmap-translate-anchor": new DataConstantProperty(styleSpec["paint_heatmap"]["heatmap-translate-anchor"] as any as StylePropertySpecification),
-    "heatmap-pitch-scale": new DataConstantProperty(styleSpec["paint_heatmap"]["heatmap-pitch-scale"] as any as StylePropertySpecification),
-    "heatmap-pitch-alignment": new DataConstantProperty(styleSpec["paint_heatmap"]["heatmap-pitch-alignment"] as any as StylePropertySpecification),
 });
 
 export default ({ paint } as {
