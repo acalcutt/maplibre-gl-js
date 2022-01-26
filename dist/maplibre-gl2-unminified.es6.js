@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.3/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.0/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -1470,6 +1470,23 @@ var layout_symbol = {
     'icon-allow-overlap': {
         type: 'boolean',
         'default': false,
+        requires: [
+            'icon-image',
+            { '!': 'icon-overlap' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-overlap': {
+        type: 'enum',
+        values: {
+            never: {},
+            always: {},
+            cooperative: {}
+        },
         requires: ['icon-image'],
         expression: {
             interpolated: false,
@@ -2016,6 +2033,23 @@ var layout_symbol = {
     'text-allow-overlap': {
         type: 'boolean',
         'default': false,
+        requires: [
+            'text-field',
+            { '!': 'text-overlap' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-overlap': {
+        type: 'enum',
+        values: {
+            never: {},
+            always: {},
+            cooperative: {}
+        },
         requires: ['text-field'],
         expression: {
             interpolated: false,
@@ -18428,7 +18462,7 @@ class SymbolBucket {
         const layout = this.layers[0].layout;
         const sortKey = layout.get('symbol-sort-key');
         const zOrder = layout.get('symbol-z-order');
-        this.canOverlap = layout.get('text-allow-overlap') || layout.get('icon-allow-overlap') || layout.get('text-ignore-placement') || layout.get('icon-ignore-placement');
+        this.canOverlap = getOverlapMode(layout, 'text-overlap', 'text-allow-overlap') !== 'never' || getOverlapMode(layout, 'icon-overlap', 'icon-allow-overlap') !== 'never' || layout.get('text-ignore-placement') || layout.get('icon-ignore-placement');
         this.sortFeaturesByKey = zOrder !== 'viewport-y' && !sortKey.isConstant();
         const zOrderByViewportY = zOrder === 'viewport-y' || zOrder === 'auto' && !this.sortFeaturesByKey;
         this.sortFeaturesByY = zOrderByViewportY && this.canOverlap;
@@ -18870,6 +18904,7 @@ const layout = new Properties({
     'symbol-sort-key': new DataDrivenProperty(spec['layout_symbol']['symbol-sort-key']),
     'symbol-z-order': new DataConstantProperty(spec['layout_symbol']['symbol-z-order']),
     'icon-allow-overlap': new DataConstantProperty(spec['layout_symbol']['icon-allow-overlap']),
+    'icon-overlap': new DataConstantProperty(spec['layout_symbol']['icon-overlap']),
     'icon-ignore-placement': new DataConstantProperty(spec['layout_symbol']['icon-ignore-placement']),
     'icon-optional': new DataConstantProperty(spec['layout_symbol']['icon-optional']),
     'icon-rotation-alignment': new DataConstantProperty(spec['layout_symbol']['icon-rotation-alignment']),
@@ -18903,6 +18938,7 @@ const layout = new Properties({
     'text-transform': new DataDrivenProperty(spec['layout_symbol']['text-transform']),
     'text-offset': new DataDrivenProperty(spec['layout_symbol']['text-offset']),
     'text-allow-overlap': new DataConstantProperty(spec['layout_symbol']['text-allow-overlap']),
+    'text-overlap': new DataConstantProperty(spec['layout_symbol']['text-overlap']),
     'text-ignore-placement': new DataConstantProperty(spec['layout_symbol']['text-ignore-placement']),
     'text-optional': new DataConstantProperty(spec['layout_symbol']['text-optional'])
 });
@@ -19078,6 +19114,16 @@ class SymbolStyleLayer extends StyleLayer {
         }
         return hasOverrides;
     }
+}
+function getOverlapMode(layout, overlapProp, allowOverlapProp) {
+    let result = 'never';
+    const overlap = layout.get(overlapProp);
+    if (overlap) {
+        result = overlap;
+    } else if (layout.get(allowOverlapProp)) {
+        result = 'always';
+    }
+    return result;
 }
 
 const paint$1 = new Properties({
@@ -19579,10 +19625,10 @@ class CanonicalTileID {
     equals(id) {
         return this.z === id.z && this.x === id.x && this.y === id.y;
     }
-    url(urls, scheme) {
+    url(urls, pixelRatio, scheme) {
         const bbox = getTileBBox(this.x, this.y, this.z);
         const quadkey = getQuadkey(this.z, this.x, this.y);
-        return urls[(this.x + this.y) % urls.length].replace(/{prefix}/g, (this.x % 16).toString(16) + (this.y % 16).toString(16)).replace(/{z}/g, String(this.z)).replace(/{x}/g, String(this.x)).replace(/{y}/g, String(scheme === 'tms' ? Math.pow(2, this.z) - this.y - 1 : this.y)).replace(/{ratio}/g, devicePixelRatio > 1 ? '@2x' : '').replace(/{quadkey}/g, quadkey).replace(/{bbox-epsg-3857}/g, bbox);
+        return urls[(this.x + this.y) % urls.length].replace(/{prefix}/g, (this.x % 16).toString(16) + (this.y % 16).toString(16)).replace(/{z}/g, String(this.z)).replace(/{x}/g, String(this.x)).replace(/{y}/g, String(scheme === 'tms' ? Math.pow(2, this.z) - this.y - 1 : this.y)).replace(/{ratio}/g, pixelRatio > 1 ? '@2x' : '').replace(/{quadkey}/g, quadkey).replace(/{bbox-epsg-3857}/g, bbox);
     }
     isChildOf(parent) {
         const dz = this.z - parent.z;
@@ -20216,6 +20262,7 @@ exports.getAnchorJustification = getAnchorJustification;
 exports.getArrayBuffer = getArrayBuffer;
 exports.getImage = getImage;
 exports.getJSON = getJSON;
+exports.getOverlapMode = getOverlapMode;
 exports.getRTLTextPluginStatus = getRTLTextPluginStatus;
 exports.getReferrer = getReferrer;
 exports.getVideo = getVideo;
@@ -23053,9 +23100,9 @@ var sqrLen = squaredLength;
     };
 })();
 
-function loadSprite (baseURL, requestManager, callback) {
+function loadSprite (baseURL, requestManager, pixelRatio, callback) {
     let json, image, error;
-    const format = devicePixelRatio > 1 ? '@2x' : '';
+    const format = pixelRatio > 1 ? '@2x' : '';
     let jsonRequest = performance.getJSON(requestManager.transformRequest(requestManager.normalizeSpriteURL(baseURL, format, '.json'), performance.ResourceType.SpriteJSON), (err, data) => {
         jsonRequest = null;
         if (!error) {
@@ -24176,7 +24223,7 @@ class VectorTileSource extends performance.Evented {
         return performance.extend({}, this._options);
     }
     loadTile(tile, callback) {
-        const url = tile.tileID.canonical.url(this.tiles, this.scheme);
+        const url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
         const params = {
             request: this.map._requestManager.transformRequest(url, performance.ResourceType.Tile),
             uid: tile.uid,
@@ -24185,7 +24232,7 @@ class VectorTileSource extends performance.Evented {
             tileSize: this.tileSize * tile.tileID.overscaleFactor(),
             type: this.type,
             source: this.id,
-            pixelRatio: devicePixelRatio,
+            pixelRatio: this.map.getPixelRatio(),
             showCollisionBoxes: this.map.showCollisionBoxes,
             promoteId: this.promoteId
         };
@@ -24309,7 +24356,7 @@ class RasterTileSource extends performance.Evented {
         return !this.tileBounds || this.tileBounds.contains(tileID.canonical);
     }
     loadTile(tile, callback) {
-        const url = tile.tileID.canonical.url(this.tiles, this.scheme);
+        const url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
         tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), (err, img) => {
             delete tile.request;
             if (tile.aborted) {
@@ -24385,7 +24432,7 @@ class RasterDEMTileSource extends RasterTileSource {
         };
     }
     loadTile(tile, callback) {
-        const url = tile.tileID.canonical.url(this.tiles, this.scheme);
+        const url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
         tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), imageLoaded.bind(this));
         tile.neighboringTiles = this._getNeighboringTiles(tile.tileID);
         function imageLoaded(err, img) {
@@ -24602,7 +24649,7 @@ class GeoJSONSource extends performance.Evented {
             maxZoom: this.maxzoom,
             tileSize: this.tileSize,
             source: this.id,
-            pixelRatio: devicePixelRatio,
+            pixelRatio: this.map.getPixelRatio(),
             showCollisionBoxes: this.map.showCollisionBoxes,
             promoteId: this.promoteId
         };
@@ -27253,6 +27300,13 @@ class PathInterpolator {
     }
 }
 
+function overlapAllowed(overlapA, overlapB) {
+    let allowed = true;
+    if (overlapA === 'always') ; else if (overlapA === 'never' || overlapB === 'never') {
+        allowed = false;
+    }
+    return allowed;
+}
 class GridIndex {
     constructor(width, height, cellSize) {
         const boxCells = this.boxCells = [];
@@ -27298,7 +27352,7 @@ class GridIndex {
     _insertCircleCell(x1, y1, x2, y2, cellIndex, uid) {
         this.circleCells[cellIndex].push(uid);
     }
-    _query(x1, y1, x2, y2, hitTest, predicate) {
+    _query(x1, y1, x2, y2, hitTest, overlapMode, predicate) {
         if (x2 < 0 || x1 > this.width || y2 < 0 || y1 > this.height) {
             return [];
         }
@@ -27337,6 +27391,7 @@ class GridIndex {
         } else {
             const queryArgs = {
                 hitTest,
+                overlapMode,
                 seenUids: {
                     box: {},
                     circle: {}
@@ -27349,10 +27404,10 @@ class GridIndex {
     query(x1, y1, x2, y2) {
         return this._query(x1, y1, x2, y2, false, null);
     }
-    hitTest(x1, y1, x2, y2, predicate) {
-        return this._query(x1, y1, x2, y2, true, predicate).length > 0;
+    hitTest(x1, y1, x2, y2, overlapMode, predicate) {
+        return this._query(x1, y1, x2, y2, true, overlapMode, predicate).length > 0;
     }
-    hitTestCircle(x, y, radius, predicate) {
+    hitTestCircle(x, y, radius, overlapMode, predicate) {
         const x1 = x - radius;
         const x2 = x + radius;
         const y1 = y - radius;
@@ -27363,6 +27418,7 @@ class GridIndex {
         const result = [];
         const queryArgs = {
             hitTest: true,
+            overlapMode,
             circle: {
                 x,
                 y,
@@ -27377,7 +27433,7 @@ class GridIndex {
         return result.length > 0;
     }
     _queryCell(x1, y1, x2, y2, cellIndex, result, queryArgs, predicate) {
-        const {seenUids, hitTest} = queryArgs;
+        const {seenUids, hitTest, overlapMode} = queryArgs;
         const boxCell = this.boxCells[cellIndex];
         if (boxCell !== null) {
             const bboxes = this.bboxes;
@@ -27387,15 +27443,17 @@ class GridIndex {
                     const offset = boxUid * 4;
                     const key = this.boxKeys[boxUid];
                     if (x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1] && (!predicate || predicate(key))) {
-                        result.push({
-                            key,
-                            x1: bboxes[offset],
-                            y1: bboxes[offset + 1],
-                            x2: bboxes[offset + 2],
-                            y2: bboxes[offset + 3]
-                        });
-                        if (hitTest) {
-                            return true;
+                        if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
+                            result.push({
+                                key,
+                                x1: bboxes[offset],
+                                y1: bboxes[offset + 1],
+                                x2: bboxes[offset + 2],
+                                y2: bboxes[offset + 3]
+                            });
+                            if (hitTest) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -27410,18 +27468,20 @@ class GridIndex {
                     const offset = circleUid * 3;
                     const key = this.circleKeys[circleUid];
                     if (this._circleAndRectCollide(circles[offset], circles[offset + 1], circles[offset + 2], x1, y1, x2, y2) && (!predicate || predicate(key))) {
-                        const x = circles[offset];
-                        const y = circles[offset + 1];
-                        const radius = circles[offset + 2];
-                        result.push({
-                            key,
-                            x1: x - radius,
-                            y1: y - radius,
-                            x2: x + radius,
-                            y2: y + radius
-                        });
-                        if (hitTest) {
-                            return true;
+                        if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
+                            const x = circles[offset];
+                            const y = circles[offset + 1];
+                            const radius = circles[offset + 2];
+                            result.push({
+                                key,
+                                x1: x - radius,
+                                y1: y - radius,
+                                x2: x + radius,
+                                y2: y + radius
+                            });
+                            if (hitTest) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -27430,7 +27490,7 @@ class GridIndex {
         return false;
     }
     _queryCellCircle(x1, y1, x2, y2, cellIndex, result, queryArgs, predicate) {
-        const {circle, seenUids} = queryArgs;
+        const {circle, seenUids, overlapMode} = queryArgs;
         const boxCell = this.boxCells[cellIndex];
         if (boxCell !== null) {
             const bboxes = this.bboxes;
@@ -27439,7 +27499,7 @@ class GridIndex {
                     seenUids.box[boxUid] = true;
                     const offset = boxUid * 4;
                     const key = this.boxKeys[boxUid];
-                    if (this._circleAndRectCollide(circle.x, circle.y, circle.radius, bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) && (!predicate || predicate(key))) {
+                    if (this._circleAndRectCollide(circle.x, circle.y, circle.radius, bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
                         result.push(true);
                         return true;
                     }
@@ -27454,7 +27514,7 @@ class GridIndex {
                     seenUids.circle[circleUid] = true;
                     const offset = circleUid * 3;
                     const key = this.circleKeys[circleUid];
-                    if (this._circlesCollide(circles[offset], circles[offset + 1], circles[offset + 2], circle.x, circle.y, circle.radius) && (!predicate || predicate(key))) {
+                    if (this._circlesCollide(circles[offset], circles[offset + 1], circles[offset + 2], circle.x, circle.y, circle.radius) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
                         result.push(true);
                         return true;
                     }
@@ -27769,14 +27829,14 @@ class CollisionIndex {
         this.gridRightBoundary = transform.width + 2 * viewportPadding;
         this.gridBottomBoundary = transform.height + 2 * viewportPadding;
     }
-    placeCollisionBox(collisionBox, allowOverlap, textPixelRatio, posMatrix, collisionGroupPredicate, getElevation) {
+    placeCollisionBox(collisionBox, overlapMode, textPixelRatio, posMatrix, collisionGroupPredicate, getElevation) {
         const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY, getElevation);
         const tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
         const tlX = collisionBox.x1 * tileToViewport + projectedPoint.point.x;
         const tlY = collisionBox.y1 * tileToViewport + projectedPoint.point.y;
         const brX = collisionBox.x2 * tileToViewport + projectedPoint.point.x;
         const brY = collisionBox.y2 * tileToViewport + projectedPoint.point.y;
-        if (!this.isInsideGrid(tlX, tlY, brX, brY) || !allowOverlap && this.grid.hitTest(tlX, tlY, brX, brY, collisionGroupPredicate)) {
+        if (!this.isInsideGrid(tlX, tlY, brX, brY) || overlapMode !== 'always' && this.grid.hitTest(tlX, tlY, brX, brY, overlapMode, collisionGroupPredicate)) {
             return {
                 box: [],
                 offscreen: false
@@ -27792,7 +27852,7 @@ class CollisionIndex {
             offscreen: this.isOffscreen(tlX, tlY, brX, brY)
         };
     }
-    placeCollisionCircles(allowOverlap, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding, getElevation) {
+    placeCollisionCircles(overlapMode, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding, getElevation) {
         const placedCollisionCircles = [];
         const tileUnitAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         const screenAnchorPoint = project(tileUnitAnchorPoint, posMatrix, getElevation);
@@ -27868,16 +27928,14 @@ class CollisionIndex {
                     const y2 = centerY + radius;
                     entirelyOffscreen = entirelyOffscreen && this.isOffscreen(x1, y1, x2, y2);
                     inGrid = inGrid || this.isInsideGrid(x1, y1, x2, y2);
-                    if (!allowOverlap) {
-                        if (this.grid.hitTestCircle(centerX, centerY, radius, collisionGroupPredicate)) {
-                            collisionDetected = true;
-                            if (!showCollisionCircles) {
-                                return {
-                                    circles: [],
-                                    offscreen: false,
-                                    collisionDetected
-                                };
-                            }
+                    if (overlapMode !== 'always' && this.grid.hitTestCircle(centerX, centerY, radius, overlapMode, collisionGroupPredicate)) {
+                        collisionDetected = true;
+                        if (!showCollisionCircles) {
+                            return {
+                                circles: [],
+                                offscreen: false,
+                                collisionDetected
+                            };
                         }
                     }
                 }
@@ -27934,21 +27992,23 @@ class CollisionIndex {
         }
         return result;
     }
-    insertCollisionBox(collisionBox, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
+    insertCollisionBox(collisionBox, overlapMode, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
         const grid = ignorePlacement ? this.ignoredGrid : this.grid;
         const key = {
             bucketInstanceId,
             featureIndex,
-            collisionGroupID
+            collisionGroupID,
+            overlapMode
         };
         grid.insert(key, collisionBox[0], collisionBox[1], collisionBox[2], collisionBox[3]);
     }
-    insertCollisionCircles(collisionCircles, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
+    insertCollisionCircles(collisionCircles, overlapMode, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
         const grid = ignorePlacement ? this.ignoredGrid : this.grid;
         const key = {
             bucketInstanceId,
             featureIndex,
-            collisionGroupID
+            collisionGroupID,
+            overlapMode
         };
         for (let k = 0; k < collisionCircles.length; k += 4) {
             grid.insertCircle(key, collisionCircles[k], collisionCircles[k + 1], collisionCircles[k + 2]);
@@ -28147,15 +28207,15 @@ class Placement {
             });
         }
     }
-    attemptAnchorPlacement(anchor, textBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, textAllowOverlap, symbolInstance, bucket, orientation, iconBox, getElevation) {
+    attemptAnchorPlacement(anchor, textBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, textOverlapMode, symbolInstance, bucket, orientation, iconBox, getElevation) {
         const textOffset = [
             symbolInstance.textOffset0,
             symbolInstance.textOffset1
         ];
         const shift = calculateVariableLayoutShift(anchor, width, height, textOffset, textBoxScale);
-        const placedGlyphBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(textBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+        const placedGlyphBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(textBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
         if (iconBox) {
-            const placedIconBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(iconBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+            const placedIconBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(iconBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
             if (placedIconBoxes.box.length === 0)
                 return;
         }
@@ -28187,14 +28247,16 @@ class Placement {
         const {bucket, layout, posMatrix, textLabelPlaneMatrix, labelToScreenMatrix, textPixelRatio, holdingForFade, collisionBoxArray, partiallyEvaluatedTextSize, collisionGroup} = bucketPart.parameters;
         const textOptional = layout.get('text-optional');
         const iconOptional = layout.get('icon-optional');
-        const textAllowOverlap = layout.get('text-allow-overlap');
-        const iconAllowOverlap = layout.get('icon-allow-overlap');
+        const textOverlapMode = performance.getOverlapMode(layout, 'text-overlap', 'text-allow-overlap');
+        const textAlwaysOverlap = textOverlapMode === 'always';
+        const iconOverlapMode = performance.getOverlapMode(layout, 'icon-overlap', 'icon-allow-overlap');
+        const iconAlwaysOverlap = iconOverlapMode === 'always';
         const rotateWithMap = layout.get('text-rotation-alignment') === 'map';
         const pitchWithMap = layout.get('text-pitch-alignment') === 'map';
         const hasIconTextFit = layout.get('icon-text-fit') !== 'none';
         const zOrderByViewportY = layout.get('symbol-z-order') === 'viewport-y';
-        const alwaysShowText = textAllowOverlap && (iconAllowOverlap || !bucket.hasIconData() || iconOptional);
-        const alwaysShowIcon = iconAllowOverlap && (textAllowOverlap || !bucket.hasTextData() || textOptional);
+        const alwaysShowText = textAlwaysOverlap && (iconAlwaysOverlap || !bucket.hasIconData() || iconOptional);
+        const alwaysShowIcon = iconAlwaysOverlap && (textAlwaysOverlap || !bucket.hasTextData() || textOptional);
         if (!bucket.collisionArrays && collisionBoxArray) {
             bucket.deserializeCollisionBoxes(collisionBoxArray);
         }
@@ -28275,7 +28337,7 @@ class Placement {
                 };
                 if (!layout.get('text-variable-anchor')) {
                     const placeBox = (collisionTextBox, orientation) => {
-                        const placedFeature = this.collisionIndex.placeCollisionBox(collisionTextBox, textAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+                        const placedFeature = this.collisionIndex.placeCollisionBox(collisionTextBox, textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
                         if (placedFeature && placedFeature.box && placedFeature.box.length) {
                             this.markUsedOrientation(bucket, orientation, symbolInstance);
                             this.placedOrientations[symbolInstance.crossTileID] = orientation;
@@ -28310,16 +28372,16 @@ class Placement {
                         const width = collisionTextBox.x2 - collisionTextBox.x1;
                         const height = collisionTextBox.y2 - collisionTextBox.y1;
                         const textBoxScale = symbolInstance.textBoxScale;
-                        const variableIconBox = hasIconTextFit && !iconAllowOverlap ? collisionIconBox : null;
+                        const variableIconBox = hasIconTextFit && iconOverlapMode === 'never' ? collisionIconBox : null;
                         let placedBox = {
                             box: [],
                             offscreen: false
                         };
-                        const placementAttempts = textAllowOverlap ? anchors.length * 2 : anchors.length;
+                        const placementAttempts = textOverlapMode !== 'never' ? anchors.length * 2 : anchors.length;
                         for (let i = 0; i < placementAttempts; ++i) {
                             const anchor = anchors[i % anchors.length];
-                            const allowOverlap = i >= anchors.length;
-                            const result = this.attemptAnchorPlacement(anchor, collisionTextBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, allowOverlap, symbolInstance, bucket, orientation, variableIconBox, getElevation);
+                            const overlapMode = i >= anchors.length ? textOverlapMode : 'never';
+                            const result = this.attemptAnchorPlacement(anchor, collisionTextBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, overlapMode, symbolInstance, bucket, orientation, variableIconBox, getElevation);
                             if (result) {
                                 placedBox = result.placedGlyphBoxes;
                                 if (placedBox && placedBox.box && placedBox.box.length) {
@@ -28368,8 +28430,8 @@ class Placement {
                 const fontSize = performance.evaluateSizeForFeature(bucket.textSizeData, partiallyEvaluatedTextSize, placedSymbol);
                 const textPixelPadding = layout.get('text-padding');
                 const circlePixelDiameter = symbolInstance.collisionCircleDiameter;
-                placedGlyphCircles = this.collisionIndex.placeCollisionCircles(textAllowOverlap, placedSymbol, bucket.lineVertexArray, bucket.glyphOffsetArray, fontSize, posMatrix, textLabelPlaneMatrix, labelToScreenMatrix, showCollisionBoxes, pitchWithMap, collisionGroup.predicate, circlePixelDiameter, textPixelPadding, getElevation);
-                placeText = textAllowOverlap || placedGlyphCircles.circles.length > 0 && !placedGlyphCircles.collisionDetected;
+                placedGlyphCircles = this.collisionIndex.placeCollisionCircles(textOverlapMode, placedSymbol, bucket.lineVertexArray, bucket.glyphOffsetArray, fontSize, posMatrix, textLabelPlaneMatrix, labelToScreenMatrix, showCollisionBoxes, pitchWithMap, collisionGroup.predicate, circlePixelDiameter, textPixelPadding, getElevation);
+                placeText = textAlwaysOverlap || placedGlyphCircles.circles.length > 0 && !placedGlyphCircles.collisionDetected;
                 offscreen = offscreen && placedGlyphCircles.offscreen;
             }
             if (collisionArrays.iconFeatureIndex) {
@@ -28378,7 +28440,7 @@ class Placement {
             if (collisionArrays.iconBox) {
                 const placeIconFeature = iconBox => {
                     const shiftedIconBox = hasIconTextFit && shift ? shiftVariableCollisionBox(iconBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle) : iconBox;
-                    return this.collisionIndex.placeCollisionBox(shiftedIconBox, iconAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+                    return this.collisionIndex.placeCollisionBox(shiftedIconBox, iconOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
                 };
                 if (placedVerticalText && placedVerticalText.box && placedVerticalText.box.length && collisionArrays.verticalIconBox) {
                     placedIconBoxes = placeIconFeature(collisionArrays.verticalIconBox);
@@ -28400,17 +28462,17 @@ class Placement {
             }
             if (placeText && placedGlyphBoxes && placedGlyphBoxes.box) {
                 if (placedVerticalText && placedVerticalText.box && verticalTextFeatureIndex) {
-                    this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, layout.get('text-ignore-placement'), bucket.bucketInstanceId, verticalTextFeatureIndex, collisionGroup.ID);
+                    this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, textOverlapMode, layout.get('text-ignore-placement'), bucket.bucketInstanceId, verticalTextFeatureIndex, collisionGroup.ID);
                 } else {
-                    this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
+                    this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, textOverlapMode, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
                 }
             }
             if (placeIcon && placedIconBoxes) {
-                this.collisionIndex.insertCollisionBox(placedIconBoxes.box, layout.get('icon-ignore-placement'), bucket.bucketInstanceId, iconFeatureIndex, collisionGroup.ID);
+                this.collisionIndex.insertCollisionBox(placedIconBoxes.box, iconOverlapMode, layout.get('icon-ignore-placement'), bucket.bucketInstanceId, iconFeatureIndex, collisionGroup.ID);
             }
             if (placedGlyphCircles) {
                 if (placeText) {
-                    this.collisionIndex.insertCollisionCircles(placedGlyphCircles.circles, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
+                    this.collisionIndex.insertCollisionCircles(placedGlyphCircles.circles, textOverlapMode, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
                 }
                 if (showCollisionBoxes) {
                     const id = bucket.bucketInstanceId;
@@ -29132,7 +29194,7 @@ class Style extends performance.Evented {
         this.fire(new performance.Event('style.load'));
     }
     _loadSprite(url) {
-        this._spriteRequest = loadSprite(url, this.map._requestManager, (err, images) => {
+        this._spriteRequest = loadSprite(url, this.map._requestManager, this.map.getPixelRatio(), (err, images) => {
             this._spriteRequest = null;
             if (err) {
                 this.fire(new performance.ErrorEvent(err));
@@ -30572,7 +30634,7 @@ const circleUniformValues = (painter, coord, tile, layer) => {
         'u_scale_with_map': +(layer.paint.get('circle-pitch-scale') === 'map'),
         'u_matrix': painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('circle-translate'), layer.paint.get('circle-translate-anchor')),
         'u_pitch_with_map': +pitchWithMap,
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_extrude_scale': extrudeScale
     };
 };
@@ -30775,7 +30837,7 @@ const lineUniformValues = (painter, tile, layer, coord) => {
     return {
         'u_matrix': calculateMatrix(painter, tile, layer, coord),
         'u_ratio': 1 / pixelsToTileUnits(tile, 1, transform.zoom),
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_units_to_pixels': [
             1 / transform.pixelsToGLUnits[0],
             1 / transform.pixelsToGLUnits[1]
@@ -30795,7 +30857,7 @@ const linePatternUniformValues = (painter, tile, layer, crossfade, coord) => {
         'u_matrix': calculateMatrix(painter, tile, layer, coord),
         'u_texsize': tile.imageAtlasTexture.size,
         'u_ratio': 1 / pixelsToTileUnits(tile, 1, transform.zoom),
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_image': 0,
         'u_scale': [
             tileZoomRatio,
@@ -30827,7 +30889,7 @@ const lineSDFUniformValues = (painter, tile, layer, dasharray, crossfade, coord)
             tileRatio / widthB,
             -posB.height / 2
         ],
-        'u_sdfgamma': lineAtlas.width / (Math.min(widthA, widthB) * 256 * devicePixelRatio) / 2,
+        'u_sdfgamma': lineAtlas.width / (Math.min(widthA, widthB) * 256 * painter.pixelRatio) / 2,
         'u_image': 0,
         'u_tex_y_a': posA.y,
         'u_tex_y_b': posB.y,
@@ -30975,7 +31037,7 @@ const symbolSDFUniformValues = (functionType, size, rotateInShader, pitchWithMap
     const transform = painter.transform;
     return performance.extend(symbolIconUniformValues(functionType, size, rotateInShader, pitchWithMap, painter, matrix, labelPlaneMatrix, glCoordMatrix, isText, texSize), {
         'u_gamma_scale': pitchWithMap ? Math.cos(transform._pitch) * transform.cameraToCenterDistance : 1,
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_is_halo': +isHalo
     });
 };
@@ -32433,7 +32495,7 @@ function renderTextureToMap(painter, layer) {
         colorRampTexture = layer.colorRampTexture = new Texture(context, layer.colorRamp, gl.RGBA);
     }
     colorRampTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-    painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, heatmapTextureUniformValues(painter, layer, 0, 1), layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer, painter.viewportSegments, layer.paint, painter.transform.zoom);
+    painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, heatmapTextureUniformValues(painter, layer, 0, 1), false, layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer, painter.viewportSegments, layer.paint, painter.transform.zoom);
 }
 
 function drawLine(painter, sourceCache, layer, coords) {
@@ -32879,7 +32941,7 @@ function drawDebugSSRect(painter, x, y, width, height, color) {
     const context = painter.context;
     const gl = context.gl;
     gl.enable(gl.SCISSOR_TEST);
-    gl.scissor(x * devicePixelRatio, y * devicePixelRatio, width * devicePixelRatio, height * devicePixelRatio);
+    gl.scissor(x * painter.pixelRatio, y * painter.pixelRatio, width * painter.pixelRatio, height * painter.pixelRatio);
     context.clear({ color });
     gl.disable(gl.SCISSOR_TEST);
 }
@@ -33088,9 +33150,10 @@ class Painter {
         this.crossTileSymbolIndex = new CrossTileSymbolIndex();
         this.gpuTimers = {};
     }
-    resize(width, height) {
-        this.width = width * devicePixelRatio;
-        this.height = height * devicePixelRatio;
+    resize(width, height, pixelRatio) {
+        this.width = width * pixelRatio;
+        this.height = height * pixelRatio;
+        this.pixelRatio = pixelRatio;
         this.context.viewport.set([
             0,
             0,
@@ -37344,6 +37407,7 @@ const defaultOptions$4 = {
 };
 class Map extends Camera {
     constructor(options) {
+        var _a;
         options = performance.extend({}, defaultOptions$4, options);
         if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
             throw new Error('maxZoom must be greater than or equal to minZoom');
@@ -37376,6 +37440,7 @@ class Map extends Camera {
         this._mapId = performance.uniqueId();
         this._locale = performance.extend({}, defaultLocale, options.locale);
         this._clickTolerance = options.clickTolerance;
+        this._pixelRatio = (_a = options.pixelRatio) !== null && _a !== void 0 ? _a : devicePixelRatio;
         this._requestManager = new RequestManager(options.transformRequest);
         if (typeof options.container === 'string') {
             this._container = document.getElementById(options.container);
@@ -37487,9 +37552,9 @@ class Map extends Camera {
         const dimensions = this._containerDimensions();
         const width = dimensions[0];
         const height = dimensions[1];
-        this._resizeCanvas(width, height);
+        this._resizeCanvas(width, height, this.getPixelRatio());
         this.transform.resize(width, height);
-        this.painter.resize(width, height);
+        this.painter.resize(width, height, this.getPixelRatio());
         const fireMoving = !this._moving;
         if (fireMoving) {
             this.stop();
@@ -37499,6 +37564,15 @@ class Map extends Camera {
         if (fireMoving)
             this.fire(new performance.Event('moveend', eventData));
         return this;
+    }
+    getPixelRatio() {
+        return this._pixelRatio;
+    }
+    setPixelRatio(pixelRatio) {
+        const [width, height] = this._containerDimensions();
+        this._pixelRatio = pixelRatio;
+        this._resizeCanvas(width, height, pixelRatio);
+        this.painter.resize(width, height, pixelRatio);
     }
     getBounds() {
         return this.transform.getBounds();
@@ -38049,7 +38123,7 @@ class Map extends Camera {
         this._canvas.setAttribute('aria-label', 'Map');
         this._canvas.setAttribute('role', 'region');
         const dimensions = this._containerDimensions();
-        this._resizeCanvas(dimensions[0], dimensions[1]);
+        this._resizeCanvas(dimensions[0], dimensions[1], this.getPixelRatio());
         const controlContainer = this._controlContainer = DOM.create('div', 'maplibregl-control-container mapboxgl-control-container', container);
         const positions = this._controlPositions = {};
         [
@@ -38062,8 +38136,7 @@ class Map extends Camera {
         });
         this._container.addEventListener('scroll', this._onMapScroll, false);
     }
-    _resizeCanvas(width, height) {
-        const pixelRatio = devicePixelRatio || 1;
+    _resizeCanvas(width, height, pixelRatio) {
         this._canvas.width = pixelRatio * width;
         this._canvas.height = pixelRatio * height;
         this._canvas.style.width = `${ width }px`;
