@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.0.3/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.0/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -2320,6 +2320,23 @@ var layout_symbol = {
     'icon-allow-overlap': {
         type: 'boolean',
         'default': false,
+        requires: [
+            'icon-image',
+            { '!': 'icon-overlap' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'icon-overlap': {
+        type: 'enum',
+        values: {
+            never: {},
+            always: {},
+            cooperative: {}
+        },
         requires: ['icon-image'],
         expression: {
             interpolated: false,
@@ -2866,6 +2883,23 @@ var layout_symbol = {
     'text-allow-overlap': {
         type: 'boolean',
         'default': false,
+        requires: [
+            'text-field',
+            { '!': 'text-overlap' }
+        ],
+        expression: {
+            interpolated: false,
+            parameters: ['zoom']
+        },
+        'property-type': 'data-constant'
+    },
+    'text-overlap': {
+        type: 'enum',
+        values: {
+            never: {},
+            always: {},
+            cooperative: {}
+        },
         requires: ['text-field'],
         expression: {
             interpolated: false,
@@ -21284,7 +21318,7 @@ var SymbolBucket = function () {
         var layout = this.layers[0].layout;
         var sortKey = layout.get('symbol-sort-key');
         var zOrder = layout.get('symbol-z-order');
-        this.canOverlap = layout.get('text-allow-overlap') || layout.get('icon-allow-overlap') || layout.get('text-ignore-placement') || layout.get('icon-ignore-placement');
+        this.canOverlap = getOverlapMode(layout, 'text-overlap', 'text-allow-overlap') !== 'never' || getOverlapMode(layout, 'icon-overlap', 'icon-allow-overlap') !== 'never' || layout.get('text-ignore-placement') || layout.get('icon-ignore-placement');
         this.sortFeaturesByKey = zOrder !== 'viewport-y' && !sortKey.isConstant();
         var zOrderByViewportY = zOrder === 'viewport-y' || zOrder === 'auto' && !this.sortFeaturesByKey;
         this.sortFeaturesByY = zOrderByViewportY && this.canOverlap;
@@ -21748,6 +21782,7 @@ var layout = new Properties({
     'symbol-sort-key': new DataDrivenProperty(spec['layout_symbol']['symbol-sort-key']),
     'symbol-z-order': new DataConstantProperty(spec['layout_symbol']['symbol-z-order']),
     'icon-allow-overlap': new DataConstantProperty(spec['layout_symbol']['icon-allow-overlap']),
+    'icon-overlap': new DataConstantProperty(spec['layout_symbol']['icon-overlap']),
     'icon-ignore-placement': new DataConstantProperty(spec['layout_symbol']['icon-ignore-placement']),
     'icon-optional': new DataConstantProperty(spec['layout_symbol']['icon-optional']),
     'icon-rotation-alignment': new DataConstantProperty(spec['layout_symbol']['icon-rotation-alignment']),
@@ -21781,6 +21816,7 @@ var layout = new Properties({
     'text-transform': new DataDrivenProperty(spec['layout_symbol']['text-transform']),
     'text-offset': new DataDrivenProperty(spec['layout_symbol']['text-offset']),
     'text-allow-overlap': new DataConstantProperty(spec['layout_symbol']['text-allow-overlap']),
+    'text-overlap': new DataConstantProperty(spec['layout_symbol']['text-overlap']),
     'text-ignore-placement': new DataConstantProperty(spec['layout_symbol']['text-ignore-placement']),
     'text-optional': new DataConstantProperty(spec['layout_symbol']['text-optional'])
 });
@@ -21993,6 +22029,16 @@ var SymbolStyleLayer = function (_super) {
     };
     return SymbolStyleLayer;
 }(StyleLayer);
+function getOverlapMode(layout, overlapProp, allowOverlapProp) {
+    var result = 'never';
+    var overlap = layout.get(overlapProp);
+    if (overlap) {
+        result = overlap;
+    } else if (layout.get(allowOverlapProp)) {
+        result = 'always';
+    }
+    return result;
+}
 
 var paint$1 = new Properties({
     'background-color': new DataConstantProperty(spec['paint_background']['background-color']),
@@ -22596,10 +22642,10 @@ var CanonicalTileID = function () {
     CanonicalTileID.prototype.equals = function (id) {
         return this.z === id.z && this.x === id.x && this.y === id.y;
     };
-    CanonicalTileID.prototype.url = function (urls, scheme) {
+    CanonicalTileID.prototype.url = function (urls, pixelRatio, scheme) {
         var bbox = getTileBBox(this.x, this.y, this.z);
         var quadkey = getQuadkey(this.z, this.x, this.y);
-        return urls[(this.x + this.y) % urls.length].replace(/{prefix}/g, (this.x % 16).toString(16) + (this.y % 16).toString(16)).replace(/{z}/g, String(this.z)).replace(/{x}/g, String(this.x)).replace(/{y}/g, String(scheme === 'tms' ? Math.pow(2, this.z) - this.y - 1 : this.y)).replace(/{ratio}/g, devicePixelRatio > 1 ? '@2x' : '').replace(/{quadkey}/g, quadkey).replace(/{bbox-epsg-3857}/g, bbox);
+        return urls[(this.x + this.y) % urls.length].replace(/{prefix}/g, (this.x % 16).toString(16) + (this.y % 16).toString(16)).replace(/{z}/g, String(this.z)).replace(/{x}/g, String(this.x)).replace(/{y}/g, String(scheme === 'tms' ? Math.pow(2, this.z) - this.y - 1 : this.y)).replace(/{ratio}/g, pixelRatio > 1 ? '@2x' : '').replace(/{quadkey}/g, quadkey).replace(/{bbox-epsg-3857}/g, bbox);
     };
     CanonicalTileID.prototype.isChildOf = function (parent) {
         var dz = this.z - parent.z;
@@ -23284,6 +23330,7 @@ exports.getAnchorJustification = getAnchorJustification;
 exports.getArrayBuffer = getArrayBuffer;
 exports.getImage = getImage;
 exports.getJSON = getJSON;
+exports.getOverlapMode = getOverlapMode;
 exports.getRTLTextPluginStatus = getRTLTextPluginStatus;
 exports.getReferrer = getReferrer;
 exports.getVideo = getVideo;
@@ -26342,9 +26389,9 @@ var sqrLen = squaredLength;
     };
 })();
 
-function loadSprite (baseURL, requestManager, callback) {
+function loadSprite (baseURL, requestManager, pixelRatio, callback) {
     var json, image, error;
-    var format = devicePixelRatio > 1 ? '@2x' : '';
+    var format = pixelRatio > 1 ? '@2x' : '';
     var jsonRequest = performance.getJSON(requestManager.transformRequest(requestManager.normalizeSpriteURL(baseURL, format, '.json'), performance.ResourceType.SpriteJSON), function (err, data) {
         jsonRequest = null;
         if (!error) {
@@ -26368,7 +26415,7 @@ function loadSprite (baseURL, requestManager, callback) {
             var imageData = performance.exported.getImageData(image);
             var result = {};
             for (var id in json) {
-                var _a = json[id], width = _a.width, height = _a.height, x = _a.x, y = _a.y, sdf = _a.sdf, pixelRatio = _a.pixelRatio, stretchX = _a.stretchX, stretchY = _a.stretchY, content = _a.content;
+                var _a = json[id], width = _a.width, height = _a.height, x = _a.x, y = _a.y, sdf = _a.sdf, pixelRatio_1 = _a.pixelRatio, stretchX = _a.stretchX, stretchY = _a.stretchY, content = _a.content;
                 var data = new performance.RGBAImage({
                     width: width,
                     height: height
@@ -26385,7 +26432,7 @@ function loadSprite (baseURL, requestManager, callback) {
                 });
                 result[id] = {
                     data: data,
-                    pixelRatio: pixelRatio,
+                    pixelRatio: pixelRatio_1,
                     sdf: sdf,
                     stretchX: stretchX,
                     stretchY: stretchY,
@@ -27610,7 +27657,7 @@ var VectorTileSource = function (_super) {
         return performance.extend({}, this._options);
     };
     VectorTileSource.prototype.loadTile = function (tile, callback) {
-        var url = tile.tileID.canonical.url(this.tiles, this.scheme);
+        var url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
         var params = {
             request: this.map._requestManager.transformRequest(url, performance.ResourceType.Tile),
             uid: tile.uid,
@@ -27619,7 +27666,7 @@ var VectorTileSource = function (_super) {
             tileSize: this.tileSize * tile.tileID.overscaleFactor(),
             type: this.type,
             source: this.id,
-            pixelRatio: devicePixelRatio,
+            pixelRatio: this.map.getPixelRatio(),
             showCollisionBoxes: this.map.showCollisionBoxes,
             promoteId: this.promoteId
         };
@@ -27776,7 +27823,7 @@ var RasterTileSource = function (_super) {
     };
     RasterTileSource.prototype.loadTile = function (tile, callback) {
         var _this = this;
-        var url = tile.tileID.canonical.url(this.tiles, this.scheme);
+        var url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
         tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), function (err, img) {
             delete tile.request;
             if (tile.aborted) {
@@ -27881,7 +27928,7 @@ var RasterDEMTileSource = function (_super) {
         };
     };
     RasterDEMTileSource.prototype.loadTile = function (tile, callback) {
-        var url = tile.tileID.canonical.url(this.tiles, this.scheme);
+        var url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
         tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), imageLoaded.bind(this));
         tile.neighboringTiles = this._getNeighboringTiles(tile.tileID);
         function imageLoaded(err, img) {
@@ -28135,7 +28182,7 @@ var GeoJSONSource = function (_super) {
             maxZoom: this.maxzoom,
             tileSize: this.tileSize,
             source: this.id,
-            pixelRatio: devicePixelRatio,
+            pixelRatio: this.map.getPixelRatio(),
             showCollisionBoxes: this.map.showCollisionBoxes,
             promoteId: this.promoteId
         };
@@ -31134,6 +31181,13 @@ var PathInterpolator = function () {
     return PathInterpolator;
 }();
 
+function overlapAllowed(overlapA, overlapB) {
+    var allowed = true;
+    if (overlapA === 'always') ; else if (overlapA === 'never' || overlapB === 'never') {
+        allowed = false;
+    }
+    return allowed;
+}
 var GridIndex = function () {
     function GridIndex(width, height, cellSize) {
         var boxCells = this.boxCells = [];
@@ -31179,7 +31233,7 @@ var GridIndex = function () {
     GridIndex.prototype._insertCircleCell = function (x1, y1, x2, y2, cellIndex, uid) {
         this.circleCells[cellIndex].push(uid);
     };
-    GridIndex.prototype._query = function (x1, y1, x2, y2, hitTest, predicate) {
+    GridIndex.prototype._query = function (x1, y1, x2, y2, hitTest, overlapMode, predicate) {
         if (x2 < 0 || x1 > this.width || y2 < 0 || y1 > this.height) {
             return [];
         }
@@ -31218,6 +31272,7 @@ var GridIndex = function () {
         } else {
             var queryArgs = {
                 hitTest: hitTest,
+                overlapMode: overlapMode,
                 seenUids: {
                     box: {},
                     circle: {}
@@ -31230,10 +31285,10 @@ var GridIndex = function () {
     GridIndex.prototype.query = function (x1, y1, x2, y2) {
         return this._query(x1, y1, x2, y2, false, null);
     };
-    GridIndex.prototype.hitTest = function (x1, y1, x2, y2, predicate) {
-        return this._query(x1, y1, x2, y2, true, predicate).length > 0;
+    GridIndex.prototype.hitTest = function (x1, y1, x2, y2, overlapMode, predicate) {
+        return this._query(x1, y1, x2, y2, true, overlapMode, predicate).length > 0;
     };
-    GridIndex.prototype.hitTestCircle = function (x, y, radius, predicate) {
+    GridIndex.prototype.hitTestCircle = function (x, y, radius, overlapMode, predicate) {
         var x1 = x - radius;
         var x2 = x + radius;
         var y1 = y - radius;
@@ -31244,6 +31299,7 @@ var GridIndex = function () {
         var result = [];
         var queryArgs = {
             hitTest: true,
+            overlapMode: overlapMode,
             circle: {
                 x: x,
                 y: y,
@@ -31258,7 +31314,7 @@ var GridIndex = function () {
         return result.length > 0;
     };
     GridIndex.prototype._queryCell = function (x1, y1, x2, y2, cellIndex, result, queryArgs, predicate) {
-        var seenUids = queryArgs.seenUids, hitTest = queryArgs.hitTest;
+        var seenUids = queryArgs.seenUids, hitTest = queryArgs.hitTest, overlapMode = queryArgs.overlapMode;
         var boxCell = this.boxCells[cellIndex];
         if (boxCell !== null) {
             var bboxes = this.bboxes;
@@ -31269,15 +31325,17 @@ var GridIndex = function () {
                     var offset = boxUid * 4;
                     var key = this.boxKeys[boxUid];
                     if (x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1] && (!predicate || predicate(key))) {
-                        result.push({
-                            key: key,
-                            x1: bboxes[offset],
-                            y1: bboxes[offset + 1],
-                            x2: bboxes[offset + 2],
-                            y2: bboxes[offset + 3]
-                        });
-                        if (hitTest) {
-                            return true;
+                        if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
+                            result.push({
+                                key: key,
+                                x1: bboxes[offset],
+                                y1: bboxes[offset + 1],
+                                x2: bboxes[offset + 2],
+                                y2: bboxes[offset + 3]
+                            });
+                            if (hitTest) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -31293,18 +31351,20 @@ var GridIndex = function () {
                     var offset = circleUid * 3;
                     var key = this.circleKeys[circleUid];
                     if (this._circleAndRectCollide(circles[offset], circles[offset + 1], circles[offset + 2], x1, y1, x2, y2) && (!predicate || predicate(key))) {
-                        var x = circles[offset];
-                        var y = circles[offset + 1];
-                        var radius = circles[offset + 2];
-                        result.push({
-                            key: key,
-                            x1: x - radius,
-                            y1: y - radius,
-                            x2: x + radius,
-                            y2: y + radius
-                        });
-                        if (hitTest) {
-                            return true;
+                        if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
+                            var x = circles[offset];
+                            var y = circles[offset + 1];
+                            var radius = circles[offset + 2];
+                            result.push({
+                                key: key,
+                                x1: x - radius,
+                                y1: y - radius,
+                                x2: x + radius,
+                                y2: y + radius
+                            });
+                            if (hitTest) {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -31313,7 +31373,7 @@ var GridIndex = function () {
         return false;
     };
     GridIndex.prototype._queryCellCircle = function (x1, y1, x2, y2, cellIndex, result, queryArgs, predicate) {
-        var circle = queryArgs.circle, seenUids = queryArgs.seenUids;
+        var circle = queryArgs.circle, seenUids = queryArgs.seenUids, overlapMode = queryArgs.overlapMode;
         var boxCell = this.boxCells[cellIndex];
         if (boxCell !== null) {
             var bboxes = this.bboxes;
@@ -31323,7 +31383,7 @@ var GridIndex = function () {
                     seenUids.box[boxUid] = true;
                     var offset = boxUid * 4;
                     var key = this.boxKeys[boxUid];
-                    if (this._circleAndRectCollide(circle.x, circle.y, circle.radius, bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) && (!predicate || predicate(key))) {
+                    if (this._circleAndRectCollide(circle.x, circle.y, circle.radius, bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
                         result.push(true);
                         return true;
                     }
@@ -31339,7 +31399,7 @@ var GridIndex = function () {
                     seenUids.circle[circleUid] = true;
                     var offset = circleUid * 3;
                     var key = this.circleKeys[circleUid];
-                    if (this._circlesCollide(circles[offset], circles[offset + 1], circles[offset + 2], circle.x, circle.y, circle.radius) && (!predicate || predicate(key))) {
+                    if (this._circlesCollide(circles[offset], circles[offset + 1], circles[offset + 2], circle.x, circle.y, circle.radius) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
                         result.push(true);
                         return true;
                     }
@@ -31668,14 +31728,14 @@ var CollisionIndex = function () {
         this.gridRightBoundary = transform.width + 2 * viewportPadding;
         this.gridBottomBoundary = transform.height + 2 * viewportPadding;
     }
-    CollisionIndex.prototype.placeCollisionBox = function (collisionBox, allowOverlap, textPixelRatio, posMatrix, collisionGroupPredicate, getElevation) {
+    CollisionIndex.prototype.placeCollisionBox = function (collisionBox, overlapMode, textPixelRatio, posMatrix, collisionGroupPredicate, getElevation) {
         var projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY, getElevation);
         var tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
         var tlX = collisionBox.x1 * tileToViewport + projectedPoint.point.x;
         var tlY = collisionBox.y1 * tileToViewport + projectedPoint.point.y;
         var brX = collisionBox.x2 * tileToViewport + projectedPoint.point.x;
         var brY = collisionBox.y2 * tileToViewport + projectedPoint.point.y;
-        if (!this.isInsideGrid(tlX, tlY, brX, brY) || !allowOverlap && this.grid.hitTest(tlX, tlY, brX, brY, collisionGroupPredicate)) {
+        if (!this.isInsideGrid(tlX, tlY, brX, brY) || overlapMode !== 'always' && this.grid.hitTest(tlX, tlY, brX, brY, overlapMode, collisionGroupPredicate)) {
             return {
                 box: [],
                 offscreen: false
@@ -31691,7 +31751,7 @@ var CollisionIndex = function () {
             offscreen: this.isOffscreen(tlX, tlY, brX, brY)
         };
     };
-    CollisionIndex.prototype.placeCollisionCircles = function (allowOverlap, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding, getElevation) {
+    CollisionIndex.prototype.placeCollisionCircles = function (overlapMode, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding, getElevation) {
         var placedCollisionCircles = [];
         var tileUnitAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         var screenAnchorPoint = project(tileUnitAnchorPoint, posMatrix, getElevation);
@@ -31774,16 +31834,14 @@ var CollisionIndex = function () {
                     var y2 = centerY + radius;
                     entirelyOffscreen = entirelyOffscreen && this.isOffscreen(x1, y1, x2, y2);
                     inGrid = inGrid || this.isInsideGrid(x1, y1, x2, y2);
-                    if (!allowOverlap) {
-                        if (this.grid.hitTestCircle(centerX, centerY, radius, collisionGroupPredicate)) {
-                            collisionDetected = true;
-                            if (!showCollisionCircles) {
-                                return {
-                                    circles: [],
-                                    offscreen: false,
-                                    collisionDetected: collisionDetected
-                                };
-                            }
+                    if (overlapMode !== 'always' && this.grid.hitTestCircle(centerX, centerY, radius, overlapMode, collisionGroupPredicate)) {
+                        collisionDetected = true;
+                        if (!showCollisionCircles) {
+                            return {
+                                circles: [],
+                                offscreen: false,
+                                collisionDetected: collisionDetected
+                            };
                         }
                     }
                 }
@@ -31842,21 +31900,23 @@ var CollisionIndex = function () {
         }
         return result;
     };
-    CollisionIndex.prototype.insertCollisionBox = function (collisionBox, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
+    CollisionIndex.prototype.insertCollisionBox = function (collisionBox, overlapMode, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
         var grid = ignorePlacement ? this.ignoredGrid : this.grid;
         var key = {
             bucketInstanceId: bucketInstanceId,
             featureIndex: featureIndex,
-            collisionGroupID: collisionGroupID
+            collisionGroupID: collisionGroupID,
+            overlapMode: overlapMode
         };
         grid.insert(key, collisionBox[0], collisionBox[1], collisionBox[2], collisionBox[3]);
     };
-    CollisionIndex.prototype.insertCollisionCircles = function (collisionCircles, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
+    CollisionIndex.prototype.insertCollisionCircles = function (collisionCircles, overlapMode, ignorePlacement, bucketInstanceId, featureIndex, collisionGroupID) {
         var grid = ignorePlacement ? this.ignoredGrid : this.grid;
         var key = {
             bucketInstanceId: bucketInstanceId,
             featureIndex: featureIndex,
-            collisionGroupID: collisionGroupID
+            collisionGroupID: collisionGroupID,
+            overlapMode: overlapMode
         };
         for (var k = 0; k < collisionCircles.length; k += 4) {
             grid.insertCircle(key, collisionCircles[k], collisionCircles[k + 1], collisionCircles[k + 2]);
@@ -32064,15 +32124,15 @@ var Placement = function () {
             });
         }
     };
-    Placement.prototype.attemptAnchorPlacement = function (anchor, textBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, textAllowOverlap, symbolInstance, bucket, orientation, iconBox, getElevation) {
+    Placement.prototype.attemptAnchorPlacement = function (anchor, textBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, textOverlapMode, symbolInstance, bucket, orientation, iconBox, getElevation) {
         var textOffset = [
             symbolInstance.textOffset0,
             symbolInstance.textOffset1
         ];
         var shift = calculateVariableLayoutShift(anchor, width, height, textOffset, textBoxScale);
-        var placedGlyphBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(textBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+        var placedGlyphBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(textBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
         if (iconBox) {
-            var placedIconBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(iconBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+            var placedIconBoxes = this.collisionIndex.placeCollisionBox(shiftVariableCollisionBox(iconBox, shift.x, shift.y, rotateWithMap, pitchWithMap, this.transform.angle), textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
             if (placedIconBoxes.box.length === 0) {
                 return;
             }
@@ -32106,14 +32166,16 @@ var Placement = function () {
         var _a = bucketPart.parameters, bucket = _a.bucket, layout = _a.layout, posMatrix = _a.posMatrix, textLabelPlaneMatrix = _a.textLabelPlaneMatrix, labelToScreenMatrix = _a.labelToScreenMatrix, textPixelRatio = _a.textPixelRatio, holdingForFade = _a.holdingForFade, collisionBoxArray = _a.collisionBoxArray, partiallyEvaluatedTextSize = _a.partiallyEvaluatedTextSize, collisionGroup = _a.collisionGroup;
         var textOptional = layout.get('text-optional');
         var iconOptional = layout.get('icon-optional');
-        var textAllowOverlap = layout.get('text-allow-overlap');
-        var iconAllowOverlap = layout.get('icon-allow-overlap');
+        var textOverlapMode = performance.getOverlapMode(layout, 'text-overlap', 'text-allow-overlap');
+        var textAlwaysOverlap = textOverlapMode === 'always';
+        var iconOverlapMode = performance.getOverlapMode(layout, 'icon-overlap', 'icon-allow-overlap');
+        var iconAlwaysOverlap = iconOverlapMode === 'always';
         var rotateWithMap = layout.get('text-rotation-alignment') === 'map';
         var pitchWithMap = layout.get('text-pitch-alignment') === 'map';
         var hasIconTextFit = layout.get('icon-text-fit') !== 'none';
         var zOrderByViewportY = layout.get('symbol-z-order') === 'viewport-y';
-        var alwaysShowText = textAllowOverlap && (iconAllowOverlap || !bucket.hasIconData() || iconOptional);
-        var alwaysShowIcon = iconAllowOverlap && (textAllowOverlap || !bucket.hasTextData() || textOptional);
+        var alwaysShowText = textAlwaysOverlap && (iconAlwaysOverlap || !bucket.hasIconData() || iconOptional);
+        var alwaysShowIcon = iconAlwaysOverlap && (textAlwaysOverlap || !bucket.hasTextData() || textOptional);
         if (!bucket.collisionArrays && collisionBoxArray) {
             bucket.deserializeCollisionBoxes(collisionBoxArray);
         }
@@ -32201,7 +32263,7 @@ var Placement = function () {
                 };
                 if (!layout.get('text-variable-anchor')) {
                     var placeBox_1 = function (collisionTextBox, orientation) {
-                        var placedFeature = _this.collisionIndex.placeCollisionBox(collisionTextBox, textAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+                        var placedFeature = _this.collisionIndex.placeCollisionBox(collisionTextBox, textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
                         if (placedFeature && placedFeature.box && placedFeature.box.length) {
                             _this.markUsedOrientation(bucket, orientation, symbolInstance);
                             _this.placedOrientations[symbolInstance.crossTileID] = orientation;
@@ -32238,16 +32300,16 @@ var Placement = function () {
                         var width = collisionTextBox.x2 - collisionTextBox.x1;
                         var height = collisionTextBox.y2 - collisionTextBox.y1;
                         var textBoxScale = symbolInstance.textBoxScale;
-                        var variableIconBox = hasIconTextFit && !iconAllowOverlap ? collisionIconBox : null;
+                        var variableIconBox = hasIconTextFit && iconOverlapMode === 'never' ? collisionIconBox : null;
                         var placedBox = {
                             box: [],
                             offscreen: false
                         };
-                        var placementAttempts = textAllowOverlap ? anchors_1.length * 2 : anchors_1.length;
+                        var placementAttempts = textOverlapMode !== 'never' ? anchors_1.length * 2 : anchors_1.length;
                         for (var i = 0; i < placementAttempts; ++i) {
                             var anchor = anchors_1[i % anchors_1.length];
-                            var allowOverlap = i >= anchors_1.length;
-                            var result = _this.attemptAnchorPlacement(anchor, collisionTextBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, allowOverlap, symbolInstance, bucket, orientation, variableIconBox, getElevation);
+                            var overlapMode = i >= anchors_1.length ? textOverlapMode : 'never';
+                            var result = _this.attemptAnchorPlacement(anchor, collisionTextBox, width, height, textBoxScale, rotateWithMap, pitchWithMap, textPixelRatio, posMatrix, collisionGroup, overlapMode, symbolInstance, bucket, orientation, variableIconBox, getElevation);
                             if (result) {
                                 placedBox = result.placedGlyphBoxes;
                                 if (placedBox && placedBox.box && placedBox.box.length) {
@@ -32296,8 +32358,8 @@ var Placement = function () {
                 var fontSize = performance.evaluateSizeForFeature(bucket.textSizeData, partiallyEvaluatedTextSize, placedSymbol);
                 var textPixelPadding = layout.get('text-padding');
                 var circlePixelDiameter = symbolInstance.collisionCircleDiameter;
-                placedGlyphCircles = _this.collisionIndex.placeCollisionCircles(textAllowOverlap, placedSymbol, bucket.lineVertexArray, bucket.glyphOffsetArray, fontSize, posMatrix, textLabelPlaneMatrix, labelToScreenMatrix, showCollisionBoxes, pitchWithMap, collisionGroup.predicate, circlePixelDiameter, textPixelPadding, getElevation);
-                placeText = textAllowOverlap || placedGlyphCircles.circles.length > 0 && !placedGlyphCircles.collisionDetected;
+                placedGlyphCircles = _this.collisionIndex.placeCollisionCircles(textOverlapMode, placedSymbol, bucket.lineVertexArray, bucket.glyphOffsetArray, fontSize, posMatrix, textLabelPlaneMatrix, labelToScreenMatrix, showCollisionBoxes, pitchWithMap, collisionGroup.predicate, circlePixelDiameter, textPixelPadding, getElevation);
+                placeText = textAlwaysOverlap || placedGlyphCircles.circles.length > 0 && !placedGlyphCircles.collisionDetected;
                 offscreen = offscreen && placedGlyphCircles.offscreen;
             }
             if (collisionArrays.iconFeatureIndex) {
@@ -32306,7 +32368,7 @@ var Placement = function () {
             if (collisionArrays.iconBox) {
                 var placeIconFeature = function (iconBox) {
                     var shiftedIconBox = hasIconTextFit && shift ? shiftVariableCollisionBox(iconBox, shift.x, shift.y, rotateWithMap, pitchWithMap, _this.transform.angle) : iconBox;
-                    return _this.collisionIndex.placeCollisionBox(shiftedIconBox, iconAllowOverlap, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
+                    return _this.collisionIndex.placeCollisionBox(shiftedIconBox, iconOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
                 };
                 if (placedVerticalText && placedVerticalText.box && placedVerticalText.box.length && collisionArrays.verticalIconBox) {
                     placedIconBoxes = placeIconFeature(collisionArrays.verticalIconBox);
@@ -32328,17 +32390,17 @@ var Placement = function () {
             }
             if (placeText && placedGlyphBoxes && placedGlyphBoxes.box) {
                 if (placedVerticalText && placedVerticalText.box && verticalTextFeatureIndex) {
-                    _this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, layout.get('text-ignore-placement'), bucket.bucketInstanceId, verticalTextFeatureIndex, collisionGroup.ID);
+                    _this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, textOverlapMode, layout.get('text-ignore-placement'), bucket.bucketInstanceId, verticalTextFeatureIndex, collisionGroup.ID);
                 } else {
-                    _this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
+                    _this.collisionIndex.insertCollisionBox(placedGlyphBoxes.box, textOverlapMode, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
                 }
             }
             if (placeIcon && placedIconBoxes) {
-                _this.collisionIndex.insertCollisionBox(placedIconBoxes.box, layout.get('icon-ignore-placement'), bucket.bucketInstanceId, iconFeatureIndex, collisionGroup.ID);
+                _this.collisionIndex.insertCollisionBox(placedIconBoxes.box, iconOverlapMode, layout.get('icon-ignore-placement'), bucket.bucketInstanceId, iconFeatureIndex, collisionGroup.ID);
             }
             if (placedGlyphCircles) {
                 if (placeText) {
-                    _this.collisionIndex.insertCollisionCircles(placedGlyphCircles.circles, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
+                    _this.collisionIndex.insertCollisionCircles(placedGlyphCircles.circles, textOverlapMode, layout.get('text-ignore-placement'), bucket.bucketInstanceId, textFeatureIndex, collisionGroup.ID);
                 }
                 if (showCollisionBoxes) {
                     var id = bucket.bucketInstanceId;
@@ -33133,7 +33195,7 @@ var Style = function (_super) {
     };
     Style.prototype._loadSprite = function (url) {
         var _this = this;
-        this._spriteRequest = loadSprite(url, this.map._requestManager, function (err, images) {
+        this._spriteRequest = loadSprite(url, this.map._requestManager, this.map.getPixelRatio(), function (err, images) {
             _this._spriteRequest = null;
             if (err) {
                 _this.fire(new performance.ErrorEvent(err));
@@ -34643,7 +34705,7 @@ var circleUniformValues = function (painter, coord, tile, layer) {
         'u_scale_with_map': +(layer.paint.get('circle-pitch-scale') === 'map'),
         'u_matrix': painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('circle-translate'), layer.paint.get('circle-translate-anchor')),
         'u_pitch_with_map': +pitchWithMap,
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_extrude_scale': extrudeScale
     };
 };
@@ -34879,7 +34941,7 @@ var lineUniformValues = function (painter, tile, layer, coord) {
     return {
         'u_matrix': calculateMatrix(painter, tile, layer, coord),
         'u_ratio': 1 / pixelsToTileUnits(tile, 1, transform.zoom),
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_units_to_pixels': [
             1 / transform.pixelsToGLUnits[0],
             1 / transform.pixelsToGLUnits[1]
@@ -34899,7 +34961,7 @@ var linePatternUniformValues = function (painter, tile, layer, crossfade, coord)
         'u_matrix': calculateMatrix(painter, tile, layer, coord),
         'u_texsize': tile.imageAtlasTexture.size,
         'u_ratio': 1 / pixelsToTileUnits(tile, 1, transform.zoom),
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_image': 0,
         'u_scale': [
             tileZoomRatio,
@@ -34931,7 +34993,7 @@ var lineSDFUniformValues = function (painter, tile, layer, dasharray, crossfade,
             tileRatio / widthB,
             -posB.height / 2
         ],
-        'u_sdfgamma': lineAtlas.width / (Math.min(widthA, widthB) * 256 * devicePixelRatio) / 2,
+        'u_sdfgamma': lineAtlas.width / (Math.min(widthA, widthB) * 256 * painter.pixelRatio) / 2,
         'u_image': 0,
         'u_tex_y_a': posA.y,
         'u_tex_y_b': posB.y,
@@ -35089,7 +35151,7 @@ var symbolSDFUniformValues = function (functionType, size, rotateInShader, pitch
     var transform = painter.transform;
     return performance.extend(symbolIconUniformValues(functionType, size, rotateInShader, pitchWithMap, painter, matrix, labelPlaneMatrix, glCoordMatrix, isText, texSize), {
         'u_gamma_scale': pitchWithMap ? Math.cos(transform._pitch) * transform.cameraToCenterDistance : 1,
-        'u_device_pixel_ratio': devicePixelRatio,
+        'u_device_pixel_ratio': painter.pixelRatio,
         'u_is_halo': +isHalo
     });
 };
@@ -37293,7 +37355,7 @@ function drawDebugSSRect(painter, x, y, width, height, color) {
     var context = painter.context;
     var gl = context.gl;
     gl.enable(gl.SCISSOR_TEST);
-    gl.scissor(x * devicePixelRatio, y * devicePixelRatio, width * devicePixelRatio, height * devicePixelRatio);
+    gl.scissor(x * painter.pixelRatio, y * painter.pixelRatio, width * painter.pixelRatio, height * painter.pixelRatio);
     context.clear({ color: color });
     gl.disable(gl.SCISSOR_TEST);
 }
@@ -37505,9 +37567,10 @@ var Painter = function () {
         this.crossTileSymbolIndex = new CrossTileSymbolIndex();
         this.gpuTimers = {};
     }
-    Painter.prototype.resize = function (width, height) {
-        this.width = width * devicePixelRatio;
-        this.height = height * devicePixelRatio;
+    Painter.prototype.resize = function (width, height, pixelRatio) {
+        this.width = width * pixelRatio;
+        this.height = height * pixelRatio;
+        this.pixelRatio = pixelRatio;
         this.context.viewport.set([
             0,
             0,
@@ -42313,6 +42376,7 @@ var defaultOptions$4 = {
 var Map = function (_super) {
     __extends$3(Map, _super);
     function Map(options) {
+        var _a;
         var _this = this;
         options = performance.extend({}, defaultOptions$4, options);
         if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
@@ -42346,6 +42410,7 @@ var Map = function (_super) {
         _this._mapId = performance.uniqueId();
         _this._locale = performance.extend({}, defaultLocale, options.locale);
         _this._clickTolerance = options.clickTolerance;
+        _this._pixelRatio = (_a = options.pixelRatio) !== null && _a !== void 0 ? _a : devicePixelRatio;
         _this._requestManager = new RequestManager(options.transformRequest);
         if (typeof options.container === 'string') {
             _this._container = document.getElementById(options.container);
@@ -42468,9 +42533,9 @@ var Map = function (_super) {
         var dimensions = this._containerDimensions();
         var width = dimensions[0];
         var height = dimensions[1];
-        this._resizeCanvas(width, height);
+        this._resizeCanvas(width, height, this.getPixelRatio());
         this.transform.resize(width, height);
-        this.painter.resize(width, height);
+        this.painter.resize(width, height, this.getPixelRatio());
         var fireMoving = !this._moving;
         if (fireMoving) {
             this.stop();
@@ -42481,6 +42546,15 @@ var Map = function (_super) {
             this.fire(new performance.Event('moveend', eventData));
         }
         return this;
+    };
+    Map.prototype.getPixelRatio = function () {
+        return this._pixelRatio;
+    };
+    Map.prototype.setPixelRatio = function (pixelRatio) {
+        var _a = this._containerDimensions(), width = _a[0], height = _a[1];
+        this._pixelRatio = pixelRatio;
+        this._resizeCanvas(width, height, pixelRatio);
+        this.painter.resize(width, height, pixelRatio);
     };
     Map.prototype.getBounds = function () {
         return this.transform.getBounds();
@@ -43058,7 +43132,7 @@ var Map = function (_super) {
         this._canvas.setAttribute('aria-label', 'Map');
         this._canvas.setAttribute('role', 'region');
         var dimensions = this._containerDimensions();
-        this._resizeCanvas(dimensions[0], dimensions[1]);
+        this._resizeCanvas(dimensions[0], dimensions[1], this.getPixelRatio());
         var controlContainer = this._controlContainer = DOM.create('div', 'maplibregl-control-container mapboxgl-control-container', container);
         var positions = this._controlPositions = {};
         [
@@ -43071,8 +43145,7 @@ var Map = function (_super) {
         });
         this._container.addEventListener('scroll', this._onMapScroll, false);
     };
-    Map.prototype._resizeCanvas = function (width, height) {
-        var pixelRatio = devicePixelRatio || 1;
+    Map.prototype._resizeCanvas = function (width, height, pixelRatio) {
         this._canvas.width = pixelRatio * width;
         this._canvas.height = pixelRatio * height;
         this._canvas.style.width = ''.concat(width, 'px');
