@@ -1,6 +1,7 @@
 /rollup/build/
 /types/
 /dist_type/
+/bench/results/
 *.es.js
 *.js.map
 node_modules
