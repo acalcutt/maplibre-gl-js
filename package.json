@@ -156,7 +156,7 @@
     "testem": "^3.6.0",
     "ts-jest": "^27.0.5",
     "ts-node": "^10.4.0",
-    "typescript": "^4.5.4"
+    "typescript": "^4.5.4",
     "unfetch": "^4.2.0"
   },
   "browser": {
