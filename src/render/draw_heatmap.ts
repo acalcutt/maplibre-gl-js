@@ -36,8 +36,7 @@ function drawHeatmap(painter: Painter, sourceCache: SourceCache, layer: HeatmapS
 
         context.clear({color: Color.transparent});
 
-        for (let i = 0; i < coords.length; i++) {
-            const coord = coords[i];
+        for (const coord of coords) {
 
             // Skip tiles that have uncovered parents to avoid flickering; we don't need
             // to use complex tile masking here because the change between zoom levels is subtle,
@@ -64,7 +63,10 @@ function drawHeatmap(painter: Painter, sourceCache: SourceCache, layer: HeatmapS
 
     } else if (painter.renderPass === 'translucent') {
         painter.context.setColorMode(painter.colorModeForRenderPass());
-        renderTextureToMap(painter, layer);
+        for (const coord of coords) {
+            const tile = sourceCache.getTile(coord);
+            renderTextureToMap(painter, coord, tile, layer);
+        }
     }
 }
 
@@ -104,15 +106,19 @@ function bindTextureToFramebuffer(context, painter, texture, fbo) {
     fbo.colorAttachment.set(texture);
 }
 
-function renderTextureToMap(painter, layer) {
+function renderTextureToMap(painter, coord, tile, layer) {
     const context = painter.context;
     const gl = context.gl;
 
     // Here we bind two different textures from which we'll sample in drawing
     // heatmaps: the kernel texture, prepared in the offscreen pass, and a
     // color ramp texture.
-    const fbo = layer.heatmapFbo;
+    const fbo = tile.fbo;
     if (!fbo) return;
+
+    const program = painter.useProgram('heatmapTexture');
+    const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+
     context.activeTexture.set(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo.colorAttachment.get());
 
@@ -123,9 +129,10 @@ function renderTextureToMap(painter, layer) {
     }
     colorRampTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
 
-    painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES,
+    const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+    program.draw(context, gl.TRIANGLES,
         DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled,
-        heatmapTextureUniformValues(painter, layer, 0, 1), false,
+        heatmapTextureUniformValues(painter, tile, layer, 0, 1, terrainCoord), terrain,
         layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer,
         painter.viewportSegments, layer.paint, painter.transform.zoom);
 }

@@ -349,6 +349,8 @@ export type HeatmapLayerSpecification = {
         "heatmap-intensity"?: PropertyValueSpecification<number>,
         "heatmap-color"?: ExpressionSpecificationArray,
         "heatmap-opacity"?: PropertyValueSpecification<number>
+        "heatmap-translate"?: PropertyValueSpecification<[number, number]>,
+        "heatmap-translate-anchor"?: PropertyValueSpecification<"map" | "viewport">,
     }
 };
 

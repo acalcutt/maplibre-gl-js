@@ -2,6 +2,7 @@ import StyleLayer from '../style_layer';
 
 import HeatmapBucket from '../../data/bucket/heatmap_bucket';
 import {RGBAImage} from '../../util/image';
+import {getMaximumPaintValue, translateDistance, translate} from '../query_utils';
 import properties, {HeatmapPaintPropsPossiblyEvaluated} from './heatmap_style_layer_properties';
 import {renderColorRamp} from '../../util/color_ramp';
 import {Transitionable, Transitioning, PossiblyEvaluated} from '../properties';
@@ -56,7 +57,7 @@ class HeatmapStyleLayer extends StyleLayer {
     }
 
     queryRadius(): number {
-        return 0;
+        return translateDistance(this.paint.get('heatmap-translate'));
     }
 
     queryIntersectsFeature(): boolean {

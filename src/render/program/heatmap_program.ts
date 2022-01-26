@@ -13,6 +13,7 @@ import type Tile from '../../source/tile';
 import type {UniformValues, UniformLocations} from '../uniform_binding';
 import type Painter from '../painter';
 import type HeatmapStyleLayer from '../../style/style_layer/heatmap_style_layer';
+import { OverscaledTileID } from '../../source/tile_id';
 
 export type HeatmapUniformsType = {
   'u_extrude_scale': Uniform1f;
@@ -50,23 +51,32 @@ const heatmapUniformValues = (matrix: mat4, tile: Tile, zoom: number, intensity:
 
 const heatmapTextureUniformValues = (
   painter: Painter,
+  tile: Tile,
   layer: HeatmapStyleLayer,
   textureUnit: number,
-  colorRampUnit: number
+  colorRampUnit: number,
+  coord: OverscaledTileID
 ): UniformValues<HeatmapTextureUniformsType> => {
-    const matrix = mat4.create();
-    mat4.ortho(matrix, 0, painter.width, painter.height, 0, 0, 1);
-
     const gl = painter.context.gl;
 
     return {
-        'u_matrix': matrix,
+        'u_scale_with_map': +(layer.paint.get('heampmap-pitch-scale') === 'map'),
+        'u_matrix': calculateMatrix(painter, tile, layer, coord),
         'u_world': [gl.drawingBufferWidth, gl.drawingBufferHeight],
         'u_image': textureUnit,
         'u_color_ramp': colorRampUnit,
         'u_opacity': layer.paint.get('heatmap-opacity')
     };
 };
+
+function calculateMatrix(painter, tile, layer, coord) {
+    return painter.translatePosMatrix(
+        coord ? coord.posMatrix : tile.tileID.posMatrix,
+        tile,
+        layer.paint.get('heatmap-translate'),
+        layer.paint.get('heatmap-translate-anchor')
+    );
+}
 
 export {
     heatmapUniforms,
