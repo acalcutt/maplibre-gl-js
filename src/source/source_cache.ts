@@ -4,7 +4,7 @@ import Tile from './tile';
 import {Event, ErrorEvent, Evented} from '../util/evented';
 import TileCache from './tile_cache';
 import MercatorCoordinate from '../geo/mercator_coordinate';
-import {keysDifference} from '../util/util';
+import {values, keysDifference} from '../util/util';
 import EXTENT from '../data/extent';
 import Context from '../gl/context';
 import Point from '@mapbox/point-geometry';
@@ -185,7 +185,7 @@ class SourceCache extends Evented {
      * @private
      */
     getIds(): Array<string> {
-        return (Object.values(this._tiles) as any).map((tile: Tile) => tile.tileID).sort(compareTileId).map(id => id.key);
+        return (values(this._tiles) as any).map((tile: Tile) => tile.tileID).sort(compareTileId).map(id => id.key);
     }
 
     getRenderableIds(symbolLayer?: boolean): Array<string> {

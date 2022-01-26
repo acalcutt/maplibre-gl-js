@@ -1,4 +1,4 @@
-
+import buble from '@rollup/plugin-buble';
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
@@ -29,6 +29,7 @@ export const plugins = (minified, production, watch) => [
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }) : false,
+    buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
     glsl('**/*.glsl', production),
     minified ? terser({
         compress: {

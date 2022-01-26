@@ -1,3 +1,6 @@
+import 'promise-polyfill/src/polyfill';
+import 'unfetch/polyfill';
+import 'abortcontroller-polyfill';
 import {extend, warnOnce, isWorker} from './util';
 import config from './config';
 import assert from 'assert';

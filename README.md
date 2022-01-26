@@ -1,6 +1,8 @@
-# MapLibre GL
+# MapLibre GL 2.0 With Internet Explorer 11 compatibility added back
 
-**MapLibre GL** is a community-led fork derived from [mapbox-gl-js](https://github.com/mapbox/mapbox-gl-js) before their switch to a non-OSS license.
+**MapLibre GL** is a community-led fork derived from [mapbox-gl-js](https://github.com/mapbox/mapbox-gl-js) before their switch to a non-OSS license. **This version is not supported by the MapLibre project!**
+
+The main MapLibre GL project has dropped Internet explorer compatibility and has removed some code that allows backward compatibility. This fork adds some of the removed code back and fixes some issues caused by updated dependencies and updated code. 
 
 ### Migrating from mapbox-gl
 

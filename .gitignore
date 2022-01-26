@@ -1,6 +1,5 @@
 /rollup/build/
 /types/
-/dist/
 /dist_type/
 /bench/results/
 *.es.js
