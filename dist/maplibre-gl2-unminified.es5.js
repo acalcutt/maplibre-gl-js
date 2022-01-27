@@ -42186,9 +42186,14 @@ var LogoControl = function () {
             options = {};
         }
         this.options = options;
-        performance.bindAll(['_updateLogo'], this);
-        performance.bindAll(['_updateCompact'], this);
+        performance.bindAll([
+            '_updateLogo',
+            '_updateCompact'
+        ], this);
     }
+    LogoControl.prototype.getDefaultPosition = function () {
+        return 'bottom-left';
+    };
     LogoControl.prototype.onAdd = function (map) {
         this._map = map;
         this._compact = this.options && this.options.compact;
@@ -42210,9 +42215,6 @@ var LogoControl = function () {
         this._map.off('resize', this._updateCompact);
         this._map = undefined;
         this._compact = undefined;
-    };
-    LogoControl.prototype.getDefaultPosition = function () {
-        return 'bottom-left';
     };
     LogoControl.prototype._updateCompact = function () {
         var containerChildren = this._container.children;
@@ -42361,7 +42363,7 @@ var defaultOptions$4 = {
     pitchWithRotate: true,
     hash: false,
     attributionControl: true,
-    maplibreLogo: true,
+    maplibreLogo: false,
     failIfMajorPerformanceCaveat: false,
     preserveDrawingBuffer: false,
     trackResize: true,
