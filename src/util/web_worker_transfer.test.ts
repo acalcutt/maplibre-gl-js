@@ -38,15 +38,6 @@ describe('web worker transfer', () => {
         expect(deserialized.squared() === 100).toBeTruthy();
     });
 
-    test('anonymous class', () => {
-        const Klass = (() => (class {}))();
-        expect(!Klass.name).toBeTruthy();
-        register('Anon', Klass);
-        const x = new Klass();
-        const deserialized = deserialize(serialize(x));
-        expect(deserialized instanceof Klass).toBeTruthy();
-    });
-
     test('custom serialization', () => {
         class CustomSerialization {
             id;
