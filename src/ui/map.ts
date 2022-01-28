@@ -869,9 +869,9 @@ class Map extends Camera {
      * var point = map.project(coordinate);
      */
     project(lnglat: LngLatLike) {
-        return this.style && this.style.terrainSourceCache.isEnabled()
-            ? this.transform.locationPoint3D(LngLat.convert(lnglat))
-            : this.transform.locationPoint(LngLat.convert(lnglat));
+        return this.style && this.style.terrainSourceCache.isEnabled() ?
+            this.transform.locationPoint3D(LngLat.convert(lnglat)) :
+            this.transform.locationPoint(LngLat.convert(lnglat));
     }
 
     /**
@@ -887,9 +887,9 @@ class Map extends Camera {
      * });
      */
     unproject(point: PointLike) {
-        return this.style && this.style.terrainSourceCache.isEnabled()
-            ? this.transform.pointLocation3D(Point.convert(point))
-            : this.transform.pointLocation(Point.convert(point));
+        return this.style && this.style.terrainSourceCache.isEnabled() ?
+            this.transform.pointLocation3D(Point.convert(point)) :
+            this.transform.pointLocation(Point.convert(point));
     }
 
     /**
@@ -1572,7 +1572,9 @@ class Map extends Camera {
      * Loads a 3D terrain mesh, based on a "raster-dem" source.
      *
      * @param {string} id The ID of the raster-dem source to use.
-     * @param options Allowed options are exaggeration, elevationOffset
+     * @param {exaggeration: number; elevationOffset: number} [options] Allowed options are exaggeration: number; elevationOffset: number
+     * @param options.exaggeration
+     * @param options.elevationOffset
      * @returns {Map} `this`
      * @example
      * map.addTerrain('my-data');
@@ -1585,7 +1587,7 @@ class Map extends Camera {
         this._sourcesDirty = true;
         this._styleDirty = true;
         this.triggerRepaint();
-        this.fire(new Event("terrain"));
+        this.fire(new Event('terrain'));
         return this;
     }
 
@@ -1608,7 +1610,7 @@ class Map extends Camera {
         this.style.terrainSourceCache.disable();
         this.transform.updateElevation();
         this.triggerRepaint();
-        this.fire(new Event("terrain"));
+        this.fire(new Event('terrain'));
         return this;
     }
 

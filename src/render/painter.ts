@@ -127,13 +127,13 @@ class Painter {
     debugOverlayCanvas: HTMLCanvasElement;
     // this object stores the current camera-matrix and the last render time of
     // of the terrain-acilitators. e.g. depth & coords framebuffers
-    terrainFacilitator: { matrix: mat4; renderTime: number; };
+    terrainFacilitator: { matrix: mat4; renderTime: number };
 
     constructor(gl: WebGLRenderingContext, transform: Transform) {
         this.context = new Context(gl);
         this.transform = transform;
         this._tileTextures = {};
-        this.terrainFacilitator = { matrix: mat4.create(), renderTime: 0 };
+        this.terrainFacilitator = {matrix: mat4.create(), renderTime: 0};
 
         this.setup();
 
@@ -376,7 +376,7 @@ class Painter {
 
         const layerIds = this.style._order;
         const sourceCaches = this.style.sourceCaches;
-        const renderToTexture = { background: true, fill: true, line: true, raster: true };
+        const renderToTexture = {background: true, fill: true, line: true, raster: true};
         const isTerrainEnabled = this.style.terrainSourceCache.isEnabled();
 
         for (const id in sourceCaches) {
@@ -402,9 +402,9 @@ class Painter {
             coordsDescendingSymbol[id] = sourceCache.getVisibleCoordinates(true).reverse();
             if (isTerrainEnabled) {
                 coordsDescendingInv[id] = {};
-                for (let c=0; c<coordsDescending[id].length; c++) {
+                for (let c = 0; c < coordsDescending[id].length; c++) {
                     const coords = this.style.terrainSourceCache.getTerrainCoords(coordsDescending[id][c]);
-                    for (let key in coords) {
+                    for (const key in coords) {
                         if (!coordsDescendingInv[id][key]) coordsDescendingInv[id][key] = [];
                         coordsDescendingInv[id][key].push(coords[key]);
                     }
@@ -419,7 +419,7 @@ class Painter {
             if (renderToTexture[layer.type]) {
                 if (!coordsDescendingInvStr[source]) {
                     coordsDescendingInvStr[source] = {};
-                    for (let key in coordsDescendingInv[source])
+                    for (const key in coordsDescendingInv[source])
                         coordsDescendingInvStr[source][key] = coordsDescendingInv[source][key].map(c => c.key).sort().join();
                 }
             }
@@ -501,7 +501,7 @@ class Painter {
             renderableTiles = this.style.terrainSourceCache.getRenderableTiles();
             renderableTiles.forEach(tile => {
                 // rerender if there are more coords to render than in the last rendering
-                for (let source in coordsDescendingInvStr) {
+                for (const source in coordsDescendingInvStr) {
                     const coords = coordsDescendingInvStr[source][tile.tileID.key];
                     if (coords && coords != tile.textureCoords[source]) tile.clearTextures(this);
                 }
@@ -527,18 +527,18 @@ class Painter {
                 if (renderToTexture[type]) {
                     if (!prevType || !renderToTexture[prevType]) stacks.push([]);
                     prevType = type;
-                    stacks[stacks.length-1].push(layerIds[this.currentLayer]);
+                    stacks[stacks.length - 1].push(layerIds[this.currentLayer]);
                     continue; // rendering is done later, all in once
 
                 // in case a stack is finished render all collected stack-layers into a texture
-                } else if (renderToTexture[prevType] || type == "hillshade") {
+                } else if (renderToTexture[prevType] || type == 'hillshade') {
                     prevType = type;
                     const stack = stacks.length - 1, layers = stacks[stack] || [];
                     for (const tile of renderableTiles) {
                         prepareTerrain(this, this.style.terrainSourceCache, tile, stack);
                         if (rerender[tile.tileID.key]) {
-                            this.context.clear({ color: Color.transparent });
-                            for (let l=0; l<layers.length; l++) {
+                            this.context.clear({color: Color.transparent});
+                            for (let l = 0; l < layers.length; l++) {
                                 const layer = this.style._layers[layers[l]];
                                 const coords = layer.source ? coordsDescendingInv[layer.source][tile.tileID.key] : [tile.tileID];
                                 this._renderTileClippingMasks(layer, coords);
@@ -552,13 +552,13 @@ class Painter {
                     // the hillshading layer is a special case because it changes on every camera-movement
                     // so rerender it in eny case.
                     // FIXME-3D! check if rerendering is really necessary, depending on hillshade-illumination-anchor
-                    if (type == "hillshade") {
+                    if (type == 'hillshade') {
                         stacks.push([layerIds[this.currentLayer]]);
                         for (const tile of renderableTiles) {
                             const coords = coordsDescendingInv[layer.source][tile.tileID.key];
                             // FIXME-3D! replace prepareTerrain with hillshading texture from prepareHillshading directly
                             prepareTerrain(this, this.style.terrainSourceCache, tile, stacks.length - 1);
-                            this.context.clear({ color: Color.transparent });
+                            this.context.clear({color: Color.transparent});
                             this._renderTileClippingMasks(layer, coords);
                             this.renderLayer(this, sourceCache, layer, coords);
                             drawTerrain(this, this.style.terrainSourceCache, tile);
@@ -723,10 +723,10 @@ class Painter {
 
     useProgram(name: string, programConfiguration?: ProgramConfiguration | null): Program<any> {
         this.cache = this.cache || {};
-        const key = name
-            + (programConfiguration ? programConfiguration.cacheKey : '')
-            + (this._showOverdrawInspector ? '/overdraw' : '')
-            + (this.style.terrainSourceCache.isEnabled() ? '/terrain' : '');
+        const key = name +
+            (programConfiguration ? programConfiguration.cacheKey : '') +
+            (this._showOverdrawInspector ? '/overdraw' : '') +
+            (this.style.terrainSourceCache.isEnabled() ? '/terrain' : '');
         if (!this.cache[key]) {
             this.cache[key] = new Program(
                 this.context,
