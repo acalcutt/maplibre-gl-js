@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.0/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.1/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -269,7 +269,7 @@ function isImageBitmap(image) {
     return typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap;
 }
 
-const now = performance && performance.now ? performance.now.bind(performance) : Date.now.bind(Date);
+const now = typeof window !== 'undefined' && performance && performance.now ? performance.now.bind(performance) : Date.now.bind(Date);
 let linkEl;
 let reducedMotionQuery;
 const exported$1 = {
@@ -19780,7 +19780,7 @@ class DEMData {
         this.max = Number.MIN_SAFE_INTEGER;
         for (let x = 0; x < dim; x++)
             for (let y = 0; y < dim; y++) {
-                let ele = this.get(x, y);
+                const ele = this.get(x, y);
                 if (ele > this.max)
                     this.max = ele;
                 if (ele < this.min)
@@ -24164,6 +24164,7 @@ class VectorTileSource extends performance.Evented {
         this._tileJSONRequest = loadTileJSON(this._options, this.map._requestManager, (err, tileJSON) => {
             this._tileJSONRequest = null;
             this._loaded = true;
+            this.map.style.sourceCaches[this.id].clearTiles();
             if (err) {
                 this.fire(new performance.ErrorEvent(err));
             } else if (tileJSON) {
@@ -24196,8 +24197,6 @@ class VectorTileSource extends performance.Evented {
             this._tileJSONRequest.cancel();
         }
         callback();
-        const sourceCache = this.map.style.sourceCaches[this.id];
-        sourceCache.clearTiles();
         this.load();
     }
     setTiles(tiles) {
@@ -26501,9 +26500,9 @@ class TerrainSourceCache extends performance.Evented {
         this.rttFramebuffer = context.createFramebuffer(size, size, true);
         this.rttFramebuffer.depthAttachment.set(context.createRenderbuffer(context.gl.DEPTH_COMPONENT16, size, size));
         style.on('data', e => {
-            if (e.dataType == 'source' && e.coord && this.isEnabled()) {
+            if (e.dataType === 'source' && e.coord && this.isEnabled()) {
                 const transform = style.map.transform;
-                if (e.sourceId == this._sourceCache.id) {
+                if (e.sourceId === this._sourceCache.id) {
                     for (const key in this._tiles) {
                         const tile = this._tiles[key];
                         if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
@@ -26524,7 +26523,7 @@ class TerrainSourceCache extends performance.Evented {
             'exaggeration',
             'elevationOffset'
         ].forEach(key => {
-            if (options && options[key] != undefined)
+            if (options && options[key] !== undefined)
                 this[key] = options[key];
         });
     }
@@ -26534,14 +26533,14 @@ class TerrainSourceCache extends performance.Evented {
         this._sourceCache.usedForTerrain = false;
         this._sourceCache = null;
         for (const key in this._tiles) {
-            let tile = this._tiles[key];
+            const tile = this._tiles[key];
             tile.textures.forEach(t => t.destroy());
             tile.textures = [];
         }
         this._tiles = {};
     }
     isEnabled() {
-        return this._sourceCache ? true : false;
+        return !!this._sourceCache;
     }
     update(transform) {
         if (!this.isEnabled() || !this._sourceCache._sourceLoaded)
@@ -26564,9 +26563,9 @@ class TerrainSourceCache extends performance.Evented {
                 this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
             }
         }
-        this._renderHistory = this._renderHistory.filter((i, p) => this._renderHistory.indexOf(i) == p);
+        this._renderHistory = this._renderHistory.filter((i, p) => this._renderHistory.indexOf(i) === p);
         while (this._renderHistory.length > 150) {
-            let tile = this._tiles[this._renderHistory.shift()];
+            const tile = this._tiles[this._renderHistory.shift()];
             if (tile && !tileIDs[tile.tileID.key]) {
                 tile.clearTextures(this._style.map.painter);
                 delete this._tiles[tile.tileID.key];
@@ -26581,7 +26580,7 @@ class TerrainSourceCache extends performance.Evented {
     }
     getTerrainCoords(tileID) {
         const coords = {};
-        for (let key of this._renderableTiles) {
+        for (const key of this._renderableTiles) {
             const _tileID = this._tiles[key].tileID;
             if (_tileID.equals(tileID)) {
                 const coord = tileID.clone();
@@ -26647,7 +26646,7 @@ class TerrainSourceCache extends performance.Evented {
             return null;
         const sourceTile = this.getSourceTile(tileID, true);
         if (sourceTile && sourceTile.dem && (!sourceTile.demTexture || sourceTile.needsTerrainPrepare)) {
-            let context = this._style.map.painter.context;
+            const context = this._style.map.painter.context;
             sourceTile.demTexture = this._style.map.painter.getTileTexture(sourceTile.dem.stride);
             if (sourceTile.demTexture)
                 sourceTile.demTexture.update(sourceTile.dem.getPixels(), { premultiply: false });
@@ -26732,7 +26731,7 @@ class TerrainSourceCache extends performance.Evented {
     getFramebuffer(painter, texture) {
         const width = painter.width / devicePixelRatio;
         const height = painter.height / devicePixelRatio;
-        if (this._fbo && (this._fbo.width != width || this._fbo.height != height)) {
+        if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
             this._fbo.destroy();
             this._fboCoordsTexture.destroy();
             this._fboDepthTexture.destroy();
@@ -26742,16 +26741,16 @@ class TerrainSourceCache extends performance.Evented {
         }
         if (!this._fboCoordsTexture) {
             this._fboCoordsTexture = new Texture(painter.context, {
-                width: width,
-                height: height,
+                width,
+                height,
                 data: null
             }, painter.context.gl.RGBA, { premultiply: false });
             this._fboCoordsTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
         }
         if (!this._fboDepthTexture) {
             this._fboDepthTexture = new Texture(painter.context, {
-                width: width,
-                height: height,
+                width,
+                height,
                 data: null
             }, painter.context.gl.RGBA, { premultiply: false });
             this._fboDepthTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
@@ -26760,7 +26759,7 @@ class TerrainSourceCache extends performance.Evented {
             this._fbo = painter.context.createFramebuffer(width, height, true);
             this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
         }
-        this._fbo.colorAttachment.set(texture == 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
+        this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
         return this._fbo;
     }
     tilesAfterTime(time = Date.now()) {
@@ -26779,11 +26778,12 @@ class TerrainSourceCache extends performance.Evented {
                 indexArray.emplaceBack(x + y, meshSize + x + y + 1, meshSize + x + y + 2);
                 indexArray.emplaceBack(x + y, meshSize + x + y + 2, x + y + 1);
             }
-        return this._mesh = {
+        this._mesh = {
             indexBuffer: context.createIndexBuffer(indexArray),
             vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
             segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
         };
+        return this._mesh;
     }
     getCoordsTexture(context) {
         if (this._coordsTexture)
@@ -26796,13 +26796,14 @@ class TerrainSourceCache extends performance.Evented {
                 data[i + 2] = x >> 8 << 4 | y >> 8;
                 data[i + 3] = 0;
             }
-        let image = new performance.RGBAImage({
+        const image = new performance.RGBAImage({
             width: this._coordsTextureSize,
             height: this._coordsTextureSize
         }, new Uint8Array(data.buffer));
-        let texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+        const texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
         texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        return this._coordsTexture = texture;
+        this._coordsTexture = texture;
+        return this._coordsTexture;
     }
 }
 
@@ -28293,9 +28294,9 @@ class Placement {
             if (collisionArrays.verticalTextFeatureIndex) {
                 verticalTextFeatureIndex = collisionArrays.verticalTextFeatureIndex;
             }
-            let tileID = this.retainedQueryData[bucket.bucketInstanceId].tileID;
-            let getElevation = (x, y) => this.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y);
-            for (let boxType of [
+            const tileID = this.retainedQueryData[bucket.bucketInstanceId].tileID;
+            const getElevation = (x, y) => this.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y);
+            for (const boxType of [
                     'textBox',
                     'verticalTextBox',
                     'iconBox',
@@ -32636,7 +32637,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
                 programConfiguration.setConstantPatternPositions(posTo, posFrom);
         }
         const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
-        let posMatrix = terrainCoord ? terrainCoord.posMatrix : coord.posMatrix;
+        const posMatrix = terrainCoord ? terrainCoord.posMatrix : coord.posMatrix;
         const tileMatrix = painter.translatePosMatrix(posMatrix, tile, layer.paint.get('fill-translate'), layer.paint.get('fill-translate-anchor'));
         if (!isOutline) {
             indexBuffer = bucket.indexBuffer;
@@ -33109,7 +33110,7 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
             data: null
         }, context.gl.RGBA);
         tile.textures[stack].bind(context.gl.LINEAR, context.gl.CLAMP_TO_EDGE);
-        if (stack == 0)
+        if (stack === 0)
             sourceCache._renderHistory.push(tile.tileID.key);
     }
     sourceCache.rttFramebuffer.colorAttachment.set(tile.textures[stack].texture);
@@ -33375,7 +33376,7 @@ class Painter {
                 coordsDescendingInv[id] = {};
                 for (let c = 0; c < coordsDescending[id].length; c++) {
                     const coords = this.style.terrainSourceCache.getTerrainCoords(coordsDescending[id][c]);
-                    for (let key in coords) {
+                    for (const key in coords) {
                         if (!coordsDescendingInv[id][key])
                             coordsDescendingInv[id][key] = [];
                         coordsDescendingInv[id][key].push(coords[key]);
@@ -33388,7 +33389,7 @@ class Painter {
             if (renderToTexture[layer.type]) {
                 if (!coordsDescendingInvStr[source]) {
                     coordsDescendingInvStr[source] = {};
-                    for (let key in coordsDescendingInv[source])
+                    for (const key in coordsDescendingInv[source])
                         coordsDescendingInvStr[source][key] = coordsDescendingInv[source][key].map(c => c.key).sort().join();
                 }
             }
@@ -33449,9 +33450,9 @@ class Painter {
         if (isTerrainEnabled) {
             renderableTiles = this.style.terrainSourceCache.getRenderableTiles();
             renderableTiles.forEach(tile => {
-                for (let source in coordsDescendingInvStr) {
+                for (const source in coordsDescendingInvStr) {
                     const coords = coordsDescendingInvStr[source][tile.tileID.key];
-                    if (coords && coords != tile.textureCoords[source])
+                    if (coords && coords !== tile.textureCoords[source])
                         tile.clearTextures(this);
                 }
                 rerender[tile.tileID.key] = !tile.textures.length;
@@ -33468,7 +33469,7 @@ class Painter {
                     prevType = type;
                     stacks[stacks.length - 1].push(layerIds[this.currentLayer]);
                     continue;
-                } else if (renderToTexture[prevType] || type == 'hillshade') {
+                } else if (renderToTexture[prevType] || type === 'hillshade') {
                     prevType = type;
                     const stack = stacks.length - 1, layers = stacks[stack] || [];
                     for (const tile of renderableTiles) {
@@ -33486,7 +33487,7 @@ class Painter {
                         }
                         drawTerrain(this, this.style.terrainSourceCache, tile);
                     }
-                    if (type == 'hillshade') {
+                    if (type === 'hillshade') {
                         stacks.push([layerIds[this.currentLayer]]);
                         for (const tile of renderableTiles) {
                             const coords = coordsDescendingInv[layer.source][tile.tileID.key];
@@ -34214,7 +34215,7 @@ class Transform {
                 const childZ = it.zoom + 1;
                 let quadrant = it.aabb.quadrant(i);
                 if (tsc.isEnabled()) {
-                    let tile = tsc.getSourceTile(new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
+                    const tile = tsc.getSourceTile(new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
                     quadrant = new Aabb(fromValues(quadrant.min[0], quadrant.min[1], tile && tile.dem ? tile.dem.min - this.elevation : -this.elevation), fromValues(quadrant.max[0], quadrant.max[1], tile && tile.dem ? Math.max(0, tile.dem.max - this.elevation) : 0));
                 }
                 stack.push({
@@ -34275,8 +34276,8 @@ class Transform {
         const lngLat = this.pointLocation(this.getCameraPoint());
         const altitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
         return {
-            lngLat: lngLat,
-            altitude: altitude
+            lngLat,
+            altitude
         };
     }
     recalculateZoom() {
@@ -39597,10 +39598,10 @@ class TerrainControl {
         this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
         if (this._map.isTerrainLoaded()) {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
-            this._terrainButton.title = this._map._getUIString(`TerrainControl.disableTerrain`);
+            this._terrainButton.title = this._map._getUIString('TerrainControl.disableTerrain');
         } else {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
-            this._terrainButton.title = this._map._getUIString(`TerrainControl.enableTerrain`);
+            this._terrainButton.title = this._map._getUIString('TerrainControl.enableTerrain');
         }
     }
 }
