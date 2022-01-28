@@ -11,8 +11,8 @@ import ColorMode from '../gl/color_mode';
 
 /**
  * Redraw the Coords & Depth Framebuffers
- * @param {Painter} painter
- * @param {sourceCache} sourceCache
+ * @param {Painter} painter painter
+ * @param {sourceCache} sourceCache sourceCache
  */
 function updateTerrainFacilitators(painter, sourceCache: TerrainSourceCache) {
     const context = painter.context;
@@ -57,9 +57,9 @@ function updateTerrainFacilitators(painter, sourceCache: TerrainSourceCache) {
 
 /**
  * Render, e.g. drape, a render-to-texture tile onto the 3d mesh on screen.
- * @param {Painter} painter
- * @param {TerrainSourceCache} sourceCache
- * @param {Tile} tile
+ * @param {Painter} painter painter
+ * @param {TerrainSourceCache} sourceCache sourceCache
+ * @param {Tile} tile tile
  */
 function drawTerrain(painter: Painter, sourceCache: TerrainSourceCache, tile: Tile) {
     const context = painter.context;
@@ -82,9 +82,9 @@ function drawTerrain(painter: Painter, sourceCache: TerrainSourceCache, tile: Ti
 /**
  * prepare the render-to-texture tile.
  * E.g. creates the necessary textures and attach them to the render-to-texture-framebuffer.
- * @param {Painter} painter
- * @param {TerrainSourceCache} sourceCache
- * @param {Tile} tile
+ * @param {Painter} painter painter
+ * @param {TerrainSourceCache} sourceCache sourceCache
+ * @param {Tile} tile tile
  * @param {number} stack number of a layer-groop. see painter.ts
  */
 function prepareTerrain(painter: Painter, sourceCache: TerrainSourceCache, tile: Tile, stack: number) {
@@ -93,7 +93,7 @@ function prepareTerrain(painter: Painter, sourceCache: TerrainSourceCache, tile:
     if (!tile.textures[stack]) {
         tile.textures[stack] = painter.getTileTexture(size) || new Texture(context, {width: size, height: size, data: null}, context.gl.RGBA);
         tile.textures[stack].bind(context.gl.LINEAR, context.gl.CLAMP_TO_EDGE);
-        if (stack == 0) sourceCache._renderHistory.push(tile.tileID.key);
+        if (stack === 0) sourceCache._renderHistory.push(tile.tileID.key);
     }
     sourceCache.rttFramebuffer.colorAttachment.set(tile.textures[stack].texture);
     context.bindFramebuffer.set(sourceCache.rttFramebuffer.framebuffer);

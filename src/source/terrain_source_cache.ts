@@ -111,7 +111,7 @@ class TerrainSourceCache extends Evented {
     rttFramebuffer: Framebuffer;
 
     /**
-     * @param {Style} style
+     * @param {Style} style style
      */
     constructor(style: Style) {
         super();
@@ -170,10 +170,10 @@ class TerrainSourceCache extends Evented {
 
     /**
      * Loads a 3D terrain-mesh
-     * @param {SourceCache} sourceCache
-     * @param options Allowed options are exaggeration & elevationOffset
-     * @param options.exaggeration
-     * @param options.elevationOffset
+     * @param {SourceCache} sourceCache sourceCache
+     * @param options Options object.
+     * @param {number} options.exaggeration this number is the multiplicator (must be a power of 2) for the current tileSize.
+     * @param {number} options.elevationOffset defines the global offset of putting negative elevations (e.g. dead-sea) into positive values.
      */
     enable(sourceCache: SourceCache, options?: {exaggeration: number; elevationOffset: number}): void {
         sourceCache.usedForTerrain = true;
@@ -201,7 +201,7 @@ class TerrainSourceCache extends Evented {
 
     /**
      * check if terrain is currently activated
-     * @return {boolean}
+     * @returns {boolean} returns true if terrain is currently activated
      */
     isEnabled(): boolean {
         return !!this._sourceCache;
@@ -209,7 +209,7 @@ class TerrainSourceCache extends Evented {
 
     /**
      * Load Terrain Tiles, create internal render-to-texture tiles, free GPU memory.
-     * @param {Transform} transform
+     * @param {Transform} transform transform
      */
     update(transform: Transform): void {
         if (!this.isEnabled() || !this._sourceCache._sourceLoaded) return;
@@ -247,7 +247,7 @@ class TerrainSourceCache extends Evented {
 
     /**
      * get a list of tiles, which are loaded and should be rendered in the current scene
-     * @returns {Array<Tile>}
+     * @returns {Array<Tile>} returns a list of tiles, which are loaded and should be rendered in the current scene
      */
     getRenderableTiles(): Array<Tile> {
         return this._renderableTiles.map(key => this.getTileByID(key));
@@ -255,8 +255,8 @@ class TerrainSourceCache extends Evented {
 
     /**
      * get terrain tile by the TileID key
-     * @param id
-     * @returns {Tile}
+     * @param id TileID key
+     * @returns {Tile} returns terrain tile
      */
     getTileByID(id: string): Tile {
         return this._tiles[id];
@@ -264,8 +264,8 @@ class TerrainSourceCache extends Evented {
 
     /**
      * searches for the corresponding current rendered terrain-tiles
-     * @param {OverscaledTileID} tileID
-     * @returns {[_:string]: Tile}
+     * @param {OverscaledTileID} tileID id of the tile
+     * @returns {[_:string]: Tile} returns the corresponding current rendered terrain-tiles
      */
     getTerrainCoords(tileID: OverscaledTileID): {[_: string]: OverscaledTileID} {
         const coords = {};
@@ -304,9 +304,9 @@ class TerrainSourceCache extends Evented {
 
     /**
      * find the covering raster-dem tile
-     * @param {OverscaledTileID} tileID
+     * @param {OverscaledTileID} tileID id of the tile
      * @param {boolean} searchForDEM Optinal parameter to search for (parent) souretiles with loaded dem.
-     * @returns {Tile}
+     * @returns {Tile} returns the covering raster-dem tile
      */
     getSourceTile(tileID: OverscaledTileID, searchForDEM?: boolean): Tile {
         if (!this.isEnabled()) return null;
@@ -327,7 +327,8 @@ class TerrainSourceCache extends Evented {
 
     /**
      * returns a Terrain Object for a tile. Unless the tile corresponds to data, return an flat dem object
-     * @param {OverscaledTileID} tileID
+     * @param {OverscaledTileID} tileID tileID id of the tile
+     * @returns {Object} returns a Terrain Object for a tile
      */
     getTerrain(tileID?: OverscaledTileID): any {
         if (!this.isEnabled() || !tileID) return null;
@@ -374,11 +375,11 @@ class TerrainSourceCache extends Evented {
     /**
      * get the Elevation for given coordinate
      * FIXME-3D: handle coordinates outside bounds, e.g. use neighbouring tiles
-     * @param {OverscaledTileID} tileID
+     * @param {OverscaledTileID} tileID id of the tile
      * @param {number} x between 0 .. EXTENT
      * @param {number} y between 0 .. EXTENT
      * @param {number} extent optional, default 8192
-     * @returns {number}
+     * @returns {number} returns the Elevation for given coordinate
      */
     getElevation(tileID: OverscaledTileID, x: number, y: number, extent: number = EXTENT): number {
         if (!this.isEnabled()) return 0.0;
@@ -400,11 +401,11 @@ class TerrainSourceCache extends Evented {
 
     /**
      * get the Elevation for given coordinate multiplied by exaggeration.
-     * @param {OverscaledTileID} tileID
+     * @param {OverscaledTileID} tileID id of the tile
      * @param {number} x between 0 .. EXTENT
      * @param {number} y between 0 .. EXTENT
      * @param {number} extent optional, default 8192
-     * @returns {number}
+     * @returns {number} returns the Elevation for given coordinate multiplied by exaggeration
      */
     getElevationWithExaggeration(tileID: OverscaledTileID, x: number, y: number, extent: number = EXTENT): number {
         if (!this.isEnabled()) return 0.0;
@@ -413,9 +414,9 @@ class TerrainSourceCache extends Evented {
 
     /**
      * get a framebuffer as big as the map-div, which will be used to render depth & coords into a texture
-     * @param {Painter} painter
-     * @param texture
-     * @returns {Framebuffer}
+     * @param {Painter} painter painter
+     * @param texture texture
+     * @returns {Framebuffer} returns a framebuffer as big as the map-div
      */
     getFramebuffer(painter: Painter, texture: string): Framebuffer {
         const width = painter.width / devicePixelRatio;
@@ -446,8 +447,8 @@ class TerrainSourceCache extends Evented {
 
     /**
      * get a list of tiles, loaded after a spezific time. This is used to update depth & coords framebuffers.
-     * @param {Date} time
-     * @returns {Array<Tile>}
+     * @param {Date} time time
+     * @returns {Array<Tile>} returns a list of tiles
      */
     tilesAfterTime(time=Date.now()): Array<Tile> {
         return Object.values(this._tiles).filter(t => t.timeLoaded >= time);
@@ -455,8 +456,8 @@ class TerrainSourceCache extends Evented {
 
     /**
      * create a regular mesh which will be used by all terrain-tiles
-     * @param {Context} context
-     * @returns {Object}
+     * @param {Context} context context
+     * @returns {Object} returns a regular mesh
      */
     getTerrainMesh(context: Context) {
         if (this._mesh) return this._mesh;
@@ -483,8 +484,8 @@ class TerrainSourceCache extends Evented {
      *   - 4 higher bits for x
      *   - 4 higher bits for y
      *   - 8 bits for coordsIndex (1 .. 255) (= number of terraintile), is later setted in draw_terrain uniform value
-     * @param {Context} context
-     * @returns {Texture}
+     * @param {Context} context context
+     * @returns {Texture} returns coords texture
      */
     getCoordsTexture(context: Context): Texture {
         if (this._coordsTexture) return this._coordsTexture;
