@@ -469,11 +469,12 @@ class TerrainSourceCache extends Evented {
             indexArray.emplaceBack(x + y, meshSize + x + y + 1, meshSize + x + y + 2);
             indexArray.emplaceBack(x + y, meshSize + x + y + 2, x + y + 1);
         }
-        return this._mesh = {
+        this._mesh = {
             indexBuffer: context.createIndexBuffer(indexArray),
             vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
             segments: SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
         };
+        return this._mesh;
     }
 
     /**
@@ -499,7 +500,8 @@ class TerrainSourceCache extends Evented {
         const image = new RGBAImage({width: this._coordsTextureSize, height: this._coordsTextureSize}, new Uint8Array(data.buffer));
         const texture = new Texture(context, image, context.gl.RGBA, {premultiply: false});
         texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        return this._coordsTexture = texture;
+        this._coordsTexture = texture;
+        return this._coordsTexture;
     }
 }
 
