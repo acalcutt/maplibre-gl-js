@@ -30322,9 +30322,9 @@ var TerrainSourceCache = function (_super) {
         _this.rttFramebuffer = context.createFramebuffer(size, size, true);
         _this.rttFramebuffer.depthAttachment.set(context.createRenderbuffer(context.gl.DEPTH_COMPONENT16, size, size));
         style.on('data', function (e) {
-            if (e.dataType == 'source' && e.coord && _this.isEnabled()) {
+            if (e.dataType === 'source' && e.coord && _this.isEnabled()) {
                 var transform = style.map.transform;
-                if (e.sourceId == _this._sourceCache.id) {
+                if (e.sourceId === _this._sourceCache.id) {
                     for (var key in _this._tiles) {
                         var tile = _this._tiles[key];
                         if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
@@ -30347,7 +30347,7 @@ var TerrainSourceCache = function (_super) {
             'exaggeration',
             'elevationOffset'
         ].forEach(function (key) {
-            if (options && options[key] != undefined) {
+            if (options && options[key] !== undefined) {
                 _this[key] = options[key];
             }
         });
@@ -30368,7 +30368,7 @@ var TerrainSourceCache = function (_super) {
         this._tiles = {};
     };
     TerrainSourceCache.prototype.isEnabled = function () {
-        return this._sourceCache ? true : false;
+        return !!this._sourceCache;
     };
     TerrainSourceCache.prototype.update = function (transform) {
         var _this = this;
@@ -30395,7 +30395,7 @@ var TerrainSourceCache = function (_super) {
             }
         }
         this._renderHistory = this._renderHistory.filter(function (i, p) {
-            return _this._renderHistory.indexOf(i) == p;
+            return _this._renderHistory.indexOf(i) === p;
         });
         while (this._renderHistory.length > 150) {
             var tile = this._tiles[this._renderHistory.shift()];
@@ -30586,7 +30586,7 @@ var TerrainSourceCache = function (_super) {
     TerrainSourceCache.prototype.getFramebuffer = function (painter, texture) {
         var width = painter.width / devicePixelRatio;
         var height = painter.height / devicePixelRatio;
-        if (this._fbo && (this._fbo.width != width || this._fbo.height != height)) {
+        if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
             this._fbo.destroy();
             this._fboCoordsTexture.destroy();
             this._fboDepthTexture.destroy();
@@ -30614,7 +30614,7 @@ var TerrainSourceCache = function (_super) {
             this._fbo = painter.context.createFramebuffer(width, height, true);
             this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
         }
-        this._fbo.colorAttachment.set(texture == 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
+        this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
         return this._fbo;
     };
     TerrainSourceCache.prototype.tilesAfterTime = function (time) {
@@ -30642,11 +30642,12 @@ var TerrainSourceCache = function (_super) {
                 indexArray.emplaceBack(x + y, meshSize + x + y + 2, x + y + 1);
             }
         }
-        return this._mesh = {
+        this._mesh = {
             indexBuffer: context.createIndexBuffer(indexArray),
             vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
             segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
         };
+        return this._mesh;
     };
     TerrainSourceCache.prototype.getCoordsTexture = function (context) {
         if (this._coordsTexture) {
@@ -30667,7 +30668,8 @@ var TerrainSourceCache = function (_super) {
         }, new Uint8Array(data.buffer));
         var texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
         texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        return this._coordsTexture = texture;
+        this._coordsTexture = texture;
+        return this._coordsTexture;
     };
     return TerrainSourceCache;
 }(performance.Evented);
@@ -37525,7 +37527,7 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
             data: null
         }, context.gl.RGBA);
         tile.textures[stack].bind(context.gl.LINEAR, context.gl.CLAMP_TO_EDGE);
-        if (stack == 0) {
+        if (stack === 0) {
             sourceCache._renderHistory.push(tile.tileID.key);
         }
     }
@@ -37884,7 +37886,7 @@ var Painter = function () {
             renderableTiles.forEach(function (tile) {
                 for (var source in coordsDescendingInvStr) {
                     var coords = coordsDescendingInvStr[source][tile.tileID.key];
-                    if (coords && coords != tile.textureCoords[source]) {
+                    if (coords && coords !== tile.textureCoords[source]) {
                         tile.clearTextures(_this);
                     }
                 }
@@ -37903,7 +37905,7 @@ var Painter = function () {
                     prevType = type;
                     stacks[stacks.length - 1].push(layerIds[this.currentLayer]);
                     continue;
-                } else if (renderToTexture[prevType] || type == 'hillshade') {
+                } else if (renderToTexture[prevType] || type === 'hillshade') {
                     prevType = type;
                     var stack = stacks.length - 1, layers = stacks[stack] || [];
                     for (var _b = 0, renderableTiles_1 = renderableTiles; _b < renderableTiles_1.length; _b++) {
@@ -37923,7 +37925,7 @@ var Painter = function () {
                         }
                         drawTerrain(this, this.style.terrainSourceCache, tile);
                     }
-                    if (type == 'hillshade') {
+                    if (type === 'hillshade') {
                         stacks.push([layerIds[this.currentLayer]]);
                         for (var _c = 0, renderableTiles_2 = renderableTiles; _c < renderableTiles_2.length; _c++) {
                             var tile = renderableTiles_2[_c];
