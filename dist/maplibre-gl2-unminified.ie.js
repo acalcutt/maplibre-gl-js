@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.0/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.1/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -27451,6 +27451,7 @@ var VectorTileSource = function (_super) {
         this._tileJSONRequest = loadTileJSON(this._options, this.map._requestManager, function (err, tileJSON) {
             _this._tileJSONRequest = null;
             _this._loaded = true;
+            _this.map.style.sourceCaches[_this.id].clearTiles();
             if (err) {
                 _this.fire(new performance.ErrorEvent(err));
             } else if (tileJSON) {
@@ -27484,8 +27485,6 @@ var VectorTileSource = function (_super) {
             this._tileJSONRequest.cancel();
         }
         callback();
-        var sourceCache = this.map.style.sourceCaches[this.id];
-        sourceCache.clearTiles();
         this.load();
     };
     VectorTileSource.prototype.setTiles = function (tiles) {
