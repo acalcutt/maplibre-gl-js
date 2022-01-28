@@ -504,7 +504,7 @@ class Painter {
                 // rerender if there are more coords to render than in the last rendering
                 for (const source in coordsDescendingInvStr) {
                     const coords = coordsDescendingInvStr[source][tile.tileID.key];
-                    if (coords && coords != tile.textureCoords[source]) tile.clearTextures(this);
+                    if (coords && coords !== tile.textureCoords[source]) tile.clearTextures(this);
                 }
                 // rerender if there are no previous renderings
                 rerender[tile.tileID.key] = !tile.textures.length;
@@ -532,7 +532,7 @@ class Painter {
                     continue; // rendering is done later, all in once
 
                 // in case a stack is finished render all collected stack-layers into a texture
-                } else if (renderToTexture[prevType] || type == 'hillshade') {
+                } else if (renderToTexture[prevType] || type === 'hillshade') {
                     prevType = type;
                     const stack = stacks.length - 1, layers = stacks[stack] || [];
                     for (const tile of renderableTiles) {
@@ -553,7 +553,7 @@ class Painter {
                     // the hillshading layer is a special case because it changes on every camera-movement
                     // so rerender it in eny case.
                     // FIXME-3D! check if rerendering is really necessary, depending on hillshade-illumination-anchor
-                    if (type == 'hillshade') {
+                    if (type === 'hillshade') {
                         stacks.push([layerIds[this.currentLayer]]);
                         for (const tile of renderableTiles) {
                             const coords = coordsDescendingInv[layer.source][tile.tileID.key];

@@ -151,9 +151,9 @@ class TerrainSourceCache extends Evented {
 
         // rerender corresponding tiles on terrain-dem source-tile updates
         style.on('data', e => {
-            if (e.dataType == 'source' && e.coord && this.isEnabled()) {
+            if (e.dataType === 'source' && e.coord && this.isEnabled()) {
                 const transform = style.map.transform;
-                if (e.sourceId == this._sourceCache.id) {
+                if (e.sourceId === this._sourceCache.id) {
                     // redraw current and overscaled terrain-tiles
                     for (const key in this._tiles) {
                         const tile = this._tiles[key];
@@ -180,7 +180,7 @@ class TerrainSourceCache extends Evented {
         sourceCache.tileSize = this.tileSize * 2 ** this.deltaZoom;
         this._sourceCache = sourceCache;
         ['exaggeration', 'elevationOffset'].forEach(key => {
-            if (options && options[key] != undefined) this[key] = options[key];
+            if (options && options[key] !== undefined) this[key] = options[key];
         });
     }
 
@@ -234,7 +234,7 @@ class TerrainSourceCache extends Evented {
             }
         }
         // remove duplicates from _renderHistory
-        this._renderHistory = this._renderHistory.filter((i, p) => this._renderHistory.indexOf(i) == p);
+        this._renderHistory = this._renderHistory.filter((i, p) => this._renderHistory.indexOf(i) === p);
         // free (GPU) memory from previously rendered not needed tiles
         while (this._renderHistory.length > 150) {
             const tile = this._tiles[this._renderHistory.shift()];
@@ -420,7 +420,7 @@ class TerrainSourceCache extends Evented {
     getFramebuffer(painter: Painter, texture: string): Framebuffer {
         const width = painter.width / devicePixelRatio;
         const height = painter.height  / devicePixelRatio;
-        if (this._fbo && (this._fbo.width != width || this._fbo.height != height)) {
+        if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
             this._fbo.destroy();
             this._fboCoordsTexture.destroy();
             this._fboDepthTexture.destroy();
@@ -440,7 +440,7 @@ class TerrainSourceCache extends Evented {
             this._fbo = painter.context.createFramebuffer(width, height, true);
             this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
         }
-        this._fbo.colorAttachment.set(texture == 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
+        this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
         return this._fbo;
     }
 
