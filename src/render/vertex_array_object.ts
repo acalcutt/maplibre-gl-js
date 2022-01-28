@@ -77,7 +77,7 @@ class VertexArrayObject {
             }
 
             if (dynamicVertexBuffer3) {
-               dynamicVertexBuffer3.bind();
+                dynamicVertexBuffer3.bind();
             }
         }
     }

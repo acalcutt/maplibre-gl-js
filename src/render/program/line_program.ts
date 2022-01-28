@@ -10,7 +10,7 @@ import type {CrossFaded} from '../../style/properties';
 import type LineStyleLayer from '../../style/style_layer/line_style_layer';
 import type Painter from '../painter';
 import type {CrossfadeParameters} from '../../style/evaluation_parameters';
-import { OverscaledTileID } from '../../source/tile_id';
+import {OverscaledTileID} from '../../source/tile_id';
 
 export type LineUniformsType = {
   'u_matrix': UniformMatrix4f;

@@ -519,10 +519,10 @@ class SourceCache extends Evented {
         if (this.usedForTerrain) {
             const parents = {};
             for (const tileID of idealTileIDs) {
-               if (tileID.canonical.z > this._source.minzoom) {
-                  const parent = tileID.scaledTo(tileID.canonical.z - 1);
-                  parents[parent.key] = parent;
-               }
+                if (tileID.canonical.z > this._source.minzoom) {
+                    const parent = tileID.scaledTo(tileID.canonical.z - 1);
+                    parents[parent.key] = parent;
+                }
             }
             idealTileIDs = idealTileIDs.concat(values(parents));
         }
@@ -583,7 +583,7 @@ class SourceCache extends Evented {
                         idealRasterTileIDs[children[1].key] = retain[children[1].key] = children[1];
                         idealRasterTileIDs[children[2].key] = retain[children[2].key] = children[2];
                         idealRasterTileIDs[children[3].key] = retain[children[3].key] = children[3];
-                        delete(missingTileIDs[key]);
+                        delete (missingTileIDs[key]);
                     }
                 }
                 // search for parent for each missing tile
@@ -593,7 +593,7 @@ class SourceCache extends Evented {
                         idealRasterTileIDs[parent.tileID.key] = retain[parent.tileID.key] = parent.tileID;
                         // remove idealTiles which would be rendered twice
                         for (const key in idealRasterTileIDs) {
-                            if (idealRasterTileIDs[key].isChildOf(parent.tileID)) delete(idealRasterTileIDs[key]);
+                            if (idealRasterTileIDs[key].isChildOf(parent.tileID)) delete (idealRasterTileIDs[key]);
                         }
                     }
                 }

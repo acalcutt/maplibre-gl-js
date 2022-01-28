@@ -351,9 +351,9 @@ class Transform {
         if (options.minzoom !== undefined && z < options.minzoom) return [];
         if (options.maxzoom !== undefined && z > options.maxzoom) z = options.maxzoom;
 
-        const cameraCoord = tsc.isEnabled()
-            ? this.pointCoordinate(this.getCameraPoint())
-            : MercatorCoordinate.fromLngLat(this.center);
+        const cameraCoord = tsc.isEnabled() ?
+            this.pointCoordinate(this.getCameraPoint()) :
+            MercatorCoordinate.fromLngLat(this.center);
         const centerCoord = MercatorCoordinate.fromLngLat(this.center);
         const numTiles = Math.pow(2, z);
         const cameraPoint = [numTiles * cameraCoord.x, numTiles * cameraCoord.y, 0];
@@ -438,7 +438,7 @@ class Transform {
                 const childZ = it.zoom + 1;
                 let quadrant = it.aabb.quadrant(i);
                 if (tsc.isEnabled()) {
-                    let tile = tsc.getSourceTile(new OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
+                    const tile = tsc.getSourceTile(new OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
                     quadrant = new Aabb(
                         vec3.fromValues(quadrant.min[0], quadrant.min[1], tile && tile.dem ? tile.dem.min - this.elevation : -this.elevation),
                         vec3.fromValues(quadrant.max[0], quadrant.max[1], tile && tile.dem ? Math.max(0, tile.dem.max - this.elevation) : 0)
@@ -495,7 +495,7 @@ class Transform {
     getCameraPosition() {
         const lngLat = this.pointLocation(this.getCameraPoint());
         const altitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
-        return { lngLat: lngLat, altitude: altitude };
+        return {lngLat, altitude};
     }
 
     // this method only works in combination with freezeElevation, because in this case
@@ -504,7 +504,7 @@ class Transform {
         // find position the camera is looking on
         const center = this.pointLocation3D(this.centerPoint);
         const elevation = this.getElevation(center);
-        const deltaElevation = + this.elevation - elevation;
+        const deltaElevation = +this.elevation - elevation;
         if (!deltaElevation) return;
 
         // calculate mercator distance between camera & target
@@ -631,7 +631,7 @@ class Transform {
         const rgba = new Uint8Array(4);
         const painter = this.terrainSourceCache._style.map.painter, context = painter.context, gl = context.gl;
         // grab coordinate pixel from coordinates framebuffer
-        context.bindFramebuffer.set(this.terrainSourceCache.getFramebuffer(painter, "coords").framebuffer);
+        context.bindFramebuffer.set(this.terrainSourceCache.getFramebuffer(painter, 'coords').framebuffer);
         gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
         context.bindFramebuffer.set(null);
         // decode coordinates (encoding see terrain-source-cache)
@@ -656,7 +656,7 @@ class Transform {
      * @returns {number} elevation, default 0
      * @private
      */
-    coordinatePoint(coord: MercatorCoordinate, elevation: number=0) {
+    coordinatePoint(coord: MercatorCoordinate, elevation: number = 0) {
         const p = vec4.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, elevation, 1);
         vec4.transformMat4(p, p, this.pixelMatrix2);
         return new Point(p[0] / p[3], p[1] / p[3]);
