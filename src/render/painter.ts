@@ -729,14 +729,17 @@ class Painter {
         const pool = this._tileFboPool[fbo.width];
         pool.push(fbo);
     }
+
     getTileFbo(size: number): Framebuffer {
         const fbos = this._tileFboPool[size];
         return fbos ? fbos.pop() : null;
     }
+
     setDemTextureCacheSize(target: number) {
         this._tileDemCache.setMaxSizeDeferred(target);
         this._tileDemCache.shrinkTick(2);
     }
+
     getOrCreateDemTextureForTile(tile: Tile, image: TextureImage, forceReupload: boolean): Texture {
         const tileID = tile.tileID;
         const context = this.context;
