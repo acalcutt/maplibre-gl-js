@@ -1,5 +1,4 @@
 import browser from '../util/browser';
-
 import {CircularBuffer} from '../util/circular_buffer';
 import {mat4, vec3} from 'gl-matrix';
 import SourceCache from '../source/source_cache';
