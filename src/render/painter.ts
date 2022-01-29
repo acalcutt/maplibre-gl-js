@@ -1,7 +1,9 @@
 import browser from '../util/browser';
 
+import {CircularBuffer} from '../util/circular_buffer';
 import {mat4, vec3} from 'gl-matrix';
 import SourceCache from '../source/source_cache';
+import TileCache from '../source/tile_cache';
 import EXTENT from '../data/extent';
 import pixelsToTileUnits from '../source/pixels_to_tile_units';
 import SegmentVector from '../data/segment';
@@ -19,6 +21,7 @@ import StencilMode from '../gl/stencil_mode';
 import ColorMode from '../gl/color_mode';
 import CullFaceMode from '../gl/cull_face_mode';
 import Texture from './texture';
+import Framebuffer from '../gl/framebuffer';
 import {clippingMaskUniformValues} from './program/clipping_mask_program';
 import Color from '../style-spec/util/color';
 import symbol from './draw_symbol';
@@ -60,9 +63,14 @@ import type VertexBuffer from '../gl/vertex_buffer';
 import type IndexBuffer from '../gl/index_buffer';
 import type {DepthRangeType, DepthMaskType, DepthFuncType} from '../gl/types';
 import type ResolvedImage from '../style-spec/expression/types/resolved_image';
+import type {TextureImage} from './texture';
 import type {RGBAImage} from '../util/image';
 
 export type RenderPass = 'offscreen' | 'opaque' | 'translucent';
+export type TileTextureData = {
+    tile: Tile,
+    texture: Texture | Framebuffer
+};
 
 type PainterOptions = {
   showOverdrawInspector: boolean;
@@ -87,6 +95,8 @@ class Painter {
     _tileTextures: {
       [_: number]: Array<Texture>;
     };
+    _tileFboPool: { [_: number]: CircularBuffer<Framebuffer> };
+    _tileDemCache: TileCache;
     numSublayers: number;
     depthEpsilon: number;
     emptyProgramConfiguration: ProgramConfiguration;
@@ -571,18 +581,54 @@ class Painter {
     }
 
     saveTileTexture(texture: Texture) {
-        const textures = this._tileTextures[texture.size[0]];
+        const textures = this._tileTextures[texture.width];
         if (!textures) {
-            this._tileTextures[texture.size[0]] = [texture];
+            this._tileTextures[texture.width] = [texture];
         } else {
             textures.push(texture);
         }
     }
 
-    getTileTexture(size: number) {
+    getTileTexture(size: number): Texture {
         const textures = this._tileTextures[size];
         return textures && textures.length > 0 ? textures.pop() : null;
     }
+
+    saveTileFbo(fbo: Framebuffer) {
+        // Lazily initialize a buffer
+        if (!this._tileFboPool[fbo.width]) {
+            const buf = new CircularBuffer(10, (evicted: Framebuffer) => evicted.destroy());
+            this._tileFboPool[fbo.width] = buf;
+        }
+        const pool = this._tileFboPool[fbo.width];
+        pool.push(fbo);
+    }
+    getTileFbo(size: number): Framebuffer {
+        const fbos = this._tileFboPool[size];
+        return fbos ? fbos.pop() : null;
+    }
+    setDemTextureCacheSize(target: number) {
+        this._tileDemCache.setMaxSizeDeferred(target);
+        this._tileDemCache.shrinkTick(2);
+    }
+    getOrCreateDemTextureForTile(tile: Tile, image: TextureImage, forceReupload: boolean): Texture {
+        const tileID = tile.tileID;
+        const context = this.context;
+        const textureCache = this._tileDemCache;
+        const cachedData = textureCache.get(tileID);
+        if (cachedData) {
+            const texture = cachedData.texture;
+            if (forceReupload) {
+                texture.update(image, {premultiply: false});
+            }
+            return texture;
+        } else {
+            const newTexture = new Texture(context, image, context.gl.RGBA, {premultiply: false});
+            textureCache.add(tileID, {tile, texture: newTexture});
+            return newTexture;
+        }
+    }
+
 
     /**
      * Checks whether a pattern image is needed, and if it is, whether it is not loaded.

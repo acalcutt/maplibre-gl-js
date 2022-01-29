@@ -284,7 +284,7 @@ class SourceCache extends Evented {
         }
 
         function fillBorder(tile, borderTile) {
-            tile.needsHillshadePrepare = true;
+            tile.borderBackfillDirty = true;
             let dx = borderTile.tileID.canonical.x - tile.tileID.canonical.x;
             const dy = borderTile.tileID.canonical.y - tile.tileID.canonical.y;
             const dim = Math.pow(2, tile.tileID.canonical.z);
@@ -770,6 +770,7 @@ class SourceCache extends Evented {
             return;
 
         if (tile.hasData() && tile.state !== 'reloading') {
+            tile.onRemove(this.map ? this.map.painter : null);
             this._cache.add(tile.tileID, tile, tile.getExpiryTimeout());
         } else {
             tile.aborted = true;

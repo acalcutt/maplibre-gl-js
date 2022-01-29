@@ -25,11 +25,12 @@ import type ImageAtlas from '../render/image_atlas';
 import type ImageManager from '../render/image_manager';
 import type Context from '../gl/context';
 import type {OverscaledTileID} from './tile_id';
-import type Framebuffer from '../gl/framebuffer';
 import type Transform from '../geo/transform';
 import type {LayerFeatureStates} from './source_state';
 import type {Cancelable} from '../types/cancelable';
 import type {FilterSpecification} from '../style-spec/types';
+import type Painter from '../render/painter';
+import type Framebuffer from '../gl/framebuffer';
 import type Point from '@mapbox/point-geometry';
 import {mat4} from 'gl-matrix';
 import type {VectorTileLayer} from '@mapbox/vector-tile';
@@ -75,11 +76,10 @@ class Tile {
     neighboringTiles: any;
     dem: DEMData;
     aborted: boolean;
-    needsHillshadePrepare: boolean;
+    borderBackfillDirty: ?boolean;
+    hillshadeFbo: ?Framebuffer;
     request: Cancelable;
     texture: any;
-    fbo: Framebuffer;
-    demTexture: Texture;
     refreshedUponExpiration: boolean;
     reloadCallback: any;
     resourceTiming: Array<PerformanceResourceTiming>;
@@ -233,6 +233,17 @@ class Tile {
 
         this.latestFeatureIndex = null;
         this.state = 'unloaded';
+    }
+	
+    /**
+     * Invoked when the tile is moved offscreen
+     * @private
+     */
+    onRemove(painter: ?Painter) {
+        if (this.hillshadeFbo && painter) {
+            painter.saveTileFbo(this.hillshadeFbo);
+            this.hillshadeFbo = null;
+        }
     }
 
     getBucket(layer: StyleLayer) {

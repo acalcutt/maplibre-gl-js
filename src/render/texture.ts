@@ -34,6 +34,9 @@ class Texture {
         this.update(image, options);
     }
 
+    get width(): number { return this.size[0]; }
+    get height(): number { return this.size[1]; }
+
     update(image: TextureImage, options?: {
       premultiply?: boolean;
       useMipmap?: boolean;
