@@ -241,7 +241,7 @@ class TileCache {
     /**
      * Call at appropriate intervals based on the usage of `setMaxSizeDeferred()`.
      *
-     * @param {number} shrinkSize
+     * @param {number} shrinkSize fixed budget to shrink by
      * @memberof TileCache
      */
     shrinkTick(shrinkSize: number) {

@@ -29,7 +29,6 @@ import type Transform from '../geo/transform';
 import type {LayerFeatureStates} from './source_state';
 import type {Cancelable} from '../types/cancelable';
 import type {FilterSpecification} from '../style-spec/types';
-import type Painter from '../render/painter';
 import type Framebuffer from '../gl/framebuffer';
 import type Point from '@mapbox/point-geometry';
 import {mat4} from 'gl-matrix';
@@ -251,6 +250,17 @@ class Tile {
         this.state = 'unloaded';
     }
 	
+    /**
+     * Invoked when the tile is moved offscreen
+     * @private
+     */
+    onRemove(painter: any) {
+        if (this.hillshadeFbo && painter) {
+            painter.saveTileFbo(this.hillshadeFbo);
+            this.hillshadeFbo = null;
+        }
+    }
+
     /**
      * Invoked when the tile is moved offscreen
      * @private
