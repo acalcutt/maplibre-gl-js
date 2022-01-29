@@ -130,4 +130,21 @@ describe('TileCache', () => {
         cache.add(idD, tileD);
         expect(numRemoved).toBe(3);
     });
+
+    test('TileCache#setMaxSizeDeferred', (t) => {
+        let numRemoved = 0;
+        const cache = new TileCache(10, () => {
+            numRemoved++;
+        });
+        cache.add(idA, tileA);
+        cache.add(idB, tileB);
+        cache.add(idC, tileC);
+        t.equal(numRemoved, 0);
+        cache.setMaxSizeDeferred(1);
+        // Dont shrink instantly
+        t.equal(numRemoved, 0);
+        cache.shrinkTick(1);
+        t.equal(numRemoved, 1);
+        t.end();
+});
 });

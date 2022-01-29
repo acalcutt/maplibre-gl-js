@@ -206,7 +206,7 @@ class Context {
         return rbo;
     }
 
-    createFramebuffer(width: number, height: number, hasDepth: boolean) {
+    createFramebuffer(width: number, height: number, hasDepth: boolean): Framebuffer {
         return new Framebuffer(this, width, height, hasDepth);
     }
 
