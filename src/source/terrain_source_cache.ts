@@ -65,7 +65,6 @@ class TerrainSourceCache extends Evented {
     _fbo: any;
     _fboCoordsTexture: Texture;
     _fboDepthTexture: Texture;
-    _demTexture: Texture;
     _emptyDepthTexture: Texture;
     // GL Objects for the terrain-mesh
     // The mesh is a regular mesh, which has the advantage that it can be reused for all tiles.
@@ -335,10 +334,10 @@ class TerrainSourceCache extends Evented {
         if (!this.isEnabled() || !tileID) return null;
         // find covering dem tile and prepare demTexture
         const sourceTile = this.getSourceTile(tileID, true);
-        if (sourceTile && sourceTile.dem && (!this._demTexture || sourceTile.needsTerrainPrepare)) {
+        if (sourceTile && sourceTile.dem && (!sourceTile.demTerrainTexture || sourceTile.needsTerrainPrepare)) {
             const context = this._style.map.painter.context;
-            this._demTexture = this._style.map.painter.getOrCreateDemTextureForTile(sourceTile, sourceTile.dem.getPixels(), !!sourceTile.needsTerrainPrepare);
-            this._demTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+            sourceTile.demTerrainTexture = this._style.map.painter.getOrCreateDemTextureForTile(sourceTile, sourceTile.dem.getPixels(), !!sourceTile.needsTerrainPrepare);
+            sourceTile.demTerrainTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
             sourceTile.needsTerrainPrepare = false;
         }
         // create matrix for lookup in dem data
@@ -365,7 +364,7 @@ class TerrainSourceCache extends Evented {
             u_terrain_unpack: sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
             u_terrain_offset: this.elevationOffset,
             u_terrain_exaggeration: this.exaggeration,
-            texture: (sourceTile && this._demTexture || this._emptyDemTexture).texture,
+            texture: (sourceTile && sourceTile.demTerrainTexture || this._emptyDemTexture).texture,
             depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
             tile: sourceTile
         };

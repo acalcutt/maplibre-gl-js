@@ -83,6 +83,7 @@ class Tile {
     needsTerrainPrepare: boolean;
     request: Cancelable;
     texture: any;
+    demTerrainTexture: Texture;
     refreshedUponExpiration: boolean;
     reloadCallback: any;
     resourceTiming: Array<PerformanceResourceTiming>;
@@ -136,7 +137,9 @@ class Tile {
     }
 
     clearTextures(painter: any) {
+        this.demTerrainTexture && painter.saveTileTexture(this.demTerrainTexture);
         this.textures.forEach(t => painter.saveTileTexture(t));
+        this.demTerrainTexture = null;
         this.textures = [];
         this.textureCoords = {};
     }
