@@ -21,6 +21,7 @@ class TileCache {
       }>;
     };
     order: Array<string>;
+    _shrinkTarget: number;
     onRemove: (element: Tile) => void;
     /**
      * @param {number} max number of permitted values

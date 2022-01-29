@@ -78,8 +78,8 @@ class Tile {
     dem: DEMData;
     demMatrix: mat4;
     aborted: boolean;
-    borderBackfillDirty: ?boolean;
-    hillshadeFbo: ?Framebuffer;
+    borderBackfillDirty: boolean;
+    hillshadeFbo: Framebuffer;
     needsTerrainPrepare: boolean;
     request: Cancelable;
     texture: any;
@@ -136,9 +136,7 @@ class Tile {
     }
 
     clearTextures(painter: any) {
-        this.demTexture && painter.saveTileTexture(this.demTexture);
         this.textures.forEach(t => painter.saveTileTexture(t));
-        this.demTexture = null;
         this.textures = [];
         this.textureCoords = {};
     }
@@ -254,7 +252,7 @@ class Tile {
      * Invoked when the tile is moved offscreen
      * @private
      */
-    onRemove(painter: ?Painter) {
+    onRemove(painter: any) {
         if (this.hillshadeFbo && painter) {
             painter.saveTileFbo(this.hillshadeFbo);
             this.hillshadeFbo = null;
