@@ -24,7 +24,7 @@ function drawHillshade(painter: Painter, sourceCache: SourceCache, layer: Hillsh
 
     const depthMode = painter.depthModeForSublayer(0, DepthMode.ReadOnly);
     const colorMode = painter.colorModeForRenderPass();
-	painter.setDemTextureCacheSize(Math.floor(tileIDs.length));
+    painter.setDemTextureCacheSize(Math.floor(tileIDs.length));
 
     const [stencilModes, coords] = painter.renderPass === 'translucent' ?
         painter.stencilConfigForOverlap(tileIDs) : [{}, tileIDs];

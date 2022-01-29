@@ -68,8 +68,8 @@ import type {RGBAImage} from '../util/image';
 
 export type RenderPass = 'offscreen' | 'opaque' | 'translucent';
 export type TileTextureData = {
-    tile: Tile,
-    texture: Texture | Framebuffer
+    tile: Tile;
+    texture: Texture | Framebuffer;
 };
 
 type PainterOptions = {
@@ -628,7 +628,6 @@ class Painter {
             return newTexture;
         }
     }
-
 
     /**
      * Checks whether a pattern image is needed, and if it is, whether it is not loaded.
