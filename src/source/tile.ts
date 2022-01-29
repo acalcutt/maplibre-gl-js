@@ -249,17 +249,6 @@ class Tile {
         this.latestFeatureIndex = null;
         this.state = 'unloaded';
     }
-	
-    /**
-     * Invoked when the tile is moved offscreen
-     * @private
-     */
-    onRemove(painter: any) {
-        if (this.hillshadeFbo && painter) {
-            painter.saveTileFbo(this.hillshadeFbo);
-            this.hillshadeFbo = null;
-        }
-    }
 
     /**
      * Invoked when the tile is moved offscreen
