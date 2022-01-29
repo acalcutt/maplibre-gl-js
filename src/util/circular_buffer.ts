@@ -5,7 +5,7 @@
  * @private
  */
 export class CircularBuffer<T> {
-    _arr: Array<?T>;
+    _arr: Array<T>;
     _capacity: number;
     _end: number;
     _count: number;
@@ -48,10 +48,10 @@ export class CircularBuffer<T> {
      * Removes the last added element from the buffer.
      * Returns null if the buffer is empty.
      *
-     * @returns {?T}
+     * @returns {T}
      * @private
      */
-    pop(): ?T {
+    pop(): T {
         if (this._count > 0) {
             const top = this._arr[this._end];
             this._arr[this._end] = null;

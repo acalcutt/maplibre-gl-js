@@ -76,8 +76,8 @@ class Tile {
     neighboringTiles: any;
     dem: DEMData;
     aborted: boolean;
-    borderBackfillDirty: ?boolean;
-    hillshadeFbo: ?Framebuffer;
+    borderBackfillDirty: boolean;
+    hillshadeFbo: Framebuffer;
     request: Cancelable;
     texture: any;
     refreshedUponExpiration: boolean;
@@ -239,7 +239,7 @@ class Tile {
      * Invoked when the tile is moved offscreen
      * @private
      */
-    onRemove(painter: ?Painter) {
+    onRemove(painter: any) {
         if (this.hillshadeFbo && painter) {
             painter.saveTileFbo(this.hillshadeFbo);
             this.hillshadeFbo = null;
