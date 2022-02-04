@@ -419,7 +419,7 @@ export declare type RasterDEMSourceSpecification = {
 	"maxzoom"?: number;
 	"tileSize"?: number;
 	"attribution"?: string;
-	"encoding"?: "terrarium" | "mapbox" | "mtk";
+	"encoding"?: "terrarium" | "mtk" | "mapbox";
 	"volatile"?: boolean;
 };
 export declare type GeoJSONSourceSpecification = {
