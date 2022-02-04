@@ -15,7 +15,7 @@ import type {SingleCollisionBox} from '../data/bucket/symbol_bucket';
 import type {
     GlyphOffsetArray,
     SymbolLineVertexArray
-} from '../data/array_types';
+} from '../data/array_types.g';
 import type {OverlapMode} from '../style/style_layer/symbol_style_layer';
 
 // When a symbol crosses the edge that causes it to be included in
@@ -83,7 +83,7 @@ class CollisionIndex {
             box: Array<number>;
             offscreen: boolean;
         } {
-        const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY, getElevation);
+        const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY);
         const tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
         const tlX = collisionBox.x1 * tileToViewport + projectedPoint.point.x;
         const tlY = collisionBox.y1 * tileToViewport + projectedPoint.point.y;

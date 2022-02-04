@@ -1,4 +1,4 @@
-import {FillExtrusionLayoutArray, PosArray} from '../array_types';
+import {FillExtrusionLayoutArray, PosArray} from '../array_types.g';
 import {members as layoutAttributes, centroidAttributes} from './fill_extrusion_attributes';
 
 import SegmentVector from '../segment';
