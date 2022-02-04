@@ -15474,7 +15474,7 @@ function createImage(image, _a, channels, data) {
     } else if (data instanceof Uint8ClampedArray) {
         data = new Uint8Array(data.buffer);
     } else if (data.length !== width * height * channels) {
-        throw new RangeError('mismatched image size');
+        throw new RangeError('mismatched image size. expected: '.concat(data.length, ' but got: ').concat(width * height * channels));
     }
     image.width = width;
     image.height = height;
@@ -29597,9 +29597,14 @@ var SourceCache = function (_super) {
     };
     SourceCache.prototype._abortTile = function (tile) {
         if (this._source.abortTile) {
-            return this._source.abortTile(tile, function () {
+            this._source.abortTile(tile, function () {
             });
         }
+        this._source.fire(new performance.Event('dataabort', {
+            tile: tile,
+            coord: tile.tileID,
+            dataType: 'source'
+        }));
     };
     SourceCache.prototype.serialize = function () {
         return this._source.serialize();
@@ -42491,6 +42496,9 @@ var Map = function (_super) {
         });
         _this.on('dataloading', function (event) {
             _this.fire(new performance.Event(''.concat(event.dataType, 'dataloading'), event));
+        });
+        _this.on('dataabort', function (event) {
+            _this.fire(new performance.Event('sourcedataabort', event));
         });
         return _this;
     }
