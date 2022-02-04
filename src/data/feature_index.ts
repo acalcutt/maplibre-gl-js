@@ -15,7 +15,7 @@ import EvaluationParameters from '../style/evaluation_parameters';
 import SourceFeatureState from '../source/source_state';
 import {polygonIntersectsBox} from '../util/intersection_tests';
 import {PossiblyEvaluated} from '../style/properties';
-import {FeatureIndexArray} from './array_types.g';
+import {FeatureIndexArray} from './array_types';
 import {mat4} from 'gl-matrix';
 
 import type StyleLayer from '../style/style_layer';

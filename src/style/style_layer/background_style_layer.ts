@@ -1,9 +1,9 @@
 import StyleLayer from '../style_layer';
 
-import properties, {BackgroundPaintPropsPossiblyEvaluated} from './background_style_layer_properties.g';
+import properties, {BackgroundPaintPropsPossiblyEvaluated} from './background_style_layer_properties';
 import {Transitionable, Transitioning, PossiblyEvaluated} from '../properties';
 
-import type {BackgroundPaintProps} from './background_style_layer_properties.g';
+import type {BackgroundPaintProps} from './background_style_layer_properties';
 import type {LayerSpecification} from '../../style-spec/types';
 
 class BackgroundStyleLayer extends StyleLayer {

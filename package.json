@@ -151,7 +151,7 @@
     "tape": "^5.5.0",
     "tape-filter": "^1.0.4",
     "testem": "^3.6.0",
-    "ts-node": "^10.2.1",
+    "ts-node": "^10.4.0",
     "typescript": "^4.5.5",
     "unfetch": "^4.2.0"
   },
@@ -195,8 +195,7 @@
     "test-unit": "jest ./src",
     "codegen": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-code.ts && node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-struct-arrays.ts && node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-spec.ts",
     "benchmark": "node bench/run-benchmarks.js",
-    "gl-stats": "node bench/gl-stats.js",
-    "postinstall": "npm run codegen"
+    "gl-stats": "node bench/gl-stats.js"
   },
   "files": [
     "build/",
