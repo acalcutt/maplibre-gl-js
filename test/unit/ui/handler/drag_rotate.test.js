@@ -743,7 +743,7 @@ test('DragRotateHandler does not begin a drag if preventDefault is called on the
     t.end();
 });
 
-test(`DragRotateHandler can be disabled after mousedown (#2419)`, (t) => {
+test('DragRotateHandler can be disabled after mousedown (#2419)', (t) => {
     const map = createMap();
 
     // Prevent inertial rotation.

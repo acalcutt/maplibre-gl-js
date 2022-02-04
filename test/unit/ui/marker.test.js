@@ -46,8 +46,8 @@ test('Marker uses a default marker element with custom scale', (t) => {
     t.ok(defaultMarker.getElement().firstChild.getAttribute('width').includes('27'));
 
     // (41 * 0.8) = 32.8, (27 * 0.8) = 21.6
-    t.ok(smallerMarker.getElement().firstChild.getAttribute('height').includes(`32.8`));
-    t.ok(smallerMarker.getElement().firstChild.getAttribute('width').includes(`21.6`));
+    t.ok(smallerMarker.getElement().firstChild.getAttribute('height').includes('32.8'));
+    t.ok(smallerMarker.getElement().firstChild.getAttribute('width').includes('21.6'));
 
     // (41 * 2) = 82, (27 * 2) = 54
     t.ok(largerMarker.getElement().firstChild.getAttribute('height').includes('82'));
@@ -191,7 +191,7 @@ test('Marker#setPopup sets a tabindex', (t) => {
     const popup = new Popup();
     const marker = new Marker()
         .setPopup(popup);
-    t.equal(marker.getElement().getAttribute('tabindex'), "0");
+    t.equal(marker.getElement().getAttribute('tabindex'), '0');
     t.end();
 });
 
@@ -210,7 +210,7 @@ test('Marker#setPopup does not replace existing tabindex', (t) => {
     const popup = new Popup();
     const marker = new Marker({element})
         .setPopup(popup);
-    t.equal(marker.getElement().getAttribute('tabindex'), "5");
+    t.equal(marker.getElement().getAttribute('tabindex'), '5');
     t.end();
 });
 
@@ -393,7 +393,7 @@ test('Marker with draggable:true fires dragstart, drag, and dragend events at ap
 
     simulate.mousemove(el, {clientX: 2.9, clientY: 0});
     t.equal(dragstart.callCount, 0);
-    t.equal(drag.callCount, 0, "drag not called yet, movement below marker's map-inherited click tolerance");
+    t.equal(drag.callCount, 0, 'drag not called yet, movement below marker\'s map-inherited click tolerance');
     t.equal(dragend.callCount, 0);
     t.equal(el.style.pointerEvents, '');
 
@@ -443,7 +443,7 @@ test('Marker with draggable:true fires dragstart, drag, and dragend events at ap
 
     simulate.mousemove(el, {clientX: 3.9, clientY: 0});
     t.equal(dragstart.callCount, 0);
-    t.equal(drag.callCount, 0, "drag not called yet, movement below marker's map-inherited click tolerance");
+    t.equal(drag.callCount, 0, 'drag not called yet, movement below marker\'s map-inherited click tolerance');
     t.equal(dragend.callCount, 0);
     t.equal(el.style.pointerEvents, '');
 
@@ -527,7 +527,7 @@ test('Marker with draggable:true fires dragstart, drag, and dragend events at ap
 
     simulate.touchmove(el, {touches: [{clientX: 2.9, clientY: 0}]});
     t.equal(dragstart.callCount, 0);
-    t.equal(drag.callCount, 0, "drag not called yet, movement below marker's map-inherited click tolerance");
+    t.equal(drag.callCount, 0, 'drag not called yet, movement below marker\'s map-inherited click tolerance');
     t.equal(dragend.callCount, 0);
     t.equal(el.style.pointerEvents, '');
 
@@ -577,7 +577,7 @@ test('Marker with draggable:true fires dragstart, drag, and dragend events at ap
 
     simulate.touchmove(el, {touches: [{clientX: 3.9, clientY: 0}]});
     t.equal(dragstart.callCount, 0);
-    t.equal(drag.callCount, 0, "drag not called yet, movement below marker's map-inherited click tolerance");
+    t.equal(drag.callCount, 0, 'drag not called yet, movement below marker\'s map-inherited click tolerance');
     t.equal(dragend.callCount, 0);
     t.equal(el.style.pointerEvents, '');
 

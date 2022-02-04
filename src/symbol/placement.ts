@@ -539,7 +539,7 @@ export class Placement {
                             textPixelRatio,
                             posMatrix,
                             collisionGroup.predicate,
-							getElevation);
+                            getElevation);
 
                         if (placedFeature && placedFeature.box && placedFeature.box.length) {
                             this.markUsedOrientation(bucket, orientation, symbolInstance);

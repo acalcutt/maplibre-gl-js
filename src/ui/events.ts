@@ -312,7 +312,7 @@ export type MapDataEvent = {
 };
 
 export type MapTerrainEvent = {
-   type: 'terrain';
+    type: 'terrain';
 };
 
 export type MapContextEvent = {
@@ -391,7 +391,7 @@ export type MapEventType = {
 
     wheel: MapWheelEvent;
 
-   terrain: MapTerrainEvent;
+    terrain: MapTerrainEvent;
 };
 
 export type MapEvent =

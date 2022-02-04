@@ -5,8 +5,8 @@ import type Map from '../map';
 import type {IControl} from './control';
 
 type TerrainOptions = {
-  id?: string;
-  options?: {exaggeration: number; elevationOffset: number};
+    id?: string;
+    options?: {exaggeration: number; elevationOffset: number};
 };
 
 /**

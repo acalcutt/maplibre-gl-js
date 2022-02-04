@@ -95,10 +95,10 @@ const lineSDFUniforms = (context: Context, locations: UniformLocations): LineSDF
 });
 
 const lineUniformValues = (
-  painter: Painter,
-  tile: Tile,
-  layer: LineStyleLayer,
-  coord: OverscaledTileID
+    painter: Painter,
+    tile: Tile,
+    layer: LineStyleLayer,
+    coord: OverscaledTileID
 ): UniformValues<LineUniformsType> => {
     const transform = painter.transform;
 
@@ -114,11 +114,11 @@ const lineUniformValues = (
 };
 
 const lineGradientUniformValues = (
-  painter: Painter,
-  tile: Tile,
-  layer: LineStyleLayer,
-  imageHeight: number,
-  coord: OverscaledTileID
+    painter: Painter,
+    tile: Tile,
+    layer: LineStyleLayer,
+    imageHeight: number,
+    coord: OverscaledTileID
 ): UniformValues<LineGradientUniformsType> => {
     return extend(lineUniformValues(painter, tile, layer, coord), {
         'u_image': 0,
