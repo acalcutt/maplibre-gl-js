@@ -13,44 +13,44 @@ import type {CrossfadeParameters} from '../../style/evaluation_parameters';
 import {OverscaledTileID} from '../../source/tile_id';
 
 export type LineUniformsType = {
-  'u_matrix': UniformMatrix4f;
-  'u_ratio': Uniform1f;
-  'u_device_pixel_ratio': Uniform1f;
-  'u_units_to_pixels': Uniform2f;
+    'u_matrix': UniformMatrix4f;
+    'u_ratio': Uniform1f;
+    'u_device_pixel_ratio': Uniform1f;
+    'u_units_to_pixels': Uniform2f;
 };
 
 export type LineGradientUniformsType = {
-  'u_matrix': UniformMatrix4f;
-  'u_ratio': Uniform1f;
-  'u_device_pixel_ratio': Uniform1f;
-  'u_units_to_pixels': Uniform2f;
-  'u_image': Uniform1i;
-  'u_image_height': Uniform1f;
+    'u_matrix': UniformMatrix4f;
+    'u_ratio': Uniform1f;
+    'u_device_pixel_ratio': Uniform1f;
+    'u_units_to_pixels': Uniform2f;
+    'u_image': Uniform1i;
+    'u_image_height': Uniform1f;
 };
 
 export type LinePatternUniformsType = {
-  'u_matrix': UniformMatrix4f;
-  'u_texsize': Uniform2f;
-  'u_ratio': Uniform1f;
-  'u_device_pixel_ratio': Uniform1f;
-  'u_units_to_pixels': Uniform2f;
-  'u_image': Uniform1i;
-  'u_scale': Uniform3f;
-  'u_fade': Uniform1f;
+    'u_matrix': UniformMatrix4f;
+    'u_texsize': Uniform2f;
+    'u_ratio': Uniform1f;
+    'u_device_pixel_ratio': Uniform1f;
+    'u_units_to_pixels': Uniform2f;
+    'u_image': Uniform1i;
+    'u_scale': Uniform3f;
+    'u_fade': Uniform1f;
 };
 
 export type LineSDFUniformsType = {
-  'u_matrix': UniformMatrix4f;
-  'u_ratio': Uniform1f;
-  'u_device_pixel_ratio': Uniform1f;
-  'u_units_to_pixels': Uniform2f;
-  'u_patternscale_a': Uniform2f;
-  'u_patternscale_b': Uniform2f;
-  'u_sdfgamma': Uniform1f;
-  'u_image': Uniform1i;
-  'u_tex_y_a': Uniform1f;
-  'u_tex_y_b': Uniform1f;
-  'u_mix': Uniform1f;
+    'u_matrix': UniformMatrix4f;
+    'u_ratio': Uniform1f;
+    'u_device_pixel_ratio': Uniform1f;
+    'u_units_to_pixels': Uniform2f;
+    'u_patternscale_a': Uniform2f;
+    'u_patternscale_b': Uniform2f;
+    'u_sdfgamma': Uniform1f;
+    'u_image': Uniform1i;
+    'u_tex_y_a': Uniform1f;
+    'u_tex_y_b': Uniform1f;
+    'u_mix': Uniform1f;
 };
 
 const lineUniforms = (context: Context, locations: UniformLocations): LineUniformsType => ({
@@ -127,11 +127,11 @@ const lineGradientUniformValues = (
 };
 
 const linePatternUniformValues = (
-  painter: Painter,
-  tile: Tile,
-  layer: LineStyleLayer,
-  crossfade: CrossfadeParameters,
-  coord: OverscaledTileID
+    painter: Painter,
+    tile: Tile,
+    layer: LineStyleLayer,
+    crossfade: CrossfadeParameters,
+    coord: OverscaledTileID
 ): UniformValues<LinePatternUniformsType> => {
     const transform = painter.transform;
     const tileZoomRatio = calculateTileRatio(tile, transform);
@@ -152,12 +152,12 @@ const linePatternUniformValues = (
 };
 
 const lineSDFUniformValues = (
-  painter: Painter,
-  tile: Tile,
-  layer: LineStyleLayer,
-  dasharray: CrossFaded<Array<number>>,
-  crossfade: CrossfadeParameters,
-  coord: OverscaledTileID
+    painter: Painter,
+    tile: Tile,
+    layer: LineStyleLayer,
+    dasharray: CrossFaded<Array<number>>,
+    crossfade: CrossfadeParameters,
+    coord: OverscaledTileID
 ): UniformValues<LineSDFUniformsType> => {
     const transform = painter.transform;
     const lineAtlas = painter.lineAtlas;
