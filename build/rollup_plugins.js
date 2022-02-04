@@ -7,7 +7,9 @@ import unassert from 'rollup-plugin-unassert';
 import json from '@rollup/plugin-json';
 import {terser} from 'rollup-plugin-terser';
 import minifyStyleSpec from './rollup_plugin_minify_style_spec.js';
+import {createFilter} from 'rollup-pluginutils';
 import strip from '@rollup/plugin-strip';
+import glsl_to_js from './glsl_to_js.js';
 
 // Common set of plugins/transformations shared across different rollup
 // builds (main maplibre bundle, style-spec package, benchmarks bundle)
@@ -28,7 +30,11 @@ export const plugins = (minified, production, watch) => [
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }) : false,
+<<<<<<< HEAD
     buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
+=======
+    glsl('**/*.glsl', production),
+>>>>>>> parent of 4983c5565 (Refactor shaders and typings generation (#928))
     minified ? terser({
         compress: {
             pure_getters: true,
@@ -49,3 +55,18 @@ export const plugins = (minified, production, watch) => [
         ignoreGlobal: true
     })
 ].filter(Boolean);
+
+// Using this instead of rollup-plugin-string to add minification
+function glsl(include, minify) {
+    const filter = createFilter(include);
+    return {
+        name: 'glsl',
+        transform(code, id) {
+            if (!filter(id)) return;
+            return {
+                code: glsl_to_js(code, minify),
+                map: {mappings: ''}
+            };
+        }
+    };
+}

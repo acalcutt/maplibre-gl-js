@@ -138,6 +138,7 @@
     "rollup-plugin-sourcemaps": "^0.6.3",
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-unassert": "^0.3.0",
+    "rollup-pluginutils": "^2.8.2",
     "rw": "^1.3.3",
     "selenium-webdriver": "^4.1.1",
     "semver": "^7.3.5",
@@ -158,6 +159,7 @@
     "./rollup/build/tsc/src/util/web_worker.js": "./build/web_worker_replacement.js"
   },
   "scripts": {
+<<<<<<< HEAD
     "generate-shaders": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-shaders.ts",
     "generate-struct-arrays": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-struct-arrays.ts",
     "generate-style-code": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-code.ts",
@@ -167,10 +169,16 @@
     "build-swc-bench": "swc bench -d rollup/build/tsc/bench -D -s",
     "build-tsc": "npm run build-swc-src && npm run build-swc-bench",
     "build-tsc-old": "tsc --outDir rollup/build/tsc",
+=======
+    "build-post-ts": "node build/post-ts-build.js ./rollup/build/tsc/src/shaders",
+    "build-post-ts-min": "node build/post-ts-build.js ./rollup/build/tsc/src/shaders true",
+    "build-tsc": "tsc --outDir rollup/build/tsc && npm run build-post-ts",
+    "build-tsc-min": "tsc --outDir rollup/build/tsc && npm run build-post-ts-min",
+>>>>>>> parent of 4983c5565 (Refactor shaders and typings generation (#928))
     "build-dev": "npm run build-tsc && rollup -c --environment BUILD:dev",
     "watch-dev": "rollup -c --environment BUILD:dev --watch",
     "build-prod": "npm run build-tsc && rollup -c --environment BUILD:production",
-    "build-prod-min": "npm run build-tsc && rollup -c --environment BUILD:production,MINIFY:true",
+    "build-prod-min": "npm run build-tsc-min && rollup -c --environment BUILD:production,MINIFY:true",
     "build-csp": "rollup -c rollup.config.csp.js",
     "build-query-suite": "rollup -c test/integration/rollup.config.test.js",
     "build-css": "postcss -o dist/maplibre-gl2.css src/css/maplibre-gl.css",
@@ -197,7 +205,7 @@
     "test-query": "testem ci -f test/integration/testem.cjs -R xunit > test/integration/query-tests/test-results.xml",
     "test-expressions": "node --loader ts-node/esm --experimental-specifier-resolution=node test/expression.test.ts",
     "test-unit": "jest ./src",
-    "codegen": "npm run generate-style-code && npm run generate-struct-arrays && npm run generate-style-spec && npm run generate-shaders",
+    "codegen": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-code.ts && node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-struct-arrays.ts && node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-spec.ts",
     "benchmark": "node bench/run-benchmarks.js",
     "gl-stats": "node bench/gl-stats.js",
     "postinstall": "npm run codegen"
