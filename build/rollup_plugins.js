@@ -30,11 +30,8 @@ export const plugins = (minified, production, watch) => [
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }) : false,
-<<<<<<< HEAD
     buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
-=======
     glsl('**/*.glsl', production),
->>>>>>> parent of 4983c5565 (Refactor shaders and typings generation (#928))
     minified ? terser({
         compress: {
             pure_getters: true,
