@@ -97,51 +97,6 @@ UnitBezier.prototype = {
     }
 };
 
-var __values$E = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$e = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 function easeCubicInOut(t) {
     if (t <= 0) {
         return 0;
@@ -204,29 +159,14 @@ function keysDifference(obj, other) {
 }
 function extend$1(dest) {
     var arguments$1 = arguments;
-    var e_1, _a;
     var sources = [];
     for (var _i = 1; _i < arguments.length; _i++) {
         sources[_i - 1] = arguments$1[_i];
     }
-    try {
-        for (var sources_1 = __values$E(sources), sources_1_1 = sources_1.next(); !sources_1_1.done; sources_1_1 = sources_1.next()) {
-            var src = sources_1_1.value;
-            for (var k in src) {
-                dest[k] = src[k];
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (sources_1_1 && !sources_1_1.done && (_a = sources_1.return)) {
-                _a.call(sources_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+    for (var _a = 0, sources_1 = sources; _a < sources_1.length; _a++) {
+        var src = sources_1[_a];
+        for (var k in src) {
+            dest[k] = src[k];
         }
     }
     return dest;
@@ -317,7 +257,7 @@ function calculateSignedArea(ring) {
     return sum;
 }
 function sphericalToCartesian(_a) {
-    var _b = __read$e(_a, 3), r = _b[0], azimuthal = _b[1], polar = _b[2];
+    var r = _a[0], azimuthal = _a[1], polar = _a[2];
     azimuthal += 90;
     azimuthal *= Math.PI / 180;
     polar *= Math.PI / 180;
@@ -1754,26 +1694,6 @@ var __extends$h = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$D = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function _addEventListener(type, listener, listenerList) {
     var listenerExists = listenerList[type] && listenerList[type].indexOf(listener) !== -1;
     if (!listenerExists) {
@@ -1828,7 +1748,6 @@ var Evented = function () {
         return this;
     };
     Evented.prototype.fire = function (event, properties) {
-        var e_1, _a, e_2, _b;
         if (typeof event === 'string') {
             event = new Event$1(event, properties || {});
         }
@@ -1836,43 +1755,15 @@ var Evented = function () {
         if (this.listens(type)) {
             event.target = this;
             var listeners = this._listeners && this._listeners[type] ? this._listeners[type].slice() : [];
-            try {
-                for (var listeners_1 = __values$D(listeners), listeners_1_1 = listeners_1.next(); !listeners_1_1.done; listeners_1_1 = listeners_1.next()) {
-                    var listener = listeners_1_1.value;
-                    listener.call(this, event);
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (listeners_1_1 && !listeners_1_1.done && (_a = listeners_1.return)) {
-                        _a.call(listeners_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, listeners_1 = listeners; _i < listeners_1.length; _i++) {
+                var listener = listeners_1[_i];
+                listener.call(this, event);
             }
             var oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
-            try {
-                for (var oneTimeListeners_1 = __values$D(oneTimeListeners), oneTimeListeners_1_1 = oneTimeListeners_1.next(); !oneTimeListeners_1_1.done; oneTimeListeners_1_1 = oneTimeListeners_1.next()) {
-                    var listener = oneTimeListeners_1_1.value;
-                    _removeEventListener(type, listener, this._oneTimeListeners);
-                    listener.call(this, event);
-                }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (oneTimeListeners_1_1 && !oneTimeListeners_1_1.done && (_b = oneTimeListeners_1.return)) {
-                        _b.call(oneTimeListeners_1);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
-                }
+            for (var _a = 0, oneTimeListeners_1 = oneTimeListeners; _a < oneTimeListeners_1.length; _a++) {
+                var listener = oneTimeListeners_1[_a];
+                _removeEventListener(type, listener, this._oneTimeListeners);
+                listener.call(this, event);
             }
             var parent_1 = this._eventedParent;
             if (parent_1) {
@@ -4382,51 +4273,16 @@ function validateConstants(options) {
     }
 }
 
-var __values$C = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function extend (output) {
     var arguments$1 = arguments;
-    var e_1, _a;
     var inputs = [];
     for (var _i = 1; _i < arguments.length; _i++) {
         inputs[_i - 1] = arguments$1[_i];
     }
-    try {
-        for (var inputs_1 = __values$C(inputs), inputs_1_1 = inputs_1.next(); !inputs_1_1.done; inputs_1_1 = inputs_1.next()) {
-            var input = inputs_1_1.value;
-            for (var k in input) {
-                output[k] = input[k];
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (inputs_1_1 && !inputs_1_1.done && (_a = inputs_1.return)) {
-                _a.call(inputs_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+    for (var _a = 0, inputs_1 = inputs; _a < inputs_1.length; _a++) {
+        var input = inputs_1[_a];
+        for (var k in input) {
+            output[k] = input[k];
         }
     }
     return output;
@@ -4487,76 +4343,16 @@ var ParsingError = function (_super) {
     return ParsingError;
 }(Error);
 
-var __values$B = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$d = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Scope = function () {
     function Scope(parent, bindings) {
-        var e_1, _a;
         if (bindings === void 0) {
             bindings = [];
         }
         this.parent = parent;
         this.bindings = {};
-        try {
-            for (var bindings_1 = __values$B(bindings), bindings_1_1 = bindings_1.next(); !bindings_1_1.done; bindings_1_1 = bindings_1.next()) {
-                var _b = __read$d(bindings_1_1.value, 2), name_1 = _b[0], expression = _b[1];
-                this.bindings[name_1] = expression;
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (bindings_1_1 && !bindings_1_1.done && (_a = bindings_1.return)) {
-                    _a.call(bindings_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, bindings_1 = bindings; _i < bindings_1.length; _i++) {
+            var _a = bindings_1[_i], name_1 = _a[0], expression = _a[1];
+            this.bindings[name_1] = expression;
         }
     }
     Scope.prototype.concat = function (bindings) {
@@ -4580,26 +4376,6 @@ var Scope = function () {
     return Scope;
 }();
 
-var __values$A = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var NullType = { kind: 'null' };
 var NumberType = { kind: 'number' };
 var StringType = { kind: 'string' };
@@ -4638,7 +4414,6 @@ var valueMemberTypes = [
     ResolvedImageType
 ];
 function checkSubtype(expected, t) {
-    var e_1, _a;
     if (t.kind === 'error') {
         return null;
     } else if (expected.kind === 'array') {
@@ -4648,24 +4423,10 @@ function checkSubtype(expected, t) {
     } else if (expected.kind === t.kind) {
         return null;
     } else if (expected.kind === 'value') {
-        try {
-            for (var valueMemberTypes_1 = __values$A(valueMemberTypes), valueMemberTypes_1_1 = valueMemberTypes_1.next(); !valueMemberTypes_1_1.done; valueMemberTypes_1_1 = valueMemberTypes_1.next()) {
-                var memberType = valueMemberTypes_1_1.value;
-                if (!checkSubtype(memberType, t)) {
-                    return null;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (valueMemberTypes_1_1 && !valueMemberTypes_1_1.done && (_a = valueMemberTypes_1.return)) {
-                    _a.call(valueMemberTypes_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, valueMemberTypes_1 = valueMemberTypes; _i < valueMemberTypes_1.length; _i++) {
+            var memberType = valueMemberTypes_1[_i];
+            if (!checkSubtype(memberType, t)) {
+                return null;
             }
         }
     }
@@ -5708,31 +5469,6 @@ try {
 } catch (e) {
 }
 
-var __read$c = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Color = function () {
     function Color(r, g, b, a) {
         if (a === void 0) {
@@ -5760,7 +5496,7 @@ var Color = function () {
         return new Color(rgba[0] / 255 * rgba[3], rgba[1] / 255 * rgba[3], rgba[2] / 255 * rgba[3], rgba[3]);
     };
     Color.prototype.toString = function () {
-        var _a = __read$c(this.toArray(), 4), r = _a[0], g = _a[1], b = _a[2], a = _a[3];
+        var _a = this.toArray(), r = _a[0], g = _a[1], b = _a[2], a = _a[3];
         return 'rgba('.concat(Math.round(r), ',').concat(Math.round(g), ',').concat(Math.round(b), ',').concat(a, ')');
     };
     Color.prototype.toArray = function () {
@@ -5806,26 +5542,6 @@ var Collator = function () {
     return Collator;
 }();
 
-var __values$z = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var FormattedSection = function () {
     function FormattedSection(text, image, scale, fontStack, textColor) {
         this.text = text;
@@ -5867,46 +5583,31 @@ var Formatted = function () {
         }).join('');
     };
     Formatted.prototype.serialize = function () {
-        var e_1, _a;
         var serialized = ['format'];
-        try {
-            for (var _b = __values$z(this.sections), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var section = _c.value;
-                if (section.image) {
-                    serialized.push([
-                        'image',
-                        section.image.name
-                    ]);
-                    continue;
-                }
-                serialized.push(section.text);
-                var options = {};
-                if (section.fontStack) {
-                    options['text-font'] = [
-                        'literal',
-                        section.fontStack.split(',')
-                    ];
-                }
-                if (section.scale) {
-                    options['font-scale'] = section.scale;
-                }
-                if (section.textColor) {
-                    options['text-color'] = ['rgba'].concat(section.textColor.toArray());
-                }
-                serialized.push(options);
+        for (var _i = 0, _a = this.sections; _i < _a.length; _i++) {
+            var section = _a[_i];
+            if (section.image) {
+                serialized.push([
+                    'image',
+                    section.image.name
+                ]);
+                continue;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+            serialized.push(section.text);
+            var options = {};
+            if (section.fontStack) {
+                options['text-font'] = [
+                    'literal',
+                    section.fontStack.split(',')
+                ];
             }
+            if (section.scale) {
+                options['font-scale'] = section.scale;
+            }
+            if (section.textColor) {
+                options['text-color'] = ['rgba'].concat(section.textColor.toArray());
+            }
+            serialized.push(options);
         }
         return serialized;
     };
@@ -5939,26 +5640,6 @@ var ResolvedImage = function () {
     return ResolvedImage;
 }();
 
-var __values$y = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function validateRGBA(r, g, b, a) {
     if (!(typeof r === 'number' && r >= 0 && r <= 255 && typeof g === 'number' && g >= 0 && g <= 255 && typeof b === 'number' && b >= 0 && b <= 255)) {
         var value = typeof a === 'number' ? [
@@ -5984,7 +5665,6 @@ function validateRGBA(r, g, b, a) {
     return null;
 }
 function isValue(mixed) {
-    var e_1, _a;
     if (mixed === null) {
         return true;
     } else if (typeof mixed === 'string') {
@@ -6002,24 +5682,10 @@ function isValue(mixed) {
     } else if (mixed instanceof ResolvedImage) {
         return true;
     } else if (Array.isArray(mixed)) {
-        try {
-            for (var mixed_1 = __values$y(mixed), mixed_1_1 = mixed_1.next(); !mixed_1_1.done; mixed_1_1 = mixed_1.next()) {
-                var item = mixed_1_1.value;
-                if (!isValue(item)) {
-                    return false;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (mixed_1_1 && !mixed_1_1.done && (_a = mixed_1.return)) {
-                    _a.call(mixed_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, mixed_1 = mixed; _i < mixed_1.length; _i++) {
+            var item = mixed_1[_i];
+            if (!isValue(item)) {
+                return false;
             }
         }
         return true;
@@ -6035,7 +5701,6 @@ function isValue(mixed) {
     }
 }
 function typeOf(value) {
-    var e_2, _a;
     if (value === null) {
         return NullType;
     } else if (typeof value === 'string') {
@@ -6055,30 +5720,16 @@ function typeOf(value) {
     } else if (Array.isArray(value)) {
         var length_1 = value.length;
         var itemType = void 0;
-        try {
-            for (var value_1 = __values$y(value), value_1_1 = value_1.next(); !value_1_1.done; value_1_1 = value_1.next()) {
-                var item = value_1_1.value;
-                var t = typeOf(item);
-                if (!itemType) {
-                    itemType = t;
-                } else if (itemType === t) {
-                    continue;
-                } else {
-                    itemType = ValueType;
-                    break;
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (value_1_1 && !value_1_1.done && (_a = value_1.return)) {
-                    _a.call(value_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+        for (var _i = 0, value_1 = value; _i < value_1.length; _i++) {
+            var item = value_1[_i];
+            var t = typeOf(item);
+            if (!itemType) {
+                itemType = t;
+            } else if (itemType === t) {
+                continue;
+            } else {
+                itemType = ValueType;
+                break;
             }
         }
         return array$1(itemType || ValueType, length_1);
@@ -6247,26 +5898,6 @@ var Assertion = function () {
     return Assertion;
 }();
 
-var __values$x = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var FormatExpression = function () {
     function FormatExpression(sections) {
         this.type = FormattedType;
@@ -6342,32 +5973,17 @@ var FormatExpression = function () {
         return new Formatted(this.sections.map(evaluateSection));
     };
     FormatExpression.prototype.eachChild = function (fn) {
-        var e_1, _a;
-        try {
-            for (var _b = __values$x(this.sections), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var section = _c.value;
-                fn(section.content);
-                if (section.scale) {
-                    fn(section.scale);
-                }
-                if (section.font) {
-                    fn(section.font);
-                }
-                if (section.textColor) {
-                    fn(section.textColor);
-                }
+        for (var _i = 0, _a = this.sections; _i < _a.length; _i++) {
+            var section = _a[_i];
+            fn(section.content);
+            if (section.scale) {
+                fn(section.scale);
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+            if (section.font) {
+                fn(section.font);
+            }
+            if (section.textColor) {
+                fn(section.textColor);
             }
         }
     };
@@ -6375,36 +5991,21 @@ var FormatExpression = function () {
         return false;
     };
     FormatExpression.prototype.serialize = function () {
-        var e_2, _a;
         var serialized = ['format'];
-        try {
-            for (var _b = __values$x(this.sections), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var section = _c.value;
-                serialized.push(section.content.serialize());
-                var options = {};
-                if (section.scale) {
-                    options['font-scale'] = section.scale.serialize();
-                }
-                if (section.font) {
-                    options['text-font'] = section.font.serialize();
-                }
-                if (section.textColor) {
-                    options['text-color'] = section.textColor.serialize();
-                }
-                serialized.push(options);
+        for (var _i = 0, _a = this.sections; _i < _a.length; _i++) {
+            var section = _a[_i];
+            serialized.push(section.content.serialize());
+            var options = {};
+            if (section.scale) {
+                options['font-scale'] = section.scale.serialize();
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+            if (section.font) {
+                options['text-font'] = section.font.serialize();
             }
+            if (section.textColor) {
+                options['text-color'] = section.textColor.serialize();
+            }
+            serialized.push(options);
         }
         return serialized;
     };
@@ -6449,26 +6050,6 @@ var ImageExpression = function () {
     return ImageExpression;
 }();
 
-var __values$w = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var types = {
     'to-boolean': BooleanType,
     'to-color': ColorType,
@@ -6500,76 +6081,47 @@ var Coercion = function () {
         return new Coercion(type, parsed);
     };
     Coercion.prototype.evaluate = function (ctx) {
-        var e_1, _a, e_2, _b;
         if (this.type.kind === 'boolean') {
             return Boolean(this.args[0].evaluate(ctx));
         } else if (this.type.kind === 'color') {
             var input = void 0;
             var error = void 0;
-            try {
-                for (var _c = __values$w(this.args), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    var arg = _d.value;
-                    input = arg.evaluate(ctx);
-                    error = null;
-                    if (input instanceof Color) {
-                        return input;
-                    } else if (typeof input === 'string') {
-                        var c = ctx.parseColor(input);
-                        if (c) {
-                            return c;
-                        }
-                    } else if (Array.isArray(input)) {
-                        if (input.length < 3 || input.length > 4) {
-                            error = 'Invalid rbga value '.concat(JSON.stringify(input), ': expected an array containing either three or four numeric values.');
-                        } else {
-                            error = validateRGBA(input[0], input[1], input[2], input[3]);
-                        }
-                        if (!error) {
-                            return new Color(input[0] / 255, input[1] / 255, input[2] / 255, input[3]);
-                        }
+            for (var _i = 0, _a = this.args; _i < _a.length; _i++) {
+                var arg = _a[_i];
+                input = arg.evaluate(ctx);
+                error = null;
+                if (input instanceof Color) {
+                    return input;
+                } else if (typeof input === 'string') {
+                    var c = ctx.parseColor(input);
+                    if (c) {
+                        return c;
                     }
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_d && !_d.done && (_a = _c.return)) {
-                        _a.call(_c);
+                } else if (Array.isArray(input)) {
+                    if (input.length < 3 || input.length > 4) {
+                        error = 'Invalid rbga value '.concat(JSON.stringify(input), ': expected an array containing either three or four numeric values.');
+                    } else {
+                        error = validateRGBA(input[0], input[1], input[2], input[3]);
                     }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
+                    if (!error) {
+                        return new Color(input[0] / 255, input[1] / 255, input[2] / 255, input[3]);
                     }
                 }
             }
             throw new RuntimeError(error || 'Could not parse color from value \''.concat(typeof input === 'string' ? input : String(JSON.stringify(input)), '\''));
         } else if (this.type.kind === 'number') {
             var value = null;
-            try {
-                for (var _e = __values$w(this.args), _f = _e.next(); !_f.done; _f = _e.next()) {
-                    var arg = _f.value;
-                    value = arg.evaluate(ctx);
-                    if (value === null) {
-                        return 0;
-                    }
-                    var num = Number(value);
-                    if (isNaN(num)) {
-                        continue;
-                    }
-                    return num;
+            for (var _b = 0, _c = this.args; _b < _c.length; _b++) {
+                var arg = _c[_b];
+                value = arg.evaluate(ctx);
+                if (value === null) {
+                    return 0;
                 }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (_f && !_f.done && (_b = _e.return)) {
-                        _b.call(_e);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
+                var num = Number(value);
+                if (isNaN(num)) {
+                    continue;
                 }
+                return num;
             }
             throw new RuntimeError('Could not convert '.concat(JSON.stringify(value), ' to number.'));
         } else if (this.type.kind === 'formatted') {
@@ -6650,64 +6202,6 @@ var EvaluationContext = function () {
     return EvaluationContext;
 }();
 
-var __read$b = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __values$v = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __spreadArray$4 = undefined && undefined.__spreadArray || function (to, from, pack) {
-    if (pack || arguments.length === 2) {
-        for (var i = 0, l = from.length, ar; i < l; i++) {
-            if (ar || !(i in from)) {
-                if (!ar) {
-                    ar = Array.prototype.slice.call(from, 0, i);
-                }
-                ar[i] = from[i];
-            }
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var CompoundExpression = function () {
     function CompoundExpression(name, type, evaluate, args) {
         this.name = name;
@@ -6730,7 +6224,7 @@ var CompoundExpression = function () {
         }));
     };
     CompoundExpression.parse = function (args, context) {
-        var e_1, _a, _b;
+        var _a;
         var op = args[0];
         var definition = CompoundExpression.definitions[op];
         if (!definition) {
@@ -6742,63 +6236,49 @@ var CompoundExpression = function () {
                 definition[2]
             ]] : definition.overloads;
         var overloads = availableOverloads.filter(function (_a) {
-            var _b = __read$b(_a, 1), signature = _b[0];
+            var signature = _a[0];
             return !Array.isArray(signature) || signature.length === args.length - 1;
         });
         var signatureContext = null;
-        try {
-            for (var overloads_1 = __values$v(overloads), overloads_1_1 = overloads_1.next(); !overloads_1_1.done; overloads_1_1 = overloads_1.next()) {
-                var _c = __read$b(overloads_1_1.value, 2), params = _c[0], evaluate = _c[1];
-                signatureContext = new ParsingContext(context.registry, context.path, null, context.scope);
-                var parsedArgs = [];
-                var argParseFailed = false;
-                for (var i = 1; i < args.length; i++) {
-                    var arg = args[i];
-                    var expectedType = Array.isArray(params) ? params[i - 1] : params.type;
-                    var parsed = signatureContext.parse(arg, 1 + parsedArgs.length, expectedType);
-                    if (!parsed) {
-                        argParseFailed = true;
-                        break;
-                    }
-                    parsedArgs.push(parsed);
+        for (var _i = 0, overloads_1 = overloads; _i < overloads_1.length; _i++) {
+            var _b = overloads_1[_i], params = _b[0], evaluate = _b[1];
+            signatureContext = new ParsingContext(context.registry, context.path, null, context.scope);
+            var parsedArgs = [];
+            var argParseFailed = false;
+            for (var i = 1; i < args.length; i++) {
+                var arg = args[i];
+                var expectedType = Array.isArray(params) ? params[i - 1] : params.type;
+                var parsed = signatureContext.parse(arg, 1 + parsedArgs.length, expectedType);
+                if (!parsed) {
+                    argParseFailed = true;
+                    break;
                 }
-                if (argParseFailed) {
+                parsedArgs.push(parsed);
+            }
+            if (argParseFailed) {
+                continue;
+            }
+            if (Array.isArray(params)) {
+                if (params.length !== parsedArgs.length) {
+                    signatureContext.error('Expected '.concat(params.length, ' arguments, but found ').concat(parsedArgs.length, ' instead.'));
                     continue;
                 }
-                if (Array.isArray(params)) {
-                    if (params.length !== parsedArgs.length) {
-                        signatureContext.error('Expected '.concat(params.length, ' arguments, but found ').concat(parsedArgs.length, ' instead.'));
-                        continue;
-                    }
-                }
-                for (var i = 0; i < parsedArgs.length; i++) {
-                    var expected = Array.isArray(params) ? params[i] : params.type;
-                    var arg = parsedArgs[i];
-                    signatureContext.concat(i + 1).checkSubtype(expected, arg.type);
-                }
-                if (signatureContext.errors.length === 0) {
-                    return new CompoundExpression(op, type, evaluate, parsedArgs);
-                }
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (overloads_1_1 && !overloads_1_1.done && (_a = overloads_1.return)) {
-                    _a.call(overloads_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+            for (var i = 0; i < parsedArgs.length; i++) {
+                var expected = Array.isArray(params) ? params[i] : params.type;
+                var arg = parsedArgs[i];
+                signatureContext.concat(i + 1).checkSubtype(expected, arg.type);
+            }
+            if (signatureContext.errors.length === 0) {
+                return new CompoundExpression(op, type, evaluate, parsedArgs);
             }
         }
         if (overloads.length === 1) {
-            (_b = context.errors).push.apply(_b, __spreadArray$4([], __read$b(signatureContext.errors), false));
+            (_a = context.errors).push.apply(_a, signatureContext.errors);
         } else {
             var expected = overloads.length ? overloads : availableOverloads;
             var signatures = expected.map(function (_a) {
-                var _b = __read$b(_a, 1), params = _b[0];
+                var params = _a[0];
                 return stringifySignature(params);
             }).join(' | ');
             var actualTypes = [];
@@ -6889,26 +6369,6 @@ var CollatorExpression = function () {
     return CollatorExpression;
 }();
 
-var __values$u = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var EXTENT$1 = 8192;
 function updateBBox(bbox, coord) {
     bbox[0] = Math.min(bbox[0], coord[0]);
@@ -7014,26 +6474,11 @@ function lineIntersectLine(a, b, c, d) {
     return false;
 }
 function lineIntersectPolygon(p1, p2, polygon) {
-    var e_1, _a;
-    try {
-        for (var polygon_1 = __values$u(polygon), polygon_1_1 = polygon_1.next(); !polygon_1_1.done; polygon_1_1 = polygon_1.next()) {
-            var ring = polygon_1_1.value;
-            for (var j = 0; j < ring.length - 1; ++j) {
-                if (lineIntersectLine(p1, p2, ring[j], ring[j + 1])) {
-                    return true;
-                }
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (polygon_1_1 && !polygon_1_1.done && (_a = polygon_1.return)) {
-                _a.call(polygon_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
+    for (var _i = 0, polygon_1 = polygon; _i < polygon_1.length; _i++) {
+        var ring = polygon_1[_i];
+        for (var j = 0; j < ring.length - 1; ++j) {
+            if (lineIntersectLine(p1, p2, ring[j], ring[j + 1])) {
+                return true;
             }
         }
     }
@@ -7097,147 +6542,60 @@ function resetBBox(bbox) {
     bbox[2] = bbox[3] = -Infinity;
 }
 function getTilePoints(geometry, pointBBox, polyBBox, canonical) {
-    var e_2, _a, e_3, _b;
     var worldSize = Math.pow(2, canonical.z) * EXTENT$1;
     var shifts = [
         canonical.x * EXTENT$1,
         canonical.y * EXTENT$1
     ];
     var tilePoints = [];
-    try {
-        for (var geometry_1 = __values$u(geometry), geometry_1_1 = geometry_1.next(); !geometry_1_1.done; geometry_1_1 = geometry_1.next()) {
-            var points = geometry_1_1.value;
-            try {
-                for (var points_1 = (e_3 = void 0, __values$u(points)), points_1_1 = points_1.next(); !points_1_1.done; points_1_1 = points_1.next()) {
-                    var point = points_1_1.value;
-                    var p = [
-                        point.x + shifts[0],
-                        point.y + shifts[1]
-                    ];
-                    updatePoint(p, pointBBox, polyBBox, worldSize);
-                    tilePoints.push(p);
-                }
-            } catch (e_3_1) {
-                e_3 = { error: e_3_1 };
-            } finally {
-                try {
-                    if (points_1_1 && !points_1_1.done && (_b = points_1.return)) {
-                        _b.call(points_1);
-                    }
-                } finally {
-                    if (e_3) {
-                        throw e_3.error;
-                    }
-                }
-            }
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (geometry_1_1 && !geometry_1_1.done && (_a = geometry_1.return)) {
-                _a.call(geometry_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
+    for (var _i = 0, geometry_1 = geometry; _i < geometry_1.length; _i++) {
+        var points = geometry_1[_i];
+        for (var _a = 0, points_1 = points; _a < points_1.length; _a++) {
+            var point = points_1[_a];
+            var p = [
+                point.x + shifts[0],
+                point.y + shifts[1]
+            ];
+            updatePoint(p, pointBBox, polyBBox, worldSize);
+            tilePoints.push(p);
         }
     }
     return tilePoints;
 }
 function getTileLines(geometry, lineBBox, polyBBox, canonical) {
-    var e_4, _a, e_5, _b, e_6, _c, e_7, _d;
     var worldSize = Math.pow(2, canonical.z) * EXTENT$1;
     var shifts = [
         canonical.x * EXTENT$1,
         canonical.y * EXTENT$1
     ];
     var tileLines = [];
-    try {
-        for (var geometry_2 = __values$u(geometry), geometry_2_1 = geometry_2.next(); !geometry_2_1.done; geometry_2_1 = geometry_2.next()) {
-            var line = geometry_2_1.value;
-            var tileLine = [];
-            try {
-                for (var line_1 = (e_5 = void 0, __values$u(line)), line_1_1 = line_1.next(); !line_1_1.done; line_1_1 = line_1.next()) {
-                    var point = line_1_1.value;
-                    var p = [
-                        point.x + shifts[0],
-                        point.y + shifts[1]
-                    ];
-                    updateBBox(lineBBox, p);
-                    tileLine.push(p);
-                }
-            } catch (e_5_1) {
-                e_5 = { error: e_5_1 };
-            } finally {
-                try {
-                    if (line_1_1 && !line_1_1.done && (_b = line_1.return)) {
-                        _b.call(line_1);
-                    }
-                } finally {
-                    if (e_5) {
-                        throw e_5.error;
-                    }
-                }
-            }
-            tileLines.push(tileLine);
+    for (var _i = 0, geometry_2 = geometry; _i < geometry_2.length; _i++) {
+        var line = geometry_2[_i];
+        var tileLine = [];
+        for (var _a = 0, line_1 = line; _a < line_1.length; _a++) {
+            var point = line_1[_a];
+            var p = [
+                point.x + shifts[0],
+                point.y + shifts[1]
+            ];
+            updateBBox(lineBBox, p);
+            tileLine.push(p);
         }
-    } catch (e_4_1) {
-        e_4 = { error: e_4_1 };
-    } finally {
-        try {
-            if (geometry_2_1 && !geometry_2_1.done && (_a = geometry_2.return)) {
-                _a.call(geometry_2);
-            }
-        } finally {
-            if (e_4) {
-                throw e_4.error;
-            }
-        }
+        tileLines.push(tileLine);
     }
     if (lineBBox[2] - lineBBox[0] <= worldSize / 2) {
         resetBBox(lineBBox);
-        try {
-            for (var tileLines_1 = __values$u(tileLines), tileLines_1_1 = tileLines_1.next(); !tileLines_1_1.done; tileLines_1_1 = tileLines_1.next()) {
-                var line = tileLines_1_1.value;
-                try {
-                    for (var line_2 = (e_7 = void 0, __values$u(line)), line_2_1 = line_2.next(); !line_2_1.done; line_2_1 = line_2.next()) {
-                        var p = line_2_1.value;
-                        updatePoint(p, lineBBox, polyBBox, worldSize);
-                    }
-                } catch (e_7_1) {
-                    e_7 = { error: e_7_1 };
-                } finally {
-                    try {
-                        if (line_2_1 && !line_2_1.done && (_d = line_2.return)) {
-                            _d.call(line_2);
-                        }
-                    } finally {
-                        if (e_7) {
-                            throw e_7.error;
-                        }
-                    }
-                }
-            }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (tileLines_1_1 && !tileLines_1_1.done && (_c = tileLines_1.return)) {
-                    _c.call(tileLines_1);
-                }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
-                }
+        for (var _b = 0, tileLines_1 = tileLines; _b < tileLines_1.length; _b++) {
+            var line = tileLines_1[_b];
+            for (var _c = 0, line_2 = line; _c < line_2.length; _c++) {
+                var p = line_2[_c];
+                updatePoint(p, lineBBox, polyBBox, worldSize);
             }
         }
     }
     return tileLines;
 }
 function pointsWithinPolygons(ctx, polygonGeometry) {
-    var e_8, _a, e_9, _b;
     var pointBBox = [
         Infinity,
         Infinity,
@@ -7257,24 +6615,10 @@ function pointsWithinPolygons(ctx, polygonGeometry) {
         if (!boxWithinBox(pointBBox, polyBBox)) {
             return false;
         }
-        try {
-            for (var tilePoints_1 = __values$u(tilePoints), tilePoints_1_1 = tilePoints_1.next(); !tilePoints_1_1.done; tilePoints_1_1 = tilePoints_1.next()) {
-                var point = tilePoints_1_1.value;
-                if (!pointWithinPolygon(point, tilePolygon)) {
-                    return false;
-                }
-            }
-        } catch (e_8_1) {
-            e_8 = { error: e_8_1 };
-        } finally {
-            try {
-                if (tilePoints_1_1 && !tilePoints_1_1.done && (_a = tilePoints_1.return)) {
-                    _a.call(tilePoints_1);
-                }
-            } finally {
-                if (e_8) {
-                    throw e_8.error;
-                }
+        for (var _i = 0, tilePoints_1 = tilePoints; _i < tilePoints_1.length; _i++) {
+            var point = tilePoints_1[_i];
+            if (!pointWithinPolygon(point, tilePolygon)) {
+                return false;
             }
         }
     }
@@ -7284,31 +6628,16 @@ function pointsWithinPolygons(ctx, polygonGeometry) {
         if (!boxWithinBox(pointBBox, polyBBox)) {
             return false;
         }
-        try {
-            for (var tilePoints_2 = __values$u(tilePoints), tilePoints_2_1 = tilePoints_2.next(); !tilePoints_2_1.done; tilePoints_2_1 = tilePoints_2.next()) {
-                var point = tilePoints_2_1.value;
-                if (!pointWithinPolygons(point, tilePolygons)) {
-                    return false;
-                }
-            }
-        } catch (e_9_1) {
-            e_9 = { error: e_9_1 };
-        } finally {
-            try {
-                if (tilePoints_2_1 && !tilePoints_2_1.done && (_b = tilePoints_2.return)) {
-                    _b.call(tilePoints_2);
-                }
-            } finally {
-                if (e_9) {
-                    throw e_9.error;
-                }
+        for (var _a = 0, tilePoints_2 = tilePoints; _a < tilePoints_2.length; _a++) {
+            var point = tilePoints_2[_a];
+            if (!pointWithinPolygons(point, tilePolygons)) {
+                return false;
             }
         }
     }
     return true;
 }
 function linesWithinPolygons(ctx, polygonGeometry) {
-    var e_10, _a, e_11, _b;
     var lineBBox = [
         Infinity,
         Infinity,
@@ -7328,24 +6657,10 @@ function linesWithinPolygons(ctx, polygonGeometry) {
         if (!boxWithinBox(lineBBox, polyBBox)) {
             return false;
         }
-        try {
-            for (var tileLines_2 = __values$u(tileLines), tileLines_2_1 = tileLines_2.next(); !tileLines_2_1.done; tileLines_2_1 = tileLines_2.next()) {
-                var line = tileLines_2_1.value;
-                if (!lineStringWithinPolygon(line, tilePolygon)) {
-                    return false;
-                }
-            }
-        } catch (e_10_1) {
-            e_10 = { error: e_10_1 };
-        } finally {
-            try {
-                if (tileLines_2_1 && !tileLines_2_1.done && (_a = tileLines_2.return)) {
-                    _a.call(tileLines_2);
-                }
-            } finally {
-                if (e_10) {
-                    throw e_10.error;
-                }
+        for (var _i = 0, tileLines_2 = tileLines; _i < tileLines_2.length; _i++) {
+            var line = tileLines_2[_i];
+            if (!lineStringWithinPolygon(line, tilePolygon)) {
+                return false;
             }
         }
     }
@@ -7355,24 +6670,10 @@ function linesWithinPolygons(ctx, polygonGeometry) {
         if (!boxWithinBox(lineBBox, polyBBox)) {
             return false;
         }
-        try {
-            for (var tileLines_3 = __values$u(tileLines), tileLines_3_1 = tileLines_3.next(); !tileLines_3_1.done; tileLines_3_1 = tileLines_3.next()) {
-                var line = tileLines_3_1.value;
-                if (!lineStringWithinPolygons(line, tilePolygons)) {
-                    return false;
-                }
-            }
-        } catch (e_11_1) {
-            e_11 = { error: e_11_1 };
-        } finally {
-            try {
-                if (tileLines_3_1 && !tileLines_3_1.done && (_b = tileLines_3.return)) {
-                    _b.call(tileLines_3);
-                }
-            } finally {
-                if (e_11) {
-                    throw e_11.error;
-                }
+        for (var _a = 0, tileLines_3 = tileLines; _a < tileLines_3.length; _a++) {
+            var line = tileLines_3[_a];
+            if (!lineStringWithinPolygons(line, tilePolygons)) {
+                return false;
             }
         }
     }
@@ -7688,76 +6989,16 @@ function findStopLessThanOrEqualTo(stops, input) {
     return 0;
 }
 
-var __values$t = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$a = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Step = function () {
     function Step(type, input, stops) {
-        var e_1, _a;
         this.type = type;
         this.input = input;
         this.labels = [];
         this.outputs = [];
-        try {
-            for (var stops_1 = __values$t(stops), stops_1_1 = stops_1.next(); !stops_1_1.done; stops_1_1 = stops_1.next()) {
-                var _b = __read$a(stops_1_1.value, 2), label = _b[0], expression = _b[1];
-                this.labels.push(label);
-                this.outputs.push(expression);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (stops_1_1 && !stops_1_1.done && (_a = stops_1.return)) {
-                    _a.call(stops_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, stops_1 = stops; _i < stops_1.length; _i++) {
+            var _a = stops_1[_i], label = _a[0], expression = _a[1];
+            this.labels.push(label);
+            this.outputs.push(expression);
         }
     }
     Step.parse = function (args, context) {
@@ -7817,25 +7058,10 @@ var Step = function () {
         return outputs[index].evaluate(ctx);
     };
     Step.prototype.eachChild = function (fn) {
-        var e_2, _a;
         fn(this.input);
-        try {
-            for (var _b = __values$t(this.outputs), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var expression = _c.value;
-                fn(expression);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = this.outputs; _i < _a.length; _i++) {
+            var expression = _a[_i];
+            fn(expression);
         }
     };
     Step.prototype.outputDefined = function () {
@@ -7964,78 +7190,18 @@ lab: lab,
 hcl: hcl
 });
 
-var __values$s = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$9 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Interpolate = function () {
     function Interpolate(type, operator, interpolation, input, stops) {
-        var e_1, _a;
         this.type = type;
         this.operator = operator;
         this.interpolation = interpolation;
         this.input = input;
         this.labels = [];
         this.outputs = [];
-        try {
-            for (var stops_1 = __values$s(stops), stops_1_1 = stops_1.next(); !stops_1_1.done; stops_1_1 = stops_1.next()) {
-                var _b = __read$9(stops_1_1.value, 2), label = _b[0], expression = _b[1];
-                this.labels.push(label);
-                this.outputs.push(expression);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (stops_1_1 && !stops_1_1.done && (_a = stops_1.return)) {
-                    _a.call(stops_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, stops_1 = stops; _i < stops_1.length; _i++) {
+            var _a = stops_1[_i], label = _a[0], expression = _a[1];
+            this.labels.push(label);
+            this.outputs.push(expression);
         }
     }
     Interpolate.interpolationFactor = function (interpolation, input, lower, upper) {
@@ -8052,7 +7218,7 @@ var Interpolate = function () {
         return t;
     };
     Interpolate.parse = function (args, context) {
-        var _a = __read$9(args), operator = _a[0], interpolation = _a[1], input = _a[2], rest = _a.slice(3);
+        var operator = args[0], interpolation = args[1], input = args[2], rest = args.slice(3);
         if (!Array.isArray(interpolation) || interpolation.length === 0) {
             return context.error('Expected an interpolation type expression.', 1);
         }
@@ -8153,25 +7319,10 @@ var Interpolate = function () {
         }
     };
     Interpolate.prototype.eachChild = function (fn) {
-        var e_2, _a;
         fn(this.input);
-        try {
-            for (var _b = __values$s(this.outputs), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var expression = _c.value;
-                fn(expression);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = this.outputs; _i < _a.length; _i++) {
+            var expression = _a[_i];
+            fn(expression);
         }
     };
     Interpolate.prototype.outputDefined = function () {
@@ -8219,33 +7370,12 @@ function exponentialInterpolation(input, base, lowerValue, upperValue) {
     }
 }
 
-var __values$r = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var Coalesce = function () {
     function Coalesce(type, args) {
         this.type = type;
         this.args = args;
     }
     Coalesce.parse = function (args, context) {
-        var e_1, _a;
         if (args.length < 2) {
             return context.error('Expectected at least one argument.');
         }
@@ -8255,28 +7385,14 @@ var Coalesce = function () {
             outputType = expectedType;
         }
         var parsedArgs = [];
-        try {
-            for (var _b = __values$r(args.slice(1)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var arg = _c.value;
-                var parsed = context.parse(arg, 1 + parsedArgs.length, outputType, undefined, { typeAnnotation: 'omit' });
-                if (!parsed) {
-                    return null;
-                }
-                outputType = outputType || parsed.type;
-                parsedArgs.push(parsed);
+        for (var _i = 0, _a = args.slice(1); _i < _a.length; _i++) {
+            var arg = _a[_i];
+            var parsed = context.parse(arg, 1 + parsedArgs.length, outputType, undefined, { typeAnnotation: 'omit' });
+            if (!parsed) {
+                return null;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+            outputType = outputType || parsed.type;
+            parsedArgs.push(parsed);
         }
         var needsAnnotation = expectedType && parsedArgs.some(function (arg) {
             return checkSubtype(expectedType, arg.type);
@@ -8284,39 +7400,24 @@ var Coalesce = function () {
         return needsAnnotation ? new Coalesce(ValueType, parsedArgs) : new Coalesce(outputType, parsedArgs);
     };
     Coalesce.prototype.evaluate = function (ctx) {
-        var e_2, _a;
         var result = null;
         var argCount = 0;
         var requestedImageName;
-        try {
-            for (var _b = __values$r(this.args), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var arg = _c.value;
-                argCount++;
-                result = arg.evaluate(ctx);
-                if (result && result instanceof ResolvedImage && !result.available) {
-                    if (!requestedImageName) {
-                        requestedImageName = result.name;
-                    }
-                    result = null;
-                    if (argCount === this.args.length) {
-                        result = requestedImageName;
-                    }
+        for (var _i = 0, _a = this.args; _i < _a.length; _i++) {
+            var arg = _a[_i];
+            argCount++;
+            result = arg.evaluate(ctx);
+            if (result && result instanceof ResolvedImage && !result.available) {
+                if (!requestedImageName) {
+                    requestedImageName = result.name;
                 }
-                if (result !== null) {
-                    break;
+                result = null;
+                if (argCount === this.args.length) {
+                    result = requestedImageName;
                 }
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+            if (result !== null) {
+                break;
             }
         }
         return result;
@@ -8339,51 +7440,6 @@ var Coalesce = function () {
     return Coalesce;
 }();
 
-var __values$q = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$8 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Let = function () {
     function Let(bindings, result) {
         this.type = result.type;
@@ -8394,24 +7450,9 @@ var Let = function () {
         return this.result.evaluate(ctx);
     };
     Let.prototype.eachChild = function (fn) {
-        var e_1, _a;
-        try {
-            for (var _b = __values$q(this.bindings), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var binding = _c.value;
-                fn(binding[1]);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, _a = this.bindings; _i < _a.length; _i++) {
+            var binding = _a[_i];
+            fn(binding[1]);
         }
         fn(this.result);
     };
@@ -8447,25 +7488,10 @@ var Let = function () {
         return this.result.outputDefined();
     };
     Let.prototype.serialize = function () {
-        var e_2, _a;
         var serialized = ['let'];
-        try {
-            for (var _b = __values$q(this.bindings), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read$8(_c.value, 2), name_2 = _d[0], expr = _d[1];
-                serialized.push(name_2, expr.serialize());
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = this.bindings; _i < _a.length; _i++) {
+            var _b = _a[_i], name_2 = _b[0], expr = _b[1];
+            serialized.push(name_2, expr.serialize());
         }
         serialized.push(this.result.serialize());
         return serialized;
@@ -8674,51 +7700,6 @@ var IndexOf = function () {
     return IndexOf;
 }();
 
-var __values$p = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$7 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Match = function () {
     function Match(inputType, outputType, input, cases, outputs, otherwise) {
         this.inputType = inputType;
@@ -8729,7 +7710,6 @@ var Match = function () {
         this.otherwise = otherwise;
     }
     Match.parse = function (args, context) {
-        var e_1, _a;
         if (args.length < 5) {
             return context.error('Expected at least 4 arguments, but found only '.concat(args.length - 1, '.'));
         }
@@ -8753,37 +7733,23 @@ var Match = function () {
             if (labels.length === 0) {
                 return labelContext.error('Expected at least one branch label.');
             }
-            try {
-                for (var labels_1 = (e_1 = void 0, __values$p(labels)), labels_1_1 = labels_1.next(); !labels_1_1.done; labels_1_1 = labels_1.next()) {
-                    var label = labels_1_1.value;
-                    if (typeof label !== 'number' && typeof label !== 'string') {
-                        return labelContext.error('Branch labels must be numbers or strings.');
-                    } else if (typeof label === 'number' && Math.abs(label) > Number.MAX_SAFE_INTEGER) {
-                        return labelContext.error('Branch labels must be integers no larger than '.concat(Number.MAX_SAFE_INTEGER, '.'));
-                    } else if (typeof label === 'number' && Math.floor(label) !== label) {
-                        return labelContext.error('Numeric branch labels must be integer values.');
-                    } else if (!inputType) {
-                        inputType = typeOf(label);
-                    } else if (labelContext.checkSubtype(inputType, typeOf(label))) {
-                        return null;
-                    }
-                    if (typeof cases[String(label)] !== 'undefined') {
-                        return labelContext.error('Branch labels must be unique.');
-                    }
-                    cases[String(label)] = outputs.length;
+            for (var _i = 0, labels_1 = labels; _i < labels_1.length; _i++) {
+                var label = labels_1[_i];
+                if (typeof label !== 'number' && typeof label !== 'string') {
+                    return labelContext.error('Branch labels must be numbers or strings.');
+                } else if (typeof label === 'number' && Math.abs(label) > Number.MAX_SAFE_INTEGER) {
+                    return labelContext.error('Branch labels must be integers no larger than '.concat(Number.MAX_SAFE_INTEGER, '.'));
+                } else if (typeof label === 'number' && Math.floor(label) !== label) {
+                    return labelContext.error('Numeric branch labels must be integer values.');
+                } else if (!inputType) {
+                    inputType = typeOf(label);
+                } else if (labelContext.checkSubtype(inputType, typeOf(label))) {
+                    return null;
                 }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (labels_1_1 && !labels_1_1.done && (_a = labels_1.return)) {
-                        _a.call(labels_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
+                if (typeof cases[String(label)] !== 'undefined') {
+                    return labelContext.error('Branch labels must be unique.');
                 }
+                cases[String(label)] = outputs.length;
             }
             var result = context.parse(value, i, outputType);
             if (!result) {
@@ -8821,7 +7787,6 @@ var Match = function () {
         }) && this.otherwise.outputDefined();
     };
     Match.prototype.serialize = function () {
-        var e_2, _a, e_3, _b;
         var _this = this;
         var serialized = [
             'match',
@@ -8830,58 +7795,30 @@ var Match = function () {
         var sortedLabels = Object.keys(this.cases).sort();
         var groupedByOutput = [];
         var outputLookup = {};
-        try {
-            for (var sortedLabels_1 = __values$p(sortedLabels), sortedLabels_1_1 = sortedLabels_1.next(); !sortedLabels_1_1.done; sortedLabels_1_1 = sortedLabels_1.next()) {
-                var label = sortedLabels_1_1.value;
-                var outputIndex = outputLookup[this.cases[label]];
-                if (outputIndex === undefined) {
-                    outputLookup[this.cases[label]] = groupedByOutput.length;
-                    groupedByOutput.push([
-                        this.cases[label],
-                        [label]
-                    ]);
-                } else {
-                    groupedByOutput[outputIndex][1].push(label);
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (sortedLabels_1_1 && !sortedLabels_1_1.done && (_a = sortedLabels_1.return)) {
-                    _a.call(sortedLabels_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+        for (var _i = 0, sortedLabels_1 = sortedLabels; _i < sortedLabels_1.length; _i++) {
+            var label = sortedLabels_1[_i];
+            var outputIndex = outputLookup[this.cases[label]];
+            if (outputIndex === undefined) {
+                outputLookup[this.cases[label]] = groupedByOutput.length;
+                groupedByOutput.push([
+                    this.cases[label],
+                    [label]
+                ]);
+            } else {
+                groupedByOutput[outputIndex][1].push(label);
             }
         }
         var coerceLabel = function (label) {
             return _this.inputType.kind === 'number' ? Number(label) : label;
         };
-        try {
-            for (var groupedByOutput_1 = __values$p(groupedByOutput), groupedByOutput_1_1 = groupedByOutput_1.next(); !groupedByOutput_1_1.done; groupedByOutput_1_1 = groupedByOutput_1.next()) {
-                var _c = __read$7(groupedByOutput_1_1.value, 2), outputIndex = _c[0], labels = _c[1];
-                if (labels.length === 1) {
-                    serialized.push(coerceLabel(labels[0]));
-                } else {
-                    serialized.push(labels.map(coerceLabel));
-                }
-                serialized.push(this.outputs[outputIndex].serialize());
+        for (var _a = 0, groupedByOutput_1 = groupedByOutput; _a < groupedByOutput_1.length; _a++) {
+            var _b = groupedByOutput_1[_a], outputIndex = _b[0], labels = _b[1];
+            if (labels.length === 1) {
+                serialized.push(coerceLabel(labels[0]));
+            } else {
+                serialized.push(labels.map(coerceLabel));
             }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (groupedByOutput_1_1 && !groupedByOutput_1_1.done && (_b = groupedByOutput_1.return)) {
-                    _b.call(groupedByOutput_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+            serialized.push(this.outputs[outputIndex].serialize());
         }
         serialized.push(this.otherwise.serialize());
         return serialized;
@@ -8889,51 +7826,6 @@ var Match = function () {
     return Match;
 }();
 
-var __values$o = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$6 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var Case = function () {
     function Case(type, branches, otherwise) {
         this.type = type;
@@ -8974,55 +7866,25 @@ var Case = function () {
         return new Case(outputType, branches, otherwise);
     };
     Case.prototype.evaluate = function (ctx) {
-        var e_1, _a;
-        try {
-            for (var _b = __values$o(this.branches), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read$6(_c.value, 2), test_2 = _d[0], expression = _d[1];
-                if (test_2.evaluate(ctx)) {
-                    return expression.evaluate(ctx);
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
+            var _b = _a[_i], test_2 = _b[0], expression = _b[1];
+            if (test_2.evaluate(ctx)) {
+                return expression.evaluate(ctx);
             }
         }
         return this.otherwise.evaluate(ctx);
     };
     Case.prototype.eachChild = function (fn) {
-        var e_2, _a;
-        try {
-            for (var _b = __values$o(this.branches), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read$6(_c.value, 2), test_3 = _d[0], expression = _d[1];
-                fn(test_3);
-                fn(expression);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = this.branches; _i < _a.length; _i++) {
+            var _b = _a[_i], test_3 = _b[0], expression = _b[1];
+            fn(test_3);
+            fn(expression);
         }
         fn(this.otherwise);
     };
     Case.prototype.outputDefined = function () {
         return this.branches.every(function (_a) {
-            var _b = __read$6(_a, 2); _b[0]; var out = _b[1];
+            _a[0]; var out = _a[1];
             return out.outputDefined();
         }) && this.otherwise.outputDefined();
     };
@@ -9397,64 +8259,6 @@ var Length = function () {
     return Length;
 }();
 
-var __read$5 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __values$n = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __spreadArray$3 = undefined && undefined.__spreadArray || function (to, from, pack) {
-    if (pack || arguments.length === 2) {
-        for (var i = 0, l = from.length, ar; i < l; i++) {
-            if (ar || !(i in from)) {
-                if (!ar) {
-                    ar = Array.prototype.slice.call(from, 0, i);
-                }
-                ar[i] = from[i];
-            }
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var expressions = {
     '==': Equals,
     '!=': NotEquals,
@@ -9493,7 +8297,7 @@ var expressions = {
     'within': Within
 };
 function rgba(ctx, _a) {
-    var _b = __read$5(_a, 4), r = _b[0], g = _b[1], b = _b[2], a = _b[3];
+    var r = _a[0], g = _a[1], b = _a[2], a = _a[3];
     r = r.evaluate(ctx);
     g = g.evaluate(ctx);
     b = b.evaluate(ctx);
@@ -9533,7 +8337,7 @@ CompoundExpression.register(expressions, {
         ErrorType,
         [StringType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             throw new RuntimeError(v.evaluate(ctx));
         }
     ],
@@ -9541,7 +8345,7 @@ CompoundExpression.register(expressions, {
         StringType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             return toString$1(typeOf(v.evaluate(ctx)));
         }
     ],
@@ -9549,7 +8353,7 @@ CompoundExpression.register(expressions, {
         array$1(NumberType, 4),
         [ColorType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             return v.evaluate(ctx).toArray();
         }
     ],
@@ -9578,7 +8382,7 @@ CompoundExpression.register(expressions, {
             [
                 [StringType],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 1), key = _b[0];
+                    var key = _a[0];
                     return has(key.evaluate(ctx), ctx.properties());
                 }
             ],
@@ -9588,7 +8392,7 @@ CompoundExpression.register(expressions, {
                     ObjectType
                 ],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 2), key = _b[0], obj = _b[1];
+                    var key = _a[0], obj = _a[1];
                     return has(key.evaluate(ctx), obj.evaluate(ctx));
                 }
             ]
@@ -9600,7 +8404,7 @@ CompoundExpression.register(expressions, {
             [
                 [StringType],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 1), key = _b[0];
+                    var key = _a[0];
                     return get(key.evaluate(ctx), ctx.properties());
                 }
             ],
@@ -9610,7 +8414,7 @@ CompoundExpression.register(expressions, {
                     ObjectType
                 ],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 2), key = _b[0], obj = _b[1];
+                    var key = _a[0], obj = _a[1];
                     return get(key.evaluate(ctx), obj.evaluate(ctx));
                 }
             ]
@@ -9620,7 +8424,7 @@ CompoundExpression.register(expressions, {
         ValueType,
         [StringType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), key = _b[0];
+            var key = _a[0];
             return get(key.evaluate(ctx), ctx.featureState || {});
         }
     ],
@@ -9677,25 +8481,10 @@ CompoundExpression.register(expressions, {
         NumberType,
         varargs(NumberType),
         function (ctx, args) {
-            var e_1, _a;
             var result = 0;
-            try {
-                for (var args_1 = __values$n(args), args_1_1 = args_1.next(); !args_1_1.done; args_1_1 = args_1.next()) {
-                    var arg = args_1_1.value;
-                    result += arg.evaluate(ctx);
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (args_1_1 && !args_1_1.done && (_a = args_1.return)) {
-                        _a.call(args_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, args_1 = args; _i < args_1.length; _i++) {
+                var arg = args_1[_i];
+                result += arg.evaluate(ctx);
             }
             return result;
         }
@@ -9704,25 +8493,10 @@ CompoundExpression.register(expressions, {
         NumberType,
         varargs(NumberType),
         function (ctx, args) {
-            var e_2, _a;
             var result = 1;
-            try {
-                for (var args_2 = __values$n(args), args_2_1 = args_2.next(); !args_2_1.done; args_2_1 = args_2.next()) {
-                    var arg = args_2_1.value;
-                    result *= arg.evaluate(ctx);
-                }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (args_2_1 && !args_2_1.done && (_a = args_2.return)) {
-                        _a.call(args_2);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
-                }
+            for (var _i = 0, args_2 = args; _i < args_2.length; _i++) {
+                var arg = args_2[_i];
+                result *= arg.evaluate(ctx);
             }
             return result;
         }
@@ -9736,14 +8510,14 @@ CompoundExpression.register(expressions, {
                     NumberType
                 ],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 2), a = _b[0], b = _b[1];
+                    var a = _a[0], b = _a[1];
                     return a.evaluate(ctx) - b.evaluate(ctx);
                 }
             ],
             [
                 [NumberType],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 1), a = _b[0];
+                    var a = _a[0];
                     return -a.evaluate(ctx);
                 }
             ]
@@ -9756,7 +8530,7 @@ CompoundExpression.register(expressions, {
             NumberType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), a = _b[0], b = _b[1];
+            var a = _a[0], b = _a[1];
             return a.evaluate(ctx) / b.evaluate(ctx);
         }
     ],
@@ -9767,7 +8541,7 @@ CompoundExpression.register(expressions, {
             NumberType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), a = _b[0], b = _b[1];
+            var a = _a[0], b = _a[1];
             return a.evaluate(ctx) % b.evaluate(ctx);
         }
     ],
@@ -9799,7 +8573,7 @@ CompoundExpression.register(expressions, {
             NumberType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), b = _b[0], e = _b[1];
+            var b = _a[0], e = _a[1];
             return Math.pow(b.evaluate(ctx), e.evaluate(ctx));
         }
     ],
@@ -9807,7 +8581,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), x = _b[0];
+            var x = _a[0];
             return Math.sqrt(x.evaluate(ctx));
         }
     ],
@@ -9815,7 +8589,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.log(n.evaluate(ctx)) / Math.LN10;
         }
     ],
@@ -9823,7 +8597,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.log(n.evaluate(ctx));
         }
     ],
@@ -9831,7 +8605,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.log(n.evaluate(ctx)) / Math.LN2;
         }
     ],
@@ -9839,7 +8613,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.sin(n.evaluate(ctx));
         }
     ],
@@ -9847,7 +8621,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.cos(n.evaluate(ctx));
         }
     ],
@@ -9855,7 +8629,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.tan(n.evaluate(ctx));
         }
     ],
@@ -9863,7 +8637,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.asin(n.evaluate(ctx));
         }
     ],
@@ -9871,7 +8645,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.acos(n.evaluate(ctx));
         }
     ],
@@ -9879,7 +8653,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.atan(n.evaluate(ctx));
         }
     ],
@@ -9887,25 +8661,25 @@ CompoundExpression.register(expressions, {
         NumberType,
         varargs(NumberType),
         function (ctx, args) {
-            return Math.min.apply(Math, __spreadArray$3([], __read$5(args.map(function (arg) {
+            return Math.min.apply(Math, args.map(function (arg) {
                 return arg.evaluate(ctx);
-            })), false));
+            }));
         }
     ],
     'max': [
         NumberType,
         varargs(NumberType),
         function (ctx, args) {
-            return Math.max.apply(Math, __spreadArray$3([], __read$5(args.map(function (arg) {
+            return Math.max.apply(Math, args.map(function (arg) {
                 return arg.evaluate(ctx);
-            })), false));
+            }));
         }
     ],
     'abs': [
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.abs(n.evaluate(ctx));
         }
     ],
@@ -9913,7 +8687,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             var v = n.evaluate(ctx);
             return v < 0 ? -Math.round(-v) : Math.round(v);
         }
@@ -9922,7 +8696,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.floor(n.evaluate(ctx));
         }
     ],
@@ -9930,7 +8704,7 @@ CompoundExpression.register(expressions, {
         NumberType,
         [NumberType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), n = _b[0];
+            var n = _a[0];
             return Math.ceil(n.evaluate(ctx));
         }
     ],
@@ -9941,7 +8715,7 @@ CompoundExpression.register(expressions, {
             ValueType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             return ctx.properties()[k.value] === v.value;
         }
     ],
@@ -9949,7 +8723,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             return ctx.id() === v.value;
         }
     ],
@@ -9957,7 +8731,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [StringType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             return ctx.geometryType() === v.value;
         }
     ],
@@ -9968,7 +8742,7 @@ CompoundExpression.register(expressions, {
             ValueType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             var a = ctx.properties()[k.value];
             var b = v.value;
             return typeof a === typeof b && a < b;
@@ -9978,7 +8752,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             var a = ctx.id();
             var b = v.value;
             return typeof a === typeof b && a < b;
@@ -9991,7 +8765,7 @@ CompoundExpression.register(expressions, {
             ValueType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             var a = ctx.properties()[k.value];
             var b = v.value;
             return typeof a === typeof b && a > b;
@@ -10001,7 +8775,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             var a = ctx.id();
             var b = v.value;
             return typeof a === typeof b && a > b;
@@ -10014,7 +8788,7 @@ CompoundExpression.register(expressions, {
             ValueType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             var a = ctx.properties()[k.value];
             var b = v.value;
             return typeof a === typeof b && a <= b;
@@ -10024,7 +8798,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             var a = ctx.id();
             var b = v.value;
             return typeof a === typeof b && a <= b;
@@ -10037,7 +8811,7 @@ CompoundExpression.register(expressions, {
             ValueType
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             var a = ctx.properties()[k.value];
             var b = v.value;
             return typeof a === typeof b && a >= b;
@@ -10047,7 +8821,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             var a = ctx.id();
             var b = v.value;
             return typeof a === typeof b && a >= b;
@@ -10057,7 +8831,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [ValueType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), k = _b[0];
+            var k = _a[0];
             return k.value in ctx.properties();
         }
     ],
@@ -10072,7 +8846,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [array$1(StringType)],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             return v.value.indexOf(ctx.geometryType()) >= 0;
         }
     ],
@@ -10080,7 +8854,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [array$1(ValueType)],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), v = _b[0];
+            var v = _a[0];
             return v.value.indexOf(ctx.id()) >= 0;
         }
     ],
@@ -10091,7 +8865,7 @@ CompoundExpression.register(expressions, {
             array$1(ValueType)
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             return v.value.indexOf(ctx.properties()[k.value]) >= 0;
         }
     ],
@@ -10102,7 +8876,7 @@ CompoundExpression.register(expressions, {
             array$1(ValueType)
         ],
         function (ctx, _a) {
-            var _b = __read$5(_a, 2), k = _b[0], v = _b[1];
+            var k = _a[0], v = _a[1];
             return binarySearch(ctx.properties()[k.value], v.value, 0, v.value.length - 1);
         }
     ],
@@ -10115,32 +8889,17 @@ CompoundExpression.register(expressions, {
                     BooleanType
                 ],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 2), a = _b[0], b = _b[1];
+                    var a = _a[0], b = _a[1];
                     return a.evaluate(ctx) && b.evaluate(ctx);
                 }
             ],
             [
                 varargs(BooleanType),
                 function (ctx, args) {
-                    var e_3, _a;
-                    try {
-                        for (var args_3 = __values$n(args), args_3_1 = args_3.next(); !args_3_1.done; args_3_1 = args_3.next()) {
-                            var arg = args_3_1.value;
-                            if (!arg.evaluate(ctx)) {
-                                return false;
-                            }
-                        }
-                    } catch (e_3_1) {
-                        e_3 = { error: e_3_1 };
-                    } finally {
-                        try {
-                            if (args_3_1 && !args_3_1.done && (_a = args_3.return)) {
-                                _a.call(args_3);
-                            }
-                        } finally {
-                            if (e_3) {
-                                throw e_3.error;
-                            }
+                    for (var _i = 0, args_3 = args; _i < args_3.length; _i++) {
+                        var arg = args_3[_i];
+                        if (!arg.evaluate(ctx)) {
+                            return false;
                         }
                     }
                     return true;
@@ -10157,32 +8916,17 @@ CompoundExpression.register(expressions, {
                     BooleanType
                 ],
                 function (ctx, _a) {
-                    var _b = __read$5(_a, 2), a = _b[0], b = _b[1];
+                    var a = _a[0], b = _a[1];
                     return a.evaluate(ctx) || b.evaluate(ctx);
                 }
             ],
             [
                 varargs(BooleanType),
                 function (ctx, args) {
-                    var e_4, _a;
-                    try {
-                        for (var args_4 = __values$n(args), args_4_1 = args_4.next(); !args_4_1.done; args_4_1 = args_4.next()) {
-                            var arg = args_4_1.value;
-                            if (arg.evaluate(ctx)) {
-                                return true;
-                            }
-                        }
-                    } catch (e_4_1) {
-                        e_4 = { error: e_4_1 };
-                    } finally {
-                        try {
-                            if (args_4_1 && !args_4_1.done && (_a = args_4.return)) {
-                                _a.call(args_4);
-                            }
-                        } finally {
-                            if (e_4) {
-                                throw e_4.error;
-                            }
+                    for (var _i = 0, args_4 = args; _i < args_4.length; _i++) {
+                        var arg = args_4[_i];
+                        if (arg.evaluate(ctx)) {
+                            return true;
                         }
                     }
                     return false;
@@ -10194,7 +8938,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [BooleanType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), b = _b[0];
+            var b = _a[0];
             return !b.evaluate(ctx);
         }
     ],
@@ -10202,7 +8946,7 @@ CompoundExpression.register(expressions, {
         BooleanType,
         [StringType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), s = _b[0];
+            var s = _a[0];
             var isSupportedScript = ctx.globals && ctx.globals.isSupportedScript;
             if (isSupportedScript) {
                 return isSupportedScript(s.evaluate(ctx));
@@ -10214,7 +8958,7 @@ CompoundExpression.register(expressions, {
         StringType,
         [StringType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), s = _b[0];
+            var s = _a[0];
             return s.evaluate(ctx).toUpperCase();
         }
     ],
@@ -10222,7 +8966,7 @@ CompoundExpression.register(expressions, {
         StringType,
         [StringType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), s = _b[0];
+            var s = _a[0];
             return s.evaluate(ctx).toLowerCase();
         }
     ],
@@ -10239,7 +8983,7 @@ CompoundExpression.register(expressions, {
         StringType,
         [CollatorType],
         function (ctx, _a) {
-            var _b = __read$5(_a, 1), collator = _b[0];
+            var collator = _a[0];
             return collator.evaluate(ctx).resolvedLocale();
         }
     ]
@@ -10284,26 +9028,6 @@ function getType(val) {
     }
 }
 
-var __values$m = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function isFunction(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -10311,7 +9035,6 @@ function identityFunction(x) {
     return x;
 }
 function createFunction(parameters, propertySpec) {
-    var e_1, _a, e_2, _b;
     var isColor = propertySpec.type === 'color';
     var zoomAndFeatureDependent = parameters.stops && typeof parameters.stops[0][0] === 'object';
     var featureDependent = zoomAndFeatureDependent || parameters.property !== undefined;
@@ -10346,23 +9069,9 @@ function createFunction(parameters, propertySpec) {
     } else if (type === 'categorical') {
         innerFun = evaluateCategoricalFunction;
         hashedStops = Object.create(null);
-        try {
-            for (var _c = __values$m(parameters.stops), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var stop_1 = _d.value;
-                hashedStops[stop_1[0]] = stop_1[1];
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_d && !_d.done && (_a = _c.return)) {
-                    _a.call(_c);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, _a = parameters.stops; _i < _a.length; _i++) {
+            var stop_1 = _a[_i];
+            hashedStops[stop_1[0]] = stop_1[1];
         }
         categoricalKeyType = typeof parameters.stops[0][0];
     } else if (type === 'identity') {
@@ -10392,26 +9101,12 @@ function createFunction(parameters, propertySpec) {
             ]);
         }
         var featureFunctionStops_1 = [];
-        try {
-            for (var zoomStops_1 = __values$m(zoomStops), zoomStops_1_1 = zoomStops_1.next(); !zoomStops_1_1.done; zoomStops_1_1 = zoomStops_1.next()) {
-                var z = zoomStops_1_1.value;
-                featureFunctionStops_1.push([
-                    featureFunctions[z].zoom,
-                    createFunction(featureFunctions[z], propertySpec)
-                ]);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (zoomStops_1_1 && !zoomStops_1_1.done && (_b = zoomStops_1.return)) {
-                    _b.call(zoomStops_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _b = 0, zoomStops_1 = zoomStops; _b < zoomStops_1.length; _b++) {
+            var z = zoomStops_1[_b];
+            featureFunctionStops_1.push([
+                featureFunctions[z].zoom,
+                createFunction(featureFunctions[z], propertySpec)
+            ]);
         }
         var interpolationType = { name: 'linear' };
         return {
@@ -10564,26 +9259,6 @@ function interpolationFactor(input, base, lowerValue, upperValue) {
     }
 }
 
-var __values$l = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var StyleExpression = function () {
     function StyleExpression(expression, propertySpec) {
         this.expression = expression;
@@ -10749,30 +9424,15 @@ function normalizePropertyExpression(value, specification) {
     }
 }
 function findZoomCurve(expression) {
-    var e_1, _a;
     var result = null;
     if (expression instanceof Let) {
         result = findZoomCurve(expression.result);
     } else if (expression instanceof Coalesce) {
-        try {
-            for (var _b = __values$l(expression.args), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var arg = _c.value;
-                result = findZoomCurve(arg);
-                if (result) {
-                    break;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, _a = expression.args; _i < _a.length; _i++) {
+            var arg = _a[_i];
+            result = findZoomCurve(arg);
+            if (result) {
+                break;
             }
         }
     } else if ((expression instanceof Step || expression instanceof Interpolate) && expression.input instanceof CompoundExpression && expression.input.name === 'zoom') {
@@ -11165,28 +9825,7 @@ function validateEnum(options) {
     return errors;
 }
 
-var __values$k = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function isExpressionFilter(filter) {
-    var e_1, _a;
     if (filter === true || filter === false) {
         return true;
     }
@@ -11211,24 +9850,10 @@ function isExpressionFilter(filter) {
         return filter.length !== 3 || (Array.isArray(filter[1]) || Array.isArray(filter[2]));
     case 'any':
     case 'all':
-        try {
-            for (var _b = __values$k(filter.slice(1)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var f = _c.value;
-                if (!isExpressionFilter(f) && typeof f !== 'boolean') {
-                    return false;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, _a = filter.slice(1); _i < _a.length; _i++) {
+            var f = _a[_i];
+            if (!isExpressionFilter(f) && typeof f !== 'boolean') {
+                return false;
             }
         }
         return true;
@@ -11678,44 +10303,6 @@ function validateString(options) {
     return [];
 }
 
-var __read$4 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __spreadArray$2 = undefined && undefined.__spreadArray || function (to, from, pack) {
-    if (pack || arguments.length === 2) {
-        for (var i = 0, l = from.length, ar; i < l; i++) {
-            if (ar || !(i in from)) {
-                if (!ar) {
-                    ar = Array.prototype.slice.call(from, 0, i);
-                }
-                ar[i] = from[i];
-            }
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var objectElementValidators = { promoteId: validatePromoteId };
 function validateSource(options) {
     var value = options.value;
@@ -11751,7 +10338,7 @@ function validateSource(options) {
         });
         if (value.cluster) {
             for (var prop in value.clusterProperties) {
-                var _a = __read$4(value.clusterProperties[prop], 2), operator = _a[0], mapExpr = _a[1];
+                var _a = value.clusterProperties[prop], operator = _a[0], mapExpr = _a[1];
                 var reduceExpr = typeof operator === 'string' ? [
                     operator,
                     ['accumulated'],
@@ -11760,16 +10347,16 @@ function validateSource(options) {
                         prop
                     ]
                 ] : operator;
-                errors.push.apply(errors, __spreadArray$2([], __read$4(validateExpression({
+                errors.push.apply(errors, validateExpression({
                     key: ''.concat(key, '.').concat(prop, '.map'),
                     value: mapExpr,
                     expressionContext: 'cluster-map'
-                })), false));
-                errors.push.apply(errors, __spreadArray$2([], __read$4(validateExpression({
+                }));
+                errors.push.apply(errors, validateExpression({
                     key: ''.concat(key, '.').concat(prop, '.reduce'),
                     value: reduceExpr,
                     expressionContext: 'cluster-reduce'
-                })), false));
+                }));
             }
         }
         return errors;
@@ -11820,10 +10407,10 @@ function validatePromoteId(_a) {
     } else {
         var errors = [];
         for (var prop in value) {
-            errors.push.apply(errors, __spreadArray$2([], __read$4(validateString({
+            errors.push.apply(errors, validateString({
                 key: ''.concat(key, '.').concat(prop),
                 value: value[prop]
-            })), false));
+            }));
         }
         return errors;
     }
@@ -11983,52 +10570,17 @@ function wrapCleanErrors(inner) {
     };
 }
 
-var __values$j = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var validateStyle = validateStyleMin;
 var validateLight = validateStyle.light;
 var validatePaintProperty = validateStyle.paintProperty;
 var validateLayoutProperty = validateStyle.layoutProperty;
 function emitValidationErrors(emitter, errors) {
-    var e_1, _a;
     var hasErrors = false;
     if (errors && errors.length) {
-        try {
-            for (var errors_1 = __values$j(errors), errors_1_1 = errors_1.next(); !errors_1_1.done; errors_1_1 = errors_1.next()) {
-                var error = errors_1_1.value;
-                emitter.fire(new ErrorEvent(new Error(error.message)));
-                hasErrors = true;
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (errors_1_1 && !errors_1_1.done && (_a = errors_1.return)) {
-                    _a.call(errors_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, errors_1 = errors; _i < errors_1.length; _i++) {
+            var error = errors_1[_i];
+            emitter.fire(new ErrorEvent(new Error(error.message)));
+            hasErrors = true;
         }
     }
     return hasErrors;
@@ -12182,26 +10734,6 @@ var TransferableGridIndex = function () {
     return TransferableGridIndex;
 }();
 
-var __values$i = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var registry = {};
 function register(name, klass, options) {
     if (options === void 0) {
@@ -12237,7 +10769,6 @@ function isArrayBuffer(value) {
     return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
 }
 function serialize(input, transferables) {
-    var e_1, _a;
     if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
         return input;
     }
@@ -12268,23 +10799,9 @@ function serialize(input, transferables) {
     }
     if (Array.isArray(input)) {
         var serialized = [];
-        try {
-            for (var input_1 = __values$i(input), input_1_1 = input_1.next(); !input_1_1.done; input_1_1 = input_1.next()) {
-                var item = input_1_1.value;
-                serialized.push(serialize(item, transferables));
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (input_1_1 && !input_1_1.done && (_a = input_1.return)) {
-                    _a.call(input_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, input_1 = input; _i < input_1.length; _i++) {
+            var item = input_1[_i];
+            serialized.push(serialize(item, transferables));
         }
         return serialized;
     }
@@ -12321,7 +10838,6 @@ function serialize(input, transferables) {
     throw new Error('can\'t serialize object of type '.concat(typeof input));
 }
 function deserialize(input) {
-    var e_2, _a;
     if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
         return input;
     }
@@ -12341,27 +10857,13 @@ function deserialize(input) {
             return klass.deserialize(input);
         }
         var result = Object.create(klass.prototype);
-        try {
-            for (var _b = __values$i(Object.keys(input)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var key = _c.value;
-                if (key === '$name') {
-                    continue;
-                }
-                var value = input[key];
-                result[key] = registry[name_3].shallow.indexOf(key) >= 0 ? value : deserialize(value);
+        for (var _i = 0, _a = Object.keys(input); _i < _a.length; _i++) {
+            var key = _a[_i];
+            if (key === '$name') {
+                continue;
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+            var value = input[key];
+            result[key] = registry[name_3].shallow.indexOf(key) >= 0 ? value : deserialize(value);
         }
         return result;
     }
@@ -12546,70 +11048,20 @@ var unicodeBlockLookup = {
     }
 };
 
-var __values$h = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function allowsVerticalWritingMode(chars) {
-    var e_2, _a;
-    try {
-        for (var chars_2 = __values$h(chars), chars_2_1 = chars_2.next(); !chars_2_1.done; chars_2_1 = chars_2.next()) {
-            var char = chars_2_1.value;
-            if (charHasUprightVerticalOrientation(char.charCodeAt(0))) {
-                return true;
-            }
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (chars_2_1 && !chars_2_1.done && (_a = chars_2.return)) {
-                _a.call(chars_2);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
+    for (var _i = 0, chars_2 = chars; _i < chars_2.length; _i++) {
+        var char = chars_2[_i];
+        if (charHasUprightVerticalOrientation(char.charCodeAt(0))) {
+            return true;
         }
     }
     return false;
 }
 function allowsLetterSpacing(chars) {
-    var e_3, _a;
-    try {
-        for (var chars_3 = __values$h(chars), chars_3_1 = chars_3.next(); !chars_3_1.done; chars_3_1 = chars_3.next()) {
-            var char = chars_3_1.value;
-            if (!charAllowsLetterSpacing(char.charCodeAt(0))) {
-                return false;
-            }
-        }
-    } catch (e_3_1) {
-        e_3 = { error: e_3_1 };
-    } finally {
-        try {
-            if (chars_3_1 && !chars_3_1.done && (_a = chars_3.return)) {
-                _a.call(chars_3);
-            }
-        } finally {
-            if (e_3) {
-                throw e_3.error;
-            }
+    for (var _i = 0, chars_3 = chars; _i < chars_3.length; _i++) {
+        var char = chars_3[_i];
+        if (!charAllowsLetterSpacing(char.charCodeAt(0))) {
+            return false;
         }
     }
     return true;
@@ -12893,49 +11345,19 @@ function charInSupportedScript(char, canRenderRTL) {
     return true;
 }
 function stringContainsRTLText(chars) {
-    var e_4, _a;
-    try {
-        for (var chars_4 = __values$h(chars), chars_4_1 = chars_4.next(); !chars_4_1.done; chars_4_1 = chars_4.next()) {
-            var char = chars_4_1.value;
-            if (charInRTLScript(char.charCodeAt(0))) {
-                return true;
-            }
-        }
-    } catch (e_4_1) {
-        e_4 = { error: e_4_1 };
-    } finally {
-        try {
-            if (chars_4_1 && !chars_4_1.done && (_a = chars_4.return)) {
-                _a.call(chars_4);
-            }
-        } finally {
-            if (e_4) {
-                throw e_4.error;
-            }
+    for (var _i = 0, chars_4 = chars; _i < chars_4.length; _i++) {
+        var char = chars_4[_i];
+        if (charInRTLScript(char.charCodeAt(0))) {
+            return true;
         }
     }
     return false;
 }
 function isStringInSupportedScript(chars, canRenderRTL) {
-    var e_5, _a;
-    try {
-        for (var chars_5 = __values$h(chars), chars_5_1 = chars_5.next(); !chars_5_1.done; chars_5_1 = chars_5.next()) {
-            var char = chars_5_1.value;
-            if (!charInSupportedScript(char.charCodeAt(0), canRenderRTL)) {
-                return false;
-            }
-        }
-    } catch (e_5_1) {
-        e_5 = { error: e_5_1 };
-    } finally {
-        try {
-            if (chars_5_1 && !chars_5_1.done && (_a = chars_5.return)) {
-                _a.call(chars_5);
-            }
-        } finally {
-            if (e_5) {
-                throw e_5.error;
-            }
+    for (var _i = 0, chars_5 = chars; _i < chars_5.length; _i++) {
+        var char = chars_5[_i];
+        if (!charInSupportedScript(char.charCodeAt(0), canRenderRTL)) {
+            return false;
         }
     }
     return true;
@@ -13102,26 +11524,6 @@ var __extends$f = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$g = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var PropertyValue = function () {
     function PropertyValue(property, value) {
         this.property = property;
@@ -13173,78 +11575,33 @@ var Transitionable = function () {
         this._values[name].transition = clone$1(value) || undefined;
     };
     Transitionable.prototype.serialize = function () {
-        var e_1, _a;
         var result = {};
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                var value = this.getValue(property);
-                if (value !== undefined) {
-                    result[property] = value;
-                }
-                var transition = this.getTransition(property);
-                if (transition !== undefined) {
-                    result[''.concat(property, '-transition')] = transition;
-                }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            var value = this.getValue(property);
+            if (value !== undefined) {
+                result[property] = value;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+            var transition = this.getTransition(property);
+            if (transition !== undefined) {
+                result[''.concat(property, '-transition')] = transition;
             }
         }
         return result;
     };
     Transitionable.prototype.transitioned = function (parameters, prior) {
-        var e_2, _a;
         var result = new Transitioning(this._properties);
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                result._values[property] = this._values[property].transitioned(parameters, prior._values[property]);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            result._values[property] = this._values[property].transitioned(parameters, prior._values[property]);
         }
         return result;
     };
     Transitionable.prototype.untransitioned = function () {
-        var e_3, _a;
         var result = new Transitioning(this._properties);
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                result._values[property] = this._values[property].untransitioned();
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            result._values[property] = this._values[property].untransitioned();
         }
         return result;
     };
@@ -13287,48 +11644,18 @@ var Transitioning = function () {
         this._values = Object.create(properties.defaultTransitioningPropertyValues);
     }
     Transitioning.prototype.possiblyEvaluate = function (parameters, canonical, availableImages) {
-        var e_4, _a;
         var result = new PossiblyEvaluated(this._properties);
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                result._values[property] = this._values[property].possiblyEvaluate(parameters, canonical, availableImages);
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
-            }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            result._values[property] = this._values[property].possiblyEvaluate(parameters, canonical, availableImages);
         }
         return result;
     };
     Transitioning.prototype.hasTransition = function () {
-        var e_5, _a;
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                if (this._values[property].prior) {
-                    return true;
-                }
-            }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            if (this._values[property].prior) {
+                return true;
             }
         }
         return false;
@@ -13347,51 +11674,21 @@ var Layout = function () {
         this._values[name] = new PropertyValue(this._values[name].property, value === null ? undefined : clone$1(value));
     };
     Layout.prototype.serialize = function () {
-        var e_6, _a;
         var result = {};
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                var value = this.getValue(property);
-                if (value !== undefined) {
-                    result[property] = value;
-                }
-            }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
-                }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            var value = this.getValue(property);
+            if (value !== undefined) {
+                result[property] = value;
             }
         }
         return result;
     };
     Layout.prototype.possiblyEvaluate = function (parameters, canonical, availableImages) {
-        var e_7, _a;
         var result = new PossiblyEvaluated(this._properties);
-        try {
-            for (var _b = __values$g(Object.keys(this._values)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var property = _c.value;
-                result._values[property] = this._values[property].possiblyEvaluate(parameters, canonical, availableImages);
-            }
-        } catch (e_7_1) {
-            e_7 = { error: e_7_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_7) {
-                    throw e_7.error;
-                }
-            }
+        for (var _i = 0, _a = Object.keys(this._values); _i < _a.length; _i++) {
+            var property = _a[_i];
+            result._values[property] = this._values[property].possiblyEvaluate(parameters, canonical, availableImages);
         }
         return result;
     };
@@ -15260,26 +13557,6 @@ var layout$6 = createLayout([{
     }], 4);
 var members$4 = layout$6.members;
 
-var __values$f = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var SegmentVector = function () {
     function SegmentVector(segments) {
         if (segments === void 0) {
@@ -15310,25 +13587,10 @@ var SegmentVector = function () {
         return this.segments;
     };
     SegmentVector.prototype.destroy = function () {
-        var e_1, _a;
-        try {
-            for (var _b = __values$f(this.segments), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var segment = _c.value;
-                for (var k in segment.vaos) {
-                    segment.vaos[k].destroy();
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, _a = this.segments; _i < _a.length; _i++) {
+            var segment = _a[_i];
+            for (var k in segment.vaos) {
+                segment.vaos[k].destroy();
             }
         }
     };
@@ -15725,64 +13987,6 @@ var UniformMatrix4f = function (_super) {
     return UniformMatrix4f;
 }(Uniform);
 
-var __values$e = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$3 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __spreadArray$1 = undefined && undefined.__spreadArray || function (to, from, pack) {
-    if (pack || arguments.length === 2) {
-        for (var i = 0, l = from.length, ar; i < l; i++) {
-            if (ar || !(i in from)) {
-                if (!ar) {
-                    ar = Array.prototype.slice.call(from, 0, i);
-                }
-                ar[i] = from[i];
-            }
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 function packColor(color) {
     return [
         packUint8ToFloat(255 * color.r, 255 * color.g),
@@ -16062,34 +14266,19 @@ var ProgramConfiguration = function () {
         }
     };
     ProgramConfiguration.prototype.updatePaintArrays = function (featureStates, featureMap, vtLayer, layer, imagePositions) {
-        var e_1, _a;
         var dirty = false;
         for (var id in featureStates) {
             var positions = featureMap.getPositions(id);
-            try {
-                for (var positions_1 = (e_1 = void 0, __values$e(positions)), positions_1_1 = positions_1.next(); !positions_1_1.done; positions_1_1 = positions_1.next()) {
-                    var pos = positions_1_1.value;
-                    var feature = vtLayer.feature(pos.index);
-                    for (var property in this.binders) {
-                        var binder = this.binders[property];
-                        if ((binder instanceof SourceExpressionBinder || binder instanceof CompositeExpressionBinder || binder instanceof CrossFadedCompositeBinder) && binder.expression.isStateDependent === true) {
-                            var value = layer.paint.get(property);
-                            binder.expression = value.value;
-                            binder.updatePaintArray(pos.start, pos.end, feature, featureStates[id], imagePositions);
-                            dirty = true;
-                        }
-                    }
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (positions_1_1 && !positions_1_1.done && (_a = positions_1.return)) {
-                        _a.call(positions_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
+            for (var _i = 0, positions_1 = positions; _i < positions_1.length; _i++) {
+                var pos = positions_1[_i];
+                var feature = vtLayer.feature(pos.index);
+                for (var property in this.binders) {
+                    var binder = this.binders[property];
+                    if ((binder instanceof SourceExpressionBinder || binder instanceof CompositeExpressionBinder || binder instanceof CrossFadedCompositeBinder) && binder.expression.isStateDependent === true) {
+                        var value = layer.paint.get(property);
+                        binder.expression = value.value;
+                        binder.updatePaintArray(pos.start, pos.end, feature, featureStates[id], imagePositions);
+                        dirty = true;
                     }
                 }
             }
@@ -16101,9 +14290,9 @@ var ProgramConfiguration = function () {
         for (var property in this.binders) {
             var binder = this.binders[property];
             if (binder instanceof ConstantBinder || binder instanceof CrossFadedConstantBinder) {
-                result.push.apply(result, __spreadArray$1([], __read$3(binder.uniformNames.map(function (name) {
+                result.push.apply(result, binder.uniformNames.map(function (name) {
                     return '#define HAS_UNIFORM_'.concat(name);
-                })), false));
+                }));
             }
         }
         return result;
@@ -16125,28 +14314,13 @@ var ProgramConfiguration = function () {
         return result;
     };
     ProgramConfiguration.prototype.getBinderUniforms = function () {
-        var e_2, _a;
         var uniforms = [];
         for (var property in this.binders) {
             var binder = this.binders[property];
             if (binder instanceof ConstantBinder || binder instanceof CrossFadedConstantBinder || binder instanceof CompositeExpressionBinder) {
-                try {
-                    for (var _b = (e_2 = void 0, __values$e(binder.uniformNames)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                        var uniformName = _c.value;
-                        uniforms.push(uniformName);
-                    }
-                } catch (e_2_1) {
-                    e_2 = { error: e_2_1 };
-                } finally {
-                    try {
-                        if (_c && !_c.done && (_a = _b.return)) {
-                            _a.call(_b);
-                        }
-                    } finally {
-                        if (e_2) {
-                            throw e_2.error;
-                        }
-                    }
+                for (var _i = 0, _a = binder.uniformNames; _i < _a.length; _i++) {
+                    var uniformName = _a[_i];
+                    uniforms.push(uniformName);
                 }
             }
         }
@@ -16156,34 +14330,19 @@ var ProgramConfiguration = function () {
         return this._buffers;
     };
     ProgramConfiguration.prototype.getUniforms = function (context, locations) {
-        var e_3, _a;
         var uniforms = [];
         for (var property in this.binders) {
             var binder = this.binders[property];
             if (binder instanceof ConstantBinder || binder instanceof CrossFadedConstantBinder || binder instanceof CompositeExpressionBinder) {
-                try {
-                    for (var _b = (e_3 = void 0, __values$e(binder.uniformNames)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                        var name_1 = _c.value;
-                        if (locations[name_1]) {
-                            var binding = binder.getBinding(context, locations[name_1], name_1);
-                            uniforms.push({
-                                name: name_1,
-                                property: property,
-                                binding: binding
-                            });
-                        }
-                    }
-                } catch (e_3_1) {
-                    e_3 = { error: e_3_1 };
-                } finally {
-                    try {
-                        if (_c && !_c.done && (_a = _b.return)) {
-                            _a.call(_b);
-                        }
-                    } finally {
-                        if (e_3) {
-                            throw e_3.error;
-                        }
+                for (var _i = 0, _a = binder.uniformNames; _i < _a.length; _i++) {
+                    var name_1 = _a[_i];
+                    if (locations[name_1]) {
+                        var binding = binder.getBinding(context, locations[name_1], name_1);
+                        uniforms.push({
+                            name: name_1,
+                            property: property,
+                            binding: binding
+                        });
                     }
                 }
             }
@@ -16191,24 +14350,9 @@ var ProgramConfiguration = function () {
         return uniforms;
     };
     ProgramConfiguration.prototype.setUniforms = function (context, binderUniforms, properties, globals) {
-        var e_4, _a;
-        try {
-            for (var binderUniforms_1 = __values$e(binderUniforms), binderUniforms_1_1 = binderUniforms_1.next(); !binderUniforms_1_1.done; binderUniforms_1_1 = binderUniforms_1.next()) {
-                var _b = binderUniforms_1_1.value, name_2 = _b.name, property = _b.property, binding = _b.binding;
-                this.binders[property].setUniform(binding, globals, properties.get(property), name_2);
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (binderUniforms_1_1 && !binderUniforms_1_1.done && (_a = binderUniforms_1.return)) {
-                    _a.call(binderUniforms_1);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
-            }
+        for (var _i = 0, binderUniforms_1 = binderUniforms; _i < binderUniforms_1.length; _i++) {
+            var _a = binderUniforms_1[_i], name_2 = _a.name, property = _a.property, binding = _a.binding;
+            this.binders[property].setUniform(binding, globals, properties.get(property), name_2);
         }
     };
     ProgramConfiguration.prototype.updatePaintBuffers = function (crossfade) {
@@ -16246,30 +14390,15 @@ var ProgramConfiguration = function () {
 }();
 var ProgramConfigurationSet = function () {
     function ProgramConfigurationSet(layers, zoom, filterProperties) {
-        var e_5, _a;
         if (filterProperties === void 0) {
             filterProperties = function () {
                 return true;
             };
         }
         this.programConfigurations = {};
-        try {
-            for (var layers_1 = __values$e(layers), layers_1_1 = layers_1.next(); !layers_1_1.done; layers_1_1 = layers_1.next()) {
-                var layer = layers_1_1.value;
-                this.programConfigurations[layer.id] = new ProgramConfiguration(layer, zoom, filterProperties);
-            }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (layers_1_1 && !layers_1_1.done && (_a = layers_1.return)) {
-                    _a.call(layers_1);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
-            }
+        for (var _i = 0, layers_1 = layers; _i < layers_1.length; _i++) {
+            var layer = layers_1[_i];
+            this.programConfigurations[layer.id] = new ProgramConfiguration(layer, zoom, filterProperties);
         }
         this.needsUpload = false;
         this._featureMap = new FeaturePositionMap();
@@ -16286,24 +14415,9 @@ var ProgramConfigurationSet = function () {
         this.needsUpload = true;
     };
     ProgramConfigurationSet.prototype.updatePaintArrays = function (featureStates, vtLayer, layers, imagePositions) {
-        var e_6, _a;
-        try {
-            for (var layers_2 = __values$e(layers), layers_2_1 = layers_2.next(); !layers_2_1.done; layers_2_1 = layers_2.next()) {
-                var layer = layers_2_1.value;
-                this.needsUpload = this.programConfigurations[layer.id].updatePaintArrays(featureStates, this._featureMap, vtLayer, layer, imagePositions) || this.needsUpload;
-            }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (layers_2_1 && !layers_2_1.done && (_a = layers_2.return)) {
-                    _a.call(layers_2);
-                }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
-                }
-            }
+        for (var _i = 0, layers_2 = layers; _i < layers_2.length; _i++) {
+            var layer = layers_2[_i];
+            this.needsUpload = this.programConfigurations[layer.id].updatePaintArrays(featureStates, this._featureMap, vtLayer, layer, imagePositions) || this.needsUpload;
         }
     };
     ProgramConfigurationSet.prototype.get = function (layerId) {
@@ -16431,26 +14545,6 @@ function toEvaluationFeature(feature, needGeometry) {
     };
 }
 
-var __values$d = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function addCircleVertex(layoutVertexArray, x, y, extrudeX, extrudeY) {
     layoutVertexArray.emplaceBack(x * 2 + (extrudeX + 1) / 2, y * 2 + (extrudeY + 1) / 2);
 }
@@ -16475,7 +14569,6 @@ var CircleBucket = function () {
         });
     }
     CircleBucket.prototype.populate = function (features, options, canonical) {
-        var e_1, _a, e_2, _b;
         var styleLayer = this.layers[0];
         var bucketFeatures = [];
         var circleSortKey = null;
@@ -16484,65 +14577,37 @@ var CircleBucket = function () {
             circleSortKey = styleLayer.layout.get('circle-sort-key');
             sortFeaturesByKey = !circleSortKey.isConstant();
         }
-        try {
-            for (var features_1 = __values$d(features), features_1_1 = features_1.next(); !features_1_1.done; features_1_1 = features_1.next()) {
-                var _c = features_1_1.value, feature = _c.feature, id = _c.id, index = _c.index, sourceLayerIndex = _c.sourceLayerIndex;
-                var needGeometry = this.layers[0]._featureFilter.needGeometry;
-                var evaluationFeature = toEvaluationFeature(feature, needGeometry);
-                if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
-                    continue;
-                }
-                var sortKey = sortFeaturesByKey ? circleSortKey.evaluate(evaluationFeature, {}, canonical) : undefined;
-                var bucketFeature = {
-                    id: id,
-                    properties: feature.properties,
-                    type: feature.type,
-                    sourceLayerIndex: sourceLayerIndex,
-                    index: index,
-                    geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
-                    patterns: {},
-                    sortKey: sortKey
-                };
-                bucketFeatures.push(bucketFeature);
+        for (var _i = 0, features_1 = features; _i < features_1.length; _i++) {
+            var _a = features_1[_i], feature = _a.feature, id = _a.id, index = _a.index, sourceLayerIndex = _a.sourceLayerIndex;
+            var needGeometry = this.layers[0]._featureFilter.needGeometry;
+            var evaluationFeature = toEvaluationFeature(feature, needGeometry);
+            if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
+                continue;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (features_1_1 && !features_1_1.done && (_a = features_1.return)) {
-                    _a.call(features_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+            var sortKey = sortFeaturesByKey ? circleSortKey.evaluate(evaluationFeature, {}, canonical) : undefined;
+            var bucketFeature = {
+                id: id,
+                properties: feature.properties,
+                type: feature.type,
+                sourceLayerIndex: sourceLayerIndex,
+                index: index,
+                geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
+                patterns: {},
+                sortKey: sortKey
+            };
+            bucketFeatures.push(bucketFeature);
         }
         if (sortFeaturesByKey) {
             bucketFeatures.sort(function (a, b) {
                 return a.sortKey - b.sortKey;
             });
         }
-        try {
-            for (var bucketFeatures_1 = __values$d(bucketFeatures), bucketFeatures_1_1 = bucketFeatures_1.next(); !bucketFeatures_1_1.done; bucketFeatures_1_1 = bucketFeatures_1.next()) {
-                var bucketFeature = bucketFeatures_1_1.value;
-                var geometry = bucketFeature.geometry, index = bucketFeature.index, sourceLayerIndex = bucketFeature.sourceLayerIndex;
-                var feature = features[index].feature;
-                this.addFeature(bucketFeature, geometry, index, canonical);
-                options.featureIndex.insert(feature, geometry, index, sourceLayerIndex, this.index);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (bucketFeatures_1_1 && !bucketFeatures_1_1.done && (_b = bucketFeatures_1.return)) {
-                    _b.call(bucketFeatures_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _b = 0, bucketFeatures_1 = bucketFeatures; _b < bucketFeatures_1.length; _b++) {
+            var bucketFeature = bucketFeatures_1[_b];
+            var geometry = bucketFeature.geometry, index = bucketFeature.index, sourceLayerIndex = bucketFeature.sourceLayerIndex;
+            var feature = features[index].feature;
+            this.addFeature(bucketFeature, geometry, index, canonical);
+            options.featureIndex.insert(feature, geometry, index, sourceLayerIndex, this.index);
         }
     };
     CircleBucket.prototype.update = function (states, vtLayer, imagePositions) {
@@ -16575,54 +14640,25 @@ var CircleBucket = function () {
         this.segments.destroy();
     };
     CircleBucket.prototype.addFeature = function (feature, geometry, index, canonical) {
-        var e_3, _a, e_4, _b;
-        try {
-            for (var geometry_1 = __values$d(geometry), geometry_1_1 = geometry_1.next(); !geometry_1_1.done; geometry_1_1 = geometry_1.next()) {
-                var ring = geometry_1_1.value;
-                try {
-                    for (var ring_1 = (e_4 = void 0, __values$d(ring)), ring_1_1 = ring_1.next(); !ring_1_1.done; ring_1_1 = ring_1.next()) {
-                        var point = ring_1_1.value;
-                        var x = point.x;
-                        var y = point.y;
-                        if (x < 0 || x >= EXTENT || y < 0 || y >= EXTENT) {
-                            continue;
-                        }
-                        var segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray, feature.sortKey);
-                        var index_1 = segment.vertexLength;
-                        addCircleVertex(this.layoutVertexArray, x, y, -1, -1);
-                        addCircleVertex(this.layoutVertexArray, x, y, 1, -1);
-                        addCircleVertex(this.layoutVertexArray, x, y, 1, 1);
-                        addCircleVertex(this.layoutVertexArray, x, y, -1, 1);
-                        this.indexArray.emplaceBack(index_1, index_1 + 1, index_1 + 2);
-                        this.indexArray.emplaceBack(index_1, index_1 + 3, index_1 + 2);
-                        segment.vertexLength += 4;
-                        segment.primitiveLength += 2;
-                    }
-                } catch (e_4_1) {
-                    e_4 = { error: e_4_1 };
-                } finally {
-                    try {
-                        if (ring_1_1 && !ring_1_1.done && (_b = ring_1.return)) {
-                            _b.call(ring_1);
-                        }
-                    } finally {
-                        if (e_4) {
-                            throw e_4.error;
-                        }
-                    }
+        for (var _i = 0, geometry_1 = geometry; _i < geometry_1.length; _i++) {
+            var ring = geometry_1[_i];
+            for (var _a = 0, ring_1 = ring; _a < ring_1.length; _a++) {
+                var point = ring_1[_a];
+                var x = point.x;
+                var y = point.y;
+                if (x < 0 || x >= EXTENT || y < 0 || y >= EXTENT) {
+                    continue;
                 }
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (geometry_1_1 && !geometry_1_1.done && (_a = geometry_1.return)) {
-                    _a.call(geometry_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
+                var segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray, feature.sortKey);
+                var index_1 = segment.vertexLength;
+                addCircleVertex(this.layoutVertexArray, x, y, -1, -1);
+                addCircleVertex(this.layoutVertexArray, x, y, 1, -1);
+                addCircleVertex(this.layoutVertexArray, x, y, 1, 1);
+                addCircleVertex(this.layoutVertexArray, x, y, -1, 1);
+                this.indexArray.emplaceBack(index_1, index_1 + 1, index_1 + 2);
+                this.indexArray.emplaceBack(index_1, index_1 + 3, index_1 + 2);
+                segment.vertexLength += 4;
+                segment.primitiveLength += 2;
             }
         }
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, {}, canonical);
@@ -16631,26 +14667,6 @@ var CircleBucket = function () {
 }();
 register('CircleBucket', CircleBucket, { omit: ['layers'] });
 
-var __values$c = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function polygonIntersectsPolygon(polygonA, polygonB) {
     for (var i = 0; i < polygonA.length; i++) {
         if (polygonContainsPoint(polygonB, polygonA[i])) {
@@ -16807,25 +14823,10 @@ function polygonContainsPoint(ring, p) {
     return c;
 }
 function polygonIntersectsBox(ring, boxX1, boxY1, boxX2, boxY2) {
-    var e_1, _a, e_2, _b;
-    try {
-        for (var ring_1 = __values$c(ring), ring_1_1 = ring_1.next(); !ring_1_1.done; ring_1_1 = ring_1.next()) {
-            var p = ring_1_1.value;
-            if (boxX1 <= p.x && boxY1 <= p.y && boxX2 >= p.x && boxY2 >= p.y) {
-                return true;
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (ring_1_1 && !ring_1_1.done && (_a = ring_1.return)) {
-                _a.call(ring_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+    for (var _i = 0, ring_1 = ring; _i < ring_1.length; _i++) {
+        var p = ring_1[_i];
+        if (boxX1 <= p.x && boxY1 <= p.y && boxX2 >= p.x && boxY2 >= p.y) {
+            return true;
         }
     }
     var corners = [
@@ -16835,24 +14836,10 @@ function polygonIntersectsBox(ring, boxX1, boxY1, boxX2, boxY2) {
         new pointGeometry(boxX2, boxY1)
     ];
     if (ring.length > 2) {
-        try {
-            for (var corners_1 = __values$c(corners), corners_1_1 = corners_1.next(); !corners_1_1.done; corners_1_1 = corners_1.next()) {
-                var corner = corners_1_1.value;
-                if (polygonContainsPoint(ring, corner)) {
-                    return true;
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (corners_1_1 && !corners_1_1.done && (_b = corners_1.return)) {
-                    _b.call(corners_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+        for (var _a = 0, corners_1 = corners; _a < corners_1.length; _a++) {
+            var corner = corners_1[_a];
+            if (polygonContainsPoint(ring, corner)) {
+                return true;
             }
         }
     }
@@ -17387,26 +15374,6 @@ var __extends$b = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$b = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var CircleStyleLayer = function (_super) {
     __extends$b(CircleStyleLayer, _super);
     function CircleStyleLayer(layer) {
@@ -17420,7 +15387,6 @@ var CircleStyleLayer = function (_super) {
         return getMaximumPaintValue('circle-radius', this, circleBucket) + getMaximumPaintValue('circle-stroke-width', this, circleBucket) + translateDistance(this.paint.get('circle-translate'));
     };
     CircleStyleLayer.prototype.queryIntersectsFeature = function (queryGeometry, feature, featureState, geometry, zoom, transform, pixelsToTileUnits, pixelPosMatrix) {
-        var e_1, _a, e_2, _b;
         var translatedPolygon = translate$1(queryGeometry, this.paint.get('circle-translate'), this.paint.get('circle-translate-anchor'), transform.angle, pixelsToTileUnits);
         var radius = this.paint.get('circle-radius').evaluate(feature, featureState);
         var stroke = this.paint.get('circle-stroke-width').evaluate(feature, featureState);
@@ -17428,48 +15394,20 @@ var CircleStyleLayer = function (_super) {
         var alignWithMap = this.paint.get('circle-pitch-alignment') === 'map';
         var transformedPolygon = alignWithMap ? translatedPolygon : projectQueryGeometry$1(translatedPolygon, pixelPosMatrix);
         var transformedSize = alignWithMap ? size * pixelsToTileUnits : size;
-        try {
-            for (var geometry_1 = __values$b(geometry), geometry_1_1 = geometry_1.next(); !geometry_1_1.done; geometry_1_1 = geometry_1.next()) {
-                var ring = geometry_1_1.value;
-                try {
-                    for (var ring_1 = (e_2 = void 0, __values$b(ring)), ring_1_1 = ring_1.next(); !ring_1_1.done; ring_1_1 = ring_1.next()) {
-                        var point = ring_1_1.value;
-                        var transformedPoint = alignWithMap ? point : projectPoint(point, pixelPosMatrix);
-                        var adjustedSize = transformedSize;
-                        var projectedCenter = transformMat4(create(), fromValues(point.x, point.y, 0, 1), pixelPosMatrix);
-                        if (this.paint.get('circle-pitch-scale') === 'viewport' && this.paint.get('circle-pitch-alignment') === 'map') {
-                            adjustedSize *= projectedCenter[3] / transform.cameraToCenterDistance;
-                        } else if (this.paint.get('circle-pitch-scale') === 'map' && this.paint.get('circle-pitch-alignment') === 'viewport') {
-                            adjustedSize *= transform.cameraToCenterDistance / projectedCenter[3];
-                        }
-                        if (polygonIntersectsBufferedPoint(transformedPolygon, transformedPoint, adjustedSize)) {
-                            return true;
-                        }
-                    }
-                } catch (e_2_1) {
-                    e_2 = { error: e_2_1 };
-                } finally {
-                    try {
-                        if (ring_1_1 && !ring_1_1.done && (_b = ring_1.return)) {
-                            _b.call(ring_1);
-                        }
-                    } finally {
-                        if (e_2) {
-                            throw e_2.error;
-                        }
-                    }
+        for (var _i = 0, geometry_1 = geometry; _i < geometry_1.length; _i++) {
+            var ring = geometry_1[_i];
+            for (var _a = 0, ring_1 = ring; _a < ring_1.length; _a++) {
+                var point = ring_1[_a];
+                var transformedPoint = alignWithMap ? point : projectPoint(point, pixelPosMatrix);
+                var adjustedSize = transformedSize;
+                var projectedCenter = transformMat4(create(), fromValues(point.x, point.y, 0, 1), pixelPosMatrix);
+                if (this.paint.get('circle-pitch-scale') === 'viewport' && this.paint.get('circle-pitch-alignment') === 'map') {
+                    adjustedSize *= projectedCenter[3] / transform.cameraToCenterDistance;
+                } else if (this.paint.get('circle-pitch-scale') === 'map' && this.paint.get('circle-pitch-alignment') === 'viewport') {
+                    adjustedSize *= transform.cameraToCenterDistance / projectedCenter[3];
                 }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (geometry_1_1 && !geometry_1_1.done && (_a = geometry_1.return)) {
-                    _a.call(geometry_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
+                if (polygonIntersectsBufferedPoint(transformedPolygon, transformedPoint, adjustedSize)) {
+                    return true;
                 }
             }
         }
@@ -18393,120 +16331,50 @@ function compareAreas(a, b) {
     return b.area - a.area;
 }
 
-var __values$a = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function hasPattern(type, layers, options) {
-    var e_1, _a;
     var patterns = options.patternDependencies;
     var hasPattern = false;
-    try {
-        for (var layers_1 = __values$a(layers), layers_1_1 = layers_1.next(); !layers_1_1.done; layers_1_1 = layers_1.next()) {
-            var layer = layers_1_1.value;
-            var patternProperty = layer.paint.get(''.concat(type, '-pattern'));
-            if (!patternProperty.isConstant()) {
-                hasPattern = true;
-            }
-            var constantPattern = patternProperty.constantOr(null);
-            if (constantPattern) {
-                hasPattern = true;
-                patterns[constantPattern.to] = true;
-                patterns[constantPattern.from] = true;
-            }
+    for (var _i = 0, layers_1 = layers; _i < layers_1.length; _i++) {
+        var layer = layers_1[_i];
+        var patternProperty = layer.paint.get(''.concat(type, '-pattern'));
+        if (!patternProperty.isConstant()) {
+            hasPattern = true;
         }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (layers_1_1 && !layers_1_1.done && (_a = layers_1.return)) {
-                _a.call(layers_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+        var constantPattern = patternProperty.constantOr(null);
+        if (constantPattern) {
+            hasPattern = true;
+            patterns[constantPattern.to] = true;
+            patterns[constantPattern.from] = true;
         }
     }
     return hasPattern;
 }
 function addPatternDependencies(type, layers, patternFeature, zoom, options) {
-    var e_2, _a;
     var patterns = options.patternDependencies;
-    try {
-        for (var layers_2 = __values$a(layers), layers_2_1 = layers_2.next(); !layers_2_1.done; layers_2_1 = layers_2.next()) {
-            var layer = layers_2_1.value;
-            var patternProperty = layer.paint.get(''.concat(type, '-pattern'));
-            var patternPropertyValue = patternProperty.value;
-            if (patternPropertyValue.kind !== 'constant') {
-                var min = patternPropertyValue.evaluate({ zoom: zoom - 1 }, patternFeature, {}, options.availableImages);
-                var mid = patternPropertyValue.evaluate({ zoom: zoom }, patternFeature, {}, options.availableImages);
-                var max = patternPropertyValue.evaluate({ zoom: zoom + 1 }, patternFeature, {}, options.availableImages);
-                min = min && min.name ? min.name : min;
-                mid = mid && mid.name ? mid.name : mid;
-                max = max && max.name ? max.name : max;
-                patterns[min] = true;
-                patterns[mid] = true;
-                patterns[max] = true;
-                patternFeature.patterns[layer.id] = {
-                    min: min,
-                    mid: mid,
-                    max: max
-                };
-            }
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (layers_2_1 && !layers_2_1.done && (_a = layers_2.return)) {
-                _a.call(layers_2);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
+    for (var _i = 0, layers_2 = layers; _i < layers_2.length; _i++) {
+        var layer = layers_2[_i];
+        var patternProperty = layer.paint.get(''.concat(type, '-pattern'));
+        var patternPropertyValue = patternProperty.value;
+        if (patternPropertyValue.kind !== 'constant') {
+            var min = patternPropertyValue.evaluate({ zoom: zoom - 1 }, patternFeature, {}, options.availableImages);
+            var mid = patternPropertyValue.evaluate({ zoom: zoom }, patternFeature, {}, options.availableImages);
+            var max = patternPropertyValue.evaluate({ zoom: zoom + 1 }, patternFeature, {}, options.availableImages);
+            min = min && min.name ? min.name : min;
+            mid = mid && mid.name ? mid.name : mid;
+            max = max && max.name ? max.name : max;
+            patterns[min] = true;
+            patterns[mid] = true;
+            patterns[max] = true;
+            patternFeature.patterns[layer.id] = {
+                min: min,
+                mid: mid,
+                max: max
+            };
         }
     }
     return patternFeature;
 }
 
-var __values$9 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var EARCUT_MAX_RINGS$1 = 500;
 var FillBucket = function () {
     function FillBucket(options) {
@@ -18532,75 +16400,46 @@ var FillBucket = function () {
         });
     }
     FillBucket.prototype.populate = function (features, options, canonical) {
-        var e_1, _a, e_2, _b;
         this.hasPattern = hasPattern('fill', this.layers, options);
         var fillSortKey = this.layers[0].layout.get('fill-sort-key');
         var sortFeaturesByKey = !fillSortKey.isConstant();
         var bucketFeatures = [];
-        try {
-            for (var features_1 = __values$9(features), features_1_1 = features_1.next(); !features_1_1.done; features_1_1 = features_1.next()) {
-                var _c = features_1_1.value, feature = _c.feature, id = _c.id, index = _c.index, sourceLayerIndex = _c.sourceLayerIndex;
-                var needGeometry = this.layers[0]._featureFilter.needGeometry;
-                var evaluationFeature = toEvaluationFeature(feature, needGeometry);
-                if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
-                    continue;
-                }
-                var sortKey = sortFeaturesByKey ? fillSortKey.evaluate(evaluationFeature, {}, canonical, options.availableImages) : undefined;
-                var bucketFeature = {
-                    id: id,
-                    properties: feature.properties,
-                    type: feature.type,
-                    sourceLayerIndex: sourceLayerIndex,
-                    index: index,
-                    geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
-                    patterns: {},
-                    sortKey: sortKey
-                };
-                bucketFeatures.push(bucketFeature);
+        for (var _i = 0, features_1 = features; _i < features_1.length; _i++) {
+            var _a = features_1[_i], feature = _a.feature, id = _a.id, index = _a.index, sourceLayerIndex = _a.sourceLayerIndex;
+            var needGeometry = this.layers[0]._featureFilter.needGeometry;
+            var evaluationFeature = toEvaluationFeature(feature, needGeometry);
+            if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
+                continue;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (features_1_1 && !features_1_1.done && (_a = features_1.return)) {
-                    _a.call(features_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+            var sortKey = sortFeaturesByKey ? fillSortKey.evaluate(evaluationFeature, {}, canonical, options.availableImages) : undefined;
+            var bucketFeature = {
+                id: id,
+                properties: feature.properties,
+                type: feature.type,
+                sourceLayerIndex: sourceLayerIndex,
+                index: index,
+                geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
+                patterns: {},
+                sortKey: sortKey
+            };
+            bucketFeatures.push(bucketFeature);
         }
         if (sortFeaturesByKey) {
             bucketFeatures.sort(function (a, b) {
                 return a.sortKey - b.sortKey;
             });
         }
-        try {
-            for (var bucketFeatures_1 = __values$9(bucketFeatures), bucketFeatures_1_1 = bucketFeatures_1.next(); !bucketFeatures_1_1.done; bucketFeatures_1_1 = bucketFeatures_1.next()) {
-                var bucketFeature = bucketFeatures_1_1.value;
-                var geometry = bucketFeature.geometry, index = bucketFeature.index, sourceLayerIndex = bucketFeature.sourceLayerIndex;
-                if (this.hasPattern) {
-                    var patternFeature = addPatternDependencies('fill', this.layers, bucketFeature, this.zoom, options);
-                    this.patternFeatures.push(patternFeature);
-                } else {
-                    this.addFeature(bucketFeature, geometry, index, canonical, {});
-                }
-                var feature = features[index].feature;
-                options.featureIndex.insert(feature, geometry, index, sourceLayerIndex, this.index);
+        for (var _b = 0, bucketFeatures_1 = bucketFeatures; _b < bucketFeatures_1.length; _b++) {
+            var bucketFeature = bucketFeatures_1[_b];
+            var geometry = bucketFeature.geometry, index = bucketFeature.index, sourceLayerIndex = bucketFeature.sourceLayerIndex;
+            if (this.hasPattern) {
+                var patternFeature = addPatternDependencies('fill', this.layers, bucketFeature, this.zoom, options);
+                this.patternFeatures.push(patternFeature);
+            } else {
+                this.addFeature(bucketFeature, geometry, index, canonical, {});
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (bucketFeatures_1_1 && !bucketFeatures_1_1.done && (_b = bucketFeatures_1.return)) {
-                    _b.call(bucketFeatures_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+            var feature = features[index].feature;
+            options.featureIndex.insert(feature, geometry, index, sourceLayerIndex, this.index);
         }
     };
     FillBucket.prototype.update = function (states, vtLayer, imagePositions) {
@@ -18610,24 +16449,9 @@ var FillBucket = function () {
         this.programConfigurations.updatePaintArrays(states, vtLayer, this.stateDependentLayers, imagePositions);
     };
     FillBucket.prototype.addFeatures = function (options, canonical, imagePositions) {
-        var e_3, _a;
-        try {
-            for (var _b = __values$9(this.patternFeatures), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var feature = _c.value;
-                this.addFeature(feature, feature.geometry, feature.index, canonical, imagePositions);
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+        for (var _i = 0, _a = this.patternFeatures; _i < _a.length; _i++) {
+            var feature = _a[_i];
+            this.addFeature(feature, feature.geometry, feature.index, canonical, imagePositions);
         }
     };
     FillBucket.prototype.isEmpty = function () {
@@ -18657,89 +16481,46 @@ var FillBucket = function () {
         this.segments2.destroy();
     };
     FillBucket.prototype.addFeature = function (feature, geometry, index, canonical, imagePositions) {
-        var e_4, _a, e_5, _b, e_6, _c;
-        try {
-            for (var _d = __values$9(classifyRings$1(geometry, EARCUT_MAX_RINGS$1)), _e = _d.next(); !_e.done; _e = _d.next()) {
-                var polygon = _e.value;
-                var numVertices = 0;
-                try {
-                    for (var polygon_1 = (e_5 = void 0, __values$9(polygon)), polygon_1_1 = polygon_1.next(); !polygon_1_1.done; polygon_1_1 = polygon_1.next()) {
-                        var ring = polygon_1_1.value;
-                        numVertices += ring.length;
-                    }
-                } catch (e_5_1) {
-                    e_5 = { error: e_5_1 };
-                } finally {
-                    try {
-                        if (polygon_1_1 && !polygon_1_1.done && (_b = polygon_1.return)) {
-                            _b.call(polygon_1);
-                        }
-                    } finally {
-                        if (e_5) {
-                            throw e_5.error;
-                        }
-                    }
-                }
-                var triangleSegment = this.segments.prepareSegment(numVertices, this.layoutVertexArray, this.indexArray);
-                var triangleIndex = triangleSegment.vertexLength;
-                var flattened = [];
-                var holeIndices = [];
-                try {
-                    for (var polygon_2 = (e_6 = void 0, __values$9(polygon)), polygon_2_1 = polygon_2.next(); !polygon_2_1.done; polygon_2_1 = polygon_2.next()) {
-                        var ring = polygon_2_1.value;
-                        if (ring.length === 0) {
-                            continue;
-                        }
-                        if (ring !== polygon[0]) {
-                            holeIndices.push(flattened.length / 2);
-                        }
-                        var lineSegment = this.segments2.prepareSegment(ring.length, this.layoutVertexArray, this.indexArray2);
-                        var lineIndex = lineSegment.vertexLength;
-                        this.layoutVertexArray.emplaceBack(ring[0].x, ring[0].y);
-                        this.indexArray2.emplaceBack(lineIndex + ring.length - 1, lineIndex);
-                        flattened.push(ring[0].x);
-                        flattened.push(ring[0].y);
-                        for (var i = 1; i < ring.length; i++) {
-                            this.layoutVertexArray.emplaceBack(ring[i].x, ring[i].y);
-                            this.indexArray2.emplaceBack(lineIndex + i - 1, lineIndex + i);
-                            flattened.push(ring[i].x);
-                            flattened.push(ring[i].y);
-                        }
-                        lineSegment.vertexLength += ring.length;
-                        lineSegment.primitiveLength += ring.length;
-                    }
-                } catch (e_6_1) {
-                    e_6 = { error: e_6_1 };
-                } finally {
-                    try {
-                        if (polygon_2_1 && !polygon_2_1.done && (_c = polygon_2.return)) {
-                            _c.call(polygon_2);
-                        }
-                    } finally {
-                        if (e_6) {
-                            throw e_6.error;
-                        }
-                    }
-                }
-                var indices = earcut$1(flattened, holeIndices);
-                for (var i = 0; i < indices.length; i += 3) {
-                    this.indexArray.emplaceBack(triangleIndex + indices[i], triangleIndex + indices[i + 1], triangleIndex + indices[i + 2]);
-                }
-                triangleSegment.vertexLength += numVertices;
-                triangleSegment.primitiveLength += indices.length / 3;
+        for (var _i = 0, _a = classifyRings$1(geometry, EARCUT_MAX_RINGS$1); _i < _a.length; _i++) {
+            var polygon = _a[_i];
+            var numVertices = 0;
+            for (var _b = 0, polygon_1 = polygon; _b < polygon_1.length; _b++) {
+                var ring = polygon_1[_b];
+                numVertices += ring.length;
             }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (_e && !_e.done && (_a = _d.return)) {
-                    _a.call(_d);
+            var triangleSegment = this.segments.prepareSegment(numVertices, this.layoutVertexArray, this.indexArray);
+            var triangleIndex = triangleSegment.vertexLength;
+            var flattened = [];
+            var holeIndices = [];
+            for (var _c = 0, polygon_2 = polygon; _c < polygon_2.length; _c++) {
+                var ring = polygon_2[_c];
+                if (ring.length === 0) {
+                    continue;
                 }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
+                if (ring !== polygon[0]) {
+                    holeIndices.push(flattened.length / 2);
                 }
+                var lineSegment = this.segments2.prepareSegment(ring.length, this.layoutVertexArray, this.indexArray2);
+                var lineIndex = lineSegment.vertexLength;
+                this.layoutVertexArray.emplaceBack(ring[0].x, ring[0].y);
+                this.indexArray2.emplaceBack(lineIndex + ring.length - 1, lineIndex);
+                flattened.push(ring[0].x);
+                flattened.push(ring[0].y);
+                for (var i = 1; i < ring.length; i++) {
+                    this.layoutVertexArray.emplaceBack(ring[i].x, ring[i].y);
+                    this.indexArray2.emplaceBack(lineIndex + i - 1, lineIndex + i);
+                    flattened.push(ring[i].x);
+                    flattened.push(ring[i].y);
+                }
+                lineSegment.vertexLength += ring.length;
+                lineSegment.primitiveLength += ring.length;
             }
+            var indices = earcut$1(flattened, holeIndices);
+            for (var i = 0; i < indices.length; i += 3) {
+                this.indexArray.emplaceBack(triangleIndex + indices[i], triangleIndex + indices[i + 1], triangleIndex + indices[i + 2]);
+            }
+            triangleSegment.vertexLength += numVertices;
+            triangleSegment.primitiveLength += indices.length / 3;
         }
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, imagePositions, canonical);
     };
@@ -19101,26 +16882,6 @@ vectorTile.VectorTile = vectortile;
 vectorTile.VectorTileFeature = vectortilefeature;
 vectorTile.VectorTileLayer = vectortilelayer;
 
-var __values$8 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var vectorTileFeatureTypes$2 = vectorTile.VectorTileFeature.types;
 var EARCUT_MAX_RINGS = 500;
 var FACTOR = Math.pow(2, 13);
@@ -19149,67 +16910,37 @@ var FillExtrusionBucket = function () {
         });
     }
     FillExtrusionBucket.prototype.populate = function (features, options, canonical) {
-        var e_1, _a;
         this.features = [];
         this.hasPattern = hasPattern('fill-extrusion', this.layers, options);
-        try {
-            for (var features_1 = __values$8(features), features_1_1 = features_1.next(); !features_1_1.done; features_1_1 = features_1.next()) {
-                var _b = features_1_1.value, feature = _b.feature, id = _b.id, index = _b.index, sourceLayerIndex = _b.sourceLayerIndex;
-                var needGeometry = this.layers[0]._featureFilter.needGeometry;
-                var evaluationFeature = toEvaluationFeature(feature, needGeometry);
-                if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
-                    continue;
-                }
-                var bucketFeature = {
-                    id: id,
-                    sourceLayerIndex: sourceLayerIndex,
-                    index: index,
-                    geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
-                    properties: feature.properties,
-                    type: feature.type,
-                    patterns: {}
-                };
-                if (this.hasPattern) {
-                    this.features.push(addPatternDependencies('fill-extrusion', this.layers, bucketFeature, this.zoom, options));
-                } else {
-                    this.addFeature(bucketFeature, bucketFeature.geometry, index, canonical, {});
-                }
-                options.featureIndex.insert(feature, bucketFeature.geometry, index, sourceLayerIndex, this.index, true);
+        for (var _i = 0, features_1 = features; _i < features_1.length; _i++) {
+            var _a = features_1[_i], feature = _a.feature, id = _a.id, index = _a.index, sourceLayerIndex = _a.sourceLayerIndex;
+            var needGeometry = this.layers[0]._featureFilter.needGeometry;
+            var evaluationFeature = toEvaluationFeature(feature, needGeometry);
+            if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
+                continue;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (features_1_1 && !features_1_1.done && (_a = features_1.return)) {
-                    _a.call(features_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+            var bucketFeature = {
+                id: id,
+                sourceLayerIndex: sourceLayerIndex,
+                index: index,
+                geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
+                properties: feature.properties,
+                type: feature.type,
+                patterns: {}
+            };
+            if (this.hasPattern) {
+                this.features.push(addPatternDependencies('fill-extrusion', this.layers, bucketFeature, this.zoom, options));
+            } else {
+                this.addFeature(bucketFeature, bucketFeature.geometry, index, canonical, {});
             }
+            options.featureIndex.insert(feature, bucketFeature.geometry, index, sourceLayerIndex, this.index, true);
         }
     };
     FillExtrusionBucket.prototype.addFeatures = function (options, canonical, imagePositions) {
-        var e_2, _a;
-        try {
-            for (var _b = __values$8(this.features), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var feature = _c.value;
-                var geometry = feature.geometry;
-                this.addFeature(feature, geometry, feature.index, canonical, imagePositions);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = this.features; _i < _a.length; _i++) {
+            var feature = _a[_i];
+            var geometry = feature.geometry;
+            this.addFeature(feature, geometry, feature.index, canonical, imagePositions);
         }
     };
     FillExtrusionBucket.prototype.update = function (states, vtLayer, imagePositions) {
@@ -19244,151 +16975,94 @@ var FillExtrusionBucket = function () {
         this.centroidVertexBuffer.destroy();
     };
     FillExtrusionBucket.prototype.addFeature = function (feature, geometry, index, canonical, imagePositions) {
-        var e_3, _a, e_4, _b, e_5, _c, e_6, _d;
         var centroid = {
             x: 0,
             y: 0,
             vertexCount: 0
         };
-        try {
-            for (var _e = __values$8(classifyRings$1(geometry, EARCUT_MAX_RINGS)), _f = _e.next(); !_f.done; _f = _e.next()) {
-                var polygon = _f.value;
-                var numVertices = 0;
-                try {
-                    for (var polygon_1 = (e_4 = void 0, __values$8(polygon)), polygon_1_1 = polygon_1.next(); !polygon_1_1.done; polygon_1_1 = polygon_1.next()) {
-                        var ring = polygon_1_1.value;
-                        numVertices += ring.length;
-                    }
-                } catch (e_4_1) {
-                    e_4 = { error: e_4_1 };
-                } finally {
-                    try {
-                        if (polygon_1_1 && !polygon_1_1.done && (_b = polygon_1.return)) {
-                            _b.call(polygon_1);
-                        }
-                    } finally {
-                        if (e_4) {
-                            throw e_4.error;
-                        }
-                    }
-                }
-                var segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
-                try {
-                    for (var polygon_2 = (e_5 = void 0, __values$8(polygon)), polygon_2_1 = polygon_2.next(); !polygon_2_1.done; polygon_2_1 = polygon_2.next()) {
-                        var ring = polygon_2_1.value;
-                        if (ring.length === 0) {
-                            continue;
-                        }
-                        if (isEntirelyOutside(ring)) {
-                            continue;
-                        }
-                        var edgeDistance = 0;
-                        for (var p = 0; p < ring.length; p++) {
-                            var p1 = ring[p];
-                            if (p >= 1) {
-                                var p2 = ring[p - 1];
-                                if (!isBoundaryEdge(p1, p2)) {
-                                    if (segment.vertexLength + 4 > SegmentVector.MAX_VERTEX_ARRAY_LENGTH) {
-                                        segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
-                                    }
-                                    var perp = p1.sub(p2)._perp()._unit();
-                                    var dist = p2.dist(p1);
-                                    if (edgeDistance + dist > 32768) {
-                                        edgeDistance = 0;
-                                    }
-                                    addVertex$1(this.layoutVertexArray, p1.x, p1.y, perp.x, perp.y, 0, 0, edgeDistance);
-                                    addVertex$1(this.layoutVertexArray, p1.x, p1.y, perp.x, perp.y, 0, 1, edgeDistance);
-                                    centroid.x += 2 * p1.x;
-                                    centroid.y += 2 * p1.y;
-                                    centroid.vertexCount += 2;
-                                    edgeDistance += dist;
-                                    addVertex$1(this.layoutVertexArray, p2.x, p2.y, perp.x, perp.y, 0, 0, edgeDistance);
-                                    addVertex$1(this.layoutVertexArray, p2.x, p2.y, perp.x, perp.y, 0, 1, edgeDistance);
-                                    centroid.x += 2 * p2.x;
-                                    centroid.y += 2 * p2.y;
-                                    centroid.vertexCount += 2;
-                                    var bottomRight = segment.vertexLength;
-                                    this.indexArray.emplaceBack(bottomRight, bottomRight + 2, bottomRight + 1);
-                                    this.indexArray.emplaceBack(bottomRight + 1, bottomRight + 2, bottomRight + 3);
-                                    segment.vertexLength += 4;
-                                    segment.primitiveLength += 2;
-                                }
-                            }
-                        }
-                    }
-                } catch (e_5_1) {
-                    e_5 = { error: e_5_1 };
-                } finally {
-                    try {
-                        if (polygon_2_1 && !polygon_2_1.done && (_c = polygon_2.return)) {
-                            _c.call(polygon_2);
-                        }
-                    } finally {
-                        if (e_5) {
-                            throw e_5.error;
-                        }
-                    }
-                }
-                if (segment.vertexLength + numVertices > SegmentVector.MAX_VERTEX_ARRAY_LENGTH) {
-                    segment = this.segments.prepareSegment(numVertices, this.layoutVertexArray, this.indexArray);
-                }
-                if (vectorTileFeatureTypes$2[feature.type] !== 'Polygon') {
+        for (var _i = 0, _a = classifyRings$1(geometry, EARCUT_MAX_RINGS); _i < _a.length; _i++) {
+            var polygon = _a[_i];
+            var numVertices = 0;
+            for (var _b = 0, polygon_1 = polygon; _b < polygon_1.length; _b++) {
+                var ring = polygon_1[_b];
+                numVertices += ring.length;
+            }
+            var segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
+            for (var _c = 0, polygon_2 = polygon; _c < polygon_2.length; _c++) {
+                var ring = polygon_2[_c];
+                if (ring.length === 0) {
                     continue;
                 }
-                var flattened = [];
-                var holeIndices = [];
-                var triangleIndex = segment.vertexLength;
-                try {
-                    for (var polygon_3 = (e_6 = void 0, __values$8(polygon)), polygon_3_1 = polygon_3.next(); !polygon_3_1.done; polygon_3_1 = polygon_3.next()) {
-                        var ring = polygon_3_1.value;
-                        if (ring.length === 0) {
-                            continue;
-                        }
-                        if (ring !== polygon[0]) {
-                            holeIndices.push(flattened.length / 2);
-                        }
-                        for (var i = 0; i < ring.length; i++) {
-                            var p = ring[i];
-                            addVertex$1(this.layoutVertexArray, p.x, p.y, 0, 0, 1, 1, 0);
-                            centroid.x += p.x;
-                            centroid.y += p.y;
-                            centroid.vertexCount += 1;
-                            flattened.push(p.x);
-                            flattened.push(p.y);
+                if (isEntirelyOutside(ring)) {
+                    continue;
+                }
+                var edgeDistance = 0;
+                for (var p = 0; p < ring.length; p++) {
+                    var p1 = ring[p];
+                    if (p >= 1) {
+                        var p2 = ring[p - 1];
+                        if (!isBoundaryEdge(p1, p2)) {
+                            if (segment.vertexLength + 4 > SegmentVector.MAX_VERTEX_ARRAY_LENGTH) {
+                                segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
+                            }
+                            var perp = p1.sub(p2)._perp()._unit();
+                            var dist = p2.dist(p1);
+                            if (edgeDistance + dist > 32768) {
+                                edgeDistance = 0;
+                            }
+                            addVertex$1(this.layoutVertexArray, p1.x, p1.y, perp.x, perp.y, 0, 0, edgeDistance);
+                            addVertex$1(this.layoutVertexArray, p1.x, p1.y, perp.x, perp.y, 0, 1, edgeDistance);
+                            centroid.x += 2 * p1.x;
+                            centroid.y += 2 * p1.y;
+                            centroid.vertexCount += 2;
+                            edgeDistance += dist;
+                            addVertex$1(this.layoutVertexArray, p2.x, p2.y, perp.x, perp.y, 0, 0, edgeDistance);
+                            addVertex$1(this.layoutVertexArray, p2.x, p2.y, perp.x, perp.y, 0, 1, edgeDistance);
+                            centroid.x += 2 * p2.x;
+                            centroid.y += 2 * p2.y;
+                            centroid.vertexCount += 2;
+                            var bottomRight = segment.vertexLength;
+                            this.indexArray.emplaceBack(bottomRight, bottomRight + 2, bottomRight + 1);
+                            this.indexArray.emplaceBack(bottomRight + 1, bottomRight + 2, bottomRight + 3);
+                            segment.vertexLength += 4;
+                            segment.primitiveLength += 2;
                         }
                     }
-                } catch (e_6_1) {
-                    e_6 = { error: e_6_1 };
-                } finally {
-                    try {
-                        if (polygon_3_1 && !polygon_3_1.done && (_d = polygon_3.return)) {
-                            _d.call(polygon_3);
-                        }
-                    } finally {
-                        if (e_6) {
-                            throw e_6.error;
-                        }
-                    }
-                }
-                var indices = earcut$1(flattened, holeIndices);
-                for (var j = 0; j < indices.length; j += 3) {
-                    this.indexArray.emplaceBack(triangleIndex + indices[j], triangleIndex + indices[j + 2], triangleIndex + indices[j + 1]);
-                }
-                segment.primitiveLength += indices.length / 3;
-                segment.vertexLength += numVertices;
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_f && !_f.done && (_a = _e.return)) {
-                    _a.call(_e);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
                 }
             }
+            if (segment.vertexLength + numVertices > SegmentVector.MAX_VERTEX_ARRAY_LENGTH) {
+                segment = this.segments.prepareSegment(numVertices, this.layoutVertexArray, this.indexArray);
+            }
+            if (vectorTileFeatureTypes$2[feature.type] !== 'Polygon') {
+                continue;
+            }
+            var flattened = [];
+            var holeIndices = [];
+            var triangleIndex = segment.vertexLength;
+            for (var _d = 0, polygon_3 = polygon; _d < polygon_3.length; _d++) {
+                var ring = polygon_3[_d];
+                if (ring.length === 0) {
+                    continue;
+                }
+                if (ring !== polygon[0]) {
+                    holeIndices.push(flattened.length / 2);
+                }
+                for (var i = 0; i < ring.length; i++) {
+                    var p = ring[i];
+                    addVertex$1(this.layoutVertexArray, p.x, p.y, 0, 0, 1, 1, 0);
+                    centroid.x += p.x;
+                    centroid.y += p.y;
+                    centroid.vertexCount += 1;
+                    flattened.push(p.x);
+                    flattened.push(p.y);
+                }
+            }
+            var indices = earcut$1(flattened, holeIndices);
+            for (var j = 0; j < indices.length; j += 3) {
+                this.indexArray.emplaceBack(triangleIndex + indices[j], triangleIndex + indices[j + 2], triangleIndex + indices[j + 1]);
+            }
+            segment.primitiveLength += indices.length / 3;
+            segment.vertexLength += numVertices;
         }
         for (var i = 0; i < centroid.vertexCount; i++) {
             this.centroidVertexArray.emplaceBack(Math.floor(centroid.x / centroid.vertexCount), Math.floor(centroid.y / centroid.vertexCount));
@@ -19454,26 +17128,6 @@ var __extends$6 = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$7 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 (function (_super) {
     __extends$6(Point3D, _super);
     function Point3D() {
@@ -19511,7 +17165,6 @@ function dot(a, b) {
     return a.x * b.x + a.y * b.y;
 }
 function getIntersectionDistance(projectedQueryGeometry, projectedFace) {
-    var e_1, _a;
     if (projectedQueryGeometry.length === 1) {
         var i = 0;
         var a = projectedFace[i++];
@@ -19545,23 +17198,9 @@ function getIntersectionDistance(projectedQueryGeometry, projectedFace) {
         return Infinity;
     } else {
         var closestDistance = Infinity;
-        try {
-            for (var projectedFace_1 = __values$7(projectedFace), projectedFace_1_1 = projectedFace_1.next(); !projectedFace_1_1.done; projectedFace_1_1 = projectedFace_1.next()) {
-                var p = projectedFace_1_1.value;
-                closestDistance = Math.min(closestDistance, p.z);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (projectedFace_1_1 && !projectedFace_1_1.done && (_a = projectedFace_1.return)) {
-                    _a.call(projectedFace_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, projectedFace_1 = projectedFace; _i < projectedFace_1.length; _i++) {
+            var p = projectedFace_1[_i];
+            closestDistance = Math.min(closestDistance, p.z);
         }
         return closestDistance;
     }
@@ -19594,7 +17233,6 @@ function checkIntersection(projectedBase, projectedTop, projectedQueryGeometry) 
     return closestDistance === Infinity ? false : closestDistance;
 }
 function projectExtrusion(geometry, zBase, zTop, m) {
-    var e_2, _a, e_3, _b;
     var projectedBase = [];
     var projectedTop = [];
     var baseXZ = m[8] * zBase;
@@ -19605,63 +17243,35 @@ function projectExtrusion(geometry, zBase, zTop, m) {
     var topYZ = m[9] * zTop;
     var topZZ = m[10] * zTop;
     var topWZ = m[11] * zTop;
-    try {
-        for (var geometry_1 = __values$7(geometry), geometry_1_1 = geometry_1.next(); !geometry_1_1.done; geometry_1_1 = geometry_1.next()) {
-            var r = geometry_1_1.value;
-            var ringBase = [];
-            var ringTop = [];
-            try {
-                for (var r_1 = (e_3 = void 0, __values$7(r)), r_1_1 = r_1.next(); !r_1_1.done; r_1_1 = r_1.next()) {
-                    var p = r_1_1.value;
-                    var x = p.x;
-                    var y = p.y;
-                    var sX = m[0] * x + m[4] * y + m[12];
-                    var sY = m[1] * x + m[5] * y + m[13];
-                    var sZ = m[2] * x + m[6] * y + m[14];
-                    var sW = m[3] * x + m[7] * y + m[15];
-                    var baseX = sX + baseXZ;
-                    var baseY = sY + baseYZ;
-                    var baseZ = sZ + baseZZ;
-                    var baseW = sW + baseWZ;
-                    var topX = sX + topXZ;
-                    var topY = sY + topYZ;
-                    var topZ = sZ + topZZ;
-                    var topW = sW + topWZ;
-                    var b = new pointGeometry(baseX / baseW, baseY / baseW);
-                    b.z = baseZ / baseW;
-                    ringBase.push(b);
-                    var t = new pointGeometry(topX / topW, topY / topW);
-                    t.z = topZ / topW;
-                    ringTop.push(t);
-                }
-            } catch (e_3_1) {
-                e_3 = { error: e_3_1 };
-            } finally {
-                try {
-                    if (r_1_1 && !r_1_1.done && (_b = r_1.return)) {
-                        _b.call(r_1);
-                    }
-                } finally {
-                    if (e_3) {
-                        throw e_3.error;
-                    }
-                }
-            }
-            projectedBase.push(ringBase);
-            projectedTop.push(ringTop);
+    for (var _i = 0, geometry_1 = geometry; _i < geometry_1.length; _i++) {
+        var r = geometry_1[_i];
+        var ringBase = [];
+        var ringTop = [];
+        for (var _a = 0, r_1 = r; _a < r_1.length; _a++) {
+            var p = r_1[_a];
+            var x = p.x;
+            var y = p.y;
+            var sX = m[0] * x + m[4] * y + m[12];
+            var sY = m[1] * x + m[5] * y + m[13];
+            var sZ = m[2] * x + m[6] * y + m[14];
+            var sW = m[3] * x + m[7] * y + m[15];
+            var baseX = sX + baseXZ;
+            var baseY = sY + baseYZ;
+            var baseZ = sZ + baseZZ;
+            var baseW = sW + baseWZ;
+            var topX = sX + topXZ;
+            var topY = sY + topYZ;
+            var topZ = sZ + topZZ;
+            var topW = sW + topWZ;
+            var b = new pointGeometry(baseX / baseW, baseY / baseW);
+            b.z = baseZ / baseW;
+            ringBase.push(b);
+            var t = new pointGeometry(topX / topW, topY / topW);
+            t.z = topZ / topW;
+            ringTop.push(t);
         }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (geometry_1_1 && !geometry_1_1.done && (_a = geometry_1.return)) {
-                _a.call(geometry_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+        projectedBase.push(ringBase);
+        projectedTop.push(ringTop);
     }
     return [
         projectedBase,
@@ -19669,27 +17279,12 @@ function projectExtrusion(geometry, zBase, zTop, m) {
     ];
 }
 function projectQueryGeometry(queryGeometry, pixelPosMatrix, transform, z) {
-    var e_4, _a;
     var projectedQueryGeometry = [];
-    try {
-        for (var queryGeometry_1 = __values$7(queryGeometry), queryGeometry_1_1 = queryGeometry_1.next(); !queryGeometry_1_1.done; queryGeometry_1_1 = queryGeometry_1.next()) {
-            var p = queryGeometry_1_1.value;
-            var v = fromValues(p.x, p.y, z, 1);
-            transformMat4(v, v, pixelPosMatrix);
-            projectedQueryGeometry.push(new pointGeometry(v[0] / v[3], v[1] / v[3]));
-        }
-    } catch (e_4_1) {
-        e_4 = { error: e_4_1 };
-    } finally {
-        try {
-            if (queryGeometry_1_1 && !queryGeometry_1_1.done && (_a = queryGeometry_1.return)) {
-                _a.call(queryGeometry_1);
-            }
-        } finally {
-            if (e_4) {
-                throw e_4.error;
-            }
-        }
+    for (var _i = 0, queryGeometry_1 = queryGeometry; _i < queryGeometry_1.length; _i++) {
+        var p = queryGeometry_1[_i];
+        var v = fromValues(p.x, p.y, z, 1);
+        transformMat4(v, v, pixelPosMatrix);
+        projectedQueryGeometry.push(new pointGeometry(v[0] / v[3], v[1] / v[3]));
     }
     return projectedQueryGeometry;
 }
@@ -19722,26 +17317,6 @@ var lineLayoutAttributesExt = createLayout([
 ]);
 var members = lineLayoutAttributesExt.members;
 
-var __values$6 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var vectorTileFeatureTypes$1 = vectorTile.VectorTileFeature.types;
 var EXTRUDE_SCALE = 63;
 var COS_HALF_SHARP_CORNER = Math.cos(75 / 2 * (Math.PI / 180));
@@ -19780,75 +17355,46 @@ var LineBucket = function () {
         });
     }
     LineBucket.prototype.populate = function (features, options, canonical) {
-        var e_1, _a, e_2, _b;
         this.hasPattern = hasPattern('line', this.layers, options);
         var lineSortKey = this.layers[0].layout.get('line-sort-key');
         var sortFeaturesByKey = !lineSortKey.isConstant();
         var bucketFeatures = [];
-        try {
-            for (var features_1 = __values$6(features), features_1_1 = features_1.next(); !features_1_1.done; features_1_1 = features_1.next()) {
-                var _c = features_1_1.value, feature = _c.feature, id = _c.id, index = _c.index, sourceLayerIndex = _c.sourceLayerIndex;
-                var needGeometry = this.layers[0]._featureFilter.needGeometry;
-                var evaluationFeature = toEvaluationFeature(feature, needGeometry);
-                if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
-                    continue;
-                }
-                var sortKey = sortFeaturesByKey ? lineSortKey.evaluate(evaluationFeature, {}, canonical) : undefined;
-                var bucketFeature = {
-                    id: id,
-                    properties: feature.properties,
-                    type: feature.type,
-                    sourceLayerIndex: sourceLayerIndex,
-                    index: index,
-                    geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
-                    patterns: {},
-                    sortKey: sortKey
-                };
-                bucketFeatures.push(bucketFeature);
+        for (var _i = 0, features_1 = features; _i < features_1.length; _i++) {
+            var _a = features_1[_i], feature = _a.feature, id = _a.id, index = _a.index, sourceLayerIndex = _a.sourceLayerIndex;
+            var needGeometry = this.layers[0]._featureFilter.needGeometry;
+            var evaluationFeature = toEvaluationFeature(feature, needGeometry);
+            if (!this.layers[0]._featureFilter.filter(new EvaluationParameters(this.zoom), evaluationFeature, canonical)) {
+                continue;
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (features_1_1 && !features_1_1.done && (_a = features_1.return)) {
-                    _a.call(features_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+            var sortKey = sortFeaturesByKey ? lineSortKey.evaluate(evaluationFeature, {}, canonical) : undefined;
+            var bucketFeature = {
+                id: id,
+                properties: feature.properties,
+                type: feature.type,
+                sourceLayerIndex: sourceLayerIndex,
+                index: index,
+                geometry: needGeometry ? evaluationFeature.geometry : loadGeometry(feature),
+                patterns: {},
+                sortKey: sortKey
+            };
+            bucketFeatures.push(bucketFeature);
         }
         if (sortFeaturesByKey) {
             bucketFeatures.sort(function (a, b) {
                 return a.sortKey - b.sortKey;
             });
         }
-        try {
-            for (var bucketFeatures_1 = __values$6(bucketFeatures), bucketFeatures_1_1 = bucketFeatures_1.next(); !bucketFeatures_1_1.done; bucketFeatures_1_1 = bucketFeatures_1.next()) {
-                var bucketFeature = bucketFeatures_1_1.value;
-                var geometry = bucketFeature.geometry, index = bucketFeature.index, sourceLayerIndex = bucketFeature.sourceLayerIndex;
-                if (this.hasPattern) {
-                    var patternBucketFeature = addPatternDependencies('line', this.layers, bucketFeature, this.zoom, options);
-                    this.patternFeatures.push(patternBucketFeature);
-                } else {
-                    this.addFeature(bucketFeature, geometry, index, canonical, {});
-                }
-                var feature = features[index].feature;
-                options.featureIndex.insert(feature, geometry, index, sourceLayerIndex, this.index);
+        for (var _b = 0, bucketFeatures_1 = bucketFeatures; _b < bucketFeatures_1.length; _b++) {
+            var bucketFeature = bucketFeatures_1[_b];
+            var geometry = bucketFeature.geometry, index = bucketFeature.index, sourceLayerIndex = bucketFeature.sourceLayerIndex;
+            if (this.hasPattern) {
+                var patternBucketFeature = addPatternDependencies('line', this.layers, bucketFeature, this.zoom, options);
+                this.patternFeatures.push(patternBucketFeature);
+            } else {
+                this.addFeature(bucketFeature, geometry, index, canonical, {});
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (bucketFeatures_1_1 && !bucketFeatures_1_1.done && (_b = bucketFeatures_1.return)) {
-                    _b.call(bucketFeatures_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+            var feature = features[index].feature;
+            options.featureIndex.insert(feature, geometry, index, sourceLayerIndex, this.index);
         }
     };
     LineBucket.prototype.update = function (states, vtLayer, imagePositions) {
@@ -19858,24 +17404,9 @@ var LineBucket = function () {
         this.programConfigurations.updatePaintArrays(states, vtLayer, this.stateDependentLayers, imagePositions);
     };
     LineBucket.prototype.addFeatures = function (options, canonical, imagePositions) {
-        var e_3, _a;
-        try {
-            for (var _b = __values$6(this.patternFeatures), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var feature = _c.value;
-                this.addFeature(feature, feature.geometry, feature.index, canonical, imagePositions);
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+        for (var _i = 0, _a = this.patternFeatures; _i < _a.length; _i++) {
+            var feature = _a[_i];
+            this.addFeature(feature, feature.geometry, feature.index, canonical, imagePositions);
         }
     };
     LineBucket.prototype.isEmpty = function () {
@@ -19915,30 +17446,15 @@ var LineBucket = function () {
         }
     };
     LineBucket.prototype.addFeature = function (feature, geometry, index, canonical, imagePositions) {
-        var e_4, _a;
         var layout = this.layers[0].layout;
         var join = layout.get('line-join').evaluate(feature, {});
         var cap = layout.get('line-cap');
         var miterLimit = layout.get('line-miter-limit');
         var roundLimit = layout.get('line-round-limit');
         this.lineClips = this.lineFeatureClips(feature);
-        try {
-            for (var geometry_1 = __values$6(geometry), geometry_1_1 = geometry_1.next(); !geometry_1_1.done; geometry_1_1 = geometry_1.next()) {
-                var line = geometry_1_1.value;
-                this.addLine(line, feature, join, cap, miterLimit, roundLimit);
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (geometry_1_1 && !geometry_1_1.done && (_a = geometry_1.return)) {
-                    _a.call(geometry_1);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
-            }
+        for (var _i = 0, geometry_1 = geometry; _i < geometry_1.length; _i++) {
+            var line = geometry_1[_i];
+            this.addLine(line, feature, join, cap, miterLimit, roundLimit);
         }
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, imagePositions, canonical);
     };
@@ -21690,31 +19206,6 @@ function potpack(boxes) {
     };
 }
 
-var __read$2 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var IMAGE_PADDING = 1;
 var ImagePosition = function () {
     function ImagePosition(paddedRect, _a) {
@@ -21875,7 +19366,7 @@ var ImageAtlas = function () {
             return;
         }
         position.version = image.version;
-        var _a = __read$2(position.tl, 2), x = _a[0], y = _a[1];
+        var _a = position.tl, x = _a[0], y = _a[1];
         texture.update(image.data, undefined, {
             x: x,
             y: y
@@ -21886,26 +19377,6 @@ var ImageAtlas = function () {
 register('ImagePosition', ImagePosition);
 register('ImageAtlas', ImageAtlas);
 
-var __values$5 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var _a, _b;
 exports.WritingMode = void 0;
 (function (WritingMode) {
@@ -21916,25 +19387,10 @@ exports.WritingMode = void 0;
 }(exports.WritingMode || (exports.WritingMode = {})));
 var SHAPING_DEFAULT_OFFSET = -17;
 function isEmpty(positionedLines) {
-    var e_1, _a;
-    try {
-        for (var positionedLines_1 = __values$5(positionedLines), positionedLines_1_1 = positionedLines_1.next(); !positionedLines_1_1.done; positionedLines_1_1 = positionedLines_1.next()) {
-            var line = positionedLines_1_1.value;
-            if (line.positionedGlyphs.length !== 0) {
-                return false;
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (positionedLines_1_1 && !positionedLines_1_1.done && (_a = positionedLines_1.return)) {
-                _a.call(positionedLines_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+    for (var _i = 0, positionedLines_1 = positionedLines; _i < positionedLines_1.length; _i++) {
+        var line = positionedLines_1[_i];
+        if (line.positionedGlyphs.length !== 0) {
+            return false;
         }
     }
     return true;
@@ -22058,28 +19514,13 @@ var TaggedString = function () {
     return TaggedString;
 }();
 function breakLines(input, lineBreakPoints) {
-    var e_2, _a;
     var lines = [];
     var text = input.text;
     var start = 0;
-    try {
-        for (var lineBreakPoints_1 = __values$5(lineBreakPoints), lineBreakPoints_1_1 = lineBreakPoints_1.next(); !lineBreakPoints_1_1.done; lineBreakPoints_1_1 = lineBreakPoints_1.next()) {
-            var lineBreak = lineBreakPoints_1_1.value;
-            lines.push(input.substring(start, lineBreak));
-            start = lineBreak;
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (lineBreakPoints_1_1 && !lineBreakPoints_1_1.done && (_a = lineBreakPoints_1.return)) {
-                _a.call(lineBreakPoints_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _i = 0, lineBreakPoints_1 = lineBreakPoints; _i < lineBreakPoints_1.length; _i++) {
+        var lineBreak = lineBreakPoints_1[_i];
+        lines.push(input.substring(start, lineBreak));
+        start = lineBreak;
     }
     if (start < text.length) {
         lines.push(input.substring(start, text.length));
@@ -22087,7 +19528,6 @@ function breakLines(input, lineBreakPoints) {
     return lines;
 }
 function shapeText(text, glyphMap, glyphPositions, imagePositions, defaultFontStack, maxWidth, lineHeight, textAnchor, textJustify, spacing, translate, writingMode, allowVerticalPlacement, symbolPlacement, layoutTextSize, layoutTextSizeThisZoom) {
-    var e_3, _a, e_4, _b;
     var logicalInput = TaggedString.fromFeature(text, defaultFontStack);
     if (writingMode === exports.WritingMode.vertical) {
         logicalInput.verticalizePunctuation();
@@ -22097,54 +19537,26 @@ function shapeText(text, glyphMap, glyphPositions, imagePositions, defaultFontSt
     if (processBidirectionalText && logicalInput.sections.length === 1) {
         lines = [];
         var untaggedLines = processBidirectionalText(logicalInput.toString(), determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, symbolPlacement, layoutTextSize));
-        try {
-            for (var untaggedLines_1 = __values$5(untaggedLines), untaggedLines_1_1 = untaggedLines_1.next(); !untaggedLines_1_1.done; untaggedLines_1_1 = untaggedLines_1.next()) {
-                var line = untaggedLines_1_1.value;
-                var taggedLine = new TaggedString();
-                taggedLine.text = line;
-                taggedLine.sections = logicalInput.sections;
-                for (var i = 0; i < line.length; i++) {
-                    taggedLine.sectionIndex.push(0);
-                }
-                lines.push(taggedLine);
+        for (var _i = 0, untaggedLines_1 = untaggedLines; _i < untaggedLines_1.length; _i++) {
+            var line = untaggedLines_1[_i];
+            var taggedLine = new TaggedString();
+            taggedLine.text = line;
+            taggedLine.sections = logicalInput.sections;
+            for (var i = 0; i < line.length; i++) {
+                taggedLine.sectionIndex.push(0);
             }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (untaggedLines_1_1 && !untaggedLines_1_1.done && (_a = untaggedLines_1.return)) {
-                    _a.call(untaggedLines_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+            lines.push(taggedLine);
         }
     } else if (processStyledBidirectionalText) {
         lines = [];
         var processedLines = processStyledBidirectionalText(logicalInput.text, logicalInput.sectionIndex, determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, symbolPlacement, layoutTextSize));
-        try {
-            for (var processedLines_1 = __values$5(processedLines), processedLines_1_1 = processedLines_1.next(); !processedLines_1_1.done; processedLines_1_1 = processedLines_1.next()) {
-                var line = processedLines_1_1.value;
-                var taggedLine = new TaggedString();
-                taggedLine.text = line[0];
-                taggedLine.sectionIndex = line[1];
-                taggedLine.sections = logicalInput.sections;
-                lines.push(taggedLine);
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (processedLines_1_1 && !processedLines_1_1.done && (_b = processedLines_1.return)) {
-                    _b.call(processedLines_1);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
-            }
+        for (var _a = 0, processedLines_1 = processedLines; _a < processedLines_1.length; _a++) {
+            var line = processedLines_1[_a];
+            var taggedLine = new TaggedString();
+            taggedLine.text = line[0];
+            taggedLine.sectionIndex = line[1];
+            taggedLine.sections = logicalInput.sections;
+            lines.push(taggedLine);
         }
     } else {
         lines = breakLines(logicalInput, determineLineBreaks(logicalInput, spacing, maxWidth, glyphMap, imagePositions, symbolPlacement, layoutTextSize));
@@ -22222,30 +19634,15 @@ function calculatePenalty(codePoint, nextCodePoint, penalizableIdeographicBreak)
     return penalty;
 }
 function evaluateBreak(breakIndex, breakX, targetWidth, potentialBreaks, penalty, isLastBreak) {
-    var e_5, _a;
     var bestPriorBreak = null;
     var bestBreakBadness = calculateBadness(breakX, targetWidth, penalty, isLastBreak);
-    try {
-        for (var potentialBreaks_1 = __values$5(potentialBreaks), potentialBreaks_1_1 = potentialBreaks_1.next(); !potentialBreaks_1_1.done; potentialBreaks_1_1 = potentialBreaks_1.next()) {
-            var potentialBreak = potentialBreaks_1_1.value;
-            var lineWidth = breakX - potentialBreak.x;
-            var breakBadness = calculateBadness(lineWidth, targetWidth, penalty, isLastBreak) + potentialBreak.badness;
-            if (breakBadness <= bestBreakBadness) {
-                bestPriorBreak = potentialBreak;
-                bestBreakBadness = breakBadness;
-            }
-        }
-    } catch (e_5_1) {
-        e_5 = { error: e_5_1 };
-    } finally {
-        try {
-            if (potentialBreaks_1_1 && !potentialBreaks_1_1.done && (_a = potentialBreaks_1.return)) {
-                _a.call(potentialBreaks_1);
-            }
-        } finally {
-            if (e_5) {
-                throw e_5.error;
-            }
+    for (var _i = 0, potentialBreaks_1 = potentialBreaks; _i < potentialBreaks_1.length; _i++) {
+        var potentialBreak = potentialBreaks_1[_i];
+        var lineWidth = breakX - potentialBreak.x;
+        var breakBadness = calculateBadness(lineWidth, targetWidth, penalty, isLastBreak) + potentialBreak.badness;
+        if (breakBadness <= bestBreakBadness) {
+            bestPriorBreak = potentialBreak;
+            bestBreakBadness = breakBadness;
         }
     }
     return {
@@ -22319,139 +19716,124 @@ function getAnchorAlignment(anchor) {
     };
 }
 function shapeLines(shaping, glyphMap, glyphPositions, imagePositions, lines, lineHeight, textAnchor, textJustify, writingMode, spacing, allowVerticalPlacement, layoutTextSizeThisZoom) {
-    var e_6, _a;
     var x = 0;
     var y = SHAPING_DEFAULT_OFFSET;
     var maxLineLength = 0;
     var maxLineHeight = 0;
     var justify = textJustify === 'right' ? 1 : textJustify === 'left' ? 0 : 0.5;
     var lineIndex = 0;
-    try {
-        for (var lines_1 = __values$5(lines), lines_1_1 = lines_1.next(); !lines_1_1.done; lines_1_1 = lines_1.next()) {
-            var line = lines_1_1.value;
-            line.trim();
-            var lineMaxScale = line.getMaxScale();
-            var maxLineOffset = (lineMaxScale - 1) * ONE_EM;
-            var positionedLine = {
-                positionedGlyphs: [],
-                lineOffset: 0
-            };
-            shaping.positionedLines[lineIndex] = positionedLine;
-            var positionedGlyphs = positionedLine.positionedGlyphs;
-            var lineOffset = 0;
-            if (!line.length()) {
-                y += lineHeight;
-                ++lineIndex;
-                continue;
-            }
-            for (var i = 0; i < line.length(); i++) {
-                var section = line.getSection(i);
-                var sectionIndex = line.getSectionIndex(i);
-                var codePoint = line.getCharCode(i);
-                var baselineOffset = 0;
-                var metrics = null;
-                var rect = null;
-                var imageName = null;
-                var verticalAdvance = ONE_EM;
-                var vertical = !(writingMode === exports.WritingMode.horizontal || !allowVerticalPlacement && !charHasUprightVerticalOrientation(codePoint) || allowVerticalPlacement && (whitespace[codePoint] || charInComplexShapingScript(codePoint)));
-                if (!section.imageName) {
-                    var positions = glyphPositions[section.fontStack];
-                    var glyphPosition = positions && positions[codePoint];
-                    if (glyphPosition && glyphPosition.rect) {
-                        rect = glyphPosition.rect;
-                        metrics = glyphPosition.metrics;
-                    } else {
-                        var glyphs = glyphMap[section.fontStack];
-                        var glyph = glyphs && glyphs[codePoint];
-                        if (!glyph) {
-                            continue;
-                        }
-                        metrics = glyph.metrics;
-                    }
-                    baselineOffset = (lineMaxScale - section.scale) * ONE_EM;
+    for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
+        var line = lines_1[_i];
+        line.trim();
+        var lineMaxScale = line.getMaxScale();
+        var maxLineOffset = (lineMaxScale - 1) * ONE_EM;
+        var positionedLine = {
+            positionedGlyphs: [],
+            lineOffset: 0
+        };
+        shaping.positionedLines[lineIndex] = positionedLine;
+        var positionedGlyphs = positionedLine.positionedGlyphs;
+        var lineOffset = 0;
+        if (!line.length()) {
+            y += lineHeight;
+            ++lineIndex;
+            continue;
+        }
+        for (var i = 0; i < line.length(); i++) {
+            var section = line.getSection(i);
+            var sectionIndex = line.getSectionIndex(i);
+            var codePoint = line.getCharCode(i);
+            var baselineOffset = 0;
+            var metrics = null;
+            var rect = null;
+            var imageName = null;
+            var verticalAdvance = ONE_EM;
+            var vertical = !(writingMode === exports.WritingMode.horizontal || !allowVerticalPlacement && !charHasUprightVerticalOrientation(codePoint) || allowVerticalPlacement && (whitespace[codePoint] || charInComplexShapingScript(codePoint)));
+            if (!section.imageName) {
+                var positions = glyphPositions[section.fontStack];
+                var glyphPosition = positions && positions[codePoint];
+                if (glyphPosition && glyphPosition.rect) {
+                    rect = glyphPosition.rect;
+                    metrics = glyphPosition.metrics;
                 } else {
-                    var imagePosition = imagePositions[section.imageName];
-                    if (!imagePosition) {
+                    var glyphs = glyphMap[section.fontStack];
+                    var glyph = glyphs && glyphs[codePoint];
+                    if (!glyph) {
                         continue;
                     }
-                    imageName = section.imageName;
-                    shaping.iconsInText = shaping.iconsInText || true;
-                    rect = imagePosition.paddedRect;
-                    var size = imagePosition.displaySize;
-                    section.scale = section.scale * ONE_EM / layoutTextSizeThisZoom;
-                    metrics = {
-                        width: size[0],
-                        height: size[1],
-                        left: IMAGE_PADDING,
-                        top: -GLYPH_PBF_BORDER,
-                        advance: vertical ? size[1] : size[0]
-                    };
-                    var imageOffset = ONE_EM - size[1] * section.scale;
-                    baselineOffset = maxLineOffset + imageOffset;
-                    verticalAdvance = metrics.advance;
-                    var offset = vertical ? size[0] * section.scale - ONE_EM * lineMaxScale : size[1] * section.scale - ONE_EM * lineMaxScale;
-                    if (offset > 0 && offset > lineOffset) {
-                        lineOffset = offset;
-                    }
+                    metrics = glyph.metrics;
                 }
-                if (!vertical) {
-                    positionedGlyphs.push({
-                        glyph: codePoint,
-                        imageName: imageName,
-                        x: x,
-                        y: y + baselineOffset,
-                        vertical: vertical,
-                        scale: section.scale,
-                        fontStack: section.fontStack,
-                        sectionIndex: sectionIndex,
-                        metrics: metrics,
-                        rect: rect
-                    });
-                    x += metrics.advance * section.scale + spacing;
-                } else {
-                    shaping.verticalizable = true;
-                    positionedGlyphs.push({
-                        glyph: codePoint,
-                        imageName: imageName,
-                        x: x,
-                        y: y + baselineOffset,
-                        vertical: vertical,
-                        scale: section.scale,
-                        fontStack: section.fontStack,
-                        sectionIndex: sectionIndex,
-                        metrics: metrics,
-                        rect: rect
-                    });
-                    x += verticalAdvance * section.scale + spacing;
+                baselineOffset = (lineMaxScale - section.scale) * ONE_EM;
+            } else {
+                var imagePosition = imagePositions[section.imageName];
+                if (!imagePosition) {
+                    continue;
+                }
+                imageName = section.imageName;
+                shaping.iconsInText = shaping.iconsInText || true;
+                rect = imagePosition.paddedRect;
+                var size = imagePosition.displaySize;
+                section.scale = section.scale * ONE_EM / layoutTextSizeThisZoom;
+                metrics = {
+                    width: size[0],
+                    height: size[1],
+                    left: IMAGE_PADDING,
+                    top: -GLYPH_PBF_BORDER,
+                    advance: vertical ? size[1] : size[0]
+                };
+                var imageOffset = ONE_EM - size[1] * section.scale;
+                baselineOffset = maxLineOffset + imageOffset;
+                verticalAdvance = metrics.advance;
+                var offset = vertical ? size[0] * section.scale - ONE_EM * lineMaxScale : size[1] * section.scale - ONE_EM * lineMaxScale;
+                if (offset > 0 && offset > lineOffset) {
+                    lineOffset = offset;
                 }
             }
-            if (positionedGlyphs.length !== 0) {
-                var lineLength = x - spacing;
-                maxLineLength = Math.max(lineLength, maxLineLength);
-                justifyLine(positionedGlyphs, 0, positionedGlyphs.length - 1, justify, lineOffset);
+            if (!vertical) {
+                positionedGlyphs.push({
+                    glyph: codePoint,
+                    imageName: imageName,
+                    x: x,
+                    y: y + baselineOffset,
+                    vertical: vertical,
+                    scale: section.scale,
+                    fontStack: section.fontStack,
+                    sectionIndex: sectionIndex,
+                    metrics: metrics,
+                    rect: rect
+                });
+                x += metrics.advance * section.scale + spacing;
+            } else {
+                shaping.verticalizable = true;
+                positionedGlyphs.push({
+                    glyph: codePoint,
+                    imageName: imageName,
+                    x: x,
+                    y: y + baselineOffset,
+                    vertical: vertical,
+                    scale: section.scale,
+                    fontStack: section.fontStack,
+                    sectionIndex: sectionIndex,
+                    metrics: metrics,
+                    rect: rect
+                });
+                x += verticalAdvance * section.scale + spacing;
             }
-            x = 0;
-            var currentLineHeight = lineHeight * lineMaxScale + lineOffset;
-            positionedLine.lineOffset = Math.max(lineOffset, maxLineOffset);
-            y += currentLineHeight;
-            maxLineHeight = Math.max(currentLineHeight, maxLineHeight);
-            ++lineIndex;
         }
-    } catch (e_6_1) {
-        e_6 = { error: e_6_1 };
-    } finally {
-        try {
-            if (lines_1_1 && !lines_1_1.done && (_a = lines_1.return)) {
-                _a.call(lines_1);
-            }
-        } finally {
-            if (e_6) {
-                throw e_6.error;
-            }
+        if (positionedGlyphs.length !== 0) {
+            var lineLength = x - spacing;
+            maxLineLength = Math.max(lineLength, maxLineLength);
+            justifyLine(positionedGlyphs, 0, positionedGlyphs.length - 1, justify, lineOffset);
         }
+        x = 0;
+        var currentLineHeight = lineHeight * lineMaxScale + lineOffset;
+        positionedLine.lineOffset = Math.max(lineOffset, maxLineOffset);
+        y += currentLineHeight;
+        maxLineHeight = Math.max(currentLineHeight, maxLineHeight);
+        ++lineIndex;
     }
     var height = y - SHAPING_DEFAULT_OFFSET;
-    var _b = getAnchorAlignment(textAnchor), horizontalAlign = _b.horizontalAlign, verticalAlign = _b.verticalAlign;
+    var _a = getAnchorAlignment(textAnchor), horizontalAlign = _a.horizontalAlign, verticalAlign = _a.verticalAlign;
     align(shaping.positionedLines, justify, horizontalAlign, verticalAlign, maxLineLength, maxLineHeight, lineHeight, height, lines.length);
     shaping.top += -verticalAlign * height;
     shaping.bottom = shaping.top + height;
@@ -22471,7 +19853,6 @@ function justifyLine(positionedGlyphs, start, end, justify, lineOffset) {
     }
 }
 function align(positionedLines, justify, horizontalAlign, verticalAlign, maxLineLength, maxLineHeight, lineHeight, blockHeight, lineCount) {
-    var e_7, _a, e_8, _b;
     var shiftX = (justify - horizontalAlign) * maxLineLength;
     var shiftY = 0;
     if (maxLineHeight !== lineHeight) {
@@ -22479,40 +19860,12 @@ function align(positionedLines, justify, horizontalAlign, verticalAlign, maxLine
     } else {
         shiftY = (-verticalAlign * lineCount + 0.5) * lineHeight;
     }
-    try {
-        for (var positionedLines_2 = __values$5(positionedLines), positionedLines_2_1 = positionedLines_2.next(); !positionedLines_2_1.done; positionedLines_2_1 = positionedLines_2.next()) {
-            var line = positionedLines_2_1.value;
-            try {
-                for (var _c = (e_8 = void 0, __values$5(line.positionedGlyphs)), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    var positionedGlyph = _d.value;
-                    positionedGlyph.x += shiftX;
-                    positionedGlyph.y += shiftY;
-                }
-            } catch (e_8_1) {
-                e_8 = { error: e_8_1 };
-            } finally {
-                try {
-                    if (_d && !_d.done && (_b = _c.return)) {
-                        _b.call(_c);
-                    }
-                } finally {
-                    if (e_8) {
-                        throw e_8.error;
-                    }
-                }
-            }
-        }
-    } catch (e_7_1) {
-        e_7 = { error: e_7_1 };
-    } finally {
-        try {
-            if (positionedLines_2_1 && !positionedLines_2_1.done && (_a = positionedLines_2.return)) {
-                _a.call(positionedLines_2);
-            }
-        } finally {
-            if (e_7) {
-                throw e_7.error;
-            }
+    for (var _i = 0, positionedLines_2 = positionedLines; _i < positionedLines_2.length; _i++) {
+        var line = positionedLines_2[_i];
+        for (var _a = 0, _b = line.positionedGlyphs; _a < _b.length; _a++) {
+            var positionedGlyph = _b[_a];
+            positionedGlyph.x += shiftX;
+            positionedGlyph.y += shiftY;
         }
     }
 }
@@ -22862,51 +20215,6 @@ function clipLine(lines, x1, y1, x2, y2) {
     return clippedLines;
 }
 
-var __values$4 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$1 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var __spreadArray = undefined && undefined.__spreadArray || function (to, from, pack) {
     if (pack || arguments.length === 2) {
         for (var i = 0, l = from.length, ar; i < l; i++) {
@@ -23052,59 +20360,29 @@ function getIconQuads(shapedIcon, iconRotate, isSDFIcon, hasIconTextFit) {
     return quads;
 }
 function sumWithinRange(ranges, min, max) {
-    var e_1, _a;
     var sum = 0;
-    try {
-        for (var ranges_1 = __values$4(ranges), ranges_1_1 = ranges_1.next(); !ranges_1_1.done; ranges_1_1 = ranges_1.next()) {
-            var range = ranges_1_1.value;
-            sum += Math.max(min, Math.min(max, range[1])) - Math.max(min, Math.min(max, range[0]));
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (ranges_1_1 && !ranges_1_1.done && (_a = ranges_1.return)) {
-                _a.call(ranges_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, ranges_1 = ranges; _i < ranges_1.length; _i++) {
+        var range = ranges_1[_i];
+        sum += Math.max(min, Math.min(max, range[1])) - Math.max(min, Math.min(max, range[0]));
     }
     return sum;
 }
 function stretchZonesToCuts(stretchZones, fixedSize, stretchSize) {
-    var e_2, _a;
     var cuts = [{
             fixed: -border,
             stretch: 0
         }];
-    try {
-        for (var stretchZones_1 = __values$4(stretchZones), stretchZones_1_1 = stretchZones_1.next(); !stretchZones_1_1.done; stretchZones_1_1 = stretchZones_1.next()) {
-            var _b = __read$1(stretchZones_1_1.value, 2), c1 = _b[0], c2 = _b[1];
-            var last = cuts[cuts.length - 1];
-            cuts.push({
-                fixed: c1 - last.stretch,
-                stretch: last.stretch
-            });
-            cuts.push({
-                fixed: c1 - last.stretch,
-                stretch: last.stretch + (c2 - c1)
-            });
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (stretchZones_1_1 && !stretchZones_1_1.done && (_a = stretchZones_1.return)) {
-                _a.call(stretchZones_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _i = 0, stretchZones_1 = stretchZones; _i < stretchZones_1.length; _i++) {
+        var _a = stretchZones_1[_i], c1 = _a[0], c2 = _a[1];
+        var last = cuts[cuts.length - 1];
+        cuts.push({
+            fixed: c1 - last.stretch,
+            stretch: last.stretch
+        });
+        cuts.push({
+            fixed: c1 - last.stretch,
+            stretch: last.stretch + (c2 - c1)
+        });
     }
     cuts.push({
         fixed: fixedSize + border,
@@ -23119,139 +20397,110 @@ function getPxOffset(fixedOffset, fixedSize, stretchOffset, stretchSize) {
     return fixedOffset - fixedSize * stretchOffset / stretchSize;
 }
 function getGlyphQuads(anchor, shaping, textOffset, layer, alongLine, feature, imageMap, allowVerticalPlacement) {
-    var e_3, _a, e_4, _b;
     var textRotate = layer.layout.get('text-rotate').evaluate(feature, {}) * Math.PI / 180;
     var quads = [];
-    try {
-        for (var _c = __values$4(shaping.positionedLines), _d = _c.next(); !_d.done; _d = _c.next()) {
-            var line = _d.value;
-            try {
-                for (var _e = (e_4 = void 0, __values$4(line.positionedGlyphs)), _f = _e.next(); !_f.done; _f = _e.next()) {
-                    var positionedGlyph = _f.value;
-                    if (!positionedGlyph.rect) {
-                        continue;
-                    }
-                    var textureRect = positionedGlyph.rect || {};
-                    var glyphPadding = 1;
-                    var rectBuffer = GLYPH_PBF_BORDER + glyphPadding;
-                    var isSDF = true;
-                    var pixelRatio = 1;
-                    var lineOffset = 0;
-                    var rotateVerticalGlyph = (alongLine || allowVerticalPlacement) && positionedGlyph.vertical;
-                    var halfAdvance = positionedGlyph.metrics.advance * positionedGlyph.scale / 2;
-                    if (allowVerticalPlacement && shaping.verticalizable) {
-                        var scaledGlyphOffset = (positionedGlyph.scale - 1) * ONE_EM;
-                        var imageOffset = (ONE_EM - positionedGlyph.metrics.width * positionedGlyph.scale) / 2;
-                        lineOffset = line.lineOffset / 2 - (positionedGlyph.imageName ? -imageOffset : scaledGlyphOffset);
-                    }
-                    if (positionedGlyph.imageName) {
-                        var image = imageMap[positionedGlyph.imageName];
-                        isSDF = image.sdf;
-                        pixelRatio = image.pixelRatio;
-                        rectBuffer = IMAGE_PADDING / pixelRatio;
-                    }
-                    var glyphOffset = alongLine ? [
-                        positionedGlyph.x + halfAdvance,
-                        positionedGlyph.y
-                    ] : [
-                        0,
-                        0
-                    ];
-                    var builtInOffset = alongLine ? [
-                        0,
-                        0
-                    ] : [
-                        positionedGlyph.x + halfAdvance + textOffset[0],
-                        positionedGlyph.y + textOffset[1] - lineOffset
-                    ];
-                    var verticalizedLabelOffset = [
-                        0,
-                        0
-                    ];
-                    if (rotateVerticalGlyph) {
-                        verticalizedLabelOffset = builtInOffset;
-                        builtInOffset = [
-                            0,
-                            0
-                        ];
-                    }
-                    var x1 = (positionedGlyph.metrics.left - rectBuffer) * positionedGlyph.scale - halfAdvance + builtInOffset[0];
-                    var y1 = (-positionedGlyph.metrics.top - rectBuffer) * positionedGlyph.scale + builtInOffset[1];
-                    var x2 = x1 + textureRect.w * positionedGlyph.scale / pixelRatio;
-                    var y2 = y1 + textureRect.h * positionedGlyph.scale / pixelRatio;
-                    var tl = new pointGeometry(x1, y1);
-                    var tr = new pointGeometry(x2, y1);
-                    var bl = new pointGeometry(x1, y2);
-                    var br = new pointGeometry(x2, y2);
-                    if (rotateVerticalGlyph) {
-                        var center = new pointGeometry(-halfAdvance, halfAdvance - SHAPING_DEFAULT_OFFSET);
-                        var verticalRotation = -Math.PI / 2;
-                        var xHalfWidthOffsetCorrection = ONE_EM / 2 - halfAdvance;
-                        var yImageOffsetCorrection = positionedGlyph.imageName ? xHalfWidthOffsetCorrection : 0;
-                        var halfWidthOffsetCorrection = new pointGeometry(5 - SHAPING_DEFAULT_OFFSET - xHalfWidthOffsetCorrection, -yImageOffsetCorrection);
-                        var verticalOffsetCorrection = new (pointGeometry.bind.apply(pointGeometry, __spreadArray([void 0], __read$1(verticalizedLabelOffset), false)))();
-                        tl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
-                        tr._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
-                        bl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
-                        br._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
-                    }
-                    if (textRotate) {
-                        var sin = Math.sin(textRotate), cos = Math.cos(textRotate), matrix = [
-                                cos,
-                                -sin,
-                                sin,
-                                cos
-                            ];
-                        tl._matMult(matrix);
-                        tr._matMult(matrix);
-                        bl._matMult(matrix);
-                        br._matMult(matrix);
-                    }
-                    var pixelOffsetTL = new pointGeometry(0, 0);
-                    var pixelOffsetBR = new pointGeometry(0, 0);
-                    var minFontScaleX = 0;
-                    var minFontScaleY = 0;
-                    quads.push({
-                        tl: tl,
-                        tr: tr,
-                        bl: bl,
-                        br: br,
-                        tex: textureRect,
-                        writingMode: shaping.writingMode,
-                        glyphOffset: glyphOffset,
-                        sectionIndex: positionedGlyph.sectionIndex,
-                        isSDF: isSDF,
-                        pixelOffsetTL: pixelOffsetTL,
-                        pixelOffsetBR: pixelOffsetBR,
-                        minFontScaleX: minFontScaleX,
-                        minFontScaleY: minFontScaleY
-                    });
-                }
-            } catch (e_4_1) {
-                e_4 = { error: e_4_1 };
-            } finally {
-                try {
-                    if (_f && !_f.done && (_b = _e.return)) {
-                        _b.call(_e);
-                    }
-                } finally {
-                    if (e_4) {
-                        throw e_4.error;
-                    }
-                }
+    for (var _i = 0, _a = shaping.positionedLines; _i < _a.length; _i++) {
+        var line = _a[_i];
+        for (var _b = 0, _c = line.positionedGlyphs; _b < _c.length; _b++) {
+            var positionedGlyph = _c[_b];
+            if (!positionedGlyph.rect) {
+                continue;
             }
-        }
-    } catch (e_3_1) {
-        e_3 = { error: e_3_1 };
-    } finally {
-        try {
-            if (_d && !_d.done && (_a = _c.return)) {
-                _a.call(_c);
+            var textureRect = positionedGlyph.rect || {};
+            var glyphPadding = 1;
+            var rectBuffer = GLYPH_PBF_BORDER + glyphPadding;
+            var isSDF = true;
+            var pixelRatio = 1;
+            var lineOffset = 0;
+            var rotateVerticalGlyph = (alongLine || allowVerticalPlacement) && positionedGlyph.vertical;
+            var halfAdvance = positionedGlyph.metrics.advance * positionedGlyph.scale / 2;
+            if (allowVerticalPlacement && shaping.verticalizable) {
+                var scaledGlyphOffset = (positionedGlyph.scale - 1) * ONE_EM;
+                var imageOffset = (ONE_EM - positionedGlyph.metrics.width * positionedGlyph.scale) / 2;
+                lineOffset = line.lineOffset / 2 - (positionedGlyph.imageName ? -imageOffset : scaledGlyphOffset);
             }
-        } finally {
-            if (e_3) {
-                throw e_3.error;
+            if (positionedGlyph.imageName) {
+                var image = imageMap[positionedGlyph.imageName];
+                isSDF = image.sdf;
+                pixelRatio = image.pixelRatio;
+                rectBuffer = IMAGE_PADDING / pixelRatio;
             }
+            var glyphOffset = alongLine ? [
+                positionedGlyph.x + halfAdvance,
+                positionedGlyph.y
+            ] : [
+                0,
+                0
+            ];
+            var builtInOffset = alongLine ? [
+                0,
+                0
+            ] : [
+                positionedGlyph.x + halfAdvance + textOffset[0],
+                positionedGlyph.y + textOffset[1] - lineOffset
+            ];
+            var verticalizedLabelOffset = [
+                0,
+                0
+            ];
+            if (rotateVerticalGlyph) {
+                verticalizedLabelOffset = builtInOffset;
+                builtInOffset = [
+                    0,
+                    0
+                ];
+            }
+            var x1 = (positionedGlyph.metrics.left - rectBuffer) * positionedGlyph.scale - halfAdvance + builtInOffset[0];
+            var y1 = (-positionedGlyph.metrics.top - rectBuffer) * positionedGlyph.scale + builtInOffset[1];
+            var x2 = x1 + textureRect.w * positionedGlyph.scale / pixelRatio;
+            var y2 = y1 + textureRect.h * positionedGlyph.scale / pixelRatio;
+            var tl = new pointGeometry(x1, y1);
+            var tr = new pointGeometry(x2, y1);
+            var bl = new pointGeometry(x1, y2);
+            var br = new pointGeometry(x2, y2);
+            if (rotateVerticalGlyph) {
+                var center = new pointGeometry(-halfAdvance, halfAdvance - SHAPING_DEFAULT_OFFSET);
+                var verticalRotation = -Math.PI / 2;
+                var xHalfWidthOffsetCorrection = ONE_EM / 2 - halfAdvance;
+                var yImageOffsetCorrection = positionedGlyph.imageName ? xHalfWidthOffsetCorrection : 0;
+                var halfWidthOffsetCorrection = new pointGeometry(5 - SHAPING_DEFAULT_OFFSET - xHalfWidthOffsetCorrection, -yImageOffsetCorrection);
+                var verticalOffsetCorrection = new (pointGeometry.bind.apply(pointGeometry, __spreadArray([void 0], verticalizedLabelOffset, false)))();
+                tl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
+                tr._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
+                bl._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
+                br._rotateAround(verticalRotation, center)._add(halfWidthOffsetCorrection)._add(verticalOffsetCorrection);
+            }
+            if (textRotate) {
+                var sin = Math.sin(textRotate), cos = Math.cos(textRotate), matrix = [
+                        cos,
+                        -sin,
+                        sin,
+                        cos
+                    ];
+                tl._matMult(matrix);
+                tr._matMult(matrix);
+                bl._matMult(matrix);
+                br._matMult(matrix);
+            }
+            var pixelOffsetTL = new pointGeometry(0, 0);
+            var pixelOffsetBR = new pointGeometry(0, 0);
+            var minFontScaleX = 0;
+            var minFontScaleY = 0;
+            quads.push({
+                tl: tl,
+                tr: tr,
+                bl: bl,
+                br: br,
+                tex: textureRect,
+                writingMode: shaping.writingMode,
+                glyphOffset: glyphOffset,
+                sectionIndex: positionedGlyph.sectionIndex,
+                isSDF: isSDF,
+                pixelOffsetTL: pixelOffsetTL,
+                pixelOffsetBR: pixelOffsetBR,
+                minFontScaleX: minFontScaleX,
+                minFontScaleY: minFontScaleY
+            });
         }
     }
     return quads;
@@ -23488,51 +20737,6 @@ function getCentroidCell(polygon) {
     return new Cell(x / area, y / area, 0, polygon);
 }
 
-var __values$3 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var baselineOffset = 7;
 var INVALID_TEXT_OFFSET = Number.POSITIVE_INFINITY;
 function evaluateVariableOffset(anchor, offset) {
@@ -23615,7 +20819,6 @@ function evaluateVariableOffset(anchor, offset) {
     return offset[1] !== INVALID_TEXT_OFFSET ? fromTextOffset(anchor, offset[0], offset[1]) : fromRadialOffset(anchor, offset[0]);
 }
 function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePositions, showCollisionBoxes, canonical) {
-    var e_1, _a;
     bucket.createArrays();
     var tileSize = 512 * bucket.overscaling;
     bucket.tilePixelRatio = EXTENT / tileSize;
@@ -23629,14 +20832,14 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
         textMaxSize: unevaluatedLayoutValues['text-size'].possiblyEvaluate(new EvaluationParameters(18))
     };
     if (bucket.textSizeData.kind === 'composite') {
-        var _b = bucket.textSizeData, minZoom = _b.minZoom, maxZoom = _b.maxZoom;
+        var _a = bucket.textSizeData, minZoom = _a.minZoom, maxZoom = _a.maxZoom;
         sizes.compositeTextSizes = [
             unevaluatedLayoutValues['text-size'].possiblyEvaluate(new EvaluationParameters(minZoom), canonical),
             unevaluatedLayoutValues['text-size'].possiblyEvaluate(new EvaluationParameters(maxZoom), canonical)
         ];
     }
     if (bucket.iconSizeData.kind === 'composite') {
-        var _c = bucket.iconSizeData, minZoom = _c.minZoom, maxZoom = _c.maxZoom;
+        var _b = bucket.iconSizeData, minZoom = _b.minZoom, maxZoom = _b.maxZoom;
         sizes.compositeIconSizes = [
             unevaluatedLayoutValues['icon-size'].possiblyEvaluate(new EvaluationParameters(minZoom), canonical),
             unevaluatedLayoutValues['icon-size'].possiblyEvaluate(new EvaluationParameters(maxZoom), canonical)
@@ -23747,23 +20950,9 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
             addFeature(bucket, feature, shapedTextOrientations, shapedIcon, imageMap, sizes, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, canonical);
         }
     };
-    try {
-        for (var _d = __values$3(bucket.features), _e = _d.next(); !_e.done; _e = _d.next()) {
-            var feature = _e.value;
-            _loop_1(feature);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (_e && !_e.done && (_a = _d.return)) {
-                _a.call(_d);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, _c = bucket.features; _i < _c.length; _i++) {
+        var feature = _c[_i];
+        _loop_1(feature);
     }
     if (showCollisionBoxes) {
         bucket.generateCollisionDebugBuffers();
@@ -23783,7 +20972,6 @@ function getAnchorJustification(anchor) {
     return 'center';
 }
 function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, imageMap, sizes, layoutTextSize, layoutIconSize, textOffset, isSDFIcon, canonical) {
-    var e_2, _a, e_3, _b, e_4, _c, e_5, _d, e_6, _e, e_7, _f, e_8, _g;
     var textMaxSize = sizes.textMaxSize.evaluate(feature, {});
     if (textMaxSize === undefined) {
         textMaxSize = layoutTextSize;
@@ -23809,142 +20997,44 @@ function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, imageMa
         addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, bucket.layers[0], bucket.collisionBoxArray, feature.index, feature.sourceLayerIndex, bucket.index, textBoxScale, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, canonical, layoutTextSize);
     };
     if (symbolPlacement === 'line') {
-        try {
-            for (var _h = __values$3(clipLine(feature.geometry, 0, 0, EXTENT, EXTENT)), _j = _h.next(); !_j.done; _j = _h.next()) {
-                var line = _j.value;
-                var anchors = getAnchors(line, symbolMinDistance, textMaxAngle, shapedTextOrientations.vertical || defaultHorizontalShaping, shapedIcon, glyphSize, textMaxBoxScale, bucket.overscaling, EXTENT);
-                try {
-                    for (var anchors_1 = (e_3 = void 0, __values$3(anchors)), anchors_1_1 = anchors_1.next(); !anchors_1_1.done; anchors_1_1 = anchors_1.next()) {
-                        var anchor = anchors_1_1.value;
-                        var shapedText = defaultHorizontalShaping;
-                        if (!shapedText || !anchorIsTooClose(bucket, shapedText.text, textRepeatDistance, anchor)) {
-                            addSymbolAtAnchor(line, anchor);
-                        }
-                    }
-                } catch (e_3_1) {
-                    e_3 = { error: e_3_1 };
-                } finally {
-                    try {
-                        if (anchors_1_1 && !anchors_1_1.done && (_b = anchors_1.return)) {
-                            _b.call(anchors_1);
-                        }
-                    } finally {
-                        if (e_3) {
-                            throw e_3.error;
-                        }
-                    }
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_j && !_j.done && (_a = _h.return)) {
-                    _a.call(_h);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
+        for (var _i = 0, _a = clipLine(feature.geometry, 0, 0, EXTENT, EXTENT); _i < _a.length; _i++) {
+            var line = _a[_i];
+            var anchors = getAnchors(line, symbolMinDistance, textMaxAngle, shapedTextOrientations.vertical || defaultHorizontalShaping, shapedIcon, glyphSize, textMaxBoxScale, bucket.overscaling, EXTENT);
+            for (var _b = 0, anchors_1 = anchors; _b < anchors_1.length; _b++) {
+                var anchor = anchors_1[_b];
+                var shapedText = defaultHorizontalShaping;
+                if (!shapedText || !anchorIsTooClose(bucket, shapedText.text, textRepeatDistance, anchor)) {
+                    addSymbolAtAnchor(line, anchor);
                 }
             }
         }
     } else if (symbolPlacement === 'line-center') {
-        try {
-            for (var _k = __values$3(feature.geometry), _l = _k.next(); !_l.done; _l = _k.next()) {
-                var line = _l.value;
-                if (line.length > 1) {
-                    var anchor = getCenterAnchor(line, textMaxAngle, shapedTextOrientations.vertical || defaultHorizontalShaping, shapedIcon, glyphSize, textMaxBoxScale);
-                    if (anchor) {
-                        addSymbolAtAnchor(line, anchor);
-                    }
-                }
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (_l && !_l.done && (_c = _k.return)) {
-                    _c.call(_k);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
+        for (var _c = 0, _d = feature.geometry; _c < _d.length; _c++) {
+            var line = _d[_c];
+            if (line.length > 1) {
+                var anchor = getCenterAnchor(line, textMaxAngle, shapedTextOrientations.vertical || defaultHorizontalShaping, shapedIcon, glyphSize, textMaxBoxScale);
+                if (anchor) {
+                    addSymbolAtAnchor(line, anchor);
                 }
             }
         }
     } else if (feature.type === 'Polygon') {
-        try {
-            for (var _m = __values$3(classifyRings$1(feature.geometry, 0)), _o = _m.next(); !_o.done; _o = _m.next()) {
-                var polygon = _o.value;
-                var poi = findPoleOfInaccessibility(polygon, 16);
-                addSymbolAtAnchor(polygon[0], new Anchor(poi.x, poi.y, 0));
-            }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (_o && !_o.done && (_d = _m.return)) {
-                    _d.call(_m);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
-            }
+        for (var _e = 0, _f = classifyRings$1(feature.geometry, 0); _e < _f.length; _e++) {
+            var polygon = _f[_e];
+            var poi = findPoleOfInaccessibility(polygon, 16);
+            addSymbolAtAnchor(polygon[0], new Anchor(poi.x, poi.y, 0));
         }
     } else if (feature.type === 'LineString') {
-        try {
-            for (var _p = __values$3(feature.geometry), _q = _p.next(); !_q.done; _q = _p.next()) {
-                var line = _q.value;
-                addSymbolAtAnchor(line, new Anchor(line[0].x, line[0].y, 0));
-            }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (_q && !_q.done && (_e = _p.return)) {
-                    _e.call(_p);
-                }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
-                }
-            }
+        for (var _g = 0, _h = feature.geometry; _g < _h.length; _g++) {
+            var line = _h[_g];
+            addSymbolAtAnchor(line, new Anchor(line[0].x, line[0].y, 0));
         }
     } else if (feature.type === 'Point') {
-        try {
-            for (var _r = __values$3(feature.geometry), _s = _r.next(); !_s.done; _s = _r.next()) {
-                var points = _s.value;
-                try {
-                    for (var points_1 = (e_8 = void 0, __values$3(points)), points_1_1 = points_1.next(); !points_1_1.done; points_1_1 = points_1.next()) {
-                        var point = points_1_1.value;
-                        addSymbolAtAnchor([point], new Anchor(point.x, point.y, 0));
-                    }
-                } catch (e_8_1) {
-                    e_8 = { error: e_8_1 };
-                } finally {
-                    try {
-                        if (points_1_1 && !points_1_1.done && (_g = points_1.return)) {
-                            _g.call(points_1);
-                        }
-                    } finally {
-                        if (e_8) {
-                            throw e_8.error;
-                        }
-                    }
-                }
-            }
-        } catch (e_7_1) {
-            e_7 = { error: e_7_1 };
-        } finally {
-            try {
-                if (_s && !_s.done && (_f = _r.return)) {
-                    _f.call(_r);
-                }
-            } finally {
-                if (e_7) {
-                    throw e_7.error;
-                }
+        for (var _j = 0, _k = feature.geometry; _j < _k.length; _j++) {
+            var points = _k[_j];
+            for (var _l = 0, points_1 = points; _l < points_1.length; _l++) {
+                var point = points_1[_l];
+                addSymbolAtAnchor([point], new Anchor(point.x, point.y, 0));
             }
         }
     }
@@ -23952,7 +21042,6 @@ function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, imageMa
 var MAX_GLYPH_ICON_SIZE = 255;
 var MAX_PACKED_SIZE = MAX_GLYPH_ICON_SIZE * SIZE_PACK_FACTOR;
 function addTextVertices(bucket, anchor, shapedText, imageMap, layer, textAlongLine, feature, textOffset, lineArray, writingMode, placementTypes, placedTextSymbolIndices, placedIconIndex, sizes, canonical) {
-    var e_9, _a;
     var glyphQuads = getGlyphQuads(anchor, shapedText, textOffset, layer, textAlongLine, feature, imageMap, bucket.allowVerticalPlacement);
     var sizeData = bucket.textSizeData;
     var textSizeData = null;
@@ -23971,23 +21060,9 @@ function addTextVertices(bucket, anchor, shapedText, imageMap, layer, textAlongL
         }
     }
     bucket.addSymbols(bucket.text, glyphQuads, textSizeData, textOffset, textAlongLine, feature, writingMode, anchor, lineArray.lineStartIndex, lineArray.lineLength, placedIconIndex, canonical);
-    try {
-        for (var placementTypes_1 = __values$3(placementTypes), placementTypes_1_1 = placementTypes_1.next(); !placementTypes_1_1.done; placementTypes_1_1 = placementTypes_1.next()) {
-            var placementType = placementTypes_1_1.value;
-            placedTextSymbolIndices[placementType] = bucket.text.placedSymbolArray.length - 1;
-        }
-    } catch (e_9_1) {
-        e_9 = { error: e_9_1 };
-    } finally {
-        try {
-            if (placementTypes_1_1 && !placementTypes_1_1.done && (_a = placementTypes_1.return)) {
-                _a.call(placementTypes_1);
-            }
-        } finally {
-            if (e_9) {
-                throw e_9.error;
-            }
-        }
+    for (var _i = 0, placementTypes_1 = placementTypes; _i < placementTypes_1.length; _i++) {
+        var placementType = placementTypes_1[_i];
+        placedTextSymbolIndices[placementType] = bucket.text.placedSymbolArray.length - 1;
     }
     return glyphQuads.length * 4;
 }
@@ -23998,7 +21073,7 @@ function getDefaultHorizontalShaping(horizontalShaping) {
     return null;
 }
 function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textBoxScale, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, canonical, layoutTextSize) {
-    var _a, e_10, _b;
+    var _a;
     var lineArray = bucket.addToLineVertexArray(anchor, line);
     var textCollisionFeature, iconCollisionFeature, verticalTextCollisionFeature, verticalIconCollisionFeature;
     var numIconVertices = 0;
@@ -24012,9 +21087,9 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
     var textOffset0 = 0;
     var textOffset1 = 0;
     if (layer._unevaluatedLayout.getValue('text-radial-offset') === undefined) {
-        _a = __read(layer.layout.get('text-offset').evaluate(feature, {}, canonical).map(function (t) {
+        _a = layer.layout.get('text-offset').evaluate(feature, {}, canonical).map(function (t) {
             return t * ONE_EM;
-        }), 2), textOffset0 = _a[0], textOffset1 = _a[1];
+        }), textOffset0 = _a[0], textOffset1 = _a[1];
     } else {
         textOffset0 = layer.layout.get('text-radial-offset').evaluate(feature, {}, canonical) * ONE_EM;
         textOffset1 = INVALID_TEXT_OFFSET;
@@ -24060,32 +21135,18 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         }
     }
     var justifications = Object.keys(shapedTextOrientations.horizontal);
-    try {
-        for (var justifications_1 = __values$3(justifications), justifications_1_1 = justifications_1.next(); !justifications_1_1.done; justifications_1_1 = justifications_1.next()) {
-            var justification = justifications_1_1.value;
-            var shaping = shapedTextOrientations.horizontal[justification];
-            if (!textCollisionFeature) {
-                key = murmur3$1(shaping.text);
-                var textRotate = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
-                textCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textBoxScale, textPadding, textAlongLine, textRotate);
-            }
-            var singleLine = shaping.positionedLines.length === 1;
-            numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
-            if (singleLine) {
-                break;
-            }
+    for (var _i = 0, justifications_1 = justifications; _i < justifications_1.length; _i++) {
+        var justification = justifications_1[_i];
+        var shaping = shapedTextOrientations.horizontal[justification];
+        if (!textCollisionFeature) {
+            key = murmur3$1(shaping.text);
+            var textRotate = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
+            textCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textBoxScale, textPadding, textAlongLine, textRotate);
         }
-    } catch (e_10_1) {
-        e_10 = { error: e_10_1 };
-    } finally {
-        try {
-            if (justifications_1_1 && !justifications_1_1.done && (_b = justifications_1.return)) {
-                _b.call(justifications_1);
-            }
-        } finally {
-            if (e_10) {
-                throw e_10.error;
-            }
+        var singleLine = shaping.positionedLines.length === 1;
+        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
+        if (singleLine) {
+            break;
         }
     }
     if (shapedTextOrientations.vertical) {
@@ -24138,26 +21199,6 @@ function anchorIsTooClose(bucket, text, repeatDistance, anchor) {
     return false;
 }
 
-var __values$2 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var vectorTileFeatureTypes = vectorTile.VectorTileFeature.types;
 var shaderOpacityAttributes = [{
         name: 'a_fade_opacity',
@@ -24177,25 +21218,10 @@ function addDynamicAttributes(dynamicLayoutVertexArray, p, angle) {
     dynamicLayoutVertexArray.emplaceBack(p.x, p.y, angle);
 }
 function containsRTLText(formattedText) {
-    var e_1, _a;
-    try {
-        for (var _b = __values$2(formattedText.sections), _c = _b.next(); !_c.done; _c = _b.next()) {
-            var section = _c.value;
-            if (stringContainsRTLText(section.text)) {
-                return true;
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (_c && !_c.done && (_a = _b.return)) {
-                _a.call(_b);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+    for (var _i = 0, _a = formattedText.sections; _i < _a.length; _i++) {
+        var section = _a[_i];
+        if (stringContainsRTLText(section.text)) {
+            return true;
         }
     }
     return false;
@@ -24331,7 +21357,6 @@ var SymbolBucket = function () {
         }
     };
     SymbolBucket.prototype.populate = function (features, options, canonical) {
-        var e_2, _a, e_3, _b;
         var layer = this.layers[0];
         var layout = layer.layout;
         var textFont = layout.get('text-font');
@@ -24348,97 +21373,69 @@ var SymbolBucket = function () {
         var stacks = options.glyphDependencies;
         var availableImages = options.availableImages;
         var globalProperties = new EvaluationParameters(this.zoom);
-        try {
-            for (var features_1 = __values$2(features), features_1_1 = features_1.next(); !features_1_1.done; features_1_1 = features_1.next()) {
-                var _c = features_1_1.value, feature = _c.feature, id = _c.id, index = _c.index, sourceLayerIndex = _c.sourceLayerIndex;
-                var needGeometry = layer._featureFilter.needGeometry;
-                var evaluationFeature = toEvaluationFeature(feature, needGeometry);
-                if (!layer._featureFilter.filter(globalProperties, evaluationFeature, canonical)) {
-                    continue;
+        for (var _i = 0, features_1 = features; _i < features_1.length; _i++) {
+            var _a = features_1[_i], feature = _a.feature, id = _a.id, index = _a.index, sourceLayerIndex = _a.sourceLayerIndex;
+            var needGeometry = layer._featureFilter.needGeometry;
+            var evaluationFeature = toEvaluationFeature(feature, needGeometry);
+            if (!layer._featureFilter.filter(globalProperties, evaluationFeature, canonical)) {
+                continue;
+            }
+            if (!needGeometry) {
+                evaluationFeature.geometry = loadGeometry(feature);
+            }
+            var text = void 0;
+            if (hasText) {
+                var resolvedTokens = layer.getValueAndResolveTokens('text-field', evaluationFeature, canonical, availableImages);
+                var formattedText = Formatted.factory(resolvedTokens);
+                if (containsRTLText(formattedText)) {
+                    this.hasRTLText = true;
                 }
-                if (!needGeometry) {
-                    evaluationFeature.geometry = loadGeometry(feature);
-                }
-                var text = void 0;
-                if (hasText) {
-                    var resolvedTokens = layer.getValueAndResolveTokens('text-field', evaluationFeature, canonical, availableImages);
-                    var formattedText = Formatted.factory(resolvedTokens);
-                    if (containsRTLText(formattedText)) {
-                        this.hasRTLText = true;
-                    }
-                    if (!this.hasRTLText || getRTLTextPluginStatus() === 'unavailable' || this.hasRTLText && plugin.isParsed()) {
-                        text = transformText$1(formattedText, layer, evaluationFeature);
-                    }
-                }
-                var icon = void 0;
-                if (hasIcon) {
-                    var resolvedTokens = layer.getValueAndResolveTokens('icon-image', evaluationFeature, canonical, availableImages);
-                    if (resolvedTokens instanceof ResolvedImage) {
-                        icon = resolvedTokens;
-                    } else {
-                        icon = ResolvedImage.fromString(resolvedTokens);
-                    }
-                }
-                if (!text && !icon) {
-                    continue;
-                }
-                var sortKey = this.sortFeaturesByKey ? symbolSortKey.evaluate(evaluationFeature, {}, canonical) : undefined;
-                var symbolFeature = {
-                    id: id,
-                    text: text,
-                    icon: icon,
-                    index: index,
-                    sourceLayerIndex: sourceLayerIndex,
-                    geometry: evaluationFeature.geometry,
-                    properties: feature.properties,
-                    type: vectorTileFeatureTypes[feature.type],
-                    sortKey: sortKey
-                };
-                this.features.push(symbolFeature);
-                if (icon) {
-                    icons[icon.name] = true;
-                }
-                if (text) {
-                    var fontStack = textFont.evaluate(evaluationFeature, {}, canonical).join(',');
-                    var textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point';
-                    this.allowVerticalPlacement = this.writingModes && this.writingModes.indexOf(exports.WritingMode.vertical) >= 0;
-                    try {
-                        for (var _d = (e_3 = void 0, __values$2(text.sections)), _e = _d.next(); !_e.done; _e = _d.next()) {
-                            var section = _e.value;
-                            if (!section.image) {
-                                var doesAllowVerticalWritingMode = allowsVerticalWritingMode(text.toString());
-                                var sectionFont = section.fontStack || fontStack;
-                                var sectionStack = stacks[sectionFont] = stacks[sectionFont] || {};
-                                this.calculateGlyphDependencies(section.text, sectionStack, textAlongLine, this.allowVerticalPlacement, doesAllowVerticalWritingMode);
-                            } else {
-                                icons[section.image.name] = true;
-                            }
-                        }
-                    } catch (e_3_1) {
-                        e_3 = { error: e_3_1 };
-                    } finally {
-                        try {
-                            if (_e && !_e.done && (_b = _d.return)) {
-                                _b.call(_d);
-                            }
-                        } finally {
-                            if (e_3) {
-                                throw e_3.error;
-                            }
-                        }
-                    }
+                if (!this.hasRTLText || getRTLTextPluginStatus() === 'unavailable' || this.hasRTLText && plugin.isParsed()) {
+                    text = transformText$1(formattedText, layer, evaluationFeature);
                 }
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (features_1_1 && !features_1_1.done && (_a = features_1.return)) {
-                    _a.call(features_1);
+            var icon = void 0;
+            if (hasIcon) {
+                var resolvedTokens = layer.getValueAndResolveTokens('icon-image', evaluationFeature, canonical, availableImages);
+                if (resolvedTokens instanceof ResolvedImage) {
+                    icon = resolvedTokens;
+                } else {
+                    icon = ResolvedImage.fromString(resolvedTokens);
                 }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
+            }
+            if (!text && !icon) {
+                continue;
+            }
+            var sortKey = this.sortFeaturesByKey ? symbolSortKey.evaluate(evaluationFeature, {}, canonical) : undefined;
+            var symbolFeature = {
+                id: id,
+                text: text,
+                icon: icon,
+                index: index,
+                sourceLayerIndex: sourceLayerIndex,
+                geometry: evaluationFeature.geometry,
+                properties: feature.properties,
+                type: vectorTileFeatureTypes[feature.type],
+                sortKey: sortKey
+            };
+            this.features.push(symbolFeature);
+            if (icon) {
+                icons[icon.name] = true;
+            }
+            if (text) {
+                var fontStack = textFont.evaluate(evaluationFeature, {}, canonical).join(',');
+                var textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point';
+                this.allowVerticalPlacement = this.writingModes && this.writingModes.indexOf(exports.WritingMode.vertical) >= 0;
+                for (var _b = 0, _c = text.sections; _b < _c.length; _b++) {
+                    var section = _c[_b];
+                    if (!section.image) {
+                        var doesAllowVerticalWritingMode = allowsVerticalWritingMode(text.toString());
+                        var sectionFont = section.fontStack || fontStack;
+                        var sectionStack = stacks[sectionFont] = stacks[sectionFont] || {};
+                        this.calculateGlyphDependencies(section.text, sectionStack, textAlongLine, this.allowVerticalPlacement, doesAllowVerticalWritingMode);
+                    } else {
+                        icons[section.image.name] = true;
+                    }
                 }
             }
         }
@@ -24714,7 +21711,6 @@ var SymbolBucket = function () {
         }
     };
     SymbolBucket.prototype.sortFeatures = function (angle) {
-        var e_4, _a;
         var _this = this;
         if (!this.sortFeaturesByY) {
             return;
@@ -24730,41 +21726,27 @@ var SymbolBucket = function () {
         this.text.indexArray.clear();
         this.icon.indexArray.clear();
         this.featureSortOrder = [];
-        try {
-            for (var _b = __values$2(this.symbolInstanceIndexes), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var i = _c.value;
-                var symbolInstance = this.symbolInstances.get(i);
-                this.featureSortOrder.push(symbolInstance.featureIndex);
-                [
-                    symbolInstance.rightJustifiedTextSymbolIndex,
-                    symbolInstance.centerJustifiedTextSymbolIndex,
-                    symbolInstance.leftJustifiedTextSymbolIndex
-                ].forEach(function (index, i, array) {
-                    if (index >= 0 && array.indexOf(index) === i) {
-                        _this.addIndicesForPlacedSymbol(_this.text, index);
-                    }
-                });
-                if (symbolInstance.verticalPlacedTextSymbolIndex >= 0) {
-                    this.addIndicesForPlacedSymbol(this.text, symbolInstance.verticalPlacedTextSymbolIndex);
+        for (var _i = 0, _a = this.symbolInstanceIndexes; _i < _a.length; _i++) {
+            var i = _a[_i];
+            var symbolInstance = this.symbolInstances.get(i);
+            this.featureSortOrder.push(symbolInstance.featureIndex);
+            [
+                symbolInstance.rightJustifiedTextSymbolIndex,
+                symbolInstance.centerJustifiedTextSymbolIndex,
+                symbolInstance.leftJustifiedTextSymbolIndex
+            ].forEach(function (index, i, array) {
+                if (index >= 0 && array.indexOf(index) === i) {
+                    _this.addIndicesForPlacedSymbol(_this.text, index);
                 }
-                if (symbolInstance.placedIconSymbolIndex >= 0) {
-                    this.addIndicesForPlacedSymbol(this.icon, symbolInstance.placedIconSymbolIndex);
-                }
-                if (symbolInstance.verticalPlacedIconSymbolIndex >= 0) {
-                    this.addIndicesForPlacedSymbol(this.icon, symbolInstance.verticalPlacedIconSymbolIndex);
-                }
+            });
+            if (symbolInstance.verticalPlacedTextSymbolIndex >= 0) {
+                this.addIndicesForPlacedSymbol(this.text, symbolInstance.verticalPlacedTextSymbolIndex);
             }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
+            if (symbolInstance.placedIconSymbolIndex >= 0) {
+                this.addIndicesForPlacedSymbol(this.icon, symbolInstance.placedIconSymbolIndex);
+            }
+            if (symbolInstance.verticalPlacedIconSymbolIndex >= 0) {
+                this.addIndicesForPlacedSymbol(this.icon, symbolInstance.verticalPlacedIconSymbolIndex);
             }
         }
         if (this.text.indexBuffer) {
@@ -24924,33 +21906,12 @@ var __extends$3 = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$1 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var SymbolStyleLayer = function (_super) {
     __extends$3(SymbolStyleLayer, _super);
     function SymbolStyleLayer(layer) {
         return _super.call(this, layer, properties$2) || this;
     }
     SymbolStyleLayer.prototype.recalculate = function (parameters, availableImages) {
-        var e_1, _a;
         _super.prototype.recalculate.call(this, parameters, availableImages);
         if (this.layout.get('icon-rotation-alignment') === 'auto') {
             if (this.layout.get('symbol-placement') !== 'point') {
@@ -24976,24 +21937,10 @@ var SymbolStyleLayer = function (_super) {
             var writingModes = this.layout.get('text-writing-mode');
             if (writingModes) {
                 var deduped = [];
-                try {
-                    for (var writingModes_1 = __values$1(writingModes), writingModes_1_1 = writingModes_1.next(); !writingModes_1_1.done; writingModes_1_1 = writingModes_1.next()) {
-                        var m = writingModes_1_1.value;
-                        if (deduped.indexOf(m) < 0) {
-                            deduped.push(m);
-                        }
-                    }
-                } catch (e_1_1) {
-                    e_1 = { error: e_1_1 };
-                } finally {
-                    try {
-                        if (writingModes_1_1 && !writingModes_1_1.done && (_a = writingModes_1.return)) {
-                            _a.call(writingModes_1);
-                        }
-                    } finally {
-                        if (e_1) {
-                            throw e_1.error;
-                        }
+                for (var _i = 0, writingModes_1 = writingModes; _i < writingModes_1.length; _i++) {
+                    var m = writingModes_1[_i];
+                    if (deduped.indexOf(m) < 0) {
+                        deduped.push(m);
                     }
                 }
                 this.layout._values['text-writing-mode'] = deduped;
@@ -25021,36 +21968,21 @@ var SymbolStyleLayer = function (_super) {
         return false;
     };
     SymbolStyleLayer.prototype._setPaintOverrides = function () {
-        var e_2, _a;
-        try {
-            for (var _b = __values$1(properties$2.paint.overridableProperties), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var overridable = _c.value;
-                if (!SymbolStyleLayer.hasPaintOverride(this.layout, overridable)) {
-                    continue;
-                }
-                var overriden = this.paint.get(overridable);
-                var override = new FormatSectionOverride(overriden);
-                var styleExpression = new StyleExpression(override, overriden.property.specification);
-                var expression = null;
-                if (overriden.value.kind === 'constant' || overriden.value.kind === 'source') {
-                    expression = new ZoomConstantExpression('source', styleExpression);
-                } else {
-                    expression = new ZoomDependentExpression('composite', styleExpression, overriden.value.zoomStops, overriden.value._interpolationType);
-                }
-                this.paint._values[overridable] = new PossiblyEvaluatedPropertyValue(overriden.property, expression, overriden.parameters);
+        for (var _i = 0, _a = properties$2.paint.overridableProperties; _i < _a.length; _i++) {
+            var overridable = _a[_i];
+            if (!SymbolStyleLayer.hasPaintOverride(this.layout, overridable)) {
+                continue;
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+            var overriden = this.paint.get(overridable);
+            var override = new FormatSectionOverride(overriden);
+            var styleExpression = new StyleExpression(override, overriden.property.specification);
+            var expression = null;
+            if (overriden.value.kind === 'constant' || overriden.value.kind === 'source') {
+                expression = new ZoomConstantExpression('source', styleExpression);
+            } else {
+                expression = new ZoomDependentExpression('composite', styleExpression, overriden.value.zoomStops, overriden.value._interpolationType);
             }
+            this.paint._values[overridable] = new PossiblyEvaluatedPropertyValue(overriden.property, expression, overriden.parameters);
         }
     };
     SymbolStyleLayer.prototype._handleOverridablePaintPropertyUpdate = function (name, oldValue, newValue) {
@@ -25064,26 +21996,11 @@ var SymbolStyleLayer = function (_super) {
         var property = properties$2.paint.properties[propertyName];
         var hasOverrides = false;
         var checkSections = function (sections) {
-            var e_3, _a;
-            try {
-                for (var sections_1 = __values$1(sections), sections_1_1 = sections_1.next(); !sections_1_1.done; sections_1_1 = sections_1.next()) {
-                    var section = sections_1_1.value;
-                    if (property.overrides && property.overrides.hasOverride(section)) {
-                        hasOverrides = true;
-                        return;
-                    }
-                }
-            } catch (e_3_1) {
-                e_3 = { error: e_3_1 };
-            } finally {
-                try {
-                    if (sections_1_1 && !sections_1_1.done && (_a = sections_1.return)) {
-                        _a.call(sections_1);
-                    }
-                } finally {
-                    if (e_3) {
-                        throw e_3.error;
-                    }
+            for (var _i = 0, sections_1 = sections; _i < sections_1.length; _i++) {
+                var section = sections_1[_i];
+                if (property.overrides && property.overrides.hasOverride(section)) {
+                    hasOverrides = true;
+                    return;
                 }
             }
         };
@@ -26077,26 +22994,6 @@ var GeoJSONFeature = function () {
     return GeoJSONFeature;
 }();
 
-var __values = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var FeatureIndex = function () {
     function FeatureIndex(tileID, promoteId) {
         this.tileID = tileID;
@@ -26140,7 +23037,6 @@ var FeatureIndex = function () {
         return this.vtLayers;
     };
     FeatureIndex.prototype.query = function (args, styleLayers, serializedLayers, sourceFeatureState) {
-        var e_1, _a;
         var _this = this;
         this.loadVTLayers();
         var params = args.params || {}, pixelsToTileUnits = EXTENT / args.tileSize / args.scale, filter = createFilter(params.filter);
@@ -26152,23 +23048,9 @@ var FeatureIndex = function () {
         var matching3D = this.grid3D.query(cameraBounds.minX - queryPadding, cameraBounds.minY - queryPadding, cameraBounds.maxX + queryPadding, cameraBounds.maxY + queryPadding, function (bx1, by1, bx2, by2) {
             return polygonIntersectsBox(args.cameraQueryGeometry, bx1 - queryPadding, by1 - queryPadding, bx2 + queryPadding, by2 + queryPadding);
         });
-        try {
-            for (var matching3D_1 = __values(matching3D), matching3D_1_1 = matching3D_1.next(); !matching3D_1_1.done; matching3D_1_1 = matching3D_1.next()) {
-                var key = matching3D_1_1.value;
-                matching.push(key);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (matching3D_1_1 && !matching3D_1_1.done && (_a = matching3D_1.return)) {
-                    _a.call(matching3D_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, matching3D_1 = matching3D; _i < matching3D_1.length; _i++) {
+            var key = matching3D_1[_i];
+            matching.push(key);
         }
         matching.sort(topDownFeatureComparator);
         var result = {};
@@ -26245,66 +23127,22 @@ var FeatureIndex = function () {
         }
     };
     FeatureIndex.prototype.lookupSymbolFeatures = function (symbolFeatureIndexes, serializedLayers, bucketIndex, sourceLayerIndex, filterSpec, filterLayerIDs, availableImages, styleLayers) {
-        var e_2, _a;
         var result = {};
         this.loadVTLayers();
         var filter = createFilter(filterSpec);
-        try {
-            for (var symbolFeatureIndexes_1 = __values(symbolFeatureIndexes), symbolFeatureIndexes_1_1 = symbolFeatureIndexes_1.next(); !symbolFeatureIndexes_1_1.done; symbolFeatureIndexes_1_1 = symbolFeatureIndexes_1.next()) {
-                var symbolFeatureIndex = symbolFeatureIndexes_1_1.value;
-                this.loadMatchingFeature(result, bucketIndex, sourceLayerIndex, symbolFeatureIndex, filter, filterLayerIDs, availableImages, styleLayers, serializedLayers);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (symbolFeatureIndexes_1_1 && !symbolFeatureIndexes_1_1.done && (_a = symbolFeatureIndexes_1.return)) {
-                    _a.call(symbolFeatureIndexes_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, symbolFeatureIndexes_1 = symbolFeatureIndexes; _i < symbolFeatureIndexes_1.length; _i++) {
+            var symbolFeatureIndex = symbolFeatureIndexes_1[_i];
+            this.loadMatchingFeature(result, bucketIndex, sourceLayerIndex, symbolFeatureIndex, filter, filterLayerIDs, availableImages, styleLayers, serializedLayers);
         }
         return result;
     };
     FeatureIndex.prototype.hasLayer = function (id) {
-        var e_3, _a, e_4, _b;
-        try {
-            for (var _c = __values(this.bucketLayerIDs), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var layerIDs = _d.value;
-                try {
-                    for (var layerIDs_1 = (e_4 = void 0, __values(layerIDs)), layerIDs_1_1 = layerIDs_1.next(); !layerIDs_1_1.done; layerIDs_1_1 = layerIDs_1.next()) {
-                        var layerID = layerIDs_1_1.value;
-                        if (id === layerID) {
-                            return true;
-                        }
-                    }
-                } catch (e_4_1) {
-                    e_4 = { error: e_4_1 };
-                } finally {
-                    try {
-                        if (layerIDs_1_1 && !layerIDs_1_1.done && (_b = layerIDs_1.return)) {
-                            _b.call(layerIDs_1);
-                        }
-                    } finally {
-                        if (e_4) {
-                            throw e_4.error;
-                        }
-                    }
-                }
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_d && !_d.done && (_a = _c.return)) {
-                    _a.call(_c);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
+        for (var _i = 0, _a = this.bucketLayerIDs; _i < _a.length; _i++) {
+            var layerIDs = _a[_i];
+            for (var _b = 0, layerIDs_1 = layerIDs; _b < layerIDs_1.length; _b++) {
+                var layerID = layerIDs_1[_b];
+                if (id === layerID) {
+                    return true;
                 }
             }
         }
@@ -26336,31 +23174,16 @@ function evaluateProperties(serializedProperties, styleLayerProperties, feature,
     });
 }
 function getBounds(geometry) {
-    var e_5, _a;
     var minX = Infinity;
     var minY = Infinity;
     var maxX = -Infinity;
     var maxY = -Infinity;
-    try {
-        for (var geometry_1 = __values(geometry), geometry_1_1 = geometry_1.next(); !geometry_1_1.done; geometry_1_1 = geometry_1.next()) {
-            var p = geometry_1_1.value;
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, p.x);
-            maxY = Math.max(maxY, p.y);
-        }
-    } catch (e_5_1) {
-        e_5 = { error: e_5_1 };
-    } finally {
-        try {
-            if (geometry_1_1 && !geometry_1_1.done && (_a = geometry_1.return)) {
-                _a.call(geometry_1);
-            }
-        } finally {
-            if (e_5) {
-                throw e_5.error;
-            }
-        }
+    for (var _i = 0, geometry_1 = geometry; _i < geometry_1.length; _i++) {
+        var p = geometry_1[_i];
+        minX = Math.min(minX, p.x);
+        minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x);
+        maxY = Math.max(maxY, p.y);
     }
     return {
         minX: minX,
@@ -26567,51 +23390,16 @@ exports.wrap = wrap;
 
 define(['./shared'], (function (performance) { 'use strict';
 
-var __values$4 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function stringify(obj) {
-    var e_1, _a;
     var type = typeof obj;
     if (type === 'number' || type === 'boolean' || type === 'string' || obj === undefined || obj === null) {
         return JSON.stringify(obj);
     }
     if (Array.isArray(obj)) {
         var str_1 = '[';
-        try {
-            for (var obj_1 = __values$4(obj), obj_1_1 = obj_1.next(); !obj_1_1.done; obj_1_1 = obj_1.next()) {
-                var val = obj_1_1.value;
-                str_1 += ''.concat(stringify(val), ',');
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (obj_1_1 && !obj_1_1.done && (_a = obj_1.return)) {
-                    _a.call(obj_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, obj_1 = obj; _i < obj_1.length; _i++) {
+            var val = obj_1[_i];
+            str_1 += ''.concat(stringify(val), ',');
         }
         return ''.concat(str_1, ']');
     }
@@ -26623,25 +23411,10 @@ function stringify(obj) {
     return ''.concat(str, '}');
 }
 function getKey(layer) {
-    var e_2, _a;
     var key = '';
-    try {
-        for (var refProperties_1 = __values$4(performance.refProperties), refProperties_1_1 = refProperties_1.next(); !refProperties_1_1.done; refProperties_1_1 = refProperties_1.next()) {
-            var k = refProperties_1_1.value;
-            key += '/'.concat(stringify(layer[k]));
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (refProperties_1_1 && !refProperties_1_1.done && (_a = refProperties_1.return)) {
-                _a.call(refProperties_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _i = 0, refProperties_1 = performance.refProperties; _i < refProperties_1.length; _i++) {
+        var k = refProperties_1[_i];
+        key += '/'.concat(stringify(layer[k]));
     }
     return key;
 }
@@ -26665,26 +23438,6 @@ function groupByLayout(layers, cachedKeys) {
     return result;
 }
 
-var __values$3 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var StyleLayerIndex = function () {
     function StyleLayerIndex(layerConfigs) {
         this.keyCache = {};
@@ -26698,87 +23451,44 @@ var StyleLayerIndex = function () {
         this.update(layerConfigs, []);
     };
     StyleLayerIndex.prototype.update = function (layerConfigs, removedIds) {
-        var e_1, _a, e_2, _b, e_3, _c;
         var _this = this;
-        try {
-            for (var layerConfigs_1 = __values$3(layerConfigs), layerConfigs_1_1 = layerConfigs_1.next(); !layerConfigs_1_1.done; layerConfigs_1_1 = layerConfigs_1.next()) {
-                var layerConfig = layerConfigs_1_1.value;
-                this._layerConfigs[layerConfig.id] = layerConfig;
-                var layer = this._layers[layerConfig.id] = performance.createStyleLayer(layerConfig);
-                layer._featureFilter = performance.createFilter(layer.filter);
-                if (this.keyCache[layerConfig.id]) {
-                    delete this.keyCache[layerConfig.id];
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (layerConfigs_1_1 && !layerConfigs_1_1.done && (_a = layerConfigs_1.return)) {
-                    _a.call(layerConfigs_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, layerConfigs_1 = layerConfigs; _i < layerConfigs_1.length; _i++) {
+            var layerConfig = layerConfigs_1[_i];
+            this._layerConfigs[layerConfig.id] = layerConfig;
+            var layer = this._layers[layerConfig.id] = performance.createStyleLayer(layerConfig);
+            layer._featureFilter = performance.createFilter(layer.filter);
+            if (this.keyCache[layerConfig.id]) {
+                delete this.keyCache[layerConfig.id];
             }
         }
-        try {
-            for (var removedIds_1 = __values$3(removedIds), removedIds_1_1 = removedIds_1.next(); !removedIds_1_1.done; removedIds_1_1 = removedIds_1.next()) {
-                var id = removedIds_1_1.value;
-                delete this.keyCache[id];
-                delete this._layerConfigs[id];
-                delete this._layers[id];
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (removedIds_1_1 && !removedIds_1_1.done && (_b = removedIds_1.return)) {
-                    _b.call(removedIds_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _a = 0, removedIds_1 = removedIds; _a < removedIds_1.length; _a++) {
+            var id = removedIds_1[_a];
+            delete this.keyCache[id];
+            delete this._layerConfigs[id];
+            delete this._layers[id];
         }
         this.familiesBySource = {};
         var groups = groupByLayout(performance.values(this._layerConfigs), this.keyCache);
-        try {
-            for (var groups_1 = __values$3(groups), groups_1_1 = groups_1.next(); !groups_1_1.done; groups_1_1 = groups_1.next()) {
-                var layerConfigs_2 = groups_1_1.value;
-                var layers = layerConfigs_2.map(function (layerConfig) {
-                    return _this._layers[layerConfig.id];
-                });
-                var layer = layers[0];
-                if (layer.visibility === 'none') {
-                    continue;
-                }
-                var sourceId = layer.source || '';
-                var sourceGroup = this.familiesBySource[sourceId];
-                if (!sourceGroup) {
-                    sourceGroup = this.familiesBySource[sourceId] = {};
-                }
-                var sourceLayerId = layer.sourceLayer || '_geojsonTileLayer';
-                var sourceLayerFamilies = sourceGroup[sourceLayerId];
-                if (!sourceLayerFamilies) {
-                    sourceLayerFamilies = sourceGroup[sourceLayerId] = [];
-                }
-                sourceLayerFamilies.push(layers);
+        for (var _b = 0, groups_1 = groups; _b < groups_1.length; _b++) {
+            var layerConfigs_2 = groups_1[_b];
+            var layers = layerConfigs_2.map(function (layerConfig) {
+                return _this._layers[layerConfig.id];
+            });
+            var layer = layers[0];
+            if (layer.visibility === 'none') {
+                continue;
             }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (groups_1_1 && !groups_1_1.done && (_c = groups_1.return)) {
-                    _c.call(groups_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
+            var sourceId = layer.source || '';
+            var sourceGroup = this.familiesBySource[sourceId];
+            if (!sourceGroup) {
+                sourceGroup = this.familiesBySource[sourceId] = {};
             }
+            var sourceLayerId = layer.sourceLayer || '_geojsonTileLayer';
+            var sourceLayerFamilies = sourceGroup[sourceLayerId];
+            if (!sourceLayerFamilies) {
+                sourceLayerFamilies = sourceGroup[sourceLayerId] = [];
+            }
+            sourceLayerFamilies.push(layers);
         }
     };
     return StyleLayerIndex;
@@ -26839,26 +23549,6 @@ var GlyphAtlas = function () {
 }();
 performance.register('GlyphAtlas', GlyphAtlas);
 
-var __values$2 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var WorkerTile = function () {
     function WorkerTile(params) {
         this.tileID = new performance.OverscaledTileID(params.tileID.overscaledZ, params.tileID.wrap, params.tileID.canonical.z, params.tileID.canonical.x, params.tileID.canonical.y);
@@ -26874,7 +23564,6 @@ var WorkerTile = function () {
         this.promoteId = params.promoteId;
     }
     WorkerTile.prototype.parse = function (data, layerIndex, availableImages, actor, callback) {
-        var e_1, _a;
         var _this = this;
         this.status = 'parsing';
         this.data = data;
@@ -26911,47 +23600,33 @@ var WorkerTile = function () {
                     sourceLayerIndex: sourceLayerIndex
                 });
             }
-            try {
-                for (var _b = (e_1 = void 0, __values$2(layerFamilies[sourceLayerId])), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var family = _c.value;
-                    var layer = family[0];
-                    if (layer.minzoom && this.zoom < Math.floor(layer.minzoom)) {
-                        continue;
-                    }
-                    if (layer.maxzoom && this.zoom >= layer.maxzoom) {
-                        continue;
-                    }
-                    if (layer.visibility === 'none') {
-                        continue;
-                    }
-                    recalculateLayers(family, this.zoom, availableImages);
-                    var bucket = buckets[layer.id] = layer.createBucket({
-                        index: featureIndex.bucketLayerIDs.length,
-                        layers: family,
-                        zoom: this.zoom,
-                        pixelRatio: this.pixelRatio,
-                        overscaling: this.overscaling,
-                        collisionBoxArray: this.collisionBoxArray,
-                        sourceLayerIndex: sourceLayerIndex,
-                        sourceID: this.source
-                    });
-                    bucket.populate(features, options, this.tileID.canonical);
-                    featureIndex.bucketLayerIDs.push(family.map(function (l) {
-                        return l.id;
-                    }));
+            for (var _i = 0, _a = layerFamilies[sourceLayerId]; _i < _a.length; _i++) {
+                var family = _a[_i];
+                var layer = family[0];
+                if (layer.minzoom && this.zoom < Math.floor(layer.minzoom)) {
+                    continue;
                 }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
+                if (layer.maxzoom && this.zoom >= layer.maxzoom) {
+                    continue;
                 }
+                if (layer.visibility === 'none') {
+                    continue;
+                }
+                recalculateLayers(family, this.zoom, availableImages);
+                var bucket = buckets[layer.id] = layer.createBucket({
+                    index: featureIndex.bucketLayerIDs.length,
+                    layers: family,
+                    zoom: this.zoom,
+                    pixelRatio: this.pixelRatio,
+                    overscaling: this.overscaling,
+                    collisionBoxArray: this.collisionBoxArray,
+                    sourceLayerIndex: sourceLayerIndex,
+                    sourceID: this.source
+                });
+                bucket.populate(features, options, this.tileID.canonical);
+                featureIndex.bucketLayerIDs.push(family.map(function (l) {
+                    return l.id;
+                }));
             }
         }
         var error;
@@ -27045,25 +23720,10 @@ var WorkerTile = function () {
     return WorkerTile;
 }();
 function recalculateLayers(layers, zoom, availableImages) {
-    var e_2, _a;
     var parameters = new performance.EvaluationParameters(zoom);
-    try {
-        for (var layers_1 = __values$2(layers), layers_1_1 = layers_1.next(); !layers_1_1.done; layers_1_1 = layers_1.next()) {
-            var layer = layers_1_1.value;
-            layer.recalculate(parameters, availableImages);
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (layers_1_1 && !layers_1_1.done && (_a = layers_1.return)) {
-                _a.call(layers_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _i = 0, layers_1 = layers; _i < layers_1.length; _i++) {
+        var layer = layers_1[_i];
+        layer.recalculate(parameters, availableImages);
     }
 }
 
@@ -27258,26 +23918,6 @@ function rewindRing(ring, dir) {
     }
 }
 
-var __values$1 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var toGeoJSON = performance.vectorTile.VectorTileFeature.prototype.toGeoJSON;
 var FeatureWrapper$1 = function () {
     function FeatureWrapper(feature) {
@@ -27290,66 +23930,23 @@ var FeatureWrapper$1 = function () {
         }
     }
     FeatureWrapper.prototype.loadGeometry = function () {
-        var e_1, _a, e_2, _b, e_3, _c;
         if (this._feature.type === 1) {
             var geometry = [];
-            try {
-                for (var _d = __values$1(this._feature.geometry), _e = _d.next(); !_e.done; _e = _d.next()) {
-                    var point = _e.value;
-                    geometry.push([new performance.pointGeometry(point[0], point[1])]);
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_e && !_e.done && (_a = _d.return)) {
-                        _a.call(_d);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, _a = this._feature.geometry; _i < _a.length; _i++) {
+                var point = _a[_i];
+                geometry.push([new performance.pointGeometry(point[0], point[1])]);
             }
             return geometry;
         } else {
             var geometry = [];
-            try {
-                for (var _f = __values$1(this._feature.geometry), _g = _f.next(); !_g.done; _g = _f.next()) {
-                    var ring = _g.value;
-                    var newRing = [];
-                    try {
-                        for (var ring_1 = (e_3 = void 0, __values$1(ring)), ring_1_1 = ring_1.next(); !ring_1_1.done; ring_1_1 = ring_1.next()) {
-                            var point = ring_1_1.value;
-                            newRing.push(new performance.pointGeometry(point[0], point[1]));
-                        }
-                    } catch (e_3_1) {
-                        e_3 = { error: e_3_1 };
-                    } finally {
-                        try {
-                            if (ring_1_1 && !ring_1_1.done && (_c = ring_1.return)) {
-                                _c.call(ring_1);
-                            }
-                        } finally {
-                            if (e_3) {
-                                throw e_3.error;
-                            }
-                        }
-                    }
-                    geometry.push(newRing);
+            for (var _b = 0, _c = this._feature.geometry; _b < _c.length; _b++) {
+                var ring = _c[_b];
+                var newRing = [];
+                for (var _d = 0, ring_1 = ring; _d < ring_1.length; _d++) {
+                    var point = ring_1[_d];
+                    newRing.push(new performance.pointGeometry(point[0], point[1]));
                 }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (_g && !_g.done && (_b = _f.return)) {
-                        _b.call(_f);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
-                }
+                geometry.push(newRing);
             }
             return geometry;
         }
@@ -28930,51 +25527,6 @@ var __extends = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 function loadGeoJSONTile(params, callback) {
     var canonical = params.tileID.canonical;
     if (!this._geoJSONIndex) {
@@ -29130,7 +25682,6 @@ var GeoJSONWorkerSource = function (_super) {
     return GeoJSONWorkerSource;
 }(VectorTileWorkerSource);
 function getSuperclusterOptions(_a) {
-    var e_1, _b;
     var superclusterOptions = _a.superclusterOptions, clusterProperties = _a.clusterProperties;
     if (!clusterProperties || !superclusterOptions) {
         return superclusterOptions;
@@ -29143,80 +25694,36 @@ function getSuperclusterOptions(_a) {
     };
     var feature = { properties: null };
     var propertyNames = Object.keys(clusterProperties);
-    try {
-        for (var propertyNames_1 = __values(propertyNames), propertyNames_1_1 = propertyNames_1.next(); !propertyNames_1_1.done; propertyNames_1_1 = propertyNames_1.next()) {
-            var key = propertyNames_1_1.value;
-            var _c = __read(clusterProperties[key], 2), operator = _c[0], mapExpression = _c[1];
-            var mapExpressionParsed = performance.createExpression(mapExpression);
-            var reduceExpressionParsed = performance.createExpression(typeof operator === 'string' ? [
-                operator,
-                ['accumulated'],
-                [
-                    'get',
-                    key
-                ]
-            ] : operator);
-            mapExpressions[key] = mapExpressionParsed.value;
-            reduceExpressions[key] = reduceExpressionParsed.value;
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (propertyNames_1_1 && !propertyNames_1_1.done && (_b = propertyNames_1.return)) {
-                _b.call(propertyNames_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, propertyNames_1 = propertyNames; _i < propertyNames_1.length; _i++) {
+        var key = propertyNames_1[_i];
+        var _b = clusterProperties[key], operator = _b[0], mapExpression = _b[1];
+        var mapExpressionParsed = performance.createExpression(mapExpression);
+        var reduceExpressionParsed = performance.createExpression(typeof operator === 'string' ? [
+            operator,
+            ['accumulated'],
+            [
+                'get',
+                key
+            ]
+        ] : operator);
+        mapExpressions[key] = mapExpressionParsed.value;
+        reduceExpressions[key] = reduceExpressionParsed.value;
     }
     superclusterOptions.map = function (pointProperties) {
-        var e_2, _a;
         feature.properties = pointProperties;
         var properties = {};
-        try {
-            for (var propertyNames_2 = __values(propertyNames), propertyNames_2_1 = propertyNames_2.next(); !propertyNames_2_1.done; propertyNames_2_1 = propertyNames_2.next()) {
-                var key = propertyNames_2_1.value;
-                properties[key] = mapExpressions[key].evaluate(globals, feature);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (propertyNames_2_1 && !propertyNames_2_1.done && (_a = propertyNames_2.return)) {
-                    _a.call(propertyNames_2);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, propertyNames_2 = propertyNames; _i < propertyNames_2.length; _i++) {
+            var key = propertyNames_2[_i];
+            properties[key] = mapExpressions[key].evaluate(globals, feature);
         }
         return properties;
     };
     superclusterOptions.reduce = function (accumulated, clusterProperties) {
-        var e_3, _a;
         feature.properties = clusterProperties;
-        try {
-            for (var propertyNames_3 = __values(propertyNames), propertyNames_3_1 = propertyNames_3.next(); !propertyNames_3_1.done; propertyNames_3_1 = propertyNames_3.next()) {
-                var key = propertyNames_3_1.value;
-                globals.accumulated = accumulated[key];
-                accumulated[key] = reduceExpressions[key].evaluate(globals, feature);
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (propertyNames_3_1 && !propertyNames_3_1.done && (_a = propertyNames_3.return)) {
-                    _a.call(propertyNames_3);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+        for (var _i = 0, propertyNames_3 = propertyNames; _i < propertyNames_3.length; _i++) {
+            var key = propertyNames_3[_i];
+            globals.accumulated = accumulated[key];
+            accumulated[key] = reduceExpressions[key].evaluate(globals, feature);
         }
     };
     return superclusterOptions;
@@ -30056,26 +26563,6 @@ var __extends$l = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$C = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var padding = 1;
 var ImageManager = function (_super) {
     __extends$l(ImageManager, _super);
@@ -30098,29 +26585,14 @@ var ImageManager = function (_super) {
         return this.loaded;
     };
     ImageManager.prototype.setLoaded = function (loaded) {
-        var e_1, _a;
         if (this.loaded === loaded) {
             return;
         }
         this.loaded = loaded;
         if (loaded) {
-            try {
-                for (var _b = __values$C(this.requestors), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var _d = _c.value, ids = _d.ids, callback = _d.callback;
-                    this._notify(ids, callback);
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, _a = this.requestors; _i < _a.length; _i++) {
+                var _b = _a[_i], ids = _b.ids, callback = _b.callback;
+                this._notify(ids, callback);
             }
             this.requestors = [];
         }
@@ -30150,31 +26622,16 @@ var ImageManager = function (_super) {
         return valid;
     };
     ImageManager.prototype._validateStretch = function (stretch, size) {
-        var e_2, _a;
         if (!stretch) {
             return true;
         }
         var last = 0;
-        try {
-            for (var stretch_1 = __values$C(stretch), stretch_1_1 = stretch_1.next(); !stretch_1_1.done; stretch_1_1 = stretch_1.next()) {
-                var part = stretch_1_1.value;
-                if (part[0] < last || part[1] < part[0] || size < part[1]) {
-                    return false;
-                }
-                last = part[1];
+        for (var _i = 0, stretch_1 = stretch; _i < stretch_1.length; _i++) {
+            var part = stretch_1[_i];
+            if (part[0] < last || part[1] < part[0] || size < part[1]) {
+                return false;
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (stretch_1_1 && !stretch_1_1.done && (_a = stretch_1.return)) {
-                    _a.call(stretch_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+            last = part[1];
         }
         return true;
     };
@@ -30223,27 +26680,12 @@ var ImageManager = function (_super) {
         return Object.keys(this.images);
     };
     ImageManager.prototype.getImages = function (ids, callback) {
-        var e_3, _a;
         var hasAllDependencies = true;
         if (!this.isLoaded()) {
-            try {
-                for (var ids_1 = __values$C(ids), ids_1_1 = ids_1.next(); !ids_1_1.done; ids_1_1 = ids_1.next()) {
-                    var id = ids_1_1.value;
-                    if (!this.images[id]) {
-                        hasAllDependencies = false;
-                    }
-                }
-            } catch (e_3_1) {
-                e_3 = { error: e_3_1 };
-            } finally {
-                try {
-                    if (ids_1_1 && !ids_1_1.done && (_a = ids_1.return)) {
-                        _a.call(ids_1);
-                    }
-                } finally {
-                    if (e_3) {
-                        throw e_3.error;
-                    }
+            for (var _i = 0, ids_1 = ids; _i < ids_1.length; _i++) {
+                var id = ids_1[_i];
+                if (!this.images[id]) {
+                    hasAllDependencies = false;
                 }
             }
         }
@@ -30257,41 +26699,26 @@ var ImageManager = function (_super) {
         }
     };
     ImageManager.prototype._notify = function (ids, callback) {
-        var e_4, _a;
         var response = {};
-        try {
-            for (var ids_2 = __values$C(ids), ids_2_1 = ids_2.next(); !ids_2_1.done; ids_2_1 = ids_2.next()) {
-                var id = ids_2_1.value;
-                if (!this.images[id]) {
-                    this.fire(new performance.Event('styleimagemissing', { id: id }));
-                }
-                var image = this.images[id];
-                if (image) {
-                    response[id] = {
-                        data: image.data.clone(),
-                        pixelRatio: image.pixelRatio,
-                        sdf: image.sdf,
-                        version: image.version,
-                        stretchX: image.stretchX,
-                        stretchY: image.stretchY,
-                        content: image.content,
-                        hasRenderCallback: Boolean(image.userImage && image.userImage.render)
-                    };
-                } else {
-                    performance.warnOnce('Image "'.concat(id, '" could not be loaded. Please make sure you have added the image with map.addImage() or a "sprite" property in your style. You can provide missing images by listening for the "styleimagemissing" map event.'));
-                }
+        for (var _i = 0, ids_2 = ids; _i < ids_2.length; _i++) {
+            var id = ids_2[_i];
+            if (!this.images[id]) {
+                this.fire(new performance.Event('styleimagemissing', { id: id }));
             }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (ids_2_1 && !ids_2_1.done && (_a = ids_2.return)) {
-                    _a.call(ids_2);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
+            var image = this.images[id];
+            if (image) {
+                response[id] = {
+                    data: image.data.clone(),
+                    pixelRatio: image.pixelRatio,
+                    sdf: image.sdf,
+                    version: image.version,
+                    stretchX: image.stretchX,
+                    stretchY: image.stretchY,
+                    content: image.content,
+                    hasRenderCallback: Boolean(image.userImage && image.userImage.render)
+                };
+            } else {
+                performance.warnOnce('Image "'.concat(id, '" could not be loaded. Please make sure you have added the image with map.addImage() or a "sprite" property in your style. You can provide missing images by listening for the "styleimagemissing" map event.'));
             }
         }
         callback(null, response);
@@ -30417,84 +26844,34 @@ var ImageManager = function (_super) {
         this.callbackDispatchedThisFrame = {};
     };
     ImageManager.prototype.dispatchRenderCallbacks = function (ids) {
-        var e_5, _a;
-        try {
-            for (var ids_3 = __values$C(ids), ids_3_1 = ids_3.next(); !ids_3_1.done; ids_3_1 = ids_3.next()) {
-                var id = ids_3_1.value;
-                if (this.callbackDispatchedThisFrame[id]) {
-                    continue;
-                }
-                this.callbackDispatchedThisFrame[id] = true;
-                var image = this.images[id];
-                var updated = renderStyleImage(image);
-                if (updated) {
-                    this.updateImage(id, image);
-                }
+        for (var _i = 0, ids_3 = ids; _i < ids_3.length; _i++) {
+            var id = ids_3[_i];
+            if (this.callbackDispatchedThisFrame[id]) {
+                continue;
             }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (ids_3_1 && !ids_3_1.done && (_a = ids_3.return)) {
-                    _a.call(ids_3);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
+            this.callbackDispatchedThisFrame[id] = true;
+            var image = this.images[id];
+            var updated = renderStyleImage(image);
+            if (updated) {
+                this.updateImage(id, image);
             }
         }
     };
     return ImageManager;
 }(performance.Evented);
 
-var __values$B = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback) {
     var begin = range * 256;
     var end = begin + 255;
     var request = requestManager.transformRequest(urlTemplate.replace('{fontstack}', fontstack).replace('{range}', ''.concat(begin, '-').concat(end)), performance.ResourceType.Glyphs);
     performance.getArrayBuffer(request, function (err, data) {
-        var e_1, _a;
         if (err) {
             callback(err);
         } else if (data) {
             var glyphs = {};
-            try {
-                for (var _b = __values$B(performance.parseGlyphPBF(data)), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var glyph = _c.value;
-                    glyphs[glyph.id] = glyph;
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, _a = performance.parseGlyphPBF(data); _i < _a.length; _i++) {
+                var glyph = _a[_i];
+                glyphs[glyph.id] = glyph;
             }
             callback(null, glyphs);
         }
@@ -30503,6 +26880,8 @@ function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback)
 
 var INF = 100000000000000000000;
 var TinySDF = function TinySDF(ref) {
+    if (ref === void 0)
+        ref = {};
     var fontSize = ref.fontSize;
     if (fontSize === void 0)
         fontSize = 24;
@@ -30552,13 +26931,13 @@ TinySDF.prototype.draw = function draw(char) {
     var actualBoundingBoxDescent = ref.actualBoundingBoxDescent;
     var actualBoundingBoxLeft = ref.actualBoundingBoxLeft;
     var actualBoundingBoxRight = ref.actualBoundingBoxRight;
-    var glyphTop = Math.floor(actualBoundingBoxAscent);
+    var glyphTop = Math.ceil(actualBoundingBoxAscent);
     var glyphLeft = 0;
     var glyphWidth = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxRight - actualBoundingBoxLeft));
-    var glyphHeight = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxAscent) + Math.ceil(actualBoundingBoxDescent));
+    var glyphHeight = Math.min(this.size - this.buffer, glyphTop + Math.ceil(actualBoundingBoxDescent));
     var width = glyphWidth + 2 * this.buffer;
     var height = glyphHeight + 2 * this.buffer;
-    var len = width * height;
+    var len = Math.max(width * height, 0);
     var data = new Uint8ClampedArray(len);
     var glyph = {
         data: data,
@@ -30579,7 +26958,7 @@ TinySDF.prototype.draw = function draw(char) {
     var gridInner = ref$1.gridInner;
     var gridOuter = ref$1.gridOuter;
     ctx.clearRect(buffer, buffer, glyphWidth, glyphHeight);
-    ctx.fillText(char, buffer, buffer + glyphTop + 1);
+    ctx.fillText(char, buffer, buffer + glyphTop);
     var imgData = ctx.getImageData(buffer, buffer, glyphWidth, glyphHeight);
     gridOuter.fill(INF, 0, len);
     gridInner.fill(0, 0, len);
@@ -30643,26 +27022,6 @@ function edt1d(grid, offset, stride, length, f, v, z) {
     }
 }
 
-var __values$A = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var GlyphManager = function () {
     function GlyphManager(requestManager, localIdeographFontFamily) {
         this.requestManager = requestManager;
@@ -30673,30 +27032,15 @@ var GlyphManager = function () {
         this.url = url;
     };
     GlyphManager.prototype.getGlyphs = function (glyphs, callback) {
-        var e_1, _a;
         var _this = this;
         var all = [];
         for (var stack in glyphs) {
-            try {
-                for (var _b = (e_1 = void 0, __values$A(glyphs[stack])), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var id = _c.value;
-                    all.push({
-                        stack: stack,
-                        id: id
-                    });
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, _a = glyphs[stack]; _i < _a.length; _i++) {
+                var id = _a[_i];
+                all.push({
+                    stack: stack,
+                    id: id
+                });
             }
         }
         performance.asyncAll(all, function (_a, callback) {
@@ -30745,7 +27089,6 @@ var GlyphManager = function () {
             if (!requests) {
                 requests = entry.requests[range] = [];
                 GlyphManager.loadGlyphRange(stack, range, _this.url, _this.requestManager, function (err, response) {
-                    var e_2, _a;
                     if (response) {
                         for (var id_1 in response) {
                             if (!_this._doesCharSupportLocalGlyph(+id_1)) {
@@ -30754,23 +27097,9 @@ var GlyphManager = function () {
                         }
                         entry.ranges[range] = true;
                     }
-                    try {
-                        for (var requests_1 = __values$A(requests), requests_1_1 = requests_1.next(); !requests_1_1.done; requests_1_1 = requests_1.next()) {
-                            var cb = requests_1_1.value;
-                            cb(err, response);
-                        }
-                    } catch (e_2_1) {
-                        e_2 = { error: e_2_1 };
-                    } finally {
-                        try {
-                            if (requests_1_1 && !requests_1_1.done && (_a = requests_1.return)) {
-                                _a.call(requests_1);
-                            }
-                        } finally {
-                            if (e_2) {
-                                throw e_2.error;
-                            }
-                        }
+                    for (var _i = 0, requests_1 = requests; _i < requests_1.length; _i++) {
+                        var cb = requests_1[_i];
+                        cb(err, response);
                     }
                     delete entry.requests[range];
                 });
@@ -30787,32 +27116,17 @@ var GlyphManager = function () {
                 }
             });
         }, function (err, glyphs) {
-            var e_3, _a;
             if (err) {
                 callback(err);
             } else if (glyphs) {
                 var result = {};
-                try {
-                    for (var glyphs_1 = __values$A(glyphs), glyphs_1_1 = glyphs_1.next(); !glyphs_1_1.done; glyphs_1_1 = glyphs_1.next()) {
-                        var _b = glyphs_1_1.value, stack = _b.stack, id = _b.id, glyph = _b.glyph;
-                        (result[stack] || (result[stack] = {}))[id] = glyph && {
-                            id: glyph.id,
-                            bitmap: glyph.bitmap.clone(),
-                            metrics: glyph.metrics
-                        };
-                    }
-                } catch (e_3_1) {
-                    e_3 = { error: e_3_1 };
-                } finally {
-                    try {
-                        if (glyphs_1_1 && !glyphs_1_1.done && (_a = glyphs_1.return)) {
-                            _a.call(glyphs_1);
-                        }
-                    } finally {
-                        if (e_3) {
-                            throw e_3.error;
-                        }
-                    }
+                for (var _i = 0, glyphs_1 = glyphs; _i < glyphs_1.length; _i++) {
+                    var _a = glyphs_1[_i], stack = _a.stack, id = _a.id, glyph = _a.glyph;
+                    (result[stack] || (result[stack] = {}))[id] = glyph && {
+                        id: glyph.id,
+                        bitmap: glyph.bitmap.clone(),
+                        metrics: glyph.metrics
+                    };
                 }
                 callback(null, result);
             }
@@ -31957,26 +28271,6 @@ var __extends$f = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$z = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var ImageSource = function (_super) {
     __extends$f(ImageSource, _super);
     function ImageSource(id, options, dispatcher, eventedParent) {
@@ -32113,31 +28407,16 @@ var ImageSource = function (_super) {
     return ImageSource;
 }(performance.Evented);
 function getCoordinatesCenterTileID(coords) {
-    var e_1, _a;
     var minX = Infinity;
     var minY = Infinity;
     var maxX = -Infinity;
     var maxY = -Infinity;
-    try {
-        for (var coords_1 = __values$z(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            minX = Math.min(minX, coord.x);
-            minY = Math.min(minY, coord.y);
-            maxX = Math.max(maxX, coord.x);
-            maxY = Math.max(maxY, coord.y);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        minX = Math.min(minX, coord.x);
+        minY = Math.min(minY, coord.y);
+        maxX = Math.max(maxX, coord.x);
+        maxY = Math.max(maxY, coord.y);
     }
     var dx = maxX - minX;
     var dy = maxY - minY;
@@ -32171,26 +28450,6 @@ var __extends$e = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$y = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var VideoSource = function (_super) {
     __extends$e(VideoSource, _super);
     function VideoSource(id, options, dispatcher, eventedParent) {
@@ -32201,28 +28460,13 @@ var VideoSource = function (_super) {
         return _this;
     }
     VideoSource.prototype.load = function () {
-        var e_1, _a;
         var _this = this;
         this._loaded = false;
         var options = this.options;
         this.urls = [];
-        try {
-            for (var _b = __values$y(options.urls), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var url = _c.value;
-                this.urls.push(this.map._requestManager.transformRequest(url, performance.ResourceType.Source).url);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, _a = options.urls; _i < _a.length; _i++) {
+            var url = _a[_i];
+            this.urls.push(this.map._requestManager.transformRequest(url, performance.ResourceType.Source).url);
         }
         performance.getVideo(this.urls, function (err, video) {
             _this._loaded = true;
@@ -32339,26 +28583,6 @@ var __extends$d = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$x = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var CanvasSource = function (_super) {
     __extends$d(CanvasSource, _super);
     function CanvasSource(id, options, dispatcher, eventedParent) {
@@ -32469,28 +28693,13 @@ var CanvasSource = function (_super) {
         return this._playing;
     };
     CanvasSource.prototype._hasInvalidDimensions = function () {
-        var e_1, _a;
-        try {
-            for (var _b = __values$x([
-                        this.canvas.width,
-                        this.canvas.height
-                    ]), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var x = _c.value;
-                if (isNaN(x) || x <= 0) {
-                    return true;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, _a = [
+                    this.canvas.width,
+                    this.canvas.height
+                ]; _i < _a.length; _i++) {
+            var x = _a[_i];
+            if (isNaN(x) || x <= 0) {
+                return true;
             }
         }
         return false;
@@ -32528,26 +28737,6 @@ var setSourceType = function (name, type) {
     sourceTypes[name] = type;
 };
 
-var __values$w = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function getPixelPosMatrix(transform, tileID) {
     var t = performance.create();
     performance.translate(t, t, [
@@ -32563,27 +28752,12 @@ function getPixelPosMatrix(transform, tileID) {
     return performance.multiply(t, t, transform.calculatePosMatrix(tileID.toUnwrapped()));
 }
 function queryIncludes3DLayer(layers, styleLayers, sourceID) {
-    var e_1, _a;
     if (layers) {
-        try {
-            for (var layers_1 = __values$w(layers), layers_1_1 = layers_1.next(); !layers_1_1.done; layers_1_1 = layers_1.next()) {
-                var layerID = layers_1_1.value;
-                var layer = styleLayers[layerID];
-                if (layer && layer.source === sourceID && layer.type === 'fill-extrusion') {
-                    return true;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (layers_1_1 && !layers_1_1.done && (_a = layers_1.return)) {
-                    _a.call(layers_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, layers_1 = layers; _i < layers_1.length; _i++) {
+            var layerID = layers_1[_i];
+            var layer = styleLayers[layerID];
+            if (layer && layer.source === sourceID && layer.type === 'fill-extrusion') {
+                return true;
             }
         }
     } else {
@@ -32597,32 +28771,17 @@ function queryIncludes3DLayer(layers, styleLayers, sourceID) {
     return false;
 }
 function queryRenderedFeatures(sourceCache, styleLayers, serializedLayers, queryGeometry, params, transform) {
-    var e_2, _a;
     var has3DLayer = queryIncludes3DLayer(params && params.layers, styleLayers, sourceCache.id);
     var maxPitchScaleFactor = transform.maxPitchScaleFactor();
     var tilesIn = sourceCache.tilesIn(queryGeometry, maxPitchScaleFactor, has3DLayer);
     tilesIn.sort(sortTilesIn);
     var renderedFeatureLayers = [];
-    try {
-        for (var tilesIn_1 = __values$w(tilesIn), tilesIn_1_1 = tilesIn_1.next(); !tilesIn_1_1.done; tilesIn_1_1 = tilesIn_1.next()) {
-            var tileIn = tilesIn_1_1.value;
-            renderedFeatureLayers.push({
-                wrappedTileID: tileIn.tileID.wrapped().key,
-                queryResults: tileIn.tile.queryRenderedFeatures(styleLayers, serializedLayers, sourceCache._state, tileIn.queryGeometry, tileIn.cameraQueryGeometry, tileIn.scale, params, transform, maxPitchScaleFactor, getPixelPosMatrix(sourceCache.transform, tileIn.tileID))
-            });
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (tilesIn_1_1 && !tilesIn_1_1.done && (_a = tilesIn_1.return)) {
-                _a.call(tilesIn_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _i = 0, tilesIn_1 = tilesIn; _i < tilesIn_1.length; _i++) {
+        var tileIn = tilesIn_1[_i];
+        renderedFeatureLayers.push({
+            wrappedTileID: tileIn.tileID.wrapped().key,
+            queryResults: tileIn.tile.queryRenderedFeatures(styleLayers, serializedLayers, sourceCache._state, tileIn.queryGeometry, tileIn.cameraQueryGeometry, tileIn.scale, params, transform, maxPitchScaleFactor, getPixelPosMatrix(sourceCache.transform, tileIn.tileID))
+        });
     }
     var result = mergeRenderedFeatureLayers(renderedFeatureLayers);
     for (var layerID in result) {
@@ -32639,31 +28798,15 @@ function queryRenderedFeatures(sourceCache, styleLayers, serializedLayers, query
     return result;
 }
 function queryRenderedSymbols(styleLayers, serializedLayers, sourceCaches, queryGeometry, params, collisionIndex, retainedQueryData) {
-    var e_3, _a, e_4, _b;
     var result = {};
     var renderedSymbols = collisionIndex.queryRenderedSymbols(queryGeometry);
     var bucketQueryData = [];
-    try {
-        for (var _c = __values$w(Object.keys(renderedSymbols).map(Number)), _d = _c.next(); !_d.done; _d = _c.next()) {
-            var bucketInstanceId = _d.value;
-            bucketQueryData.push(retainedQueryData[bucketInstanceId]);
-        }
-    } catch (e_3_1) {
-        e_3 = { error: e_3_1 };
-    } finally {
-        try {
-            if (_d && !_d.done && (_a = _c.return)) {
-                _a.call(_c);
-            }
-        } finally {
-            if (e_3) {
-                throw e_3.error;
-            }
-        }
+    for (var _i = 0, _a = Object.keys(renderedSymbols).map(Number); _i < _a.length; _i++) {
+        var bucketInstanceId = _a[_i];
+        bucketQueryData.push(retainedQueryData[bucketInstanceId]);
     }
     bucketQueryData.sort(sortTilesIn);
     var _loop_1 = function (queryData) {
-        var e_5, _e;
         var bucketSymbols = queryData.featureIndex.lookupSymbolFeatures(renderedSymbols[queryData.bucketInstanceId], serializedLayers, queryData.bucketIndex, queryData.sourceLayerIndex, params.filter, params.layers, params.availableImages, styleLayers);
         for (var layerID in bucketSymbols) {
             var resultFeatures = result[layerID] = result[layerID] || [];
@@ -32678,43 +28821,15 @@ function queryRenderedSymbols(styleLayers, serializedLayers, sourceCaches, query
                     return b.featureIndex - a.featureIndex;
                 }
             });
-            try {
-                for (var layerSymbols_1 = (e_5 = void 0, __values$w(layerSymbols)), layerSymbols_1_1 = layerSymbols_1.next(); !layerSymbols_1_1.done; layerSymbols_1_1 = layerSymbols_1.next()) {
-                    var symbolFeature = layerSymbols_1_1.value;
-                    resultFeatures.push(symbolFeature);
-                }
-            } catch (e_5_1) {
-                e_5 = { error: e_5_1 };
-            } finally {
-                try {
-                    if (layerSymbols_1_1 && !layerSymbols_1_1.done && (_e = layerSymbols_1.return)) {
-                        _e.call(layerSymbols_1);
-                    }
-                } finally {
-                    if (e_5) {
-                        throw e_5.error;
-                    }
-                }
+            for (var _c = 0, layerSymbols_1 = layerSymbols; _c < layerSymbols_1.length; _c++) {
+                var symbolFeature = layerSymbols_1[_c];
+                resultFeatures.push(symbolFeature);
             }
         }
     };
-    try {
-        for (var bucketQueryData_1 = __values$w(bucketQueryData), bucketQueryData_1_1 = bucketQueryData_1.next(); !bucketQueryData_1_1.done; bucketQueryData_1_1 = bucketQueryData_1.next()) {
-            var queryData = bucketQueryData_1_1.value;
-            _loop_1(queryData);
-        }
-    } catch (e_4_1) {
-        e_4 = { error: e_4_1 };
-    } finally {
-        try {
-            if (bucketQueryData_1_1 && !bucketQueryData_1_1.done && (_b = bucketQueryData_1.return)) {
-                _b.call(bucketQueryData_1);
-            }
-        } finally {
-            if (e_4) {
-                throw e_4.error;
-            }
-        }
+    for (var _b = 0, bucketQueryData_1 = bucketQueryData; _b < bucketQueryData_1.length; _b++) {
+        var queryData = bucketQueryData_1[_b];
+        _loop_1(queryData);
     }
     var _loop_2 = function (layerName) {
         result[layerName].forEach(function (featureWrapper) {
@@ -32756,86 +28871,35 @@ function sortTilesIn(a, b) {
     return idA.overscaledZ - idB.overscaledZ || idA.canonical.y - idB.canonical.y || idA.wrap - idB.wrap || idA.canonical.x - idB.canonical.x;
 }
 function mergeRenderedFeatureLayers(tiles) {
-    var e_6, _a, e_7, _b;
     var result = {};
     var wrappedIDLayerMap = {};
-    try {
-        for (var tiles_1 = __values$w(tiles), tiles_1_1 = tiles_1.next(); !tiles_1_1.done; tiles_1_1 = tiles_1.next()) {
-            var tile = tiles_1_1.value;
-            var queryResults = tile.queryResults;
-            var wrappedID = tile.wrappedTileID;
-            var wrappedIDLayers = wrappedIDLayerMap[wrappedID] = wrappedIDLayerMap[wrappedID] || {};
-            for (var layerID in queryResults) {
-                var tileFeatures = queryResults[layerID];
-                var wrappedIDFeatures = wrappedIDLayers[layerID] = wrappedIDLayers[layerID] || {};
-                var resultFeatures = result[layerID] = result[layerID] || [];
-                try {
-                    for (var tileFeatures_1 = (e_7 = void 0, __values$w(tileFeatures)), tileFeatures_1_1 = tileFeatures_1.next(); !tileFeatures_1_1.done; tileFeatures_1_1 = tileFeatures_1.next()) {
-                        var tileFeature = tileFeatures_1_1.value;
-                        if (!wrappedIDFeatures[tileFeature.featureIndex]) {
-                            wrappedIDFeatures[tileFeature.featureIndex] = true;
-                            resultFeatures.push(tileFeature);
-                        }
-                    }
-                } catch (e_7_1) {
-                    e_7 = { error: e_7_1 };
-                } finally {
-                    try {
-                        if (tileFeatures_1_1 && !tileFeatures_1_1.done && (_b = tileFeatures_1.return)) {
-                            _b.call(tileFeatures_1);
-                        }
-                    } finally {
-                        if (e_7) {
-                            throw e_7.error;
-                        }
-                    }
+    for (var _i = 0, tiles_1 = tiles; _i < tiles_1.length; _i++) {
+        var tile = tiles_1[_i];
+        var queryResults = tile.queryResults;
+        var wrappedID = tile.wrappedTileID;
+        var wrappedIDLayers = wrappedIDLayerMap[wrappedID] = wrappedIDLayerMap[wrappedID] || {};
+        for (var layerID in queryResults) {
+            var tileFeatures = queryResults[layerID];
+            var wrappedIDFeatures = wrappedIDLayers[layerID] = wrappedIDLayers[layerID] || {};
+            var resultFeatures = result[layerID] = result[layerID] || [];
+            for (var _a = 0, tileFeatures_1 = tileFeatures; _a < tileFeatures_1.length; _a++) {
+                var tileFeature = tileFeatures_1[_a];
+                if (!wrappedIDFeatures[tileFeature.featureIndex]) {
+                    wrappedIDFeatures[tileFeature.featureIndex] = true;
+                    resultFeatures.push(tileFeature);
                 }
-            }
-        }
-    } catch (e_6_1) {
-        e_6 = { error: e_6_1 };
-    } finally {
-        try {
-            if (tiles_1_1 && !tiles_1_1.done && (_a = tiles_1.return)) {
-                _a.call(tiles_1);
-            }
-        } finally {
-            if (e_6) {
-                throw e_6.error;
             }
         }
     }
     return result;
 }
 
-var __values$v = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function deserialize(input, style) {
-    var e_1, _a;
     var output = {};
     if (!style) {
         return output;
     }
     var _loop_1 = function (bucket) {
-        var e_2, _b;
         var layers = bucket.layerIds.map(function (id) {
             return style.getLayer(id);
         }).filter(Boolean);
@@ -32850,66 +28914,18 @@ function deserialize(input, style) {
                 })[0];
             });
         }
-        try {
-            for (var layers_1 = (e_2 = void 0, __values$v(layers)), layers_1_1 = layers_1.next(); !layers_1_1.done; layers_1_1 = layers_1.next()) {
-                var layer = layers_1_1.value;
-                output[layer.id] = bucket;
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (layers_1_1 && !layers_1_1.done && (_b = layers_1.return)) {
-                    _b.call(layers_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _a = 0, layers_1 = layers; _a < layers_1.length; _a++) {
+            var layer = layers_1[_a];
+            output[layer.id] = bucket;
         }
     };
-    try {
-        for (var input_1 = __values$v(input), input_1_1 = input_1.next(); !input_1_1.done; input_1_1 = input_1.next()) {
-            var bucket = input_1_1.value;
-            _loop_1(bucket);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (input_1_1 && !input_1_1.done && (_a = input_1.return)) {
-                _a.call(input_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, input_1 = input; _i < input_1.length; _i++) {
+        var bucket = input_1[_i];
+        _loop_1(bucket);
     }
     return output;
 }
 
-var __values$u = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var CLOCK_SKEW_RETRY_TIMEOUT = 30000;
 var Tile = function () {
     function Tile(tileID, size) {
@@ -33184,67 +29200,23 @@ var Tile = function () {
         this.symbolFadeHoldUntil = performance.exported.now() + duration;
     };
     Tile.prototype.setDependencies = function (namespace, dependencies) {
-        var e_1, _a;
         var index = {};
-        try {
-            for (var dependencies_1 = __values$u(dependencies), dependencies_1_1 = dependencies_1.next(); !dependencies_1_1.done; dependencies_1_1 = dependencies_1.next()) {
-                var dep = dependencies_1_1.value;
-                index[dep] = true;
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (dependencies_1_1 && !dependencies_1_1.done && (_a = dependencies_1.return)) {
-                    _a.call(dependencies_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, dependencies_1 = dependencies; _i < dependencies_1.length; _i++) {
+            var dep = dependencies_1[_i];
+            index[dep] = true;
         }
         this.dependencies[namespace] = index;
     };
     Tile.prototype.hasDependency = function (namespaces, keys) {
-        var e_2, _a, e_3, _b;
-        try {
-            for (var namespaces_1 = __values$u(namespaces), namespaces_1_1 = namespaces_1.next(); !namespaces_1_1.done; namespaces_1_1 = namespaces_1.next()) {
-                var namespace = namespaces_1_1.value;
-                var dependencies = this.dependencies[namespace];
-                if (dependencies) {
-                    try {
-                        for (var keys_1 = (e_3 = void 0, __values$u(keys)), keys_1_1 = keys_1.next(); !keys_1_1.done; keys_1_1 = keys_1.next()) {
-                            var key = keys_1_1.value;
-                            if (dependencies[key]) {
-                                return true;
-                            }
-                        }
-                    } catch (e_3_1) {
-                        e_3 = { error: e_3_1 };
-                    } finally {
-                        try {
-                            if (keys_1_1 && !keys_1_1.done && (_b = keys_1.return)) {
-                                _b.call(keys_1);
-                            }
-                        } finally {
-                            if (e_3) {
-                                throw e_3.error;
-                            }
-                        }
+        for (var _i = 0, namespaces_1 = namespaces; _i < namespaces_1.length; _i++) {
+            var namespace = namespaces_1[_i];
+            var dependencies = this.dependencies[namespace];
+            if (dependencies) {
+                for (var _a = 0, keys_1 = keys; _a < keys_1.length; _a++) {
+                    var key = keys_1[_a];
+                    if (dependencies[key]) {
+                        return true;
                     }
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (namespaces_1_1 && !namespaces_1_1.done && (_a = namespaces_1.return)) {
-                    _a.call(namespaces_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
                 }
             }
         }
@@ -33253,26 +29225,6 @@ var Tile = function () {
     return Tile;
 }();
 
-var __values$t = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var TileCache = function () {
     function TileCache(max, onRemove) {
         this.max = max;
@@ -33280,28 +29232,13 @@ var TileCache = function () {
         this.reset();
     }
     TileCache.prototype.reset = function () {
-        var e_1, _a;
         for (var key in this.data) {
-            try {
-                for (var _b = (e_1 = void 0, __values$t(this.data[key])), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var removedData = _c.value;
-                    if (removedData.timeout) {
-                        clearTimeout(removedData.timeout);
-                    }
-                    this.onRemove(removedData.value);
+            for (var _i = 0, _a = this.data[key]; _i < _a.length; _i++) {
+                var removedData = _a[_i];
+                if (removedData.timeout) {
+                    clearTimeout(removedData.timeout);
                 }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+                this.onRemove(removedData.value);
             }
         }
         this.data = {};
@@ -33393,72 +29330,23 @@ var TileCache = function () {
         return this;
     };
     TileCache.prototype.filter = function (filterFn) {
-        var e_2, _a, e_3, _b;
         var removed = [];
         for (var key in this.data) {
-            try {
-                for (var _c = (e_2 = void 0, __values$t(this.data[key])), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    var entry = _d.value;
-                    if (!filterFn(entry.value)) {
-                        removed.push(entry);
-                    }
-                }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (_d && !_d.done && (_a = _c.return)) {
-                        _a.call(_c);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
+            for (var _i = 0, _a = this.data[key]; _i < _a.length; _i++) {
+                var entry = _a[_i];
+                if (!filterFn(entry.value)) {
+                    removed.push(entry);
                 }
             }
         }
-        try {
-            for (var removed_1 = __values$t(removed), removed_1_1 = removed_1.next(); !removed_1_1.done; removed_1_1 = removed_1.next()) {
-                var r = removed_1_1.value;
-                this.remove(r.value.tileID, r);
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (removed_1_1 && !removed_1_1.done && (_b = removed_1.return)) {
-                    _b.call(removed_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
-            }
+        for (var _b = 0, removed_1 = removed; _b < removed_1.length; _b++) {
+            var r = removed_1[_b];
+            this.remove(r.value.tileID, r);
         }
     };
     return TileCache;
 }();
 
-var __values$s = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var SourceFeatureState = function () {
     function SourceFeatureState() {
         this.state = {};
@@ -33544,7 +29432,6 @@ var SourceFeatureState = function () {
         tile.setFeatureState(this.state, painter);
     };
     SourceFeatureState.prototype.coalesceChanges = function (tiles, painter) {
-        var e_1, _a;
         var featuresChanged = {};
         for (var sourceLayer in this.stateChanges) {
             this.state[sourceLayer] = this.state[sourceLayer] || {};
@@ -33572,23 +29459,9 @@ var SourceFeatureState = function () {
                     if (deleteWholeFeatureState) {
                         this.state[sourceLayer][feature] = {};
                     } else {
-                        try {
-                            for (var _b = (e_1 = void 0, __values$s(Object.keys(this.deletedStates[sourceLayer][feature]))), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                var key = _c.value;
-                                delete this.state[sourceLayer][feature][key];
-                            }
-                        } catch (e_1_1) {
-                            e_1 = { error: e_1_1 };
-                        } finally {
-                            try {
-                                if (_c && !_c.done && (_a = _b.return)) {
-                                    _a.call(_b);
-                                }
-                            } finally {
-                                if (e_1) {
-                                    throw e_1.error;
-                                }
-                            }
+                        for (var _i = 0, _a = Object.keys(this.deletedStates[sourceLayer][feature]); _i < _a.length; _i++) {
+                            var key = _a[_i];
+                            delete this.state[sourceLayer][feature][key];
                         }
                     }
                     layerStates[feature] = this.state[sourceLayer][feature];
@@ -33634,26 +29507,6 @@ var __extends$c = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$r = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var SourceCache = function (_super) {
     __extends$c(SourceCache, _super);
     function SourceCache(id, options, dispatcher) {
@@ -33986,7 +29839,6 @@ var SourceCache = function (_super) {
         }
     };
     SourceCache.prototype.update = function (transform) {
-        var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
         var _this = this;
         this.transform = transform;
         if (!this._sourceLoaded || this._paused) {
@@ -34021,25 +29873,11 @@ var SourceCache = function (_super) {
         var maxCoveringZoom = Math.max(zoom + SourceCache.maxUnderzooming, this._source.minzoom);
         if (this.usedForTerrain) {
             var parents = {};
-            try {
-                for (var idealTileIDs_1 = __values$r(idealTileIDs), idealTileIDs_1_1 = idealTileIDs_1.next(); !idealTileIDs_1_1.done; idealTileIDs_1_1 = idealTileIDs_1.next()) {
-                    var tileID = idealTileIDs_1_1.value;
-                    if (tileID.canonical.z > this._source.minzoom) {
-                        var parent_2 = tileID.scaledTo(tileID.canonical.z - 1);
-                        parents[parent_2.key] = parent_2;
-                    }
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (idealTileIDs_1_1 && !idealTileIDs_1_1.done && (_a = idealTileIDs_1.return)) {
-                        _a.call(idealTileIDs_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
+            for (var _i = 0, idealTileIDs_1 = idealTileIDs; _i < idealTileIDs_1.length; _i++) {
+                var tileID = idealTileIDs_1[_i];
+                if (tileID.canonical.z > this._source.minzoom) {
+                    var parent_2 = tileID.scaledTo(tileID.canonical.z - 1);
+                    parents[parent_2.key] = parent_2;
                 }
             }
             idealTileIDs = idealTileIDs.concat(performance.values(parents));
@@ -34049,33 +29887,19 @@ var SourceCache = function (_super) {
             var parentsForFading = {};
             var fadingTiles = {};
             var ids = Object.keys(retain);
-            try {
-                for (var ids_1 = __values$r(ids), ids_1_1 = ids_1.next(); !ids_1_1.done; ids_1_1 = ids_1.next()) {
-                    var id = ids_1_1.value;
-                    var tileID = retain[id];
-                    var tile = this._tiles[id];
-                    if (!tile || tile.fadeEndTime && tile.fadeEndTime <= performance.exported.now()) {
-                        continue;
-                    }
-                    var parentTile = this.findLoadedParent(tileID, minCoveringZoom);
-                    if (parentTile) {
-                        this._addTile(parentTile.tileID);
-                        parentsForFading[parentTile.tileID.key] = parentTile.tileID;
-                    }
-                    fadingTiles[id] = tileID;
+            for (var _a = 0, ids_1 = ids; _a < ids_1.length; _a++) {
+                var id = ids_1[_a];
+                var tileID = retain[id];
+                var tile = this._tiles[id];
+                if (!tile || tile.fadeEndTime && tile.fadeEndTime <= performance.exported.now()) {
+                    continue;
                 }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (ids_1_1 && !ids_1_1.done && (_b = ids_1.return)) {
-                        _b.call(ids_1);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
+                var parentTile = this.findLoadedParent(tileID, minCoveringZoom);
+                if (parentTile) {
+                    this._addTile(parentTile.tileID);
+                    parentsForFading[parentTile.tileID.key] = parentTile.tileID;
                 }
+                fadingTiles[id] = tileID;
             }
             this._retainLoadedChildren(fadingTiles, zoom, maxCoveringZoom, retain);
             for (var id in parentsForFading) {
@@ -34087,26 +29911,12 @@ var SourceCache = function (_super) {
             if (this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
                 var idealRasterTileIDs = {};
                 var missingTileIDs = {};
-                try {
-                    for (var idealTileIDs_2 = __values$r(idealTileIDs), idealTileIDs_2_1 = idealTileIDs_2.next(); !idealTileIDs_2_1.done; idealTileIDs_2_1 = idealTileIDs_2.next()) {
-                        var tileID = idealTileIDs_2_1.value;
-                        if (this._tiles[tileID.key].hasData()) {
-                            idealRasterTileIDs[tileID.key] = tileID;
-                        } else {
-                            missingTileIDs[tileID.key] = tileID;
-                        }
-                    }
-                } catch (e_3_1) {
-                    e_3 = { error: e_3_1 };
-                } finally {
-                    try {
-                        if (idealTileIDs_2_1 && !idealTileIDs_2_1.done && (_c = idealTileIDs_2.return)) {
-                            _c.call(idealTileIDs_2);
-                        }
-                    } finally {
-                        if (e_3) {
-                            throw e_3.error;
-                        }
+                for (var _b = 0, idealTileIDs_2 = idealTileIDs; _b < idealTileIDs_2.length; _b++) {
+                    var tileID = idealTileIDs_2[_b];
+                    if (this._tiles[tileID.key].hasData()) {
+                        idealRasterTileIDs[tileID.key] = tileID;
+                    } else {
+                        missingTileIDs[tileID.key] = tileID;
                     }
                 }
                 for (var key in missingTileIDs) {
@@ -34141,27 +29951,13 @@ var SourceCache = function (_super) {
             this._tiles[retainedId].clearFadeHold();
         }
         var remove = performance.keysDifference(this._tiles, retain);
-        try {
-            for (var remove_1 = __values$r(remove), remove_1_1 = remove_1.next(); !remove_1_1.done; remove_1_1 = remove_1.next()) {
-                var tileID = remove_1_1.value;
-                var tile = this._tiles[tileID];
-                if (tile.hasSymbolBuckets && !tile.holdingForFade()) {
-                    tile.setHoldDuration(this.map._fadeDuration);
-                } else if (!tile.hasSymbolBuckets || tile.symbolFadeFinished()) {
-                    this._removeTile(tileID);
-                }
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (remove_1_1 && !remove_1_1.done && (_d = remove_1.return)) {
-                    _d.call(remove_1);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
+        for (var _c = 0, remove_1 = remove; _c < remove_1.length; _c++) {
+            var tileID = remove_1[_c];
+            var tile = this._tiles[tileID];
+            if (tile.hasSymbolBuckets && !tile.holdingForFade()) {
+                tile.setHoldDuration(this.map._fadeDuration);
+            } else if (!tile.hasSymbolBuckets || tile.symbolFadeFinished()) {
+                this._removeTile(tileID);
             }
         }
         this._updateLoadedParentTileCache();
@@ -34174,95 +29970,65 @@ var SourceCache = function (_super) {
         }
     };
     SourceCache.prototype._updateRetainedTiles = function (idealTileIDs, zoom) {
-        var e_5, _a, e_6, _b;
         var retain = {};
         var checked = {};
         var minCoveringZoom = Math.max(zoom - SourceCache.maxOverzooming, this._source.minzoom);
         var maxCoveringZoom = Math.max(zoom + SourceCache.maxUnderzooming, this._source.minzoom);
         var missingTiles = {};
-        try {
-            for (var idealTileIDs_3 = __values$r(idealTileIDs), idealTileIDs_3_1 = idealTileIDs_3.next(); !idealTileIDs_3_1.done; idealTileIDs_3_1 = idealTileIDs_3.next()) {
-                var tileID = idealTileIDs_3_1.value;
-                var tile = this._addTile(tileID);
-                retain[tileID.key] = tileID;
-                if (tile.hasData()) {
-                    continue;
-                }
-                if (zoom < this._source.maxzoom) {
-                    missingTiles[tileID.key] = tileID;
-                }
+        for (var _i = 0, idealTileIDs_3 = idealTileIDs; _i < idealTileIDs_3.length; _i++) {
+            var tileID = idealTileIDs_3[_i];
+            var tile = this._addTile(tileID);
+            retain[tileID.key] = tileID;
+            if (tile.hasData()) {
+                continue;
             }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (idealTileIDs_3_1 && !idealTileIDs_3_1.done && (_a = idealTileIDs_3.return)) {
-                    _a.call(idealTileIDs_3);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
+            if (zoom < this._source.maxzoom) {
+                missingTiles[tileID.key] = tileID;
             }
         }
         this._retainLoadedChildren(missingTiles, zoom, maxCoveringZoom, retain);
-        try {
-            for (var idealTileIDs_4 = __values$r(idealTileIDs), idealTileIDs_4_1 = idealTileIDs_4.next(); !idealTileIDs_4_1.done; idealTileIDs_4_1 = idealTileIDs_4.next()) {
-                var tileID = idealTileIDs_4_1.value;
-                var tile = this._tiles[tileID.key];
-                if (tile.hasData()) {
+        for (var _a = 0, idealTileIDs_4 = idealTileIDs; _a < idealTileIDs_4.length; _a++) {
+            var tileID = idealTileIDs_4[_a];
+            var tile = this._tiles[tileID.key];
+            if (tile.hasData()) {
+                continue;
+            }
+            if (zoom + 1 > this._source.maxzoom) {
+                var childCoord = tileID.children(this._source.maxzoom)[0];
+                var childTile = this.getTile(childCoord);
+                if (!!childTile && childTile.hasData()) {
+                    retain[childCoord.key] = childCoord;
                     continue;
                 }
-                if (zoom + 1 > this._source.maxzoom) {
-                    var childCoord = tileID.children(this._source.maxzoom)[0];
-                    var childTile = this.getTile(childCoord);
-                    if (!!childTile && childTile.hasData()) {
-                        retain[childCoord.key] = childCoord;
-                        continue;
-                    }
-                } else {
-                    var children = tileID.children(this._source.maxzoom);
-                    if (retain[children[0].key] && retain[children[1].key] && retain[children[2].key] && retain[children[3].key]) {
-                        continue;
-                    }
-                }
-                var parentWasRequested = tile.wasRequested();
-                for (var overscaledZ = tileID.overscaledZ - 1; overscaledZ >= minCoveringZoom; --overscaledZ) {
-                    var parentId = tileID.scaledTo(overscaledZ);
-                    if (checked[parentId.key]) {
-                        break;
-                    }
-                    checked[parentId.key] = true;
-                    tile = this.getTile(parentId);
-                    if (!tile && parentWasRequested) {
-                        tile = this._addTile(parentId);
-                    }
-                    if (tile) {
-                        retain[parentId.key] = parentId;
-                        parentWasRequested = tile.wasRequested();
-                        if (tile.hasData()) {
-                            break;
-                        }
-                    }
+            } else {
+                var children = tileID.children(this._source.maxzoom);
+                if (retain[children[0].key] && retain[children[1].key] && retain[children[2].key] && retain[children[3].key]) {
+                    continue;
                 }
             }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (idealTileIDs_4_1 && !idealTileIDs_4_1.done && (_b = idealTileIDs_4.return)) {
-                    _b.call(idealTileIDs_4);
+            var parentWasRequested = tile.wasRequested();
+            for (var overscaledZ = tileID.overscaledZ - 1; overscaledZ >= minCoveringZoom; --overscaledZ) {
+                var parentId = tileID.scaledTo(overscaledZ);
+                if (checked[parentId.key]) {
+                    break;
                 }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
+                checked[parentId.key] = true;
+                tile = this.getTile(parentId);
+                if (!tile && parentWasRequested) {
+                    tile = this._addTile(parentId);
+                }
+                if (tile) {
+                    retain[parentId.key] = parentId;
+                    parentWasRequested = tile.wasRequested();
+                    if (tile.hasData()) {
+                        break;
+                    }
                 }
             }
         }
         return retain;
     };
     SourceCache.prototype._updateLoadedParentTileCache = function () {
-        var e_7, _a;
         this._loadedParentTiles = {};
         for (var tileKey in this._tiles) {
             var path = [];
@@ -34281,23 +30047,9 @@ var SourceCache = function (_super) {
                 }
                 currentId = parentId;
             }
-            try {
-                for (var path_1 = (e_7 = void 0, __values$r(path)), path_1_1 = path_1.next(); !path_1_1.done; path_1_1 = path_1.next()) {
-                    var key = path_1_1.value;
-                    this._loadedParentTiles[key] = parentTile;
-                }
-            } catch (e_7_1) {
-                e_7 = { error: e_7_1 };
-            } finally {
-                try {
-                    if (path_1_1 && !path_1_1.done && (_a = path_1.return)) {
-                        _a.call(path_1);
-                    }
-                } finally {
-                    if (e_7) {
-                        throw e_7.error;
-                    }
-                }
+            for (var _i = 0, path_1 = path; _i < path_1.length; _i++) {
+                var key = path_1[_i];
+                this._loadedParentTiles[key] = parentTile;
             }
         }
     };
@@ -34378,7 +30130,6 @@ var SourceCache = function (_super) {
         this._cache.reset();
     };
     SourceCache.prototype.tilesIn = function (pointQueryGeometry, maxPitchScaleFactor, has3DLayer) {
-        var e_8, _a;
         var tileResults = [];
         var transform = this.transform;
         if (!transform) {
@@ -34396,26 +30147,12 @@ var SourceCache = function (_super) {
         var minY = Infinity;
         var maxX = -Infinity;
         var maxY = -Infinity;
-        try {
-            for (var cameraQueryGeometry_1 = __values$r(cameraQueryGeometry), cameraQueryGeometry_1_1 = cameraQueryGeometry_1.next(); !cameraQueryGeometry_1_1.done; cameraQueryGeometry_1_1 = cameraQueryGeometry_1.next()) {
-                var p = cameraQueryGeometry_1_1.value;
-                minX = Math.min(minX, p.x);
-                minY = Math.min(minY, p.y);
-                maxX = Math.max(maxX, p.x);
-                maxY = Math.max(maxY, p.y);
-            }
-        } catch (e_8_1) {
-            e_8 = { error: e_8_1 };
-        } finally {
-            try {
-                if (cameraQueryGeometry_1_1 && !cameraQueryGeometry_1_1.done && (_a = cameraQueryGeometry_1.return)) {
-                    _a.call(cameraQueryGeometry_1);
-                }
-            } finally {
-                if (e_8) {
-                    throw e_8.error;
-                }
-            }
+        for (var _i = 0, cameraQueryGeometry_1 = cameraQueryGeometry; _i < cameraQueryGeometry_1.length; _i++) {
+            var p = cameraQueryGeometry_1[_i];
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x);
+            maxY = Math.max(maxY, p.y);
         }
         var _loop_1 = function (i) {
             var tile = this_1._tiles[ids[i]];
@@ -34452,28 +30189,13 @@ var SourceCache = function (_super) {
         return tileResults;
     };
     SourceCache.prototype.getVisibleCoordinates = function (symbolLayer) {
-        var e_9, _a;
         var _this = this;
         var coords = this.getRenderableIds(symbolLayer).map(function (id) {
             return _this._tiles[id].tileID;
         });
-        try {
-            for (var coords_1 = __values$r(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-                var coord = coords_1_1.value;
-                coord.posMatrix = this.transform.calculatePosMatrix(coord.toUnwrapped());
-            }
-        } catch (e_9_1) {
-            e_9 = { error: e_9_1 };
-        } finally {
-            try {
-                if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                    _a.call(coords_1);
-                }
-            } finally {
-                if (e_9) {
-                    throw e_9.error;
-                }
-            }
+        for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+            var coord = coords_1[_i];
+            coord.posMatrix = this.transform.calculatePosMatrix(coord.toUnwrapped());
         }
         return coords;
     };
@@ -34563,26 +30285,6 @@ var __extends$b = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$q = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var TerrainSourceCache = function (_super) {
     __extends$b(TerrainSourceCache, _super);
     function TerrainSourceCache(style) {
@@ -34675,7 +30377,6 @@ var TerrainSourceCache = function (_super) {
         return !!this._sourceCache;
     };
     TerrainSourceCache.prototype.update = function (transform) {
-        var e_1, _a;
         var _this = this;
         if (!this.isEnabled() || !this._sourceCache._sourceLoaded) {
             return;
@@ -34684,33 +30385,19 @@ var TerrainSourceCache = function (_super) {
         this._sourceCache.update(transform);
         this._renderableTiles = [];
         var tileIDs = {};
-        try {
-            for (var _b = __values$q(transform.coveringTiles({
-                        tileSize: this.tileSize,
-                        minzoom: this.minzoom,
-                        maxzoom: this.maxzoom,
-                        reparseOverscaled: false
-                    })), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var tileID = _c.value;
-                this._renderableTiles.push(tileID.key);
-                tileIDs[tileID.key] = true;
-                if (!this._tiles[tileID.key]) {
-                    tileID.posMatrix = new Float64Array(16);
-                    performance.ortho(tileID.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                    this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, _a = transform.coveringTiles({
+                    tileSize: this.tileSize,
+                    minzoom: this.minzoom,
+                    maxzoom: this.maxzoom,
+                    reparseOverscaled: false
+                }); _i < _a.length; _i++) {
+            var tileID = _a[_i];
+            this._renderableTiles.push(tileID.key);
+            tileIDs[tileID.key] = true;
+            if (!this._tiles[tileID.key]) {
+                tileID.posMatrix = new Float64Array(16);
+                performance.ortho(tileID.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
             }
         }
         this._renderHistory = this._renderHistory.filter(function (i, p) {
@@ -34734,63 +30421,48 @@ var TerrainSourceCache = function (_super) {
         return this._tiles[id];
     };
     TerrainSourceCache.prototype.getTerrainCoords = function (tileID) {
-        var e_2, _a;
         var coords = {};
-        try {
-            for (var _b = __values$q(this._renderableTiles), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var key = _c.value;
-                var _tileID = this._tiles[key].tileID;
-                if (_tileID.equals(tileID)) {
-                    var coord = tileID.clone();
-                    coord.posMatrix = new Float64Array(16);
-                    performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                    coords[key] = coord;
-                } else if (_tileID.canonical.isChildOf(tileID.canonical)) {
-                    var coord = tileID.clone();
-                    coord.posMatrix = new Float64Array(16);
-                    var dz = _tileID.canonical.z - tileID.canonical.z;
-                    var dx = _tileID.canonical.x - (_tileID.canonical.x >> dz << dz);
-                    var dy = _tileID.canonical.y - (_tileID.canonical.y >> dz << dz);
-                    var size = performance.EXTENT >> dz;
-                    performance.ortho(coord.posMatrix, 0, size, 0, size, 0, 1);
-                    performance.translate(coord.posMatrix, coord.posMatrix, [
-                        -dx * size,
-                        -dy * size,
-                        0
-                    ]);
-                    coords[key] = coord;
-                } else if (tileID.canonical.isChildOf(_tileID.canonical)) {
-                    var coord = tileID.clone();
-                    coord.posMatrix = new Float64Array(16);
-                    var dz = tileID.canonical.z - _tileID.canonical.z;
-                    var dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
-                    var dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
-                    var size = performance.EXTENT >> dz;
-                    performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                    performance.translate(coord.posMatrix, coord.posMatrix, [
-                        dx * size,
-                        dy * size,
-                        0
-                    ]);
-                    performance.scale(coord.posMatrix, coord.posMatrix, [
-                        1 / Math.pow(2, dz),
-                        1 / Math.pow(2, dz),
-                        0
-                    ]);
-                    coords[key] = coord;
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+        for (var _i = 0, _a = this._renderableTiles; _i < _a.length; _i++) {
+            var key = _a[_i];
+            var _tileID = this._tiles[key].tileID;
+            if (_tileID.equals(tileID)) {
+                var coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                coords[key] = coord;
+            } else if (_tileID.canonical.isChildOf(tileID.canonical)) {
+                var coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                var dz = _tileID.canonical.z - tileID.canonical.z;
+                var dx = _tileID.canonical.x - (_tileID.canonical.x >> dz << dz);
+                var dy = _tileID.canonical.y - (_tileID.canonical.y >> dz << dz);
+                var size = performance.EXTENT >> dz;
+                performance.ortho(coord.posMatrix, 0, size, 0, size, 0, 1);
+                performance.translate(coord.posMatrix, coord.posMatrix, [
+                    -dx * size,
+                    -dy * size,
+                    0
+                ]);
+                coords[key] = coord;
+            } else if (tileID.canonical.isChildOf(_tileID.canonical)) {
+                var coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                var dz = tileID.canonical.z - _tileID.canonical.z;
+                var dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
+                var dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
+                var size = performance.EXTENT >> dz;
+                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                performance.translate(coord.posMatrix, coord.posMatrix, [
+                    dx * size,
+                    dy * size,
+                    0
+                ]);
+                performance.scale(coord.posMatrix, coord.posMatrix, [
+                    1 / Math.pow(2, dz),
+                    1 / Math.pow(2, dz),
+                    0
+                ]);
+                coords[key] = coord;
             }
         }
         return coords;
@@ -35517,26 +31189,6 @@ var PathInterpolator = function () {
     return PathInterpolator;
 }();
 
-var __values$p = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function overlapAllowed(overlapA, overlapB) {
     var allowed = true;
     if (overlapA === 'always') ; else if (overlapA === 'never' || overlapB === 'never') {
@@ -35670,44 +31322,29 @@ var GridIndex = function () {
         return result.length > 0;
     };
     GridIndex.prototype._queryCell = function (x1, y1, x2, y2, cellIndex, result, queryArgs, predicate) {
-        var e_1, _a, e_2, _b;
         var seenUids = queryArgs.seenUids, hitTest = queryArgs.hitTest, overlapMode = queryArgs.overlapMode;
         var boxCell = this.boxCells[cellIndex];
         if (boxCell !== null) {
             var bboxes = this.bboxes;
-            try {
-                for (var boxCell_1 = __values$p(boxCell), boxCell_1_1 = boxCell_1.next(); !boxCell_1_1.done; boxCell_1_1 = boxCell_1.next()) {
-                    var boxUid = boxCell_1_1.value;
-                    if (!seenUids.box[boxUid]) {
-                        seenUids.box[boxUid] = true;
-                        var offset = boxUid * 4;
-                        var key = this.boxKeys[boxUid];
-                        if (x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1] && (!predicate || predicate(key))) {
-                            if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
-                                result.push({
-                                    key: key,
-                                    x1: bboxes[offset],
-                                    y1: bboxes[offset + 1],
-                                    x2: bboxes[offset + 2],
-                                    y2: bboxes[offset + 3]
-                                });
-                                if (hitTest) {
-                                    return true;
-                                }
+            for (var _i = 0, boxCell_1 = boxCell; _i < boxCell_1.length; _i++) {
+                var boxUid = boxCell_1[_i];
+                if (!seenUids.box[boxUid]) {
+                    seenUids.box[boxUid] = true;
+                    var offset = boxUid * 4;
+                    var key = this.boxKeys[boxUid];
+                    if (x1 <= bboxes[offset + 2] && y1 <= bboxes[offset + 3] && x2 >= bboxes[offset + 0] && y2 >= bboxes[offset + 1] && (!predicate || predicate(key))) {
+                        if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
+                            result.push({
+                                key: key,
+                                x1: bboxes[offset],
+                                y1: bboxes[offset + 1],
+                                x2: bboxes[offset + 2],
+                                y2: bboxes[offset + 3]
+                            });
+                            if (hitTest) {
+                                return true;
                             }
                         }
-                    }
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (boxCell_1_1 && !boxCell_1_1.done && (_a = boxCell_1.return)) {
-                        _a.call(boxCell_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
                     }
                 }
             }
@@ -35715,42 +31352,28 @@ var GridIndex = function () {
         var circleCell = this.circleCells[cellIndex];
         if (circleCell !== null) {
             var circles = this.circles;
-            try {
-                for (var circleCell_1 = __values$p(circleCell), circleCell_1_1 = circleCell_1.next(); !circleCell_1_1.done; circleCell_1_1 = circleCell_1.next()) {
-                    var circleUid = circleCell_1_1.value;
-                    if (!seenUids.circle[circleUid]) {
-                        seenUids.circle[circleUid] = true;
-                        var offset = circleUid * 3;
-                        var key = this.circleKeys[circleUid];
-                        if (this._circleAndRectCollide(circles[offset], circles[offset + 1], circles[offset + 2], x1, y1, x2, y2) && (!predicate || predicate(key))) {
-                            if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
-                                var x = circles[offset];
-                                var y = circles[offset + 1];
-                                var radius = circles[offset + 2];
-                                result.push({
-                                    key: key,
-                                    x1: x - radius,
-                                    y1: y - radius,
-                                    x2: x + radius,
-                                    y2: y + radius
-                                });
-                                if (hitTest) {
-                                    return true;
-                                }
+            for (var _a = 0, circleCell_1 = circleCell; _a < circleCell_1.length; _a++) {
+                var circleUid = circleCell_1[_a];
+                if (!seenUids.circle[circleUid]) {
+                    seenUids.circle[circleUid] = true;
+                    var offset = circleUid * 3;
+                    var key = this.circleKeys[circleUid];
+                    if (this._circleAndRectCollide(circles[offset], circles[offset + 1], circles[offset + 2], x1, y1, x2, y2) && (!predicate || predicate(key))) {
+                        if (!hitTest || !overlapAllowed(overlapMode, key.overlapMode)) {
+                            var x = circles[offset];
+                            var y = circles[offset + 1];
+                            var radius = circles[offset + 2];
+                            result.push({
+                                key: key,
+                                x1: x - radius,
+                                y1: y - radius,
+                                x2: x + radius,
+                                y2: y + radius
+                            });
+                            if (hitTest) {
+                                return true;
                             }
                         }
-                    }
-                }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (circleCell_1_1 && !circleCell_1_1.done && (_b = circleCell_1.return)) {
-                        _b.call(circleCell_1);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
                     }
                 }
             }
@@ -35758,34 +31381,19 @@ var GridIndex = function () {
         return false;
     };
     GridIndex.prototype._queryCellCircle = function (x1, y1, x2, y2, cellIndex, result, queryArgs, predicate) {
-        var e_3, _a, e_4, _b;
         var circle = queryArgs.circle, seenUids = queryArgs.seenUids, overlapMode = queryArgs.overlapMode;
         var boxCell = this.boxCells[cellIndex];
         if (boxCell !== null) {
             var bboxes = this.bboxes;
-            try {
-                for (var boxCell_2 = __values$p(boxCell), boxCell_2_1 = boxCell_2.next(); !boxCell_2_1.done; boxCell_2_1 = boxCell_2.next()) {
-                    var boxUid = boxCell_2_1.value;
-                    if (!seenUids.box[boxUid]) {
-                        seenUids.box[boxUid] = true;
-                        var offset = boxUid * 4;
-                        var key = this.boxKeys[boxUid];
-                        if (this._circleAndRectCollide(circle.x, circle.y, circle.radius, bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
-                            result.push(true);
-                            return true;
-                        }
-                    }
-                }
-            } catch (e_3_1) {
-                e_3 = { error: e_3_1 };
-            } finally {
-                try {
-                    if (boxCell_2_1 && !boxCell_2_1.done && (_a = boxCell_2.return)) {
-                        _a.call(boxCell_2);
-                    }
-                } finally {
-                    if (e_3) {
-                        throw e_3.error;
+            for (var _i = 0, boxCell_2 = boxCell; _i < boxCell_2.length; _i++) {
+                var boxUid = boxCell_2[_i];
+                if (!seenUids.box[boxUid]) {
+                    seenUids.box[boxUid] = true;
+                    var offset = boxUid * 4;
+                    var key = this.boxKeys[boxUid];
+                    if (this._circleAndRectCollide(circle.x, circle.y, circle.radius, bboxes[offset + 0], bboxes[offset + 1], bboxes[offset + 2], bboxes[offset + 3]) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
+                        result.push(true);
+                        return true;
                     }
                 }
             }
@@ -35793,29 +31401,15 @@ var GridIndex = function () {
         var circleCell = this.circleCells[cellIndex];
         if (circleCell !== null) {
             var circles = this.circles;
-            try {
-                for (var circleCell_2 = __values$p(circleCell), circleCell_2_1 = circleCell_2.next(); !circleCell_2_1.done; circleCell_2_1 = circleCell_2.next()) {
-                    var circleUid = circleCell_2_1.value;
-                    if (!seenUids.circle[circleUid]) {
-                        seenUids.circle[circleUid] = true;
-                        var offset = circleUid * 3;
-                        var key = this.circleKeys[circleUid];
-                        if (this._circlesCollide(circles[offset], circles[offset + 1], circles[offset + 2], circle.x, circle.y, circle.radius) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
-                            result.push(true);
-                            return true;
-                        }
-                    }
-                }
-            } catch (e_4_1) {
-                e_4 = { error: e_4_1 };
-            } finally {
-                try {
-                    if (circleCell_2_1 && !circleCell_2_1.done && (_b = circleCell_2.return)) {
-                        _b.call(circleCell_2);
-                    }
-                } finally {
-                    if (e_4) {
-                        throw e_4.error;
+            for (var _a = 0, circleCell_2 = circleCell; _a < circleCell_2.length; _a++) {
+                var circleUid = circleCell_2[_a];
+                if (!seenUids.circle[circleUid]) {
+                    seenUids.circle[circleUid] = true;
+                    var offset = circleUid * 3;
+                    var key = this.circleKeys[circleUid];
+                    if (this._circlesCollide(circles[offset], circles[offset + 1], circles[offset + 2], circle.x, circle.y, circle.radius) && (!predicate || predicate(key)) && !overlapAllowed(overlapMode, key.overlapMode)) {
+                        result.push(true);
+                        return true;
                     }
                 }
             }
@@ -35868,26 +31462,6 @@ var GridIndex = function () {
     return GridIndex;
 }();
 
-var __values$o = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function getLabelPlaneMatrix(posMatrix, pitchWithMap, rotateWithMap, transform, pixelsToTileUnits) {
     var m = performance.create();
     if (pitchWithMap) {
@@ -36016,7 +31590,6 @@ function requiresOrientationChange(writingMode, firstPoint, lastPoint, aspectRat
     return null;
 }
 function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation) {
-    var e_1, _a;
     var fontScale = fontSize / 24;
     var lineOffsetX = symbol.lineOffsetX * fontScale;
     var lineOffsetY = symbol.lineOffsetY * fontScale;
@@ -36060,23 +31633,9 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         }
         placedGlyphs = [singleGlyph];
     }
-    try {
-        for (var placedGlyphs_1 = __values$o(placedGlyphs), placedGlyphs_1_1 = placedGlyphs_1.next(); !placedGlyphs_1_1.done; placedGlyphs_1_1 = placedGlyphs_1.next()) {
-            var glyph = placedGlyphs_1_1.value;
-            performance.addDynamicAttributes(dynamicLayoutVertexArray, glyph.point, glyph.angle);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (placedGlyphs_1_1 && !placedGlyphs_1_1.done && (_a = placedGlyphs_1.return)) {
-                _a.call(placedGlyphs_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, placedGlyphs_1 = placedGlyphs; _i < placedGlyphs_1.length; _i++) {
+        var glyph = placedGlyphs_1[_i];
+        performance.addDynamicAttributes(dynamicLayoutVertexArray, glyph.point, glyph.angle);
     }
     return {};
 }
@@ -36159,26 +31718,6 @@ function hideGlyphs(num, dynamicLayoutVertexArray) {
     }
 }
 
-var __values$n = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var viewportPadding = 100;
 var CollisionIndex = function () {
     function CollisionIndex(transform, grid, ignoredGrid) {
@@ -36221,7 +31760,6 @@ var CollisionIndex = function () {
         };
     };
     CollisionIndex.prototype.placeCollisionCircles = function (overlapMode, symbol, lineVertexArray, glyphOffsetArray, fontSize, posMatrix, labelPlaneMatrix, labelToScreenMatrix, showCollisionCircles, pitchWithMap, collisionGroupPredicate, circlePixelDiameter, textPixelPadding, getElevation) {
-        var e_1, _a;
         var placedCollisionCircles = [];
         var tileUnitAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         var screenAnchorPoint = project(tileUnitAnchorPoint, posMatrix, getElevation);
@@ -36283,50 +31821,36 @@ var CollisionIndex = function () {
                     segments = performance.clipLine([projectedPath], screenPlaneMin.x, screenPlaneMin.y, screenPlaneMax.x, screenPlaneMax.y);
                 }
             }
-            try {
-                for (var segments_1 = __values$n(segments), segments_1_1 = segments_1.next(); !segments_1_1.done; segments_1_1 = segments_1.next()) {
-                    var seg = segments_1_1.value;
-                    interpolator.reset(seg, radius * 0.25);
-                    var numCircles = 0;
-                    if (interpolator.length <= 0.5 * radius) {
-                        numCircles = 1;
-                    } else {
-                        numCircles = Math.ceil(interpolator.paddedLength / circleDist) + 1;
-                    }
-                    for (var i = 0; i < numCircles; i++) {
-                        var t = i / Math.max(numCircles - 1, 1);
-                        var circlePosition = interpolator.lerp(t);
-                        var centerX = circlePosition.x + viewportPadding;
-                        var centerY = circlePosition.y + viewportPadding;
-                        placedCollisionCircles.push(centerX, centerY, radius, 0);
-                        var x1 = centerX - radius;
-                        var y1 = centerY - radius;
-                        var x2 = centerX + radius;
-                        var y2 = centerY + radius;
-                        entirelyOffscreen = entirelyOffscreen && this.isOffscreen(x1, y1, x2, y2);
-                        inGrid = inGrid || this.isInsideGrid(x1, y1, x2, y2);
-                        if (overlapMode !== 'always' && this.grid.hitTestCircle(centerX, centerY, radius, overlapMode, collisionGroupPredicate)) {
-                            collisionDetected = true;
-                            if (!showCollisionCircles) {
-                                return {
-                                    circles: [],
-                                    offscreen: false,
-                                    collisionDetected: collisionDetected
-                                };
-                            }
-                        }
-                    }
+            for (var _i = 0, segments_1 = segments; _i < segments_1.length; _i++) {
+                var seg = segments_1[_i];
+                interpolator.reset(seg, radius * 0.25);
+                var numCircles = 0;
+                if (interpolator.length <= 0.5 * radius) {
+                    numCircles = 1;
+                } else {
+                    numCircles = Math.ceil(interpolator.paddedLength / circleDist) + 1;
                 }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (segments_1_1 && !segments_1_1.done && (_a = segments_1.return)) {
-                        _a.call(segments_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
+                for (var i = 0; i < numCircles; i++) {
+                    var t = i / Math.max(numCircles - 1, 1);
+                    var circlePosition = interpolator.lerp(t);
+                    var centerX = circlePosition.x + viewportPadding;
+                    var centerY = circlePosition.y + viewportPadding;
+                    placedCollisionCircles.push(centerX, centerY, radius, 0);
+                    var x1 = centerX - radius;
+                    var y1 = centerY - radius;
+                    var x2 = centerX + radius;
+                    var y2 = centerY + radius;
+                    entirelyOffscreen = entirelyOffscreen && this.isOffscreen(x1, y1, x2, y2);
+                    inGrid = inGrid || this.isInsideGrid(x1, y1, x2, y2);
+                    if (overlapMode !== 'always' && this.grid.hitTestCircle(centerX, centerY, radius, overlapMode, collisionGroupPredicate)) {
+                        collisionDetected = true;
+                        if (!showCollisionCircles) {
+                            return {
+                                circles: [],
+                                offscreen: false,
+                                collisionDetected: collisionDetected
+                            };
+                        }
                     }
                 }
             }
@@ -36338,7 +31862,6 @@ var CollisionIndex = function () {
         };
     };
     CollisionIndex.prototype.queryRenderedSymbols = function (viewportQueryGeometry) {
-        var e_2, _a, e_3, _b;
         if (viewportQueryGeometry.length === 0 || this.grid.keysLength() === 0 && this.ignoredGrid.keysLength() === 0) {
             return {};
         }
@@ -36347,69 +31870,41 @@ var CollisionIndex = function () {
         var minY = Infinity;
         var maxX = -Infinity;
         var maxY = -Infinity;
-        try {
-            for (var viewportQueryGeometry_1 = __values$n(viewportQueryGeometry), viewportQueryGeometry_1_1 = viewportQueryGeometry_1.next(); !viewportQueryGeometry_1_1.done; viewportQueryGeometry_1_1 = viewportQueryGeometry_1.next()) {
-                var point = viewportQueryGeometry_1_1.value;
-                var gridPoint = new performance.pointGeometry(point.x + viewportPadding, point.y + viewportPadding);
-                minX = Math.min(minX, gridPoint.x);
-                minY = Math.min(minY, gridPoint.y);
-                maxX = Math.max(maxX, gridPoint.x);
-                maxY = Math.max(maxY, gridPoint.y);
-                query.push(gridPoint);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (viewportQueryGeometry_1_1 && !viewportQueryGeometry_1_1.done && (_a = viewportQueryGeometry_1.return)) {
-                    _a.call(viewportQueryGeometry_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, viewportQueryGeometry_1 = viewportQueryGeometry; _i < viewportQueryGeometry_1.length; _i++) {
+            var point = viewportQueryGeometry_1[_i];
+            var gridPoint = new performance.pointGeometry(point.x + viewportPadding, point.y + viewportPadding);
+            minX = Math.min(minX, gridPoint.x);
+            minY = Math.min(minY, gridPoint.y);
+            maxX = Math.max(maxX, gridPoint.x);
+            maxY = Math.max(maxY, gridPoint.y);
+            query.push(gridPoint);
         }
         var features = this.grid.query(minX, minY, maxX, maxY).concat(this.ignoredGrid.query(minX, minY, maxX, maxY));
         var seenFeatures = {};
         var result = {};
-        try {
-            for (var features_1 = __values$n(features), features_1_1 = features_1.next(); !features_1_1.done; features_1_1 = features_1.next()) {
-                var feature = features_1_1.value;
-                var featureKey = feature.key;
-                if (seenFeatures[featureKey.bucketInstanceId] === undefined) {
-                    seenFeatures[featureKey.bucketInstanceId] = {};
-                }
-                if (seenFeatures[featureKey.bucketInstanceId][featureKey.featureIndex]) {
-                    continue;
-                }
-                var bbox = [
-                    new performance.pointGeometry(feature.x1, feature.y1),
-                    new performance.pointGeometry(feature.x2, feature.y1),
-                    new performance.pointGeometry(feature.x2, feature.y2),
-                    new performance.pointGeometry(feature.x1, feature.y2)
-                ];
-                if (!performance.polygonIntersectsPolygon(query, bbox)) {
-                    continue;
-                }
-                seenFeatures[featureKey.bucketInstanceId][featureKey.featureIndex] = true;
-                if (result[featureKey.bucketInstanceId] === undefined) {
-                    result[featureKey.bucketInstanceId] = [];
-                }
-                result[featureKey.bucketInstanceId].push(featureKey.featureIndex);
+        for (var _a = 0, features_1 = features; _a < features_1.length; _a++) {
+            var feature = features_1[_a];
+            var featureKey = feature.key;
+            if (seenFeatures[featureKey.bucketInstanceId] === undefined) {
+                seenFeatures[featureKey.bucketInstanceId] = {};
             }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (features_1_1 && !features_1_1.done && (_b = features_1.return)) {
-                    _b.call(features_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
+            if (seenFeatures[featureKey.bucketInstanceId][featureKey.featureIndex]) {
+                continue;
             }
+            var bbox = [
+                new performance.pointGeometry(feature.x1, feature.y1),
+                new performance.pointGeometry(feature.x2, feature.y1),
+                new performance.pointGeometry(feature.x2, feature.y2),
+                new performance.pointGeometry(feature.x1, feature.y2)
+            ];
+            if (!performance.polygonIntersectsPolygon(query, bbox)) {
+                continue;
+            }
+            seenFeatures[featureKey.bucketInstanceId][featureKey.featureIndex] = true;
+            if (result[featureKey.bucketInstanceId] === undefined) {
+                result[featureKey.bucketInstanceId] = [];
+            }
+            result[featureKey.bucketInstanceId].push(featureKey.featureIndex);
         }
         return result;
     };
@@ -36466,26 +31961,6 @@ function pixelsToTileUnits (tile, pixelValue, z) {
     return pixelValue * (performance.EXTENT / (tile.tileSize * Math.pow(2, z - tile.tileID.overscaledZ)));
 }
 
-var __values$m = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var OpacityState = function () {
     function OpacityState(prevState, increment, placed, skipFade) {
         if (prevState) {
@@ -36605,7 +32080,6 @@ var Placement = function () {
         this.placedOrientations = {};
     }
     Placement.prototype.getBucketParts = function (results, styleLayer, tile, sortAcrossTiles) {
-        var e_1, _a;
         var symbolBucket = tile.getBucket(styleLayer);
         var bucketFeatureIndex = tile.latestFeatureIndex;
         if (!symbolBucket || !bucketFeatureIndex || styleLayer.id !== symbolBucket.layerIds[0]) {
@@ -36640,29 +32114,15 @@ var Placement = function () {
             collisionGroup: this.collisionGroups.get(symbolBucket.sourceID)
         };
         if (sortAcrossTiles) {
-            try {
-                for (var _b = __values$m(symbolBucket.sortKeyRanges), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var range = _c.value;
-                    var sortKey = range.sortKey, symbolInstanceStart = range.symbolInstanceStart, symbolInstanceEnd = range.symbolInstanceEnd;
-                    results.push({
-                        sortKey: sortKey,
-                        symbolInstanceStart: symbolInstanceStart,
-                        symbolInstanceEnd: symbolInstanceEnd,
-                        parameters: parameters
-                    });
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, _a = symbolBucket.sortKeyRanges; _i < _a.length; _i++) {
+                var range = _a[_i];
+                var sortKey = range.sortKey, symbolInstanceStart = range.symbolInstanceStart, symbolInstanceEnd = range.symbolInstanceEnd;
+                results.push({
+                    sortKey: sortKey,
+                    symbolInstanceStart: symbolInstanceStart,
+                    symbolInstanceEnd: symbolInstanceEnd,
+                    parameters: parameters
+                });
             }
         } else {
             results.push({
@@ -36728,7 +32188,6 @@ var Placement = function () {
             bucket.deserializeCollisionBoxes(collisionBoxArray);
         }
         var placeSymbol = function (symbolInstance, collisionArrays) {
-            var e_2, _a;
             if (seenCrossTileIDs[symbolInstance.crossTileID]) {
                 return;
             }
@@ -36766,30 +32225,16 @@ var Placement = function () {
             var getElevation = function (x, y) {
                 return _this.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y);
             };
-            try {
-                for (var _b = __values$m([
-                            'textBox',
-                            'verticalTextBox',
-                            'iconBox',
-                            'verticalIconBox'
-                        ]), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var boxType = _c.value;
-                    var box = collisionArrays[boxType];
-                    if (box) {
-                        box.elevation = getElevation(box.anchorPointX, box.anchorPointY);
-                    }
-                }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
+            for (var _i = 0, _a = [
+                        'textBox',
+                        'verticalTextBox',
+                        'iconBox',
+                        'verticalIconBox'
+                    ]; _i < _a.length; _i++) {
+                var boxType = _a[_i];
+                var box = collisionArrays[boxType];
+                if (box) {
+                    box.elevation = getElevation(box.anchorPointX, box.anchorPointY);
                 }
             }
             var textBox = collisionArrays.textBox;
@@ -36807,32 +32252,17 @@ var Placement = function () {
                     return previousOrientation;
                 };
                 var placeTextForPlacementModes = function (placeHorizontalFn, placeVerticalFn) {
-                    var e_3, _a;
                     if (bucket.allowVerticalPlacement && symbolInstance.numVerticalGlyphVertices > 0 && collisionArrays.verticalTextBox) {
-                        try {
-                            for (var _b = __values$m(bucket.writingModes), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                var placementMode = _c.value;
-                                if (placementMode === performance.WritingMode.vertical) {
-                                    placed = placeVerticalFn();
-                                    placedVerticalText = placed;
-                                } else {
-                                    placed = placeHorizontalFn();
-                                }
-                                if (placed && placed.box && placed.box.length) {
-                                    break;
-                                }
+                        for (var _i = 0, _a = bucket.writingModes; _i < _a.length; _i++) {
+                            var placementMode = _a[_i];
+                            if (placementMode === performance.WritingMode.vertical) {
+                                placed = placeVerticalFn();
+                                placedVerticalText = placed;
+                            } else {
+                                placed = placeHorizontalFn();
                             }
-                        } catch (e_3_1) {
-                            e_3 = { error: e_3_1 };
-                        } finally {
-                            try {
-                                if (_c && !_c.done && (_a = _b.return)) {
-                                    _a.call(_b);
-                                }
-                            } finally {
-                                if (e_3) {
-                                    throw e_3.error;
-                                }
+                            if (placed && placed.box && placed.box.length) {
+                                break;
                             }
                         }
                     } else {
@@ -37016,7 +32446,6 @@ var Placement = function () {
         bucket.justReloaded = false;
     };
     Placement.prototype.markUsedJustification = function (bucket, placedAnchor, symbolInstance, orientation) {
-        var e_4, _a;
         var justifications = {
             'left': symbolInstance.leftJustifiedTextSymbolIndex,
             'center': symbolInstance.centerJustifiedTextSymbolIndex,
@@ -37034,33 +32463,18 @@ var Placement = function () {
             symbolInstance.rightJustifiedTextSymbolIndex,
             symbolInstance.verticalPlacedTextSymbolIndex
         ];
-        try {
-            for (var indexes_1 = __values$m(indexes), indexes_1_1 = indexes_1.next(); !indexes_1_1.done; indexes_1_1 = indexes_1.next()) {
-                var index = indexes_1_1.value;
-                if (index >= 0) {
-                    if (autoIndex >= 0 && index !== autoIndex) {
-                        bucket.text.placedSymbolArray.get(index).crossTileID = 0;
-                    } else {
-                        bucket.text.placedSymbolArray.get(index).crossTileID = symbolInstance.crossTileID;
-                    }
-                }
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (indexes_1_1 && !indexes_1_1.done && (_a = indexes_1.return)) {
-                    _a.call(indexes_1);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
+        for (var _i = 0, indexes_1 = indexes; _i < indexes_1.length; _i++) {
+            var index = indexes_1[_i];
+            if (index >= 0) {
+                if (autoIndex >= 0 && index !== autoIndex) {
+                    bucket.text.placedSymbolArray.get(index).crossTileID = 0;
+                } else {
+                    bucket.text.placedSymbolArray.get(index).crossTileID = symbolInstance.crossTileID;
                 }
             }
         }
     };
     Placement.prototype.markUsedOrientation = function (bucket, orientation, symbolInstance) {
-        var e_5, _a;
         var horizontal = orientation === performance.WritingMode.horizontal || orientation === performance.WritingMode.horizontalOnly ? orientation : 0;
         var vertical = orientation === performance.WritingMode.vertical ? orientation : 0;
         var horizontalIndexes = [
@@ -37068,23 +32482,9 @@ var Placement = function () {
             symbolInstance.centerJustifiedTextSymbolIndex,
             symbolInstance.rightJustifiedTextSymbolIndex
         ];
-        try {
-            for (var horizontalIndexes_1 = __values$m(horizontalIndexes), horizontalIndexes_1_1 = horizontalIndexes_1.next(); !horizontalIndexes_1_1.done; horizontalIndexes_1_1 = horizontalIndexes_1.next()) {
-                var index = horizontalIndexes_1_1.value;
-                bucket.text.placedSymbolArray.get(index).placedOrientation = horizontal;
-            }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (horizontalIndexes_1_1 && !horizontalIndexes_1_1.done && (_a = horizontalIndexes_1.return)) {
-                    _a.call(horizontalIndexes_1);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
-            }
+        for (var _i = 0, horizontalIndexes_1 = horizontalIndexes; _i < horizontalIndexes_1.length; _i++) {
+            var index = horizontalIndexes_1[_i];
+            bucket.text.placedSymbolArray.get(index).placedOrientation = horizontal;
         }
         if (symbolInstance.verticalPlacedTextSymbolIndex) {
             bucket.text.placedSymbolArray.get(symbolInstance.verticalPlacedTextSymbolIndex).placedOrientation = vertical;
@@ -37138,27 +32538,12 @@ var Placement = function () {
         }
     };
     Placement.prototype.updateLayerOpacities = function (styleLayer, tiles) {
-        var e_6, _a;
         var seenCrossTileIDs = {};
-        try {
-            for (var tiles_1 = __values$m(tiles), tiles_1_1 = tiles_1.next(); !tiles_1_1.done; tiles_1_1 = tiles_1.next()) {
-                var tile = tiles_1_1.value;
-                var symbolBucket = tile.getBucket(styleLayer);
-                if (symbolBucket && tile.latestFeatureIndex && styleLayer.id === symbolBucket.layerIds[0]) {
-                    this.updateBucketOpacities(symbolBucket, seenCrossTileIDs, tile.collisionBoxArray);
-                }
-            }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (tiles_1_1 && !tiles_1_1.done && (_a = tiles_1.return)) {
-                    _a.call(tiles_1);
-                }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
-                }
+        for (var _i = 0, tiles_1 = tiles; _i < tiles_1.length; _i++) {
+            var tile = tiles_1[_i];
+            var symbolBucket = tile.getBucket(styleLayer);
+            if (symbolBucket && tile.latestFeatureIndex && styleLayer.id === symbolBucket.layerIds[0]) {
+                this.updateBucketOpacities(symbolBucket, seenCrossTileIDs, tile.collisionBoxArray);
             }
         }
     };
@@ -37437,26 +32822,6 @@ var PauseablePlacement = function () {
     return PauseablePlacement;
 }();
 
-var __values$l = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var roundingFactor = 512 / performance.EXTENT / 2;
 var TileLayerIndex = function () {
     function TileLayerIndex(tileID, symbolInstances, bucketInstanceId) {
@@ -37484,7 +32849,6 @@ var TileLayerIndex = function () {
         };
     };
     TileLayerIndex.prototype.findMatches = function (symbolInstances, newTileID, zoomCrossTileIDs) {
-        var e_1, _a;
         var tolerance = this.tileID.canonical.z < newTileID.canonical.z ? 1 : Math.pow(2, this.tileID.canonical.z - newTileID.canonical.z);
         for (var i = 0; i < symbolInstances.length; i++) {
             var symbolInstance = symbolInstances.get(i);
@@ -37496,26 +32860,12 @@ var TileLayerIndex = function () {
                 continue;
             }
             var scaledSymbolCoord = this.getScaledCoordinates(symbolInstance, newTileID);
-            try {
-                for (var indexedInstances_1 = (e_1 = void 0, __values$l(indexedInstances)), indexedInstances_1_1 = indexedInstances_1.next(); !indexedInstances_1_1.done; indexedInstances_1_1 = indexedInstances_1.next()) {
-                    var thisTileSymbol = indexedInstances_1_1.value;
-                    if (Math.abs(thisTileSymbol.coord.x - scaledSymbolCoord.x) <= tolerance && Math.abs(thisTileSymbol.coord.y - scaledSymbolCoord.y) <= tolerance && !zoomCrossTileIDs[thisTileSymbol.crossTileID]) {
-                        zoomCrossTileIDs[thisTileSymbol.crossTileID] = true;
-                        symbolInstance.crossTileID = thisTileSymbol.crossTileID;
-                        break;
-                    }
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (indexedInstances_1_1 && !indexedInstances_1_1.done && (_a = indexedInstances_1.return)) {
-                        _a.call(indexedInstances_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
+            for (var _i = 0, indexedInstances_1 = indexedInstances; _i < indexedInstances_1.length; _i++) {
+                var thisTileSymbol = indexedInstances_1[_i];
+                if (Math.abs(thisTileSymbol.coord.x - scaledSymbolCoord.x) <= tolerance && Math.abs(thisTileSymbol.coord.y - scaledSymbolCoord.y) <= tolerance && !zoomCrossTileIDs[thisTileSymbol.crossTileID]) {
+                    zoomCrossTileIDs[thisTileSymbol.crossTileID] = true;
+                    symbolInstance.crossTileID = thisTileSymbol.crossTileID;
+                    break;
                 }
             }
         }
@@ -37600,25 +32950,10 @@ var CrossTileSymbolLayerIndex = function () {
         return true;
     };
     CrossTileSymbolLayerIndex.prototype.removeBucketCrossTileIDs = function (zoom, removedBucket) {
-        var e_2, _a;
         for (var key in removedBucket.indexedSymbolInstances) {
-            try {
-                for (var _b = (e_2 = void 0, __values$l(removedBucket.indexedSymbolInstances[key])), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var symbolInstance = _c.value;
-                    delete this.usedCrossTileIDs[zoom][symbolInstance.crossTileID];
-                }
-            } catch (e_2_1) {
-                e_2 = { error: e_2_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_2) {
-                        throw e_2.error;
-                    }
-                }
+            for (var _i = 0, _a = removedBucket.indexedSymbolInstances[key]; _i < _a.length; _i++) {
+                var symbolInstance = _a[_i];
+                delete this.usedCrossTileIDs[zoom][symbolInstance.crossTileID];
             }
         }
     };
@@ -37646,7 +32981,6 @@ var CrossTileSymbolIndex = function () {
         this.bucketsInCurrentPlacement = {};
     }
     CrossTileSymbolIndex.prototype.addLayer = function (styleLayer, tiles, lng) {
-        var e_3, _a;
         var layerIndex = this.layerIndexes[styleLayer.id];
         if (layerIndex === undefined) {
             layerIndex = this.layerIndexes[styleLayer.id] = new CrossTileSymbolLayerIndex();
@@ -37654,33 +32988,19 @@ var CrossTileSymbolIndex = function () {
         var symbolBucketsChanged = false;
         var currentBucketIDs = {};
         layerIndex.handleWrapJump(lng);
-        try {
-            for (var tiles_1 = __values$l(tiles), tiles_1_1 = tiles_1.next(); !tiles_1_1.done; tiles_1_1 = tiles_1.next()) {
-                var tile = tiles_1_1.value;
-                var symbolBucket = tile.getBucket(styleLayer);
-                if (!symbolBucket || styleLayer.id !== symbolBucket.layerIds[0]) {
-                    continue;
-                }
-                if (!symbolBucket.bucketInstanceId) {
-                    symbolBucket.bucketInstanceId = ++this.maxBucketInstanceId;
-                }
-                if (layerIndex.addBucket(tile.tileID, symbolBucket, this.crossTileIDs)) {
-                    symbolBucketsChanged = true;
-                }
-                currentBucketIDs[symbolBucket.bucketInstanceId] = true;
+        for (var _i = 0, tiles_1 = tiles; _i < tiles_1.length; _i++) {
+            var tile = tiles_1[_i];
+            var symbolBucket = tile.getBucket(styleLayer);
+            if (!symbolBucket || styleLayer.id !== symbolBucket.layerIds[0]) {
+                continue;
             }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (tiles_1_1 && !tiles_1_1.done && (_a = tiles_1.return)) {
-                    _a.call(tiles_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
+            if (!symbolBucket.bucketInstanceId) {
+                symbolBucket.bucketInstanceId = ++this.maxBucketInstanceId;
             }
+            if (layerIndex.addBucket(tile.tileID, symbolBucket, this.crossTileIDs)) {
+                symbolBucketsChanged = true;
+            }
+            currentBucketIDs[symbolBucket.bucketInstanceId] = true;
         }
         if (layerIndex.removeStaleBuckets(currentBucketIDs)) {
             symbolBucketsChanged = true;
@@ -37725,26 +33045,6 @@ var __extends$a = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$k = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var emitValidationErrors = function (evented, errors) {
     return performance.emitValidationErrors(evented, errors && errors.filter(function (error) {
         return error.identifier !== 'source.canvas';
@@ -37869,7 +33169,6 @@ var Style = function (_super) {
         this._load(empty, false);
     };
     Style.prototype._load = function (json, validate) {
-        var e_1, _a;
         if (validate && emitValidationErrors(this, performance.validateStyle(json))) {
             return;
         }
@@ -37890,26 +33189,12 @@ var Style = function (_super) {
         });
         this._layers = {};
         this._serializedLayers = {};
-        try {
-            for (var layers_1 = __values$k(layers), layers_1_1 = layers_1.next(); !layers_1_1.done; layers_1_1 = layers_1.next()) {
-                var layer = layers_1_1.value;
-                layer = performance.createStyleLayer(layer);
-                layer.setEventedParent(this, { layer: { id: layer.id } });
-                this._layers[layer.id] = layer;
-                this._serializedLayers[layer.id] = layer.serialize();
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (layers_1_1 && !layers_1_1.done && (_a = layers_1.return)) {
-                    _a.call(layers_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, layers_1 = layers; _i < layers_1.length; _i++) {
+            var layer = layers_1[_i];
+            layer = performance.createStyleLayer(layer);
+            layer.setEventedParent(this, { layer: { id: layer.id } });
+            this._layers[layer.id] = layer;
+            this._serializedLayers[layer.id] = layer.serialize();
         }
         this.dispatcher.broadcast('setLayers', this._serializeLayers(this._order));
         this.light = new Light(this.stylesheet.light);
@@ -37965,27 +33250,12 @@ var Style = function (_super) {
         return true;
     };
     Style.prototype._serializeLayers = function (ids) {
-        var e_2, _a;
         var serializedLayers = [];
-        try {
-            for (var ids_1 = __values$k(ids), ids_1_1 = ids_1.next(); !ids_1_1.done; ids_1_1 = ids_1.next()) {
-                var id = ids_1_1.value;
-                var layer = this._layers[id];
-                if (layer.type !== 'custom') {
-                    serializedLayers.push(layer.serialize());
-                }
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (ids_1_1 && !ids_1_1.done && (_a = ids_1.return)) {
-                    _a.call(ids_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+        for (var _i = 0, ids_1 = ids; _i < ids_1.length; _i++) {
+            var id = ids_1[_i];
+            var layer = this._layers[id];
+            if (layer.type !== 'custom') {
+                serializedLayers.push(layer.serialize());
             }
         }
         return serializedLayers;
@@ -38012,7 +33282,6 @@ var Style = function (_super) {
         }
     };
     Style.prototype.update = function (parameters) {
-        var e_3, _a;
         if (!this._loaded) {
             return;
         }
@@ -38044,26 +33313,12 @@ var Style = function (_super) {
             sourcesUsedBefore[sourceId] = sourceCache.used;
             sourceCache.used = false;
         }
-        try {
-            for (var _b = __values$k(this._order), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var layerId = _c.value;
-                var layer = this._layers[layerId];
-                layer.recalculate(parameters, this._availableImages);
-                if (!layer.isHidden(parameters.zoom) && layer.source) {
-                    this.sourceCaches[layer.source].used = true;
-                }
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
+        for (var _i = 0, _a = this._order; _i < _a.length; _i++) {
+            var layerId = _a[_i];
+            var layer = this._layers[layerId];
+            layer.recalculate(parameters, this._availableImages);
+            if (!layer.isHidden(parameters.zoom) && layer.source) {
+                this.sourceCaches[layer.source].used = true;
             }
         }
         for (var sourceId in sourcesUsedBefore) {
@@ -38533,7 +33788,6 @@ var Style = function (_super) {
         this._changed = true;
     };
     Style.prototype._flattenAndSortRenderedFeatures = function (sourceResults) {
-        var e_4, _a, e_5, _b, e_6, _c, e_7, _d;
         var _this = this;
         var isLayer3D = function (layerId) {
             return _this._layers[layerId].type === 'fill-extrusion';
@@ -38544,41 +33798,13 @@ var Style = function (_super) {
             var layerId = this._order[l];
             if (isLayer3D(layerId)) {
                 layerIndex[layerId] = l;
-                try {
-                    for (var sourceResults_1 = (e_4 = void 0, __values$k(sourceResults)), sourceResults_1_1 = sourceResults_1.next(); !sourceResults_1_1.done; sourceResults_1_1 = sourceResults_1.next()) {
-                        var sourceResult = sourceResults_1_1.value;
-                        var layerFeatures = sourceResult[layerId];
-                        if (layerFeatures) {
-                            try {
-                                for (var layerFeatures_1 = (e_5 = void 0, __values$k(layerFeatures)), layerFeatures_1_1 = layerFeatures_1.next(); !layerFeatures_1_1.done; layerFeatures_1_1 = layerFeatures_1.next()) {
-                                    var featureWrapper = layerFeatures_1_1.value;
-                                    features3D.push(featureWrapper);
-                                }
-                            } catch (e_5_1) {
-                                e_5 = { error: e_5_1 };
-                            } finally {
-                                try {
-                                    if (layerFeatures_1_1 && !layerFeatures_1_1.done && (_b = layerFeatures_1.return)) {
-                                        _b.call(layerFeatures_1);
-                                    }
-                                } finally {
-                                    if (e_5) {
-                                        throw e_5.error;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (e_4_1) {
-                    e_4 = { error: e_4_1 };
-                } finally {
-                    try {
-                        if (sourceResults_1_1 && !sourceResults_1_1.done && (_a = sourceResults_1.return)) {
-                            _a.call(sourceResults_1);
-                        }
-                    } finally {
-                        if (e_4) {
-                            throw e_4.error;
+                for (var _i = 0, sourceResults_1 = sourceResults; _i < sourceResults_1.length; _i++) {
+                    var sourceResult = sourceResults_1[_i];
+                    var layerFeatures = sourceResult[layerId];
+                    if (layerFeatures) {
+                        for (var _a = 0, layerFeatures_1 = layerFeatures; _a < layerFeatures_1.length; _a++) {
+                            var featureWrapper = layerFeatures_1[_a];
+                            features3D.push(featureWrapper);
                         }
                     }
                 }
@@ -38600,41 +33826,13 @@ var Style = function (_super) {
                     features3D.pop();
                 }
             } else {
-                try {
-                    for (var sourceResults_2 = (e_6 = void 0, __values$k(sourceResults)), sourceResults_2_1 = sourceResults_2.next(); !sourceResults_2_1.done; sourceResults_2_1 = sourceResults_2.next()) {
-                        var sourceResult = sourceResults_2_1.value;
-                        var layerFeatures = sourceResult[layerId];
-                        if (layerFeatures) {
-                            try {
-                                for (var layerFeatures_2 = (e_7 = void 0, __values$k(layerFeatures)), layerFeatures_2_1 = layerFeatures_2.next(); !layerFeatures_2_1.done; layerFeatures_2_1 = layerFeatures_2.next()) {
-                                    var featureWrapper = layerFeatures_2_1.value;
-                                    features.push(featureWrapper.feature);
-                                }
-                            } catch (e_7_1) {
-                                e_7 = { error: e_7_1 };
-                            } finally {
-                                try {
-                                    if (layerFeatures_2_1 && !layerFeatures_2_1.done && (_d = layerFeatures_2.return)) {
-                                        _d.call(layerFeatures_2);
-                                    }
-                                } finally {
-                                    if (e_7) {
-                                        throw e_7.error;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (e_6_1) {
-                    e_6 = { error: e_6_1 };
-                } finally {
-                    try {
-                        if (sourceResults_2_1 && !sourceResults_2_1.done && (_c = sourceResults_2.return)) {
-                            _c.call(sourceResults_2);
-                        }
-                    } finally {
-                        if (e_6) {
-                            throw e_6.error;
+                for (var _b = 0, sourceResults_2 = sourceResults; _b < sourceResults_2.length; _b++) {
+                    var sourceResult = sourceResults_2[_b];
+                    var layerFeatures = sourceResult[layerId];
+                    if (layerFeatures) {
+                        for (var _c = 0, layerFeatures_2 = layerFeatures; _c < layerFeatures_2.length; _c++) {
+                            var featureWrapper = layerFeatures_2[_c];
+                            features.push(featureWrapper.feature);
                         }
                     }
                 }
@@ -38643,7 +33841,6 @@ var Style = function (_super) {
         return features;
     };
     Style.prototype.queryRenderedFeatures = function (queryGeometry, params, transform) {
-        var e_8, _a;
         if (params && params.filter) {
             this._validate(performance.validateStyle.filter, 'queryRenderedFeatures.filter', params.filter, null, params);
         }
@@ -38653,28 +33850,14 @@ var Style = function (_super) {
                 this.fire(new performance.ErrorEvent(new Error('parameters.layers must be an Array.')));
                 return [];
             }
-            try {
-                for (var _b = __values$k(params.layers), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var layerId = _c.value;
-                    var layer = this._layers[layerId];
-                    if (!layer) {
-                        this.fire(new performance.ErrorEvent(new Error('The layer \''.concat(layerId, '\' does not exist in the map\'s style and cannot be queried for features.'))));
-                        return [];
-                    }
-                    includedSources[layer.source] = true;
+            for (var _i = 0, _a = params.layers; _i < _a.length; _i++) {
+                var layerId = _a[_i];
+                var layer = this._layers[layerId];
+                if (!layer) {
+                    this.fire(new performance.ErrorEvent(new Error('The layer \''.concat(layerId, '\' does not exist in the map\'s style and cannot be queried for features.'))));
+                    return [];
                 }
-            } catch (e_8_1) {
-                e_8 = { error: e_8_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_8) {
-                        throw e_8.error;
-                    }
-                }
+                includedSources[layer.source] = true;
             }
         }
         var sourceResults = [];
@@ -38794,7 +33977,6 @@ var Style = function (_super) {
         }
     };
     Style.prototype._updatePlacement = function (transform, showCollisionBoxes, fadeDuration, crossSourceCollisions, forceFullPlacement) {
-        var e_9, _a, e_10, _b;
         if (forceFullPlacement === void 0) {
             forceFullPlacement = false;
         }
@@ -38818,23 +34000,9 @@ var Style = function (_super) {
             symbolBucketsChanged = symbolBucketsChanged || layerBucketsChanged;
         };
         var this_1 = this;
-        try {
-            for (var _c = __values$k(this._order), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var layerID = _d.value;
-                _loop_1(layerID);
-            }
-        } catch (e_9_1) {
-            e_9 = { error: e_9_1 };
-        } finally {
-            try {
-                if (_d && !_d.done && (_a = _c.return)) {
-                    _a.call(_c);
-                }
-            } finally {
-                if (e_9) {
-                    throw e_9.error;
-                }
-            }
+        for (var _i = 0, _a = this._order; _i < _a.length; _i++) {
+            var layerID = _a[_i];
+            _loop_1(layerID);
         }
         this.crossTileSymbolIndex.pruneUnusedLayers(this._order);
         forceFullPlacement = forceFullPlacement || this._layerOrderChanged || fadeDuration === 0;
@@ -38855,27 +34023,13 @@ var Style = function (_super) {
             }
         }
         if (placementCommitted || symbolBucketsChanged) {
-            try {
-                for (var _e = __values$k(this._order), _f = _e.next(); !_f.done; _f = _e.next()) {
-                    var layerID = _f.value;
-                    var styleLayer = this._layers[layerID];
-                    if (styleLayer.type !== 'symbol') {
-                        continue;
-                    }
-                    this.placement.updateLayerOpacities(styleLayer, layerTiles[styleLayer.source]);
+            for (var _b = 0, _c = this._order; _b < _c.length; _b++) {
+                var layerID = _c[_b];
+                var styleLayer = this._layers[layerID];
+                if (styleLayer.type !== 'symbol') {
+                    continue;
                 }
-            } catch (e_10_1) {
-                e_10 = { error: e_10_1 };
-            } finally {
-                try {
-                    if (_f && !_f.done && (_b = _e.return)) {
-                        _b.call(_e);
-                    }
-                } finally {
-                    if (e_10) {
-                        throw e_10.error;
-                    }
-                }
+                this.placement.updateLayerOpacities(styleLayer, layerTiles[styleLayer.source]);
             }
         }
         var needsRerender = !this.pauseablePlacement.isDone() || this.placement.hasTransitions(performance.exported.now());
@@ -39097,26 +34251,6 @@ function compile(fragmentSource, vertexSource) {
     };
 }
 
-var __values$j = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var VertexArrayObject = function () {
     function VertexArrayObject() {
         this.boundProgram = null;
@@ -39155,7 +34289,6 @@ var VertexArrayObject = function () {
         }
     };
     VertexArrayObject.prototype.freshBind = function (program, layoutVertexBuffer, paintVertexBuffers, indexBuffer, vertexOffset, dynamicVertexBuffer, dynamicVertexBuffer2, dynamicVertexBuffer3) {
-        var e_1, _a, e_2, _b;
         var numPrevAttributes;
         var numNextAttributes = program.numAttributes;
         var context = this.context;
@@ -39182,23 +34315,9 @@ var VertexArrayObject = function () {
             }
         }
         layoutVertexBuffer.enableAttributes(gl, program);
-        try {
-            for (var paintVertexBuffers_1 = __values$j(paintVertexBuffers), paintVertexBuffers_1_1 = paintVertexBuffers_1.next(); !paintVertexBuffers_1_1.done; paintVertexBuffers_1_1 = paintVertexBuffers_1.next()) {
-                var vertexBuffer = paintVertexBuffers_1_1.value;
-                vertexBuffer.enableAttributes(gl, program);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (paintVertexBuffers_1_1 && !paintVertexBuffers_1_1.done && (_a = paintVertexBuffers_1.return)) {
-                    _a.call(paintVertexBuffers_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, paintVertexBuffers_1 = paintVertexBuffers; _i < paintVertexBuffers_1.length; _i++) {
+            var vertexBuffer = paintVertexBuffers_1[_i];
+            vertexBuffer.enableAttributes(gl, program);
         }
         if (dynamicVertexBuffer) {
             dynamicVertexBuffer.enableAttributes(gl, program);
@@ -39211,24 +34330,10 @@ var VertexArrayObject = function () {
         }
         layoutVertexBuffer.bind();
         layoutVertexBuffer.setVertexAttribPointers(gl, program, vertexOffset);
-        try {
-            for (var paintVertexBuffers_2 = __values$j(paintVertexBuffers), paintVertexBuffers_2_1 = paintVertexBuffers_2.next(); !paintVertexBuffers_2_1.done; paintVertexBuffers_2_1 = paintVertexBuffers_2.next()) {
-                var vertexBuffer = paintVertexBuffers_2_1.value;
-                vertexBuffer.bind();
-                vertexBuffer.setVertexAttribPointers(gl, program, vertexOffset);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (paintVertexBuffers_2_1 && !paintVertexBuffers_2_1.done && (_b = paintVertexBuffers_2.return)) {
-                    _b.call(paintVertexBuffers_2);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _a = 0, paintVertexBuffers_2 = paintVertexBuffers; _a < paintVertexBuffers_2.length; _a++) {
+            var vertexBuffer = paintVertexBuffers_2[_a];
+            vertexBuffer.bind();
+            vertexBuffer.setVertexAttribPointers(gl, program, vertexOffset);
         }
         if (dynamicVertexBuffer) {
             dynamicVertexBuffer.bind();
@@ -39300,26 +34405,6 @@ var terrainCoordsUniformValues = function (matrix, coordsId) {
     };
 };
 
-var __values$i = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function getTokenizedAttributesAndUniforms(array) {
     var result = [];
     for (var i = 0; i < array.length; i++) {
@@ -39333,7 +34418,6 @@ function getTokenizedAttributesAndUniforms(array) {
 }
 var Program = function () {
     function Program(context, name, source, configuration, fixedUniforms, showOverdrawInspector, useTerrain) {
-        var e_1, _a;
         var gl = context.gl;
         this.program = gl.createProgram();
         var staticAttrInfo = getTokenizedAttributesAndUniforms(source.staticAttributes);
@@ -39344,24 +34428,10 @@ var Program = function () {
         var dynamicUniformsInfo = configuration ? configuration.getBinderUniforms() : [];
         var uniformList = preludeUniformsInfo.concat(staticUniformsInfo).concat(dynamicUniformsInfo);
         var allUniformsInfo = [];
-        try {
-            for (var uniformList_1 = __values$i(uniformList), uniformList_1_1 = uniformList_1.next(); !uniformList_1_1.done; uniformList_1_1 = uniformList_1.next()) {
-                var uniform = uniformList_1_1.value;
-                if (allUniformsInfo.indexOf(uniform) < 0) {
-                    allUniformsInfo.push(uniform);
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (uniformList_1_1 && !uniformList_1_1.done && (_a = uniformList_1.return)) {
-                    _a.call(uniformList_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, uniformList_1 = uniformList; _i < uniformList_1.length; _i++) {
+            var uniform = uniformList_1[_i];
+            if (allUniformsInfo.indexOf(uniform) < 0) {
+                allUniformsInfo.push(uniform);
             }
         }
         var defines = configuration ? configuration.defines() : [];
@@ -39415,7 +34485,7 @@ var Program = function () {
         this.binderUniforms = configuration ? configuration.getUniforms(context, uniformLocations) : [];
     }
     Program.prototype.draw = function (context, drawMode, depthMode, stencilMode, colorMode, cullFaceMode, uniformValues, terrain, layerID, layoutVertexBuffer, indexBuffer, segments, currentProperties, zoom, configuration, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3) {
-        var _a, e_2, _b;
+        var _a;
         var gl = context.gl;
         if (this.failedToCreate) {
             return;
@@ -39441,26 +34511,12 @@ var Program = function () {
             configuration.setUniforms(context, this.binderUniforms, currentProperties, { zoom: zoom });
         }
         var primitiveSize = (_a = {}, _a[gl.LINES] = 2, _a[gl.TRIANGLES] = 3, _a[gl.LINE_STRIP] = 1, _a)[drawMode];
-        try {
-            for (var _c = __values$i(segments.get()), _d = _c.next(); !_d.done; _d = _c.next()) {
-                var segment = _d.value;
-                var vaos = segment.vaos || (segment.vaos = {});
-                var vao = vaos[layerID] || (vaos[layerID] = new VertexArrayObject());
-                vao.bind(context, this, layoutVertexBuffer, configuration ? configuration.getPaintVertexBuffers() : [], indexBuffer, segment.vertexOffset, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3);
-                gl.drawElements(drawMode, segment.primitiveLength * primitiveSize, gl.UNSIGNED_SHORT, segment.primitiveOffset * primitiveSize * 2);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_d && !_d.done && (_b = _c.return)) {
-                    _b.call(_c);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _b = segments.get(); _i < _b.length; _i++) {
+            var segment = _b[_i];
+            var vaos = segment.vaos || (segment.vaos = {});
+            var vao = vaos[layerID] || (vaos[layerID] = new VertexArrayObject());
+            vao.bind(context, this, layoutVertexBuffer, configuration ? configuration.getPaintVertexBuffers() : [], indexBuffer, segment.vertexOffset, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3);
+            gl.drawElements(drawMode, segment.primitiveLength * primitiveSize, gl.UNSIGNED_SHORT, segment.primitiveOffset * primitiveSize * 2);
         }
     };
     return Program;
@@ -41313,29 +36369,8 @@ var CullFaceMode = function () {
 CullFaceMode.disabled = new CullFaceMode(false, BACK, CCW);
 CullFaceMode.backCCW = new CullFaceMode(true, BACK, CCW);
 
-var __values$h = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var quadTriangles;
 function drawCollisionDebug(painter, sourceCache, layer, coords, translate, translateAnchor, isText) {
-    var e_1, _a, e_2, _b;
     var context = painter.context;
     var gl = context.gl;
     var program = painter.useProgram('collisionBox');
@@ -41383,32 +36418,18 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
     vertexData.resize(circleCount * 4);
     vertexData._trim();
     var vertexOffset = 0;
-    try {
-        for (var tileBatches_1 = __values$h(tileBatches), tileBatches_1_1 = tileBatches_1.next(); !tileBatches_1_1.done; tileBatches_1_1 = tileBatches_1.next()) {
-            var batch = tileBatches_1_1.value;
-            for (var i = 0; i < batch.circleArray.length / 4; i++) {
-                var circleIdx = i * 4;
-                var x = batch.circleArray[circleIdx + 0];
-                var y = batch.circleArray[circleIdx + 1];
-                var radius = batch.circleArray[circleIdx + 2];
-                var collision = batch.circleArray[circleIdx + 3];
-                vertexData.emplace(vertexOffset++, x, y, radius, collision, 0);
-                vertexData.emplace(vertexOffset++, x, y, radius, collision, 1);
-                vertexData.emplace(vertexOffset++, x, y, radius, collision, 2);
-                vertexData.emplace(vertexOffset++, x, y, radius, collision, 3);
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (tileBatches_1_1 && !tileBatches_1_1.done && (_a = tileBatches_1.return)) {
-                _a.call(tileBatches_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+    for (var _i = 0, tileBatches_1 = tileBatches; _i < tileBatches_1.length; _i++) {
+        var batch = tileBatches_1[_i];
+        for (var i = 0; i < batch.circleArray.length / 4; i++) {
+            var circleIdx = i * 4;
+            var x = batch.circleArray[circleIdx + 0];
+            var y = batch.circleArray[circleIdx + 1];
+            var radius = batch.circleArray[circleIdx + 2];
+            var collision = batch.circleArray[circleIdx + 3];
+            vertexData.emplace(vertexOffset++, x, y, radius, collision, 0);
+            vertexData.emplace(vertexOffset++, x, y, radius, collision, 1);
+            vertexData.emplace(vertexOffset++, x, y, radius, collision, 2);
+            vertexData.emplace(vertexOffset++, x, y, radius, collision, 3);
         }
     }
     if (!quadTriangles || quadTriangles.length < circleCount * 2) {
@@ -41416,24 +36437,10 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
     }
     var indexBuffer = context.createIndexBuffer(quadTriangles, true);
     var vertexBuffer = context.createVertexBuffer(vertexData, performance.collisionCircleLayout.members, true);
-    try {
-        for (var tileBatches_2 = __values$h(tileBatches), tileBatches_2_1 = tileBatches_2.next(); !tileBatches_2_1.done; tileBatches_2_1 = tileBatches_2.next()) {
-            var batch = tileBatches_2_1.value;
-            var uniforms = collisionCircleUniformValues(batch.transform, batch.invTransform, painter.transform);
-            circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch.circleOffset * 2, batch.circleArray.length, batch.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (tileBatches_2_1 && !tileBatches_2_1.done && (_b = tileBatches_2.return)) {
-                _b.call(tileBatches_2);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _a = 0, tileBatches_2 = tileBatches; _a < tileBatches_2.length; _a++) {
+        var batch = tileBatches_2[_a];
+        var uniforms = collisionCircleUniformValues(batch.transform, batch.invTransform, painter.transform);
+        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch.circleOffset * 2, batch.circleArray.length, batch.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
     }
     vertexBuffer.destroy();
     indexBuffer.destroy();
@@ -41455,26 +36462,6 @@ function createQuadTriangles(quadCount) {
     return array;
 }
 
-var __values$g = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var identityMat4 = performance.identity(new Float32Array(16));
 function drawSymbols(painter, sourceCache, layer, coords, variableOffsets) {
     if (painter.renderPass !== 'translucent') {
@@ -41505,7 +36492,6 @@ function calculateVariableRenderShift(anchor, width, height, textOffset, textBox
     return new performance.pointGeometry((shiftX / textBoxScale + variableOffset[0]) * renderTextSize, (shiftY / textBoxScale + variableOffset[1]) * renderTextSize);
 }
 function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlignment, pitchAlignment, variableOffsets) {
-    var e_1, _a;
     var tr = painter.transform;
     var rotateWithMap = rotationAlignment === 'map';
     var pitchWithMap = pitchAlignment === 'map';
@@ -41528,23 +36514,9 @@ function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlig
             updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, performance.symbolSize, tr, labelPlaneMatrix, coord.posMatrix, tileScale, size, updateTextFitIcon, getElevation);
         }
     };
-    try {
-        for (var coords_1 = __values$g(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            _loop_1(coord);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        _loop_1(coord);
     }
 }
 function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
@@ -41614,7 +36586,6 @@ function getSymbolProgramName(isSDF, isText, bucket) {
     }
 }
 function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate, translateAnchor, rotationAlignment, pitchAlignment, keepUpright, stencilMode, colorMode) {
-    var e_2, _a, e_3, _b;
     var context = painter.context;
     var gl = context.gl;
     var tr = painter.transform;
@@ -41628,7 +36599,6 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
     var variablePlacement = layer.layout.get('text-variable-anchor');
     var tileRenderState = [];
     var _loop_2 = function (coord) {
-        var e_4, _c;
         var tile = sourceCache.getTile(coord);
         var bucket = tile.getBucket(layer);
         if (!bucket) {
@@ -41707,28 +36677,14 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
         if (hasSortKey && bucket.canOverlap) {
             sortFeaturesByKey = true;
             var oldSegments = buffers.segments.get();
-            try {
-                for (var oldSegments_1 = (e_4 = void 0, __values$g(oldSegments)), oldSegments_1_1 = oldSegments_1.next(); !oldSegments_1_1.done; oldSegments_1_1 = oldSegments_1.next()) {
-                    var segment = oldSegments_1_1.value;
-                    tileRenderState.push({
-                        segments: new performance.SegmentVector([segment]),
-                        sortKey: segment.sortKey,
-                        state: state,
-                        terrain: terrain
-                    });
-                }
-            } catch (e_4_1) {
-                e_4 = { error: e_4_1 };
-            } finally {
-                try {
-                    if (oldSegments_1_1 && !oldSegments_1_1.done && (_c = oldSegments_1.return)) {
-                        _c.call(oldSegments_1);
-                    }
-                } finally {
-                    if (e_4) {
-                        throw e_4.error;
-                    }
-                }
+            for (var _b = 0, oldSegments_1 = oldSegments; _b < oldSegments_1.length; _b++) {
+                var segment = oldSegments_1[_b];
+                tileRenderState.push({
+                    segments: new performance.SegmentVector([segment]),
+                    sortKey: segment.sortKey,
+                    state: state,
+                    terrain: terrain
+                });
             }
         } else {
             tileRenderState.push({
@@ -41739,63 +36695,35 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
             });
         }
     };
-    try {
-        for (var coords_2 = __values$g(coords), coords_2_1 = coords_2.next(); !coords_2_1.done; coords_2_1 = coords_2.next()) {
-            var coord = coords_2_1.value;
-            _loop_2(coord);
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (coords_2_1 && !coords_2_1.done && (_a = coords_2.return)) {
-                _a.call(coords_2);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _i = 0, coords_2 = coords; _i < coords_2.length; _i++) {
+        var coord = coords_2[_i];
+        _loop_2(coord);
     }
     if (sortFeaturesByKey) {
         tileRenderState.sort(function (a, b) {
             return a.sortKey - b.sortKey;
         });
     }
-    try {
-        for (var tileRenderState_1 = __values$g(tileRenderState), tileRenderState_1_1 = tileRenderState_1.next(); !tileRenderState_1_1.done; tileRenderState_1_1 = tileRenderState_1.next()) {
-            var segmentState = tileRenderState_1_1.value;
-            var state = segmentState.state;
-            context.activeTexture.set(gl.TEXTURE0);
-            state.atlasTexture.bind(state.atlasInterpolation, gl.CLAMP_TO_EDGE);
+    for (var _a = 0, tileRenderState_1 = tileRenderState; _a < tileRenderState_1.length; _a++) {
+        var segmentState = tileRenderState_1[_a];
+        var state = segmentState.state;
+        context.activeTexture.set(gl.TEXTURE0);
+        state.atlasTexture.bind(state.atlasInterpolation, gl.CLAMP_TO_EDGE);
+        if (state.atlasTextureIcon) {
+            context.activeTexture.set(gl.TEXTURE1);
             if (state.atlasTextureIcon) {
-                context.activeTexture.set(gl.TEXTURE1);
-                if (state.atlasTextureIcon) {
-                    state.atlasTextureIcon.bind(state.atlasInterpolationIcon, gl.CLAMP_TO_EDGE);
-                }
-            }
-            if (state.isSDF) {
-                var uniformValues = state.uniformValues;
-                if (state.hasHalo) {
-                    uniformValues['u_is_halo'] = 1;
-                    drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, uniformValues, segmentState.terrain);
-                }
-                uniformValues['u_is_halo'] = 0;
-            }
-            drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, state.uniformValues, segmentState.terrain);
-        }
-    } catch (e_3_1) {
-        e_3 = { error: e_3_1 };
-    } finally {
-        try {
-            if (tileRenderState_1_1 && !tileRenderState_1_1.done && (_b = tileRenderState_1.return)) {
-                _b.call(tileRenderState_1);
-            }
-        } finally {
-            if (e_3) {
-                throw e_3.error;
+                state.atlasTextureIcon.bind(state.atlasInterpolationIcon, gl.CLAMP_TO_EDGE);
             }
         }
+        if (state.isSDF) {
+            var uniformValues = state.uniformValues;
+            if (state.hasHalo) {
+                uniformValues['u_is_halo'] = 1;
+                drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, uniformValues, segmentState.terrain);
+            }
+            uniformValues['u_is_halo'] = 0;
+        }
+        drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, state.uniformValues, segmentState.terrain);
     }
 }
 function drawSymbolElements(buffers, segments, layer, painter, program, depthMode, stencilMode, colorMode, uniformValues, terrain) {
@@ -41804,28 +36732,7 @@ function drawSymbolElements(buffers, segments, layer, painter, program, depthMod
     program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, segments, layer.paint, painter.transform.zoom, buffers.programConfigurations.get(layer.id), buffers.dynamicLayoutVertexBuffer, buffers.opacityVertexBuffer);
 }
 
-var __values$f = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function drawCircles(painter, sourceCache, layer, coords) {
-    var e_1, _a, e_2, _b;
     if (painter.renderPass !== 'translucent') {
         return;
     }
@@ -41865,27 +36772,13 @@ function drawCircles(painter, sourceCache, layer, coords) {
         };
         if (sortFeaturesByKey) {
             var oldSegments = bucket.segments.get();
-            try {
-                for (var oldSegments_1 = (e_1 = void 0, __values$f(oldSegments)), oldSegments_1_1 = oldSegments_1.next(); !oldSegments_1_1.done; oldSegments_1_1 = oldSegments_1.next()) {
-                    var segment = oldSegments_1_1.value;
-                    segmentsRenderStates.push({
-                        segments: new performance.SegmentVector([segment]),
-                        sortKey: segment.sortKey,
-                        state: state
-                    });
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (oldSegments_1_1 && !oldSegments_1_1.done && (_a = oldSegments_1.return)) {
-                        _a.call(oldSegments_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, oldSegments_1 = oldSegments; _i < oldSegments_1.length; _i++) {
+                var segment = oldSegments_1[_i];
+                segmentsRenderStates.push({
+                    segments: new performance.SegmentVector([segment]),
+                    sortKey: segment.sortKey,
+                    state: state
+                });
             }
         } else {
             segmentsRenderStates.push({
@@ -41900,25 +36793,11 @@ function drawCircles(painter, sourceCache, layer, coords) {
             return a.sortKey - b.sortKey;
         });
     }
-    try {
-        for (var segmentsRenderStates_1 = __values$f(segmentsRenderStates), segmentsRenderStates_1_1 = segmentsRenderStates_1.next(); !segmentsRenderStates_1_1.done; segmentsRenderStates_1_1 = segmentsRenderStates_1.next()) {
-            var segmentsState = segmentsRenderStates_1_1.value;
-            var _c = segmentsState.state, programConfiguration = _c.programConfiguration, program = _c.program, layoutVertexBuffer = _c.layoutVertexBuffer, indexBuffer = _c.indexBuffer, uniformValues = _c.uniformValues, terrain = _c.terrain;
-            var segments = segmentsState.segments;
-            program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (segmentsRenderStates_1_1 && !segmentsRenderStates_1_1.done && (_b = segmentsRenderStates_1.return)) {
-                _b.call(segmentsRenderStates_1);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _a = 0, segmentsRenderStates_1 = segmentsRenderStates; _a < segmentsRenderStates_1.length; _a++) {
+        var segmentsState = segmentsRenderStates_1[_a];
+        var _b = segmentsState.state, programConfiguration = _b.programConfiguration, program = _b.program, layoutVertexBuffer = _b.layoutVertexBuffer, indexBuffer = _b.indexBuffer, uniformValues = _b.uniformValues, terrain = _b.terrain;
+        var segments = segmentsState.segments;
+        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
     }
 }
 
@@ -42016,28 +36895,7 @@ function renderTextureToMap(painter, layer) {
     painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, heatmapTextureUniformValues(painter, layer, 0, 1), layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer, painter.viewportSegments, layer.paint, painter.transform.zoom);
 }
 
-var __values$e = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function drawLine(painter, sourceCache, layer, coords) {
-    var e_1, _a;
     if (painter.renderPass !== 'translucent') {
         return;
     }
@@ -42057,109 +36915,75 @@ function drawLine(painter, sourceCache, layer, coords) {
     var context = painter.context;
     var gl = context.gl;
     var firstTile = true;
-    try {
-        for (var coords_1 = __values$e(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            var tile = sourceCache.getTile(coord);
-            if (image && !tile.patternsLoaded()) {
-                continue;
-            }
-            var bucket = tile.getBucket(layer);
-            if (!bucket) {
-                continue;
-            }
-            var programConfiguration = bucket.programConfigurations.get(layer.id);
-            var prevProgram = painter.context.program.get();
-            var program = painter.useProgram(programId, programConfiguration);
-            var programChanged = firstTile || program.program !== prevProgram;
-            var terrain = painter.style.terrainSourceCache.getTerrain(coord);
-            var constantPattern = patternProperty.constantOr(null);
-            if (constantPattern && tile.imageAtlas) {
-                var atlas = tile.imageAtlas;
-                var posTo = atlas.patternPositions[constantPattern.to.toString()];
-                var posFrom = atlas.patternPositions[constantPattern.from.toString()];
-                if (posTo && posFrom) {
-                    programConfiguration.setConstantPatternPositions(posTo, posFrom);
-                }
-            }
-            var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
-            var uniformValues = image ? linePatternUniformValues(painter, tile, layer, crossfade, terrainCoord) : dasharray ? lineSDFUniformValues(painter, tile, layer, dasharray, crossfade, terrainCoord) : gradient ? lineGradientUniformValues(painter, tile, layer, bucket.lineClipsArray.length, terrainCoord) : lineUniformValues(painter, tile, layer, terrainCoord);
-            if (image) {
-                context.activeTexture.set(gl.TEXTURE0);
-                tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-                programConfiguration.updatePaintBuffers(crossfade);
-            } else if (dasharray && (programChanged || painter.lineAtlas.dirty)) {
-                context.activeTexture.set(gl.TEXTURE0);
-                painter.lineAtlas.bind(context);
-            } else if (gradient) {
-                var layerGradient = bucket.gradients[layer.id];
-                var gradientTexture = layerGradient.texture;
-                if (layer.gradientVersion !== layerGradient.version) {
-                    var textureResolution = 256;
-                    if (layer.stepInterpolant) {
-                        var sourceMaxZoom = sourceCache.getSource().maxzoom;
-                        var potentialOverzoom = coord.canonical.z === sourceMaxZoom ? Math.ceil(1 << painter.transform.maxZoom - coord.canonical.z) : 1;
-                        var lineLength = bucket.maxLineLength / performance.EXTENT;
-                        var maxTilePixelSize = 1024;
-                        var maxTextureCoverage = lineLength * maxTilePixelSize * potentialOverzoom;
-                        textureResolution = performance.clamp(performance.nextPowerOfTwo(maxTextureCoverage), 256, context.maxTextureSize);
-                    }
-                    layerGradient.gradient = performance.renderColorRamp({
-                        expression: layer.gradientExpression(),
-                        evaluationKey: 'lineProgress',
-                        resolution: textureResolution,
-                        image: layerGradient.gradient || undefined,
-                        clips: bucket.lineClipsArray
-                    });
-                    if (layerGradient.texture) {
-                        layerGradient.texture.update(layerGradient.gradient);
-                    } else {
-                        layerGradient.texture = new Texture(context, layerGradient.gradient, gl.RGBA);
-                    }
-                    layerGradient.version = layer.gradientVersion;
-                    gradientTexture = layerGradient.texture;
-                }
-                context.activeTexture.set(gl.TEXTURE0);
-                gradientTexture.bind(layer.stepInterpolant ? gl.NEAREST : gl.LINEAR, gl.CLAMP_TO_EDGE);
-            }
-            program.draw(context, gl.TRIANGLES, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.layoutVertexBuffer2);
-            firstTile = false;
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        var tile = sourceCache.getTile(coord);
+        if (image && !tile.patternsLoaded()) {
+            continue;
         }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
+        var bucket = tile.getBucket(layer);
+        if (!bucket) {
+            continue;
+        }
+        var programConfiguration = bucket.programConfigurations.get(layer.id);
+        var prevProgram = painter.context.program.get();
+        var program = painter.useProgram(programId, programConfiguration);
+        var programChanged = firstTile || program.program !== prevProgram;
+        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var constantPattern = patternProperty.constantOr(null);
+        if (constantPattern && tile.imageAtlas) {
+            var atlas = tile.imageAtlas;
+            var posTo = atlas.patternPositions[constantPattern.to.toString()];
+            var posFrom = atlas.patternPositions[constantPattern.from.toString()];
+            if (posTo && posFrom) {
+                programConfiguration.setConstantPatternPositions(posTo, posFrom);
             }
         }
+        var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        var uniformValues = image ? linePatternUniformValues(painter, tile, layer, crossfade, terrainCoord) : dasharray ? lineSDFUniformValues(painter, tile, layer, dasharray, crossfade, terrainCoord) : gradient ? lineGradientUniformValues(painter, tile, layer, bucket.lineClipsArray.length, terrainCoord) : lineUniformValues(painter, tile, layer, terrainCoord);
+        if (image) {
+            context.activeTexture.set(gl.TEXTURE0);
+            tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+            programConfiguration.updatePaintBuffers(crossfade);
+        } else if (dasharray && (programChanged || painter.lineAtlas.dirty)) {
+            context.activeTexture.set(gl.TEXTURE0);
+            painter.lineAtlas.bind(context);
+        } else if (gradient) {
+            var layerGradient = bucket.gradients[layer.id];
+            var gradientTexture = layerGradient.texture;
+            if (layer.gradientVersion !== layerGradient.version) {
+                var textureResolution = 256;
+                if (layer.stepInterpolant) {
+                    var sourceMaxZoom = sourceCache.getSource().maxzoom;
+                    var potentialOverzoom = coord.canonical.z === sourceMaxZoom ? Math.ceil(1 << painter.transform.maxZoom - coord.canonical.z) : 1;
+                    var lineLength = bucket.maxLineLength / performance.EXTENT;
+                    var maxTilePixelSize = 1024;
+                    var maxTextureCoverage = lineLength * maxTilePixelSize * potentialOverzoom;
+                    textureResolution = performance.clamp(performance.nextPowerOfTwo(maxTextureCoverage), 256, context.maxTextureSize);
+                }
+                layerGradient.gradient = performance.renderColorRamp({
+                    expression: layer.gradientExpression(),
+                    evaluationKey: 'lineProgress',
+                    resolution: textureResolution,
+                    image: layerGradient.gradient || undefined,
+                    clips: bucket.lineClipsArray
+                });
+                if (layerGradient.texture) {
+                    layerGradient.texture.update(layerGradient.gradient);
+                } else {
+                    layerGradient.texture = new Texture(context, layerGradient.gradient, gl.RGBA);
+                }
+                layerGradient.version = layer.gradientVersion;
+                gradientTexture = layerGradient.texture;
+            }
+            context.activeTexture.set(gl.TEXTURE0);
+            gradientTexture.bind(layer.stepInterpolant ? gl.NEAREST : gl.LINEAR, gl.CLAMP_TO_EDGE);
+        }
+        program.draw(context, gl.TRIANGLES, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.layoutVertexBuffer2);
+        firstTile = false;
     }
 }
 
-var __values$d = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function drawFill(painter, sourceCache, layer, coords) {
     var color = layer.paint.get('fill-color');
     var opacity = layer.paint.get('fill-opacity');
@@ -42179,7 +37003,6 @@ function drawFill(painter, sourceCache, layer, coords) {
     }
 }
 function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode, isOutline) {
-    var e_1, _a;
     var gl = painter.context.gl;
     var patternProperty = layer.paint.get('fill-pattern');
     var image = patternProperty && patternProperty.constantOr(1);
@@ -42192,87 +37015,53 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
         programName = image && !layer.getPaintProperty('fill-outline-color') ? 'fillOutlinePattern' : 'fillOutline';
         drawMode = gl.LINES;
     }
-    try {
-        for (var coords_1 = __values$d(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            var tile = sourceCache.getTile(coord);
-            if (image && !tile.patternsLoaded()) {
-                continue;
-            }
-            var bucket = tile.getBucket(layer);
-            if (!bucket) {
-                continue;
-            }
-            var programConfiguration = bucket.programConfigurations.get(layer.id);
-            var program = painter.useProgram(programName, programConfiguration);
-            var terrain = painter.style.terrainSourceCache.getTerrain(coord);
-            if (image) {
-                painter.context.activeTexture.set(gl.TEXTURE0);
-                tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-                programConfiguration.updatePaintBuffers(crossfade);
-            }
-            var constantPattern = patternProperty.constantOr(null);
-            if (constantPattern && tile.imageAtlas) {
-                var atlas = tile.imageAtlas;
-                var posTo = atlas.patternPositions[constantPattern.to.toString()];
-                var posFrom = atlas.patternPositions[constantPattern.from.toString()];
-                if (posTo && posFrom) {
-                    programConfiguration.setConstantPatternPositions(posTo, posFrom);
-                }
-            }
-            var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
-            var posMatrix = terrainCoord ? terrainCoord.posMatrix : coord.posMatrix;
-            var tileMatrix = painter.translatePosMatrix(posMatrix, tile, layer.paint.get('fill-translate'), layer.paint.get('fill-translate-anchor'));
-            if (!isOutline) {
-                indexBuffer = bucket.indexBuffer;
-                segments = bucket.segments;
-                uniformValues = image ? fillPatternUniformValues(tileMatrix, painter, crossfade, tile) : fillUniformValues(tileMatrix);
-            } else {
-                indexBuffer = bucket.indexBuffer2;
-                segments = bucket.segments2;
-                var drawingBufferSize = [
-                    gl.drawingBufferWidth,
-                    gl.drawingBufferHeight
-                ];
-                uniformValues = programName === 'fillOutlinePattern' && image ? fillOutlinePatternUniformValues(tileMatrix, painter, crossfade, tile, drawingBufferSize) : fillOutlineUniformValues(tileMatrix, drawingBufferSize);
-            }
-            program.draw(painter.context, drawMode, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        var tile = sourceCache.getTile(coord);
+        if (image && !tile.patternsLoaded()) {
+            continue;
         }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
+        var bucket = tile.getBucket(layer);
+        if (!bucket) {
+            continue;
+        }
+        var programConfiguration = bucket.programConfigurations.get(layer.id);
+        var program = painter.useProgram(programName, programConfiguration);
+        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        if (image) {
+            painter.context.activeTexture.set(gl.TEXTURE0);
+            tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+            programConfiguration.updatePaintBuffers(crossfade);
+        }
+        var constantPattern = patternProperty.constantOr(null);
+        if (constantPattern && tile.imageAtlas) {
+            var atlas = tile.imageAtlas;
+            var posTo = atlas.patternPositions[constantPattern.to.toString()];
+            var posFrom = atlas.patternPositions[constantPattern.from.toString()];
+            if (posTo && posFrom) {
+                programConfiguration.setConstantPatternPositions(posTo, posFrom);
             }
         }
+        var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        var posMatrix = terrainCoord ? terrainCoord.posMatrix : coord.posMatrix;
+        var tileMatrix = painter.translatePosMatrix(posMatrix, tile, layer.paint.get('fill-translate'), layer.paint.get('fill-translate-anchor'));
+        if (!isOutline) {
+            indexBuffer = bucket.indexBuffer;
+            segments = bucket.segments;
+            uniformValues = image ? fillPatternUniformValues(tileMatrix, painter, crossfade, tile) : fillUniformValues(tileMatrix);
+        } else {
+            indexBuffer = bucket.indexBuffer2;
+            segments = bucket.segments2;
+            var drawingBufferSize = [
+                gl.drawingBufferWidth,
+                gl.drawingBufferHeight
+            ];
+            uniformValues = programName === 'fillOutlinePattern' && image ? fillOutlinePatternUniformValues(tileMatrix, painter, crossfade, tile, drawingBufferSize) : fillOutlineUniformValues(tileMatrix, drawingBufferSize);
+        }
+        program.draw(painter.context, drawMode, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
     }
 }
 
-var __values$c = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function draw$1(painter, source, layer, coords) {
     var opacity = layer.paint.get('fill-extrusion-opacity');
     if (opacity === 0) {
@@ -42290,136 +37079,61 @@ function draw$1(painter, source, layer, coords) {
     }
 }
 function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMode, colorMode) {
-    var e_1, _a;
     var context = painter.context;
     var gl = context.gl;
     var patternProperty = layer.paint.get('fill-extrusion-pattern');
     var image = patternProperty.constantOr(1);
     var crossfade = layer.getCrossfadeParameters();
     var opacity = layer.paint.get('fill-extrusion-opacity');
-    try {
-        for (var coords_1 = __values$c(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            var tile = source.getTile(coord);
-            var bucket = tile.getBucket(layer);
-            if (!bucket) {
-                continue;
-            }
-            var terrain = painter.style.terrainSourceCache.getTerrain(coord);
-            var programConfiguration = bucket.programConfigurations.get(layer.id);
-            var program = painter.useProgram(image ? 'fillExtrusionPattern' : 'fillExtrusion', programConfiguration);
-            if (image) {
-                painter.context.activeTexture.set(gl.TEXTURE0);
-                tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-                programConfiguration.updatePaintBuffers(crossfade);
-            }
-            var constantPattern = patternProperty.constantOr(null);
-            if (constantPattern && tile.imageAtlas) {
-                var atlas = tile.imageAtlas;
-                var posTo = atlas.patternPositions[constantPattern.to.toString()];
-                var posFrom = atlas.patternPositions[constantPattern.from.toString()];
-                if (posTo && posFrom) {
-                    programConfiguration.setConstantPatternPositions(posTo, posFrom);
-                }
-            }
-            var matrix = painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('fill-extrusion-translate'), layer.paint.get('fill-extrusion-translate-anchor'));
-            var shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
-            var uniformValues = image ? fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, opacity, coord, crossfade, tile) : fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient, opacity);
-            program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        var tile = source.getTile(coord);
+        var bucket = tile.getBucket(layer);
+        if (!bucket) {
+            continue;
         }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
+        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var programConfiguration = bucket.programConfigurations.get(layer.id);
+        var program = painter.useProgram(image ? 'fillExtrusionPattern' : 'fillExtrusion', programConfiguration);
+        if (image) {
+            painter.context.activeTexture.set(gl.TEXTURE0);
+            tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
+            programConfiguration.updatePaintBuffers(crossfade);
+        }
+        var constantPattern = patternProperty.constantOr(null);
+        if (constantPattern && tile.imageAtlas) {
+            var atlas = tile.imageAtlas;
+            var posTo = atlas.patternPositions[constantPattern.to.toString()];
+            var posFrom = atlas.patternPositions[constantPattern.from.toString()];
+            if (posTo && posFrom) {
+                programConfiguration.setConstantPatternPositions(posTo, posFrom);
             }
         }
+        var matrix = painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('fill-extrusion-translate'), layer.paint.get('fill-extrusion-translate-anchor'));
+        var shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
+        var uniformValues = image ? fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, opacity, coord, crossfade, tile) : fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient, opacity);
+        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
     }
 }
 
-var __read$4 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __values$b = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function drawHillshade(painter, sourceCache, layer, tileIDs) {
-    var e_1, _a;
     if (painter.renderPass !== 'offscreen' && painter.renderPass !== 'translucent') {
         return;
     }
     var context = painter.context;
     var depthMode = painter.depthModeForSublayer(0, DepthMode.ReadOnly);
     var colorMode = painter.colorModeForRenderPass();
-    var _b = __read$4(painter.renderPass === 'translucent' ? painter.stencilConfigForOverlap(tileIDs) : [
+    var _a = painter.renderPass === 'translucent' ? painter.stencilConfigForOverlap(tileIDs) : [
             {},
             tileIDs
-        ], 2), stencilModes = _b[0], coords = _b[1];
-    try {
-        for (var coords_1 = __values$b(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            var tile = sourceCache.getTile(coord);
-            if (tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
-                prepareHillshade(painter, tile, layer, depthMode, StencilMode.disabled, colorMode);
-            } else if (painter.renderPass === 'translucent') {
-                renderHillshade(painter, coord, tile, layer, depthMode, stencilModes[coord.overscaledZ], colorMode);
-            }
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+        ], stencilModes = _a[0], coords = _a[1];
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        var tile = sourceCache.getTile(coord);
+        if (tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
+            prepareHillshade(painter, tile, layer, depthMode, StencilMode.disabled, colorMode);
+        } else if (painter.renderPass === 'translucent') {
+            renderHillshade(painter, coord, tile, layer, depthMode, stencilModes[coord.overscaledZ], colorMode);
         }
     }
     context.viewport.set([
@@ -42487,53 +37201,7 @@ function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMod
     }
 }
 
-var __read$3 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __values$a = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function drawRaster(painter, sourceCache, layer, tileIDs) {
-    var e_1, _a;
     if (painter.renderPass !== 'translucent') {
         return;
     }
@@ -42548,58 +37216,44 @@ function drawRaster(painter, sourceCache, layer, tileIDs) {
     var source = sourceCache.getSource();
     var program = painter.useProgram('raster');
     var colorMode = painter.colorModeForRenderPass();
-    var _b = __read$3(source instanceof ImageSource ? [
+    var _a = source instanceof ImageSource ? [
             {},
             tileIDs
-        ] : painter.stencilConfigForOverlap(tileIDs), 2), stencilModes = _b[0], coords = _b[1];
+        ] : painter.stencilConfigForOverlap(tileIDs), stencilModes = _a[0], coords = _a[1];
     var minTileZ = coords[coords.length - 1].overscaledZ;
     var align = !painter.options.moving;
-    try {
-        for (var coords_1 = __values$a(coords), coords_1_1 = coords_1.next(); !coords_1_1.done; coords_1_1 = coords_1.next()) {
-            var coord = coords_1_1.value;
-            var depthMode = painter.depthModeForSublayer(coord.overscaledZ - minTileZ, layer.paint.get('raster-opacity') === 1 ? DepthMode.ReadWrite : DepthMode.ReadOnly, gl.LESS);
-            var tile = sourceCache.getTile(coord);
-            tile.registerFadeDuration(layer.paint.get('raster-fade-duration'));
-            var parentTile = sourceCache.findLoadedParent(coord, 0), fade = getFadeValues(tile, parentTile, sourceCache, layer, painter);
-            var parentScaleBy = void 0, parentTL = void 0;
-            var textureFilter = layer.paint.get('raster-resampling') === 'nearest' ? gl.NEAREST : gl.LINEAR;
-            context.activeTexture.set(gl.TEXTURE0);
+    for (var _i = 0, coords_1 = coords; _i < coords_1.length; _i++) {
+        var coord = coords_1[_i];
+        var depthMode = painter.depthModeForSublayer(coord.overscaledZ - minTileZ, layer.paint.get('raster-opacity') === 1 ? DepthMode.ReadWrite : DepthMode.ReadOnly, gl.LESS);
+        var tile = sourceCache.getTile(coord);
+        tile.registerFadeDuration(layer.paint.get('raster-fade-duration'));
+        var parentTile = sourceCache.findLoadedParent(coord, 0), fade = getFadeValues(tile, parentTile, sourceCache, layer, painter);
+        var parentScaleBy = void 0, parentTL = void 0;
+        var textureFilter = layer.paint.get('raster-resampling') === 'nearest' ? gl.NEAREST : gl.LINEAR;
+        context.activeTexture.set(gl.TEXTURE0);
+        tile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
+        context.activeTexture.set(gl.TEXTURE1);
+        if (parentTile) {
+            parentTile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
+            parentScaleBy = Math.pow(2, parentTile.tileID.overscaledZ - tile.tileID.overscaledZ);
+            parentTL = [
+                tile.tileID.canonical.x * parentScaleBy % 1,
+                tile.tileID.canonical.y * parentScaleBy % 1
+            ];
+        } else {
             tile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
-            context.activeTexture.set(gl.TEXTURE1);
-            if (parentTile) {
-                parentTile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
-                parentScaleBy = Math.pow(2, parentTile.tileID.overscaledZ - tile.tileID.overscaledZ);
-                parentTL = [
-                    tile.tileID.canonical.x * parentScaleBy % 1,
-                    tile.tileID.canonical.y * parentScaleBy % 1
-                ];
-            } else {
-                tile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
-            }
-            var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
-            var posMatrix = terrainCoord ? terrainCoord.posMatrix : painter.transform.calculatePosMatrix(coord.toUnwrapped(), align);
-            var uniformValues = rasterUniformValues(posMatrix, parentTL || [
-                0,
-                0
-            ], parentScaleBy || 1, fade, layer);
-            var terrain = painter.style.terrainSourceCache.getTerrain(coord);
-            if (source instanceof ImageSource) {
-                program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, source.boundsBuffer, painter.quadTriangleIndexBuffer, source.boundsSegments);
-            } else {
-                program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
-            }
         }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (coords_1_1 && !coords_1_1.done && (_a = coords_1.return)) {
-                _a.call(coords_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
+        var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        var posMatrix = terrainCoord ? terrainCoord.posMatrix : painter.transform.calculatePosMatrix(coord.toUnwrapped(), align);
+        var uniformValues = rasterUniformValues(posMatrix, parentTL || [
+            0,
+            0
+        ], parentScaleBy || 1, fade, layer);
+        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        if (source instanceof ImageSource) {
+            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, source.boundsBuffer, painter.quadTriangleIndexBuffer, source.boundsSegments);
+        } else {
+            program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
         }
     }
 }
@@ -42638,28 +37292,7 @@ function getFadeValues(tile, parentTile, sourceCache, layer, painter) {
     }
 }
 
-var __values$9 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function drawBackground(painter, sourceCache, layer, coords) {
-    var e_1, _a;
     var color = layer.paint.get('background-color');
     var opacity = layer.paint.get('background-opacity');
     if (opacity === 0) {
@@ -42687,29 +37320,15 @@ function drawBackground(painter, sourceCache, layer, coords) {
         painter.imageManager.bind(painter.context);
     }
     var crossfade = layer.getCrossfadeParameters();
-    try {
-        for (var tileIDs_1 = __values$9(tileIDs), tileIDs_1_1 = tileIDs_1.next(); !tileIDs_1_1.done; tileIDs_1_1 = tileIDs_1.next()) {
-            var tileID = tileIDs_1_1.value;
-            var matrix = coords ? tileID.posMatrix : painter.transform.calculatePosMatrix(tileID.toUnwrapped());
-            var uniformValues = image ? backgroundPatternUniformValues(matrix, opacity, painter, image, {
-                tileID: tileID,
-                tileSize: tileSize
-            }, crossfade) : backgroundUniformValues(matrix, opacity, color);
-            var terrain = painter.style.terrainSourceCache.getTerrain(tileID);
-            program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.tileExtentBuffer, painter.quadTriangleIndexBuffer, painter.tileExtentSegments);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (tileIDs_1_1 && !tileIDs_1_1.done && (_a = tileIDs_1.return)) {
-                _a.call(tileIDs_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, tileIDs_1 = tileIDs; _i < tileIDs_1.length; _i++) {
+        var tileID = tileIDs_1[_i];
+        var matrix = coords ? tileID.posMatrix : painter.transform.calculatePosMatrix(tileID.toUnwrapped());
+        var uniformValues = image ? backgroundPatternUniformValues(matrix, opacity, painter, image, {
+            tileID: tileID,
+            tileSize: tileSize
+        }, crossfade) : backgroundUniformValues(matrix, opacity, color);
+        var terrain = painter.style.terrainSourceCache.getTerrain(tileID);
+        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.tileExtentBuffer, painter.quadTriangleIndexBuffer, painter.tileExtentSegments);
     }
 }
 
@@ -42822,28 +37441,7 @@ function drawCustom(painter, sourceCache, layer) {
     }
 }
 
-var __values$8 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function updateTerrainFacilitators(painter, sourceCache) {
-    var e_1, _a, e_2, _b;
     var context = painter.context;
     var gl = context.gl;
     var colorMode = ColorMode.unblended;
@@ -42867,29 +37465,15 @@ function updateTerrainFacilitators(painter, sourceCache) {
         depth: 1
     });
     sourceCache._coordsIndex = [];
-    try {
-        for (var tiles_1 = __values$8(tiles), tiles_1_1 = tiles_1.next(); !tiles_1_1.done; tiles_1_1 = tiles_1.next()) {
-            var tile = tiles_1_1.value;
-            var terrain = sourceCache.getTerrain(tile.tileID);
-            context.activeTexture.set(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, coords.texture);
-            var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
-            var uniformValues = terrainCoordsUniformValues(posMatrix, 255 - sourceCache._coordsIndex.length);
-            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
-            sourceCache._coordsIndex.push(tile.tileID.key);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (tiles_1_1 && !tiles_1_1.done && (_a = tiles_1.return)) {
-                _a.call(tiles_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, tiles_1 = tiles; _i < tiles_1.length; _i++) {
+        var tile = tiles_1[_i];
+        var terrain = sourceCache.getTerrain(tile.tileID);
+        context.activeTexture.set(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, coords.texture);
+        var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
+        var uniformValues = terrainCoordsUniformValues(posMatrix, 255 - sourceCache._coordsIndex.length);
+        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+        sourceCache._coordsIndex.push(tile.tileID.key);
     }
     program = painter.useProgram('terrainDepth');
     context.bindFramebuffer.set(sourceCache.getFramebuffer(painter, 'depth').framebuffer);
@@ -42903,26 +37487,12 @@ function updateTerrainFacilitators(painter, sourceCache) {
         color: performance.Color.transparent,
         depth: 1
     });
-    try {
-        for (var tiles_2 = __values$8(tiles), tiles_2_1 = tiles_2.next(); !tiles_2_1.done; tiles_2_1 = tiles_2.next()) {
-            var tile = tiles_2_1.value;
-            var terrain = sourceCache.getTerrain(tile.tileID);
-            var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
-            var uniformValues = terrainDepthUniformValues(posMatrix);
-            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
-        }
-    } catch (e_2_1) {
-        e_2 = { error: e_2_1 };
-    } finally {
-        try {
-            if (tiles_2_1 && !tiles_2_1.done && (_b = tiles_2.return)) {
-                _b.call(tiles_2);
-            }
-        } finally {
-            if (e_2) {
-                throw e_2.error;
-            }
-        }
+    for (var _a = 0, tiles_2 = tiles; _a < tiles_2.length; _a++) {
+        var tile = tiles_2[_a];
+        var terrain = sourceCache.getTerrain(tile.tileID);
+        var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
+        var uniformValues = terrainDepthUniformValues(posMatrix);
+        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
     }
     context.bindFramebuffer.set(null);
     context.viewport.set([
@@ -42977,26 +37547,6 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
     ]);
 }
 
-var __values$7 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var draw = {
     symbol: drawSymbols,
     circle: drawCircles,
@@ -43026,7 +37576,6 @@ var Painter = function () {
         this.gpuTimers = {};
     }
     Painter.prototype.resize = function (width, height, pixelRatio) {
-        var e_1, _a;
         this.width = width * pixelRatio;
         this.height = height * pixelRatio;
         this.pixelRatio = pixelRatio;
@@ -43037,23 +37586,9 @@ var Painter = function () {
             this.height
         ]);
         if (this.style) {
-            try {
-                for (var _b = __values$7(this.style._order), _c = _b.next(); !_c.done; _c = _b.next()) {
-                    var layerId = _c.value;
-                    this.style._layers[layerId].resize();
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (_c && !_c.done && (_a = _b.return)) {
-                        _a.call(_b);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, _a = this.style._order; _i < _a.length; _i++) {
+                var layerId = _a[_i];
+                this.style._layers[layerId].resize();
             }
         }
     };
@@ -43129,7 +37664,6 @@ var Painter = function () {
         this.useProgram('clippingMask').draw(context, gl.TRIANGLES, DepthMode.disabled, this.stencilClearMode, ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(matrix), this.style.terrainSourceCache.getTerrain(), '$clipping', this.viewportBuffer, this.quadTriangleIndexBuffer, this.viewportSegments);
     };
     Painter.prototype._renderTileClippingMasks = function (layer, tileIDs) {
-        var e_2, _a;
         if (this.currentStencilSource === layer.source || !layer.isTileClipped() || !tileIDs || !tileIDs.length) {
             return;
         }
@@ -43143,28 +37677,14 @@ var Painter = function () {
         context.setDepthMode(DepthMode.disabled);
         var program = this.useProgram('clippingMask');
         this._tileClippingMaskIDs = {};
-        try {
-            for (var tileIDs_1 = __values$7(tileIDs), tileIDs_1_1 = tileIDs_1.next(); !tileIDs_1_1.done; tileIDs_1_1 = tileIDs_1.next()) {
-                var tileID = tileIDs_1_1.value;
-                var id = this._tileClippingMaskIDs[tileID.key] = this.nextStencilID++;
-                var terrain = this.style.terrainSourceCache.getTerrain(tileID);
-                program.draw(context, gl.TRIANGLES, DepthMode.disabled, new StencilMode({
-                    func: gl.ALWAYS,
-                    mask: 0
-                }, id, 255, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(tileID.posMatrix), terrain, '$clipping', this.tileExtentBuffer, this.quadTriangleIndexBuffer, this.tileExtentSegments);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (tileIDs_1_1 && !tileIDs_1_1.done && (_a = tileIDs_1.return)) {
-                    _a.call(tileIDs_1);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, tileIDs_1 = tileIDs; _i < tileIDs_1.length; _i++) {
+            var tileID = tileIDs_1[_i];
+            var id = this._tileClippingMaskIDs[tileID.key] = this.nextStencilID++;
+            var terrain = this.style.terrainSourceCache.getTerrain(tileID);
+            program.draw(context, gl.TRIANGLES, DepthMode.disabled, new StencilMode({
+                func: gl.ALWAYS,
+                mask: 0
+            }, id, 255, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(tileID.posMatrix), terrain, '$clipping', this.tileExtentBuffer, this.quadTriangleIndexBuffer, this.tileExtentSegments);
         }
     };
     Painter.prototype.stencilModeFor3D = function () {
@@ -43251,7 +37771,6 @@ var Painter = function () {
         return this.currentLayer < this.opaquePassCutoff;
     };
     Painter.prototype.render = function (style, options) {
-        var e_3, _a, e_4, _b, e_5, _c, e_6, _d;
         var _this = this;
         this.style = style;
         this.options = options;
@@ -43298,31 +37817,17 @@ var Painter = function () {
                 }
             }
         }
-        try {
-            for (var layerIds_1 = __values$7(layerIds), layerIds_1_1 = layerIds_1.next(); !layerIds_1_1.done; layerIds_1_1 = layerIds_1.next()) {
-                var id = layerIds_1_1.value;
-                var layer = this.style._layers[id], source = layer.source;
-                if (renderToTexture[layer.type]) {
-                    if (!coordsDescendingInvStr[source]) {
-                        coordsDescendingInvStr[source] = {};
-                        for (var key in coordsDescendingInv[source]) {
-                            coordsDescendingInvStr[source][key] = coordsDescendingInv[source][key].map(function (c) {
-                                return c.key;
-                            }).sort().join();
-                        }
+        for (var _i = 0, layerIds_1 = layerIds; _i < layerIds_1.length; _i++) {
+            var id = layerIds_1[_i];
+            var layer = this.style._layers[id], source = layer.source;
+            if (renderToTexture[layer.type]) {
+                if (!coordsDescendingInvStr[source]) {
+                    coordsDescendingInvStr[source] = {};
+                    for (var key in coordsDescendingInv[source]) {
+                        coordsDescendingInvStr[source][key] = coordsDescendingInv[source][key].map(function (c) {
+                            return c.key;
+                        }).sort().join();
                     }
-                }
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (layerIds_1_1 && !layerIds_1_1.done && (_a = layerIds_1.return)) {
-                    _a.call(layerIds_1);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
                 }
             }
         }
@@ -43344,31 +37849,17 @@ var Painter = function () {
             }
         }
         this.renderPass = 'offscreen';
-        try {
-            for (var layerIds_2 = __values$7(layerIds), layerIds_2_1 = layerIds_2.next(); !layerIds_2_1.done; layerIds_2_1 = layerIds_2.next()) {
-                var layerId = layerIds_2_1.value;
-                var layer = this.style._layers[layerId];
-                if (!layer.hasOffscreenPass() || layer.isHidden(this.transform.zoom)) {
-                    continue;
-                }
-                var coords = coordsDescending[layer.source];
-                if (layer.type !== 'custom' && !coords.length) {
-                    continue;
-                }
-                this.renderLayer(this, sourceCaches[layer.source], layer, coords);
+        for (var _a = 0, layerIds_2 = layerIds; _a < layerIds_2.length; _a++) {
+            var layerId = layerIds_2[_a];
+            var layer = this.style._layers[layerId];
+            if (!layer.hasOffscreenPass() || layer.isHidden(this.transform.zoom)) {
+                continue;
             }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (layerIds_2_1 && !layerIds_2_1.done && (_b = layerIds_2.return)) {
-                    _b.call(layerIds_2);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
+            var coords = coordsDescending[layer.source];
+            if (layer.type !== 'custom' && !coords.length) {
+                continue;
             }
+            this.renderLayer(this, sourceCaches[layer.source], layer, coords);
         }
         this.context.bindFramebuffer.set(null);
         this.context.clear({
@@ -43423,61 +37914,33 @@ var Painter = function () {
                 } else if (renderToTexture[prevType] || type === 'hillshade') {
                     prevType = type;
                     var stack = stacks.length - 1, layers = stacks[stack] || [];
-                    try {
-                        for (var renderableTiles_1 = (e_5 = void 0, __values$7(renderableTiles)), renderableTiles_1_1 = renderableTiles_1.next(); !renderableTiles_1_1.done; renderableTiles_1_1 = renderableTiles_1.next()) {
-                            var tile = renderableTiles_1_1.value;
-                            prepareTerrain(this, this.style.terrainSourceCache, tile, stack);
-                            if (rerender[tile.tileID.key]) {
-                                this.context.clear({ color: performance.Color.transparent });
-                                for (var l = 0; l < layers.length; l++) {
-                                    var layer_1 = this.style._layers[layers[l]];
-                                    var coords_1 = layer_1.source ? coordsDescendingInv[layer_1.source][tile.tileID.key] : [tile.tileID];
-                                    this._renderTileClippingMasks(layer_1, coords_1);
-                                    this.renderLayer(this, this.style.sourceCaches[layer_1.source], layer_1, coords_1);
-                                    if (layer_1.source) {
-                                        tile.textureCoords[layer_1.source] = coordsDescendingInvStr[layer_1.source][tile.tileID.key];
-                                    }
+                    for (var _b = 0, renderableTiles_1 = renderableTiles; _b < renderableTiles_1.length; _b++) {
+                        var tile = renderableTiles_1[_b];
+                        prepareTerrain(this, this.style.terrainSourceCache, tile, stack);
+                        if (rerender[tile.tileID.key]) {
+                            this.context.clear({ color: performance.Color.transparent });
+                            for (var l = 0; l < layers.length; l++) {
+                                var layer_1 = this.style._layers[layers[l]];
+                                var coords_1 = layer_1.source ? coordsDescendingInv[layer_1.source][tile.tileID.key] : [tile.tileID];
+                                this._renderTileClippingMasks(layer_1, coords_1);
+                                this.renderLayer(this, this.style.sourceCaches[layer_1.source], layer_1, coords_1);
+                                if (layer_1.source) {
+                                    tile.textureCoords[layer_1.source] = coordsDescendingInvStr[layer_1.source][tile.tileID.key];
                                 }
                             }
-                            drawTerrain(this, this.style.terrainSourceCache, tile);
                         }
-                    } catch (e_5_1) {
-                        e_5 = { error: e_5_1 };
-                    } finally {
-                        try {
-                            if (renderableTiles_1_1 && !renderableTiles_1_1.done && (_c = renderableTiles_1.return)) {
-                                _c.call(renderableTiles_1);
-                            }
-                        } finally {
-                            if (e_5) {
-                                throw e_5.error;
-                            }
-                        }
+                        drawTerrain(this, this.style.terrainSourceCache, tile);
                     }
                     if (type === 'hillshade') {
                         stacks.push([layerIds[this.currentLayer]]);
-                        try {
-                            for (var renderableTiles_2 = (e_6 = void 0, __values$7(renderableTiles)), renderableTiles_2_1 = renderableTiles_2.next(); !renderableTiles_2_1.done; renderableTiles_2_1 = renderableTiles_2.next()) {
-                                var tile = renderableTiles_2_1.value;
-                                var coords_2 = coordsDescendingInv[layer.source][tile.tileID.key];
-                                prepareTerrain(this, this.style.terrainSourceCache, tile, stacks.length - 1);
-                                this.context.clear({ color: performance.Color.transparent });
-                                this._renderTileClippingMasks(layer, coords_2);
-                                this.renderLayer(this, sourceCache, layer, coords_2);
-                                drawTerrain(this, this.style.terrainSourceCache, tile);
-                            }
-                        } catch (e_6_1) {
-                            e_6 = { error: e_6_1 };
-                        } finally {
-                            try {
-                                if (renderableTiles_2_1 && !renderableTiles_2_1.done && (_d = renderableTiles_2.return)) {
-                                    _d.call(renderableTiles_2);
-                                }
-                            } finally {
-                                if (e_6) {
-                                    throw e_6.error;
-                                }
-                            }
+                        for (var _c = 0, renderableTiles_2 = renderableTiles; _c < renderableTiles_2.length; _c++) {
+                            var tile = renderableTiles_2[_c];
+                            var coords_2 = coordsDescendingInv[layer.source][tile.tileID.key];
+                            prepareTerrain(this, this.style.terrainSourceCache, tile, stacks.length - 1);
+                            this.context.clear({ color: performance.Color.transparent });
+                            this._renderTileClippingMasks(layer, coords_2);
+                            this.renderLayer(this, sourceCache, layer, coords_2);
+                            drawTerrain(this, this.style.terrainSourceCache, tile);
                         }
                         continue;
                     }
@@ -43926,26 +38389,6 @@ var EdgeInsets = function () {
     return EdgeInsets;
 }();
 
-var __values$6 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var Transform = function () {
     function Transform(minZoom, maxZoom, minPitch, maxPitch, renderWorldCopies) {
         this.tileSize = 512;
@@ -44737,7 +39180,6 @@ var Transform = function () {
         return this.centerPoint.add(new performance.pointGeometry(0, yOffset));
     };
     Transform.prototype.getCameraQueryGeometry = function (queryGeometry) {
-        var e_1, _a;
         var c = this.getCameraPoint();
         if (queryGeometry.length === 1) {
             return [
@@ -44749,26 +39191,12 @@ var Transform = function () {
             var minY = c.y;
             var maxX = c.x;
             var maxY = c.y;
-            try {
-                for (var queryGeometry_1 = __values$6(queryGeometry), queryGeometry_1_1 = queryGeometry_1.next(); !queryGeometry_1_1.done; queryGeometry_1_1 = queryGeometry_1.next()) {
-                    var p = queryGeometry_1_1.value;
-                    minX = Math.min(minX, p.x);
-                    minY = Math.min(minY, p.y);
-                    maxX = Math.max(maxX, p.x);
-                    maxY = Math.max(maxY, p.y);
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (queryGeometry_1_1 && !queryGeometry_1_1.done && (_a = queryGeometry_1.return)) {
-                        _a.call(queryGeometry_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, queryGeometry_1 = queryGeometry; _i < queryGeometry_1.length; _i++) {
+                var p = queryGeometry_1[_i];
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x);
+                maxY = Math.max(maxY, p.y);
             }
             return [
                 new performance.pointGeometry(minX, minY),
@@ -44904,26 +39332,6 @@ var Hash = function () {
     return Hash;
 }();
 
-var __values$5 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var defaultInertiaOptions = {
     linearity: 0.3,
     easing: performance.bezier(0, 0, 0.3, 1)
@@ -44966,7 +39374,6 @@ var HandlerInertia = function () {
         }
     };
     HandlerInertia.prototype._onMoveEnd = function (panInertiaOptions) {
-        var e_1, _a;
         this._drainInertiaBuffer();
         if (this._inertiaBuffer.length < 2) {
             return;
@@ -44979,33 +39386,19 @@ var HandlerInertia = function () {
             pinchAround: undefined,
             around: undefined
         };
-        try {
-            for (var _b = __values$5(this._inertiaBuffer), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var settings = _c.value.settings;
-                deltas.zoom += settings.zoomDelta || 0;
-                deltas.bearing += settings.bearingDelta || 0;
-                deltas.pitch += settings.pitchDelta || 0;
-                if (settings.panDelta) {
-                    deltas.pan._add(settings.panDelta);
-                }
-                if (settings.around) {
-                    deltas.around = settings.around;
-                }
-                if (settings.pinchAround) {
-                    deltas.pinchAround = settings.pinchAround;
-                }
+        for (var _i = 0, _a = this._inertiaBuffer; _i < _a.length; _i++) {
+            var settings = _a[_i].settings;
+            deltas.zoom += settings.zoomDelta || 0;
+            deltas.bearing += settings.bearingDelta || 0;
+            deltas.pitch += settings.pitchDelta || 0;
+            if (settings.panDelta) {
+                deltas.pan._add(settings.panDelta);
             }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+            if (settings.around) {
+                deltas.around = settings.around;
+            }
+            if (settings.pinchAround) {
+                deltas.pinchAround = settings.pinchAround;
             }
         }
         var lastEntry = this._inertiaBuffer[this._inertiaBuffer.length - 1];
@@ -45386,46 +39779,11 @@ function indexTouches(touches, points) {
     return obj;
 }
 
-var __values$4 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 function getCentroid(points) {
-    var e_1, _a;
     var sum = new performance.pointGeometry(0, 0);
-    try {
-        for (var points_1 = __values$4(points), points_1_1 = points_1.next(); !points_1_1.done; points_1_1 = points_1.next()) {
-            var point = points_1_1.value;
-            sum._add(point);
-        }
-    } catch (e_1_1) {
-        e_1 = { error: e_1_1 };
-    } finally {
-        try {
-            if (points_1_1 && !points_1_1.done && (_a = points_1.return)) {
-                _a.call(points_1);
-            }
-        } finally {
-            if (e_1) {
-                throw e_1.error;
-            }
-        }
+    for (var _i = 0, points_1 = points; _i < points_1.length; _i++) {
+        var point = points_1[_i];
+        sum._add(point);
     }
     return sum.div(points.length);
 }
@@ -45876,31 +40234,6 @@ var __extends$6 = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __read$2 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var TwoTouchHandler = function () {
     function TwoTouchHandler() {
         this.reset();
@@ -45932,7 +40265,7 @@ var TwoTouchHandler = function () {
             return;
         }
         e.preventDefault();
-        var _a = __read$2(this._firstTwoTouches, 2), idA = _a[0], idB = _a[1];
+        var _a = this._firstTwoTouches, idA = _a[0], idB = _a[1];
         var a = getTouchById(mapTouches, points, idA);
         var b = getTouchById(mapTouches, points, idB);
         if (!a || !b) {
@@ -45948,7 +40281,7 @@ var TwoTouchHandler = function () {
         if (!this._firstTwoTouches) {
             return;
         }
-        var _a = __read$2(this._firstTwoTouches, 2), idA = _a[0], idB = _a[1];
+        var _a = this._firstTwoTouches, idA = _a[0], idB = _a[1];
         var a = getTouchById(mapTouches, points, idA);
         var b = getTouchById(mapTouches, points, idB);
         if (a && b) {
@@ -46674,51 +41007,6 @@ var __extends$5 = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values$3 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
-var __read$1 = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 var isMoving = function (p) {
     return p.zoom || p.drag || p.pitch || p.rotate;
 };
@@ -46734,7 +41022,6 @@ function hasChange(result) {
 }
 var HandlerManager = function () {
     function HandlerManager(map, options) {
-        var e_1, _a;
         this._map = map;
         this._el = this._map.getCanvasContainer();
         this._handlers = [];
@@ -46842,48 +41129,18 @@ var HandlerManager = function () {
                 undefined
             ]
         ];
-        try {
-            for (var _b = __values$3(this._listeners), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read$1(_c.value, 3), target = _d[0], type = _d[1], listenerOptions = _d[2];
-                DOM.addEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, _a = this._listeners; _i < _a.length; _i++) {
+            var _b = _a[_i], target = _b[0], type = _b[1], listenerOptions = _b[2];
+            DOM.addEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
         }
     }
     HandlerManager.prototype.destroy = function () {
-        var e_2, _a;
-        try {
-            for (var _b = __values$3(this._listeners), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read$1(_c.value, 3), target = _d[0], type = _d[1], listenerOptions = _d[2];
-                DOM.removeEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
-            }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
-            }
+        for (var _i = 0, _a = this._listeners; _i < _a.length; _i++) {
+            var _b = _a[_i], target = _b[0], type = _b[1], listenerOptions = _b[2];
+            DOM.removeEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
         }
     };
     HandlerManager.prototype._addDefaultHandlers = function (options) {
-        var e_3, _a;
         var map = this._map;
         var el = map.getCanvasContainer();
         this._add('mapEvent', new MapEventHandler(map, options));
@@ -46927,34 +41184,20 @@ var HandlerManager = function () {
         var keyboard = map.keyboard = new KeyboardHandler();
         this._add('keyboard', keyboard);
         this._add('blockableMapEvent', new BlockableMapEventHandler(map));
-        try {
-            for (var _b = __values$3([
-                        'boxZoom',
-                        'doubleClickZoom',
-                        'tapDragZoom',
-                        'touchPitch',
-                        'dragRotate',
-                        'dragPan',
-                        'touchZoomRotate',
-                        'scrollZoom',
-                        'keyboard'
-                    ]), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var name_1 = _c.value;
-                if (options.interactive && options[name_1]) {
-                    map[name_1].enable(options[name_1]);
-                }
-            }
-        } catch (e_3_1) {
-            e_3 = { error: e_3_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_3) {
-                    throw e_3.error;
-                }
+        for (var _i = 0, _a = [
+                    'boxZoom',
+                    'doubleClickZoom',
+                    'tapDragZoom',
+                    'touchPitch',
+                    'dragRotate',
+                    'dragPan',
+                    'touchZoomRotate',
+                    'scrollZoom',
+                    'keyboard'
+                ]; _i < _a.length; _i++) {
+            var name_1 = _a[_i];
+            if (options.interactive && options[name_1]) {
+                map[name_1].enable(options[name_1]);
             }
         }
     };
@@ -46967,52 +41210,22 @@ var HandlerManager = function () {
         this._handlersById[handlerName] = handler;
     };
     HandlerManager.prototype.stop = function (allowEndAnimation) {
-        var e_4, _a;
         if (this._updatingCamera) {
             return;
         }
-        try {
-            for (var _b = __values$3(this._handlers), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var handler = _c.value.handler;
-                handler.reset();
-            }
-        } catch (e_4_1) {
-            e_4 = { error: e_4_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_4) {
-                    throw e_4.error;
-                }
-            }
+        for (var _i = 0, _a = this._handlers; _i < _a.length; _i++) {
+            var handler = _a[_i].handler;
+            handler.reset();
         }
         this._inertia.clear();
         this._fireEvents({}, {}, allowEndAnimation);
         this._changes = [];
     };
     HandlerManager.prototype.isActive = function () {
-        var e_5, _a;
-        try {
-            for (var _b = __values$3(this._handlers), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var handler = _c.value.handler;
-                if (handler.isActive()) {
-                    return true;
-                }
-            }
-        } catch (e_5_1) {
-            e_5 = { error: e_5_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_5) {
-                    throw e_5.error;
-                }
+        for (var _i = 0, _a = this._handlers; _i < _a.length; _i++) {
+            var handler = _a[_i].handler;
+            if (handler.isActive()) {
+                return true;
             }
         }
         return false;
@@ -47051,7 +41264,6 @@ var HandlerManager = function () {
         return mapTouches;
     };
     HandlerManager.prototype.handleEvent = function (e, eventName) {
-        var e_6, _a;
         if (e.type === 'blur') {
             this.stop(true);
             return;
@@ -47064,39 +41276,25 @@ var HandlerManager = function () {
         var eventTouches = e.touches;
         var mapTouches = eventTouches ? this._getMapTouches(eventTouches) : undefined;
         var points = mapTouches ? DOM.touchPos(this._el, mapTouches) : DOM.mousePos(this._el, e);
-        try {
-            for (var _b = __values$3(this._handlers), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = _c.value, handlerName = _d.handlerName, handler = _d.handler, allowed = _d.allowed;
-                if (!handler.isEnabled()) {
-                    continue;
-                }
-                var data = void 0;
-                if (this._blockedByActive(activeHandlers, allowed, handlerName)) {
-                    handler.reset();
-                } else {
-                    if (handler[eventName || e.type]) {
-                        data = handler[eventName || e.type](e, points, mapTouches);
-                        this.mergeHandlerResult(mergedHandlerResult, eventsInProgress, data, handlerName, inputEvent);
-                        if (data && data.needsRenderFrame) {
-                            this._triggerRenderFrame();
-                        }
+        for (var _i = 0, _a = this._handlers; _i < _a.length; _i++) {
+            var _b = _a[_i], handlerName = _b.handlerName, handler = _b.handler, allowed = _b.allowed;
+            if (!handler.isEnabled()) {
+                continue;
+            }
+            var data = void 0;
+            if (this._blockedByActive(activeHandlers, allowed, handlerName)) {
+                handler.reset();
+            } else {
+                if (handler[eventName || e.type]) {
+                    data = handler[eventName || e.type](e, points, mapTouches);
+                    this.mergeHandlerResult(mergedHandlerResult, eventsInProgress, data, handlerName, inputEvent);
+                    if (data && data.needsRenderFrame) {
+                        this._triggerRenderFrame();
                     }
                 }
-                if (data || handler.isActive()) {
-                    activeHandlers[handlerName] = handler;
-                }
             }
-        } catch (e_6_1) {
-            e_6 = { error: e_6_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_6) {
-                    throw e_6.error;
-                }
+            if (data || handler.isActive()) {
+                activeHandlers[handlerName] = handler;
             }
         }
         var deactivatedHandlers = {};
@@ -47149,49 +41347,34 @@ var HandlerManager = function () {
         }
     };
     HandlerManager.prototype._applyChanges = function () {
-        var e_7, _a;
         var combined = {};
         var combinedEventsInProgress = {};
         var combinedDeactivatedHandlers = {};
-        try {
-            for (var _b = __values$3(this._changes), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var _d = __read$1(_c.value, 3), change = _d[0], eventsInProgress = _d[1], deactivatedHandlers = _d[2];
-                if (change.panDelta) {
-                    combined.panDelta = (combined.panDelta || new performance.pointGeometry(0, 0))._add(change.panDelta);
-                }
-                if (change.zoomDelta) {
-                    combined.zoomDelta = (combined.zoomDelta || 0) + change.zoomDelta;
-                }
-                if (change.bearingDelta) {
-                    combined.bearingDelta = (combined.bearingDelta || 0) + change.bearingDelta;
-                }
-                if (change.pitchDelta) {
-                    combined.pitchDelta = (combined.pitchDelta || 0) + change.pitchDelta;
-                }
-                if (change.around !== undefined) {
-                    combined.around = change.around;
-                }
-                if (change.pinchAround !== undefined) {
-                    combined.pinchAround = change.pinchAround;
-                }
-                if (change.noInertia) {
-                    combined.noInertia = change.noInertia;
-                }
-                performance.extend(combinedEventsInProgress, eventsInProgress);
-                performance.extend(combinedDeactivatedHandlers, deactivatedHandlers);
+        for (var _i = 0, _a = this._changes; _i < _a.length; _i++) {
+            var _b = _a[_i], change = _b[0], eventsInProgress = _b[1], deactivatedHandlers = _b[2];
+            if (change.panDelta) {
+                combined.panDelta = (combined.panDelta || new performance.pointGeometry(0, 0))._add(change.panDelta);
             }
-        } catch (e_7_1) {
-            e_7 = { error: e_7_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_7) {
-                    throw e_7.error;
-                }
+            if (change.zoomDelta) {
+                combined.zoomDelta = (combined.zoomDelta || 0) + change.zoomDelta;
             }
+            if (change.bearingDelta) {
+                combined.bearingDelta = (combined.bearingDelta || 0) + change.bearingDelta;
+            }
+            if (change.pitchDelta) {
+                combined.pitchDelta = (combined.pitchDelta || 0) + change.pitchDelta;
+            }
+            if (change.around !== undefined) {
+                combined.around = change.around;
+            }
+            if (change.pinchAround !== undefined) {
+                combined.pinchAround = change.pinchAround;
+            }
+            if (change.noInertia) {
+                combined.noInertia = change.noInertia;
+            }
+            performance.extend(combinedEventsInProgress, eventsInProgress);
+            performance.extend(combinedDeactivatedHandlers, deactivatedHandlers);
         }
         this._updateMapTransform(combined, combinedEventsInProgress, combinedDeactivatedHandlers);
         this._changes = [];
@@ -47323,31 +41506,6 @@ var HandlerManager = function () {
     return HandlerManager;
 }();
 
-undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
 undefined && undefined.__spreadArray || function (to, from, pack) {
     if (pack || arguments.length === 2) {
         for (var i = 0, l = from.length, ar; i < l; i++) {
@@ -48082,26 +42240,6 @@ var LogoControl = function () {
     return LogoControl;
 }();
 
-var __values$2 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var TaskQueue = function () {
     function TaskQueue() {
         this._queue = [];
@@ -48120,60 +42258,30 @@ var TaskQueue = function () {
         return id;
     };
     TaskQueue.prototype.remove = function (id) {
-        var e_1, _a;
         var running = this._currentlyRunning;
         var queue = running ? this._queue.concat(running) : this._queue;
-        try {
-            for (var queue_1 = __values$2(queue), queue_1_1 = queue_1.next(); !queue_1_1.done; queue_1_1 = queue_1.next()) {
-                var task = queue_1_1.value;
-                if (task.id === id) {
-                    task.cancelled = true;
-                    return;
-                }
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (queue_1_1 && !queue_1_1.done && (_a = queue_1.return)) {
-                    _a.call(queue_1);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
+        for (var _i = 0, queue_1 = queue; _i < queue_1.length; _i++) {
+            var task = queue_1[_i];
+            if (task.id === id) {
+                task.cancelled = true;
+                return;
             }
         }
     };
     TaskQueue.prototype.run = function (timeStamp) {
-        var e_2, _a;
         if (timeStamp === void 0) {
             timeStamp = 0;
         }
         var queue = this._currentlyRunning = this._queue;
         this._queue = [];
-        try {
-            for (var queue_2 = __values$2(queue), queue_2_1 = queue_2.next(); !queue_2_1.done; queue_2_1 = queue_2.next()) {
-                var task = queue_2_1.value;
-                if (task.cancelled) {
-                    continue;
-                }
-                task.callback(timeStamp);
-                if (this._cleared) {
-                    break;
-                }
+        for (var _i = 0, queue_2 = queue; _i < queue_2.length; _i++) {
+            var task = queue_2[_i];
+            if (task.cancelled) {
+                continue;
             }
-        } catch (e_2_1) {
-            e_2 = { error: e_2_1 };
-        } finally {
-            try {
-                if (queue_2_1 && !queue_2_1.done && (_a = queue_2.return)) {
-                    _a.call(queue_2);
-                }
-            } finally {
-                if (e_2) {
-                    throw e_2.error;
-                }
+            task.callback(timeStamp);
+            if (this._cleared) {
+                break;
             }
         }
         this._cleared = false;
@@ -48232,51 +42340,6 @@ var __extends$3 = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __read = undefined && undefined.__read || function (o, n) {
-    var m = typeof Symbol === 'function' && o[Symbol.iterator];
-    if (!m) {
-        return o;
-    }
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) {
-            ar.push(r.value);
-        }
-    } catch (error) {
-        e = { error: error };
-    } finally {
-        try {
-            if (r && !r.done && (m = i['return'])) {
-                m.call(i);
-            }
-        } finally {
-            if (e) {
-                throw e.error;
-            }
-        }
-    }
-    return ar;
-};
-var __values$1 = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var defaultMinZoom = -2;
 var defaultMaxZoom = 22;
 var defaultMinPitch = 0;
@@ -48501,7 +42564,7 @@ var Map = function (_super) {
         return this._pixelRatio;
     };
     Map.prototype.setPixelRatio = function (pixelRatio) {
-        var _a = __read(this._containerDimensions(), 2), width = _a[0], height = _a[1];
+        var _a = this._containerDimensions(), width = _a[0], height = _a[1];
         this._pixelRatio = pixelRatio;
         this._resizeCanvas(width, height, pixelRatio);
         this.painter.resize(width, height, pixelRatio);
@@ -49257,27 +43320,12 @@ var Map = function (_super) {
         return this;
     };
     Map.prototype.remove = function () {
-        var e_1, _a;
         if (this._hash) {
             this._hash.remove();
         }
-        try {
-            for (var _b = __values$1(this._controls), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var control = _c.value;
-                control.onRemove(this);
-            }
-        } catch (e_1_1) {
-            e_1 = { error: e_1_1 };
-        } finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) {
-                    _a.call(_b);
-                }
-            } finally {
-                if (e_1) {
-                    throw e_1.error;
-                }
-            }
+        for (var _i = 0, _a = this._controls; _i < _a.length; _i++) {
+            var control = _a[_i];
+            control.onRemove(this);
         }
         this._controls = [];
         if (this._frame) {
@@ -49708,30 +43756,9 @@ var __extends$2 = undefined && undefined.__extends || function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 }();
-var __values = undefined && undefined.__values || function (o) {
-    var s = typeof Symbol === 'function' && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) {
-        return m.call(o);
-    }
-    if (o && typeof o.length === 'number') {
-        return {
-            next: function () {
-                if (o && i >= o.length) {
-                    o = void 0;
-                }
-                return {
-                    value: o && o[i++],
-                    done: !o
-                };
-            }
-        };
-    }
-    throw new TypeError(s ? 'Object is not iterable.' : 'Symbol.iterator is not defined.');
-};
 var Marker = function (_super) {
     __extends$2(Marker, _super);
     function Marker(options, legacyOptions) {
-        var e_1, _a;
         var _this = _super.call(this) || this;
         if (options instanceof HTMLElement || legacyOptions) {
             options = performance.extend({ element: options }, legacyOptions);
@@ -49809,29 +43836,15 @@ var Marker = function (_super) {
                     'ry': '2.38636864'
                 }
             ];
-            try {
-                for (var ellipses_1 = __values(ellipses), ellipses_1_1 = ellipses_1.next(); !ellipses_1_1.done; ellipses_1_1 = ellipses_1.next()) {
-                    var data = ellipses_1_1.value;
-                    var ellipse = DOM.createNS('http://www.w3.org/2000/svg', 'ellipse');
-                    ellipse.setAttributeNS(null, 'opacity', '0.04');
-                    ellipse.setAttributeNS(null, 'cx', '10.5');
-                    ellipse.setAttributeNS(null, 'cy', '5.80029008');
-                    ellipse.setAttributeNS(null, 'rx', data['rx']);
-                    ellipse.setAttributeNS(null, 'ry', data['ry']);
-                    shadow.appendChild(ellipse);
-                }
-            } catch (e_1_1) {
-                e_1 = { error: e_1_1 };
-            } finally {
-                try {
-                    if (ellipses_1_1 && !ellipses_1_1.done && (_a = ellipses_1.return)) {
-                        _a.call(ellipses_1);
-                    }
-                } finally {
-                    if (e_1) {
-                        throw e_1.error;
-                    }
-                }
+            for (var _i = 0, ellipses_1 = ellipses; _i < ellipses_1.length; _i++) {
+                var data = ellipses_1[_i];
+                var ellipse = DOM.createNS('http://www.w3.org/2000/svg', 'ellipse');
+                ellipse.setAttributeNS(null, 'opacity', '0.04');
+                ellipse.setAttributeNS(null, 'cx', '10.5');
+                ellipse.setAttributeNS(null, 'cy', '5.80029008');
+                ellipse.setAttributeNS(null, 'rx', data['rx']);
+                ellipse.setAttributeNS(null, 'ry', data['ry']);
+                shadow.appendChild(ellipse);
             }
             var background = DOM.createNS('http://www.w3.org/2000/svg', 'g');
             background.setAttributeNS(null, 'fill', _this._color);
