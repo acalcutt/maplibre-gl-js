@@ -10,8 +10,8 @@ const srcDir = watch ? 'src' : 'rollup/build/tsc/src';
 const inputExt = watch ? 'ts' : 'js';
 const production = BUILD === 'production';
 const outputFile =
-    !production ? 'dist/maplibre-gl2-dev.es2015.js' :
-    minified ? 'dist/maplibre-gl2.es2015.js' : 'dist/maplibre-gl2-unminified.es2015.js';
+    !production ? 'dist/maplibre-gl2-dev.es2017.js' :
+    minified ? 'dist/maplibre-gl2.es2017.js' : 'dist/maplibre-gl2-unminified.es2017.js';
 
 export default [{
     // Before rollup you should run build-tsc to transpile from typescript to javascript (except when running rollup in watch mode)
