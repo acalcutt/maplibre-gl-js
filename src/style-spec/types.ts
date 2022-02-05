@@ -134,7 +134,7 @@ export type RasterDEMSourceSpecification = {
     "maxzoom"?: number,
     "tileSize"?: number,
     "attribution"?: string,
-    "encoding"?: "terrarium" | "mapbox" | "mtk",
+    "encoding"?: "terrarium" | "mtk" | "mapbox",
     "volatile"?: boolean
 };
 
