@@ -40050,4 +40050,4 @@ var maplibregl$1 = maplibregl;
 return maplibregl$1;
 
 }));
-//# sourceMappingURL=maplibre-gl2-unminified.es6.js.map
+//# sourceMappingURL=maplibre-gl2-unminified.js.map

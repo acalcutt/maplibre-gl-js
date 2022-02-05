@@ -41,4 +41,4 @@ var maplibregl$1 = maplibregl;
 return maplibregl$1;
 
 }));
-//# sourceMappingURL=maplibre-gl2.es6.js.map
+//# sourceMappingURL=maplibre-gl2.js.map
