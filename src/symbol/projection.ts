@@ -132,14 +132,14 @@ function isVisible(anchorPos: vec4,
  *  This is only run on labels that are aligned with lines. Horizontal labels are handled entirely in the shader.
  */
 function updateLineLabels(bucket: SymbolBucket,
-                          posMatrix: mat4,
-                          painter: Painter,
-                          isText: boolean,
-                          labelPlaneMatrix: mat4,
-                          glCoordMatrix: mat4,
-                          pitchWithMap: boolean,
-                          keepUpright: boolean,
-                          getElevation: any) {
+    posMatrix: mat4,
+    painter: Painter,
+    isText: boolean,
+    labelPlaneMatrix: mat4,
+    glCoordMatrix: mat4,
+    pitchWithMap: boolean,
+    keepUpright: boolean,
+    getElevation: any) {
 
     const sizeData = isText ? bucket.textSizeData : bucket.iconSizeData;
     const partiallyEvaluatedSize = symbolSize.evaluateSizeForZoom(sizeData, painter.transform.zoom);
@@ -335,20 +335,20 @@ function projectTruncatedLineSegment(previousTilePoint: Point, currentTilePoint:
 }
 
 function placeGlyphAlongLine(offsetX: number,
-                             lineOffsetX: number,
-                             lineOffsetY: number,
-                             flip: boolean,
-                             anchorPoint: Point,
-                             tileAnchorPoint: Point,
-                             anchorSegment: number,
-                             lineStartIndex: number,
-                             lineEndIndex: number,
-                             lineVertexArray: SymbolLineVertexArray,
-                             labelPlaneMatrix: mat4,
-                             projectionCache: {
-                               [_: number]: Point;
-                             },
-                             getElevation: any) {
+    lineOffsetX: number,
+    lineOffsetY: number,
+    flip: boolean,
+    anchorPoint: Point,
+    tileAnchorPoint: Point,
+    anchorSegment: number,
+    lineStartIndex: number,
+    lineEndIndex: number,
+    lineVertexArray: SymbolLineVertexArray,
+    labelPlaneMatrix: mat4,
+    projectionCache: {
+        [_: number]: Point;
+    },
+    getElevation: any) {
 
     const combinedOffsetX = flip ?
         offsetX - lineOffsetX :

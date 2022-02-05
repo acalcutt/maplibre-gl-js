@@ -73,16 +73,16 @@ class CollisionIndex {
     }
 
     placeCollisionBox(
-      collisionBox: SingleCollisionBox,
-      overlapMode: OverlapMode,
-      textPixelRatio: number,
-      posMatrix: mat4,
-      collisionGroupPredicate?: (key: FeatureKey) => boolean,
-      getElevation?: any
+        collisionBox: SingleCollisionBox,
+        overlapMode: OverlapMode,
+        textPixelRatio: number,
+        posMatrix: mat4,
+        collisionGroupPredicate?: (key: FeatureKey) => boolean,
+        getElevation?: any
     ): {
-      box: Array<number>;
-      offscreen: boolean;
-    } {
+            box: Array<number>;
+            offscreen: boolean;
+        } {
         const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY, getElevation);
         const tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
         const tlX = collisionBox.x1 * tileToViewport + projectedPoint.point.x;
@@ -105,20 +105,20 @@ class CollisionIndex {
     }
 
     placeCollisionCircles(
-      overlapMode: OverlapMode,
-      symbol: any,
-      lineVertexArray: SymbolLineVertexArray,
-      glyphOffsetArray: GlyphOffsetArray,
-      fontSize: number,
-      posMatrix: mat4,
-      labelPlaneMatrix: mat4,
-      labelToScreenMatrix: mat4,
-      showCollisionCircles: boolean,
-      pitchWithMap: boolean,
-      collisionGroupPredicate: (key: FeatureKey) => boolean,
-      circlePixelDiameter: number,
-      textPixelPadding: number,
-      getElevation: any
+        overlapMode: OverlapMode,
+        symbol: any,
+        lineVertexArray: SymbolLineVertexArray,
+        glyphOffsetArray: GlyphOffsetArray,
+        fontSize: number,
+        posMatrix: mat4,
+        labelPlaneMatrix: mat4,
+        labelToScreenMatrix: mat4,
+        showCollisionCircles: boolean,
+        pitchWithMap: boolean,
+        collisionGroupPredicate: (key: FeatureKey) => boolean,
+        circlePixelDiameter: number,
+        textPixelPadding: number,
+        getElevation: any
     ): {
             circles: Array<number>;
             offscreen: boolean;

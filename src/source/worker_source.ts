@@ -30,14 +30,14 @@ export type WorkerTileParameters = TileParameters & {
 };
 
 export type WorkerDEMTileParameters = TileParameters & {
-  coord: {
-    z: number;
-    x: number;
-    y: number;
-    w: number;
-  };
-  rawImageData: RGBAImage | ImageBitmap;
-  encoding: 'mapbox' | 'terrarium' | 'mtk';
+    coord: {
+        z: number;
+        x: number;
+        y: number;
+        w: number;
+    };
+    rawImageData: RGBAImage | ImageBitmap;
+    encoding: 'mapbox' | 'terrarium' | 'mtk';
 };
 
 export type WorkerTileResult = {

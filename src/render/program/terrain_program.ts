@@ -9,28 +9,28 @@ import type {UniformValues, UniformLocations} from '../../render/uniform_binding
 import {mat4} from 'gl-matrix';
 
 export type TerrainPreludeUniformsType = {
-   'u_depth': Uniform1i;
-   'u_terrain': Uniform1i;
-   'u_terrain_dim': Uniform1f;
-   'u_terrain_matrix': UniformMatrix4f;
-   'u_terrain_unpack': Uniform4f;
-   'u_terrain_offset': Uniform1f;
-   'u_terrain_exaggeration': Uniform1f;
+    'u_depth': Uniform1i;
+    'u_terrain': Uniform1i;
+    'u_terrain_dim': Uniform1f;
+    'u_terrain_matrix': UniformMatrix4f;
+    'u_terrain_unpack': Uniform4f;
+    'u_terrain_offset': Uniform1f;
+    'u_terrain_exaggeration': Uniform1f;
 };
 
 export type TerrainUniformsType = {
-   'u_matrix': UniformMatrix4f;
-   'u_texture': Uniform1i;
+    'u_matrix': UniformMatrix4f;
+    'u_texture': Uniform1i;
 };
 
 export type TerrainDepthUniformsType = {
-   'u_matrix': UniformMatrix4f;
+    'u_matrix': UniformMatrix4f;
 };
 
 export type TerrainCoordsUniformsType = {
-   'u_matrix': UniformMatrix4f;
-   'u_texture': Uniform1i;
-   'u_terrain_coords_id': Uniform1f;
+    'u_matrix': UniformMatrix4f;
+    'u_texture': Uniform1i;
+    'u_terrain_coords_id': Uniform1f;
 };
 
 const terrainPreludeUniforms = (context: Context, locations: UniformLocations): TerrainPreludeUniformsType => ({
@@ -59,21 +59,21 @@ const terrainCoordsUniforms = (context: Context, locations: UniformLocations): T
 });
 
 const terrainUniformValues = (
-   matrix: mat4
+    matrix: mat4
 ): UniformValues<TerrainUniformsType> => ({
     'u_matrix': matrix,
     'u_texture': 0
 });
 
 const terrainDepthUniformValues = (
-   matrix: mat4
+    matrix: mat4
 ): UniformValues<TerrainDepthUniformsType> => ({
     'u_matrix': matrix
 });
 
 const terrainCoordsUniformValues = (
-   matrix: mat4,
-   coordsId: number
+    matrix: mat4,
+    coordsId: number
 ): UniformValues<TerrainCoordsUniformsType> => ({
     'u_matrix': matrix,
     'u_terrain_coords_id': coordsId / 255,

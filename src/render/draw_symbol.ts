@@ -36,20 +36,20 @@ import type {SymbolBuffers} from '../data/bucket/symbol_bucket';
 export default drawSymbols;
 
 type SymbolTileRenderState = {
-  segments: SegmentVector;
-  sortKey: number;
-  terrain: any;
-  state: {
-    program: any;
-    buffers: SymbolBuffers;
-    uniformValues: any;
-    atlasTexture: Texture;
-    atlasTextureIcon: Texture | null;
-    atlasInterpolation: any;
-    atlasInterpolationIcon: any;
-    isSDF: boolean;
-    hasHalo: boolean;
-  };
+    segments: SegmentVector;
+    sortKey: number;
+    terrain: any;
+    state: {
+        program: any;
+        buffers: SymbolBuffers;
+        uniformValues: any;
+        atlasTexture: Texture;
+        atlasTextureIcon: Texture | null;
+        atlasInterpolation: any;
+        atlasInterpolationIcon: any;
+        isSDF: boolean;
+        hasHalo: boolean;
+    };
 };
 
 const identityMat4 = mat4.identity(new Float32Array(16));

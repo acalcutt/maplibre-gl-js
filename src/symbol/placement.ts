@@ -336,22 +336,22 @@ export class Placement {
     }
 
     attemptAnchorPlacement(
-      anchor: TextAnchor,
-      textBox: SingleCollisionBox,
-      width: number,
-      height: number,
-      textBoxScale: number,
-      rotateWithMap: boolean,
-      pitchWithMap: boolean,
-      textPixelRatio: number,
-      posMatrix: mat4,
-      collisionGroup: CollisionGroup,
-      textOverlapMode: OverlapMode,
-      symbolInstance: SymbolInstance,
-      bucket: SymbolBucket,
-      orientation: number,
-      iconBox?: SingleCollisionBox | null,
-      getElevation?: any
+        anchor: TextAnchor,
+        textBox: SingleCollisionBox,
+        width: number,
+        height: number,
+        textBoxScale: number,
+        rotateWithMap: boolean,
+        pitchWithMap: boolean,
+        textPixelRatio: number,
+        posMatrix: mat4,
+        collisionGroup: CollisionGroup,
+        textOverlapMode: OverlapMode,
+        symbolInstance: SymbolInstance,
+        bucket: SymbolBucket,
+        orientation: number,
+        iconBox?: SingleCollisionBox | null,
+        getElevation?: any
     ): {
             shift: Point;
             placedGlyphBoxes: {
@@ -538,7 +538,7 @@ export class Placement {
                             textPixelRatio,
                             posMatrix,
                             collisionGroup.predicate,
-							getElevation);
+                            getElevation);
 
                         if (placedFeature && placedFeature.box && placedFeature.box.length) {
                             this.markUsedOrientation(bucket, orientation, symbolInstance);

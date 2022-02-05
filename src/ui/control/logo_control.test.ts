@@ -45,7 +45,7 @@ describe('LogoControl', () => {
         const map = createMap('top-left', false);
         map.on('load', () => {
             expect(map.getContainer().querySelectorAll(
-            '.maplibregl-ctrl-logo'
+                '.maplibregl-ctrl-logo'
             )).toHaveLength(0);
             done();
         });

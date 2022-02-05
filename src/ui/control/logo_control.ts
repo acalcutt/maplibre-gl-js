@@ -5,7 +5,7 @@ import type Map from '../map';
 import type {ControlPosition, IControl} from './control';
 
 type LogoOptions = {
-  compact?: boolean;
+    compact?: boolean;
 };
 
 /**

@@ -33,27 +33,27 @@ import {CanonicalTileID} from './tile_id';
  * if they are floor-ed to the nearest integer.
  */
 export interface Source {
-  readonly type: string;
-  id: string;
-  minzoom: number;
-  maxzoom: number;
-  tileSize: number;
-  attribution?: string;
-  roundZoom?: boolean;
-  isTileClipped?: boolean;
-  tileID?: CanonicalTileID;
-  reparseOverscaled?: boolean;
-  vectorLayerIds?: Array<string>;
-  hasTransition(): boolean;
-  loaded(): boolean;
-  fire(event: Event): unknown;
-  readonly onAdd?: (map: Map) => void;
-  readonly onRemove?: (map: Map) => void;
-  loadTile(tile: Tile, callback: Callback<void>): void;
-  readonly hasTile?: (tileID: OverscaledTileID) => boolean;
-  readonly abortTile?: (tile: Tile, callback: Callback<void>) => void;
-  readonly unloadTile?: (tile: Tile, callback: Callback<void>) => void;
-  /**
+    readonly type: string;
+    id: string;
+    minzoom: number;
+    maxzoom: number;
+    tileSize: number;
+    attribution?: string;
+    roundZoom?: boolean;
+    isTileClipped?: boolean;
+    tileID?: CanonicalTileID;
+    reparseOverscaled?: boolean;
+    vectorLayerIds?: Array<string>;
+    hasTransition(): boolean;
+    loaded(): boolean;
+    fire(event: Event): unknown;
+    readonly onAdd?: (map: Map) => void;
+    readonly onRemove?: (map: Map) => void;
+    loadTile(tile: Tile, callback: Callback<void>): void;
+    readonly hasTile?: (tileID: OverscaledTileID) => boolean;
+    readonly abortTile?: (tile: Tile, callback: Callback<void>) => void;
+    readonly unloadTile?: (tile: Tile, callback: Callback<void>) => void;
+    /**
      * @returns A plain (stringifiable) JS object representing the current state of the source.
      * Creating a source using the returned object as the `options` should result in a Source that is
      * equivalent to this one.

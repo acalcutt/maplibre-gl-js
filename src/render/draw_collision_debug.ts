@@ -18,11 +18,11 @@ import IndexBuffer from '../gl/index_buffer';
 export default drawCollisionDebug;
 
 type TileBatch = {
-  circleArray: Array<number>;
-  circleOffset: number;
-  transform: mat4;
-  invTransform: mat4;
-  coord: OverscaledTileID;
+    circleArray: Array<number>;
+    circleOffset: number;
+    transform: mat4;
+    invTransform: mat4;
+    coord: OverscaledTileID;
 };
 
 let quadTriangles: QuadTriangleArray;
