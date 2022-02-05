@@ -11,7 +11,7 @@ import type {
     GlyphOffsetArray,
     SymbolLineVertexArray,
     SymbolDynamicLayoutArray
-} from '../data/array_types';
+} from '../data/array_types.g';
 import {WritingMode} from '../symbol/shaping';
 
 export {updateLineLabels, hideGlyphs, getLabelPlaneMatrix, getGlCoordMatrix, project, getPerspectiveRatio, placeFirstAndLastGlyph, placeGlyphAlongLine, xyTransformMat4};
@@ -65,10 +65,10 @@ export {updateLineLabels, hideGlyphs, getLabelPlaneMatrix, getGlCoordMatrix, pro
  * Returns a matrix for converting from tile units to the correct label coordinate space.
  */
 function getLabelPlaneMatrix(posMatrix: mat4,
-                             pitchWithMap: boolean,
-                             rotateWithMap: boolean,
-                             transform: Transform,
-                             pixelsToTileUnits: number) {
+    pitchWithMap: boolean,
+    rotateWithMap: boolean,
+    transform: Transform,
+    pixelsToTileUnits: number) {
     const m = mat4.create();
     if (pitchWithMap) {
         mat4.scale(m, m, [1 / pixelsToTileUnits, 1 / pixelsToTileUnits, 1]);
@@ -85,10 +85,10 @@ function getLabelPlaneMatrix(posMatrix: mat4,
  * Returns a matrix for converting from the correct label coordinate space to gl coords.
  */
 function getGlCoordMatrix(posMatrix: mat4,
-                          pitchWithMap: boolean,
-                          rotateWithMap: boolean,
-                          transform: Transform,
-                          pixelsToTileUnits: number) {
+    pitchWithMap: boolean,
+    rotateWithMap: boolean,
+    transform: Transform,
+    pixelsToTileUnits: number) {
     if (pitchWithMap) {
         const m = mat4.clone(posMatrix);
         mat4.scale(m, m, [pixelsToTileUnits, pixelsToTileUnits, 1]);
@@ -116,7 +116,7 @@ function getPerspectiveRatio(cameraToCenterDistance: number, signedDistanceFromC
 }
 
 function isVisible(anchorPos: vec4,
-                   clippingBuffer: [number, number]) {
+    clippingBuffer: [number, number]) {
     const x = anchorPos[0] / anchorPos[3];
     const y = anchorPos[1] / anchorPos[3];
     const inPaddedViewport = (

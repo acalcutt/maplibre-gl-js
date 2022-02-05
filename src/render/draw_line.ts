@@ -36,8 +36,8 @@ export default function drawLine(painter: Painter, sourceCache: SourceCache, lay
 
     const programId =
         image ? 'linePattern' :
-        dasharray ? 'lineSDF' :
-        gradient ? 'lineGradient' : 'line';
+            dasharray ? 'lineSDF' :
+                gradient ? 'lineGradient' : 'line';
 
     const context = painter.context;
     const gl = context.gl;

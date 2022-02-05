@@ -28,9 +28,9 @@ type TileRenderState = {
 };
 
 type SegmentsTileRenderState = {
-  segments: SegmentVector;
-  sortKey: number;
-  state: TileRenderState;
+    segments: SegmentVector;
+    sortKey: number;
+    state: TileRenderState;
 };
 
 function drawCircles(painter: Painter, sourceCache: SourceCache, layer: CircleStyleLayer, coords: Array<OverscaledTileID>) {
