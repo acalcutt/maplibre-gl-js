@@ -240,7 +240,7 @@ class TerrainSourceCache extends Evented {
             const tile = this._tiles[this._renderHistory.shift()];
             if (tile && !tileIDs[tile.tileID.key]) {
                 tile.clearTextures(this._style.map.painter);
-                delete (this._tiles[tile.tileID.key]);
+                this._tiles[tile.tileID.key] = null;
             }
         }
     }
