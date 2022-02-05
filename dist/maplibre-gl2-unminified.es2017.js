@@ -26297,8 +26297,6 @@ function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback)
 
 var INF = 100000000000000000000;
 var TinySDF = function TinySDF(ref) {
-    if (ref === void 0)
-        ref = {};
     var fontSize = ref.fontSize;
     if (fontSize === void 0)
         fontSize = 24;
@@ -26348,13 +26346,13 @@ TinySDF.prototype.draw = function draw(char) {
     var actualBoundingBoxDescent = ref.actualBoundingBoxDescent;
     var actualBoundingBoxLeft = ref.actualBoundingBoxLeft;
     var actualBoundingBoxRight = ref.actualBoundingBoxRight;
-    var glyphTop = Math.ceil(actualBoundingBoxAscent);
+    var glyphTop = Math.floor(actualBoundingBoxAscent);
     var glyphLeft = 0;
     var glyphWidth = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxRight - actualBoundingBoxLeft));
-    var glyphHeight = Math.min(this.size - this.buffer, glyphTop + Math.ceil(actualBoundingBoxDescent));
+    var glyphHeight = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxAscent) + Math.ceil(actualBoundingBoxDescent));
     var width = glyphWidth + 2 * this.buffer;
     var height = glyphHeight + 2 * this.buffer;
-    var len = Math.max(width * height, 0);
+    var len = width * height;
     var data = new Uint8ClampedArray(len);
     var glyph = {
         data: data,
@@ -26375,7 +26373,7 @@ TinySDF.prototype.draw = function draw(char) {
     var gridInner = ref$1.gridInner;
     var gridOuter = ref$1.gridOuter;
     ctx.clearRect(buffer, buffer, glyphWidth, glyphHeight);
-    ctx.fillText(char, buffer, buffer + glyphTop);
+    ctx.fillText(char, buffer, buffer + glyphTop + 1);
     var imgData = ctx.getImageData(buffer, buffer, glyphWidth, glyphHeight);
     gridOuter.fill(INF, 0, len);
     gridInner.fill(0, 0, len);
@@ -44024,4 +44022,4 @@ var maplibregl$1 = maplibregl;
 return maplibregl$1;
 
 }));
-//# sourceMappingURL=maplibre-gl2-unminified.es2015.js.map
+//# sourceMappingURL=maplibre-gl2-unminified.es2017.js.map
