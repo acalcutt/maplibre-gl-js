@@ -15,7 +15,6 @@
     "sourceMap": true,
     "strict": false,
     "target": "ES5",
-    "downlevelIteration": true,
     "lib": [
       "ESNext",
       "DOM",
