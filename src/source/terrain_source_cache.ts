@@ -6,7 +6,7 @@ import {Evented} from '../util/evented';
 import Style from '../style/style';
 import Texture from '../render/texture';
 import {RGBAImage} from '../util/image';
-import {PosArray, TriangleIndexArray} from '../data/array_types';
+import {PosArray, TriangleIndexArray} from '../data/array_types.g';
 import {number as mix} from '../style-spec/util/interpolate';
 import posAttributes from '../data/pos_attributes';
 import SegmentVector from '../data/segment';
