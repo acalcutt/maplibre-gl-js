@@ -159,7 +159,7 @@
   },
   "scripts": {
     "generate-shaders": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-shaders.ts",
-    "generate-struct-arrays": "node --loader ts-node/esm --downlevelIteration --experimental-specifier-resolution=node build/generate-struct-arrays.ts",
+    "generate-struct-arrays": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-struct-arrays.ts",
     "generate-style-code": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-code.ts",
     "generate-style-spec": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-style-spec.ts",
     "generate-typings": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-typings.ts",
