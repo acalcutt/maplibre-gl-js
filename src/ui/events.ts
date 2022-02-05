@@ -348,6 +348,8 @@ export type MapEventType = {
     sourcedata: MapSourceDataEvent;
     styledata: MapStyleDataEvent;
     styleimagemissing: MapStyleImageMissingEvent;
+    dataabort: MapDataEvent;
+    sourcedataabort: MapSourceDataEvent;
 
     boxzoomcancel: MapLibreZoomEvent;
     boxzoomstart: MapLibreZoomEvent;
