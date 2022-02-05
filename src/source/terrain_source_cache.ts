@@ -451,7 +451,7 @@ class TerrainSourceCache extends Evented {
      * @returns {Array<Tile>} returns a list of tiles
      */
     tilesAfterTime(time = Date.now()): Array<Tile> {
-        return values(this._tiles).filter(t => t.timeLoaded >= time);
+        return Object.values(this._tiles).filter(t => t.timeLoaded >= time);
     }
 
     /**

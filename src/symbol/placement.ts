@@ -375,7 +375,6 @@ export class Placement {
                     iconBox, shift.x, shift.y,
                     rotateWithMap, pitchWithMap, this.transform.angle),
                 textOverlapMode, textPixelRatio, posMatrix, collisionGroup.predicate, getElevation);
-
             if (placedIconBoxes.box.length === 0) return;
         }
 

@@ -348,8 +348,6 @@ export type MapEventType = {
     sourcedata: MapSourceDataEvent;
     styledata: MapStyleDataEvent;
     styleimagemissing: MapStyleImageMissingEvent;
-    dataabort: MapDataEvent;
-    sourcedataabort: MapSourceDataEvent;
 
     boxzoomcancel: MapLibreZoomEvent;
     boxzoomstart: MapLibreZoomEvent;
@@ -1399,6 +1397,7 @@ export type MapEvent =
      * @private
      */
     | 'style.load'
+
     /**
      * @event terrain
      * @memberof Map
@@ -1406,6 +1405,7 @@ export type MapEvent =
      * @private
      */
     | 'terrain'
+
     /**
      * Fired when a request for one of the map's sources' tiles is aborted.
      * See {@link MapDataEvent} for more information.
