@@ -8,7 +8,7 @@
     "isolatedModules": true,
     //"importsNotUsedAsValues": "preserve",
     "jsx": "react",
-    "module": "ES6",
+    "module": "es2022",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "skipLibCheck": true,
