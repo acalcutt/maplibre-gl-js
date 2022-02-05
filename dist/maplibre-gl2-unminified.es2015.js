@@ -40232,10 +40232,11 @@ HandlerManager.prototype.handleWindowEvent = function handleWindowEvent(e) {
 };
 HandlerManager.prototype._getMapTouches = function _getMapTouches(touches) {
     var mapTouches = [];
-    for (var i = 0; i < touches.length; i++) {
-        var target = touches[i].target;
+    for (var i = 0, list = touches; i < list.length; i += 1) {
+        var t = list[i];
+        var target = t.target;
         if (this._el.contains(target)) {
-            mapTouches.push(touches[i]);
+            mapTouches.push(t);
         }
     }
     return mapTouches;
