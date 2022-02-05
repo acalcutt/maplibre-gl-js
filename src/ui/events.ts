@@ -1397,13 +1397,17 @@ export type MapEvent =
      * @memberof Map
      * @instance
      * @private
+     */
     | 'style.load'
+
     /**
      * @event terrain
      * @memberof Map
      * @instance
      * @private
+     */
     | 'terrain'
+
     /**
      * Fired when a request for one of the map's sources' tiles is aborted.
      * See {@link MapDataEvent} for more information.
