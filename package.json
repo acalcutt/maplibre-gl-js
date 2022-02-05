@@ -2,7 +2,7 @@
   "name": "maplibre-gl",
   "description": "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library",
   "version": "2.1.1",
-  "main": "dist/maplibre-gl2.es5.js",
+  "main": "dist/maplibre-gl2.es2015.js",
   "style": "dist/maplibre-gl2.css",
   "license": "BSD-3-Clause",
   "repository": {
@@ -199,7 +199,8 @@
     "test-unit": "jest ./src",
     "codegen": "npm run generate-style-code && npm run generate-struct-arrays && npm run generate-style-spec && npm run generate-shaders",
     "benchmark": "node bench/run-benchmarks.js",
-    "gl-stats": "node bench/gl-stats.js"
+    "gl-stats": "node bench/gl-stats.js",
+    "postinstall": "npm run codegen"
   },
   "files": [
     "build/",
