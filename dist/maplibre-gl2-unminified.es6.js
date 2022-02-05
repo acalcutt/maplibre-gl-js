@@ -100,9 +100,9 @@ function easeCubicInOut(t) {
     return 4 * (t < 0.5 ? t3 : 3 * (t - t2) + t3 - 0.75);
 }
 function bezier(p1x, p1y, p2x, p2y) {
-    const bezier = new unitbezier(p1x, p1y, p2x, p2y);
+    const bezier1 = new unitbezier(p1x, p1y, p2x, p2y);
     return function (t) {
-        return bezier.solve(t);
+        return bezier1.solve(t);
     };
 }
 const ease = bezier(0.25, 0.1, 0.25, 1);
@@ -603,15 +603,15 @@ if (typeof Object.freeze == 'function') {
     Object.freeze(ResourceType);
 }
 class AJAXError extends Error {
+    toString() {
+        return `${ this.name }: ${ this.message } (${ this.status }): ${ this.url }`;
+    }
     constructor(message, status, url) {
         super(message);
         this.status = status;
         this.url = url;
         this.name = this.constructor.name;
         this.message = message;
-    }
-    toString() {
-        return `${ this.name }: ${ this.message } (${ this.status }): ${ this.url }`;
     }
 }
 const getReferrer = isWorker() ? () => self.worker && self.worker.referrer : () => (window.location.protocol === 'blob:' ? window.parent : window).location.href;
@@ -789,17 +789,17 @@ const resetImageRequestQueue = () => {
     numImageRequests = 0;
 };
 resetImageRequestQueue();
-const getImage = function (requestParameters, callback) {
+const getImage = function (requestParameters1, callback1) {
     if (exported.supported) {
-        if (!requestParameters.headers) {
-            requestParameters.headers = {};
+        if (!requestParameters1.headers) {
+            requestParameters1.headers = {};
         }
-        requestParameters.headers.accept = 'image/webp,*/*';
+        requestParameters1.headers.accept = 'image/webp,*/*';
     }
     if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
         const queued = {
-            requestParameters,
-            callback,
+            requestParameters: requestParameters1,
+            callback: callback1,
             cancelled: false,
             cancel() {
                 this.cancelled = true;
@@ -823,17 +823,17 @@ const getImage = function (requestParameters, callback) {
             }
         }
     };
-    const request = getArrayBuffer(requestParameters, (err, data, cacheControl, expires) => {
+    const request1 = getArrayBuffer(requestParameters1, (err, data, cacheControl, expires) => {
         advanceImageRequestQueue();
         if (err) {
-            callback(err);
+            callback1(err);
         } else if (data) {
-            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
+            arrayBufferToCanvasImageSource(data, callback1, cacheControl, expires);
         }
     });
     return {
         cancel: () => {
-            request.cancel();
+            request1.cancel();
             advanceImageRequestQueue();
         }
     };
@@ -912,9 +912,9 @@ class Evented {
                 listener.call(this, event);
             }
             const oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
-            for (const listener of oneTimeListeners) {
-                _removeEventListener(type, listener, this._oneTimeListeners);
-                listener.call(this, event);
+            for (const listener1 of oneTimeListeners) {
+                _removeEventListener(type, listener1, this._oneTimeListeners);
+                listener1.call(this, event);
             }
             const parent = this._eventedParent;
             if (parent) {
@@ -3457,15 +3457,9 @@ class ParsingError extends Error {
         this.key = key;
     }
 }
+var ParsingError$1 = ParsingError;
 
 class Scope {
-    constructor(parent, bindings = []) {
-        this.parent = parent;
-        this.bindings = {};
-        for (const [name, expression] of bindings) {
-            this.bindings[name] = expression;
-        }
-    }
     concat(bindings) {
         return new Scope(this, bindings);
     }
@@ -3483,7 +3477,15 @@ class Scope {
             return true;
         return this.parent ? this.parent.has(name) : false;
     }
+    constructor(parent, bindings = []) {
+        this.parent = parent;
+        this.bindings = {};
+        for (const [name, expression] of bindings) {
+            this.bindings[name] = expression;
+        }
+    }
 }
+var Scope$1 = Scope;
 
 const NullType = { kind: 'null' };
 const NumberType = { kind: 'number' };
@@ -4563,12 +4565,6 @@ try {
 }
 
 class Color {
-    constructor(r, g, b, a = 1) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-    }
     static parse(input) {
         if (!input) {
             return undefined;
@@ -4603,13 +4599,26 @@ class Color {
             a
         ];
     }
+    constructor(r, g, b, a = 1) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+    }
 }
 Color.black = new Color(0, 0, 0, 1);
 Color.white = new Color(1, 1, 1, 1);
 Color.transparent = new Color(0, 0, 0, 0);
 Color.red = new Color(1, 0, 0, 1);
+var Color$1 = Color;
 
 class Collator {
+    compare(lhs, rhs) {
+        return this.collator.compare(lhs, rhs);
+    }
+    resolvedLocale() {
+        return new Intl.Collator(this.locale ? this.locale : []).resolvedOptions().locale;
+    }
     constructor(caseSensitive, diacriticSensitive, locale) {
         if (caseSensitive)
             this.sensitivity = diacriticSensitive ? 'variant' : 'case';
@@ -4620,12 +4629,6 @@ class Collator {
             sensitivity: this.sensitivity,
             usage: 'search'
         });
-    }
-    compare(lhs, rhs) {
-        return this.collator.compare(lhs, rhs);
-    }
-    resolvedLocale() {
-        return new Intl.Collator(this.locale ? this.locale : []).resolvedOptions().locale;
     }
 }
 
@@ -4639,9 +4642,6 @@ class FormattedSection {
     }
 }
 class Formatted {
-    constructor(sections) {
-        this.sections = sections;
-    }
     static fromString(unformatted) {
         return new Formatted([new FormattedSection(unformatted, null, null, null, null)]);
     }
@@ -4690,13 +4690,12 @@ class Formatted {
         }
         return serialized;
     }
+    constructor(sections) {
+        this.sections = sections;
+    }
 }
 
 class ResolvedImage {
-    constructor(options) {
-        this.name = options.name;
-        this.available = options.available;
-    }
     toString() {
         return this.name;
     }
@@ -4713,6 +4712,10 @@ class ResolvedImage {
             'image',
             this.name
         ];
+    }
+    constructor(options) {
+        this.name = options.name;
+        this.available = options.available;
     }
 }
 
@@ -4749,7 +4752,7 @@ function isValue(mixed) {
         return true;
     } else if (typeof mixed === 'number') {
         return true;
-    } else if (mixed instanceof Color) {
+    } else if (mixed instanceof Color$1) {
         return true;
     } else if (mixed instanceof Collator) {
         return true;
@@ -4784,7 +4787,7 @@ function typeOf(value) {
         return BooleanType;
     } else if (typeof value === 'number') {
         return NumberType;
-    } else if (value instanceof Color) {
+    } else if (value instanceof Color$1) {
         return ColorType;
     } else if (value instanceof Collator) {
         return CollatorType;
@@ -4817,7 +4820,7 @@ function toString(value) {
         return '';
     } else if (type === 'string' || type === 'number' || type === 'boolean') {
         return String(value);
-    } else if (value instanceof Color || value instanceof Formatted || value instanceof ResolvedImage) {
+    } else if (value instanceof Color$1 || value instanceof Formatted || value instanceof ResolvedImage) {
         return value.toString();
     } else {
         return JSON.stringify(value);
@@ -4825,10 +4828,6 @@ function toString(value) {
 }
 
 class Literal {
-    constructor(type, value) {
-        this.type = type;
-        this.value = value;
-    }
     static parse(args, context) {
         if (args.length !== 2)
             return context.error(`'literal' expression requires exactly one argument, but found ${ args.length - 1 } instead.`);
@@ -4856,7 +4855,7 @@ class Literal {
                 'literal',
                 this.value
             ];
-        } else if (this.value instanceof Color) {
+        } else if (this.value instanceof Color$1) {
             return ['rgba'].concat(this.value.toArray());
         } else if (this.value instanceof Formatted) {
             return this.value.serialize();
@@ -4864,17 +4863,23 @@ class Literal {
             return this.value;
         }
     }
+    constructor(type, value) {
+        this.type = type;
+        this.value = value;
+    }
 }
+var Literal$1 = Literal;
 
 class RuntimeError {
+    toJSON() {
+        return this.message;
+    }
     constructor(message) {
         this.name = 'ExpressionEvaluationError';
         this.message = message;
     }
-    toJSON() {
-        return this.message;
-    }
 }
+var RuntimeError$1 = RuntimeError;
 
 const types$1 = {
     string: StringType,
@@ -4883,10 +4888,6 @@ const types$1 = {
     object: ObjectType
 };
 class Assertion {
-    constructor(type, args) {
-        this.type = type;
-        this.args = args;
-    }
     static parse(args, context) {
         if (args.length < 2)
             return context.error('Expected at least one argument.');
@@ -4932,7 +4933,7 @@ class Assertion {
             if (!error) {
                 return value;
             } else if (i === this.args.length - 1) {
-                throw new RuntimeError(`Expected value to be of type ${ toString$1(this.type) }, but found ${ toString$1(typeOf(value)) } instead.`);
+                throw new RuntimeError$1(`Expected value to be of type ${ toString$1(this.type) }, but found ${ toString$1(typeOf(value)) } instead.`);
             }
         }
         return null;
@@ -4958,13 +4959,14 @@ class Assertion {
         }
         return serialized.concat(this.args.map(arg => arg.serialize()));
     }
+    constructor(type, args) {
+        this.type = type;
+        this.args = args;
+    }
 }
+var Assertion$1 = Assertion;
 
 class FormatExpression {
-    constructor(sections) {
-        this.type = FormattedType;
-        this.sections = sections;
-    }
     static parse(args, context) {
         if (args.length < 2) {
             return context.error('Expected at least one argument.');
@@ -5064,13 +5066,13 @@ class FormatExpression {
         }
         return serialized;
     }
+    constructor(sections) {
+        this.type = FormattedType;
+        this.sections = sections;
+    }
 }
 
 class ImageExpression {
-    constructor(input) {
-        this.type = ResolvedImageType;
-        this.input = input;
-    }
     static parse(args, context) {
         if (args.length !== 2) {
             return context.error('Expected two arguments.');
@@ -5099,6 +5101,10 @@ class ImageExpression {
             this.input.serialize()
         ];
     }
+    constructor(input) {
+        this.type = ResolvedImageType;
+        this.input = input;
+    }
 }
 
 const types = {
@@ -5108,10 +5114,6 @@ const types = {
     'to-string': StringType
 };
 class Coercion {
-    constructor(type, args) {
-        this.type = type;
-        this.args = args;
-    }
     static parse(args, context) {
         if (args.length < 2)
             return context.error('Expected at least one argument.');
@@ -5137,7 +5139,7 @@ class Coercion {
             for (const arg of this.args) {
                 input = arg.evaluate(ctx);
                 error = null;
-                if (input instanceof Color) {
+                if (input instanceof Color$1) {
                     return input;
                 } else if (typeof input === 'string') {
                     const c = ctx.parseColor(input);
@@ -5150,11 +5152,11 @@ class Coercion {
                         error = validateRGBA(input[0], input[1], input[2], input[3]);
                     }
                     if (!error) {
-                        return new Color(input[0] / 255, input[1] / 255, input[2] / 255, input[3]);
+                        return new Color$1(input[0] / 255, input[1] / 255, input[2] / 255, input[3]);
                     }
                 }
             }
-            throw new RuntimeError(error || `Could not parse color from value '${ typeof input === 'string' ? input : String(JSON.stringify(input)) }'`);
+            throw new RuntimeError$1(error || `Could not parse color from value '${ typeof input === 'string' ? input : String(JSON.stringify(input)) }'`);
         } else if (this.type.kind === 'number') {
             let value = null;
             for (const arg of this.args) {
@@ -5166,7 +5168,7 @@ class Coercion {
                     continue;
                 return num;
             }
-            throw new RuntimeError(`Could not convert ${ JSON.stringify(value) } to number.`);
+            throw new RuntimeError$1(`Could not convert ${ JSON.stringify(value) } to number.`);
         } else if (this.type.kind === 'formatted') {
             return Formatted.fromString(toString(this.args[0].evaluate(ctx)));
         } else if (this.type.kind === 'resolvedImage') {
@@ -5199,7 +5201,12 @@ class Coercion {
         });
         return serialized;
     }
+    constructor(type, args) {
+        this.type = type;
+        this.args = args;
+    }
 }
+var Coercion$1 = Coercion;
 
 const geometryTypes = [
     'Unknown',
@@ -5208,15 +5215,6 @@ const geometryTypes = [
     'Polygon'
 ];
 class EvaluationContext {
-    constructor() {
-        this.globals = null;
-        this.feature = null;
-        this.featureState = null;
-        this.formattedSection = null;
-        this._parseColorCache = {};
-        this.availableImages = null;
-        this.canonical = null;
-    }
     id() {
         return this.feature && 'id' in this.feature ? this.feature.id : null;
     }
@@ -5235,19 +5233,23 @@ class EvaluationContext {
     parseColor(input) {
         let cached = this._parseColorCache[input];
         if (!cached) {
-            cached = this._parseColorCache[input] = Color.parse(input);
+            cached = this._parseColorCache[input] = Color$1.parse(input);
         }
         return cached;
     }
+    constructor() {
+        this.globals = null;
+        this.feature = null;
+        this.featureState = null;
+        this.formattedSection = null;
+        this._parseColorCache = {};
+        this.availableImages = null;
+        this.canonical = null;
+    }
 }
+var EvaluationContext$1 = EvaluationContext;
 
 class CompoundExpression {
-    constructor(name, type, evaluate, args) {
-        this.name = name;
-        this.type = type;
-        this._evaluate = evaluate;
-        this.args = args;
-    }
     evaluate(ctx) {
         return this._evaluate(ctx, this.args);
     }
@@ -5273,13 +5275,13 @@ class CompoundExpression {
             ]] : definition.overloads;
         const overloads = availableOverloads.filter(([signature]) => !Array.isArray(signature) || signature.length === args.length - 1);
         let signatureContext = null;
-        for (const [params, evaluate] of overloads) {
-            signatureContext = new ParsingContext(context.registry, context.path, null, context.scope);
+        for (const [params1, evaluate] of overloads) {
+            signatureContext = new ParsingContext$1(context.registry, context.path, null, context.scope);
             const parsedArgs = [];
             let argParseFailed = false;
             for (let i = 1; i < args.length; i++) {
                 const arg = args[i];
-                const expectedType = Array.isArray(params) ? params[i - 1] : params.type;
+                const expectedType = Array.isArray(params1) ? params1[i - 1] : params1.type;
                 const parsed = signatureContext.parse(arg, 1 + parsedArgs.length, expectedType);
                 if (!parsed) {
                     argParseFailed = true;
@@ -5290,16 +5292,16 @@ class CompoundExpression {
             if (argParseFailed) {
                 continue;
             }
-            if (Array.isArray(params)) {
-                if (params.length !== parsedArgs.length) {
-                    signatureContext.error(`Expected ${ params.length } arguments, but found ${ parsedArgs.length } instead.`);
+            if (Array.isArray(params1)) {
+                if (params1.length !== parsedArgs.length) {
+                    signatureContext.error(`Expected ${ params1.length } arguments, but found ${ parsedArgs.length } instead.`);
                     continue;
                 }
             }
-            for (let i = 0; i < parsedArgs.length; i++) {
-                const expected = Array.isArray(params) ? params[i] : params.type;
-                const arg = parsedArgs[i];
-                signatureContext.concat(i + 1).checkSubtype(expected, arg.type);
+            for (let i1 = 0; i1 < parsedArgs.length; i1++) {
+                const expected = Array.isArray(params1) ? params1[i1] : params1.type;
+                const arg = parsedArgs[i1];
+                signatureContext.concat(i1 + 1).checkSubtype(expected, arg.type);
             }
             if (signatureContext.errors.length === 0) {
                 return new CompoundExpression(op, type, evaluate, parsedArgs);
@@ -5327,6 +5329,12 @@ class CompoundExpression {
             registry[name] = CompoundExpression;
         }
     }
+    constructor(name, type, evaluate, args) {
+        this.name = name;
+        this.type = type;
+        this._evaluate = evaluate;
+        this.args = args;
+    }
 }
 function stringifySignature(signature) {
     if (Array.isArray(signature)) {
@@ -5335,14 +5343,9 @@ function stringifySignature(signature) {
         return `(${ toString$1(signature.type) }...)`;
     }
 }
+var CompoundExpression$1 = CompoundExpression;
 
 class CollatorExpression {
-    constructor(caseSensitive, diacriticSensitive, locale) {
-        this.type = CollatorType;
-        this.locale = locale;
-        this.caseSensitive = caseSensitive;
-        this.diacriticSensitive = diacriticSensitive;
-    }
     static parse(args, context) {
         if (args.length !== 2)
             return context.error('Expected one argument.');
@@ -5387,6 +5390,12 @@ class CollatorExpression {
             'collator',
             options
         ];
+    }
+    constructor(caseSensitive, diacriticSensitive, locale) {
+        this.type = CollatorType;
+        this.locale = locale;
+        this.caseSensitive = caseSensitive;
+        this.diacriticSensitive = diacriticSensitive;
     }
 }
 
@@ -5500,8 +5509,8 @@ function lineStringWithinPolygon(line, polygon) {
             return false;
         }
     }
-    for (let i = 0; i < line.length - 1; ++i) {
-        if (lineIntersectPolygon(line[i], line[i + 1], polygon)) {
+    for (let i1 = 0; i1 < line.length - 1; ++i1) {
+        if (lineIntersectPolygon(line[i1], line[i1 + 1], polygon)) {
             return false;
         }
     }
@@ -5671,11 +5680,6 @@ function linesWithinPolygons(ctx, polygonGeometry) {
     return true;
 }
 class Within {
-    constructor(geojson, geometries) {
-        this.type = BooleanType;
-        this.geojson = geojson;
-        this.geometries = geometries;
-    }
     static parse(args, context) {
         if (args.length !== 2)
             return context.error(`'within' expression requires exactly one argument, but found ${ args.length - 1 } instead.`);
@@ -5720,10 +5724,16 @@ class Within {
             this.geojson
         ];
     }
+    constructor(geojson, geometries) {
+        this.type = BooleanType;
+        this.geojson = geojson;
+        this.geometries = geometries;
+    }
 }
+var Within$1 = Within;
 
 function isFeatureConstant(e) {
-    if (e instanceof CompoundExpression) {
+    if (e instanceof CompoundExpression$1) {
         if (e.name === 'get' && e.args.length === 1) {
             return false;
         } else if (e.name === 'feature-state') {
@@ -5736,7 +5746,7 @@ function isFeatureConstant(e) {
             return false;
         }
     }
-    if (e instanceof Within) {
+    if (e instanceof Within$1) {
         return false;
     }
     let result = true;
@@ -5748,7 +5758,7 @@ function isFeatureConstant(e) {
     return result;
 }
 function isStateConstant(e) {
-    if (e instanceof CompoundExpression) {
+    if (e instanceof CompoundExpression$1) {
         if (e.name === 'feature-state') {
             return false;
         }
@@ -5762,7 +5772,7 @@ function isStateConstant(e) {
     return result;
 }
 function isGlobalPropertyConstant(e, properties) {
-    if (e instanceof CompoundExpression && properties.indexOf(e.name) >= 0) {
+    if (e instanceof CompoundExpression$1 && properties.indexOf(e.name) >= 0) {
         return false;
     }
     let result = true;
@@ -5775,11 +5785,6 @@ function isGlobalPropertyConstant(e, properties) {
 }
 
 class Var {
-    constructor(name, boundExpression) {
-        this.type = boundExpression.type;
-        this.name = name;
-        this.boundExpression = boundExpression;
-    }
     static parse(args, context) {
         if (args.length !== 2 || typeof args[1] !== 'string')
             return context.error('\'var\' expression requires exactly one string literal argument.');
@@ -5803,17 +5808,15 @@ class Var {
             this.name
         ];
     }
+    constructor(name, boundExpression) {
+        this.type = boundExpression.type;
+        this.name = name;
+        this.boundExpression = boundExpression;
+    }
 }
+var Var$1 = Var;
 
 class ParsingContext {
-    constructor(registry, path = [], expectedType, scope = new Scope(), errors = []) {
-        this.registry = registry;
-        this.path = path;
-        this.key = path.map(part => `[${ part }]`).join('');
-        this.scope = scope;
-        this.errors = errors;
-        this.expectedType = expectedType;
-    }
     parse(expr, index, expectedType, bindings, options = {}) {
         if (index) {
             return this.concat(index, expectedType, bindings)._parse(expr, options);
@@ -5829,9 +5832,9 @@ class ParsingContext {
         }
         function annotate(parsed, type, typeAnnotation) {
             if (typeAnnotation === 'assert') {
-                return new Assertion(type, [parsed]);
+                return new Assertion$1(type, [parsed]);
             } else if (typeAnnotation === 'coerce') {
-                return new Coercion(type, [parsed]);
+                return new Coercion$1(type, [parsed]);
             } else {
                 return parsed;
             }
@@ -5861,10 +5864,10 @@ class ParsingContext {
                         return null;
                     }
                 }
-                if (!(parsed instanceof Literal) && parsed.type.kind !== 'resolvedImage' && isConstant(parsed)) {
-                    const ec = new EvaluationContext();
+                if (!(parsed instanceof Literal$1) && parsed.type.kind !== 'resolvedImage' && isConstant(parsed)) {
+                    const ec = new EvaluationContext$1();
                     try {
-                        parsed = new Literal(parsed.type, parsed.evaluate(ec));
+                        parsed = new Literal$1(parsed.type, parsed.evaluate(ec));
                     } catch (e) {
                         this.error(e.message);
                         return null;
@@ -5888,7 +5891,7 @@ class ParsingContext {
     }
     error(error, ...keys) {
         const key = `${ this.key }${ keys.map(k => `[${ k }]`).join('') }`;
-        this.errors.push(new ParsingError(key, error));
+        this.errors.push(new ParsingError$1(key, error));
     }
     checkSubtype(expected, t) {
         const error = checkSubtype(expected, t);
@@ -5896,24 +5899,33 @@ class ParsingContext {
             this.error(error);
         return error;
     }
+    constructor(registry, path = [], expectedType, scope = new Scope$1(), errors = []) {
+        this.registry = registry;
+        this.path = path;
+        this.key = path.map(part => `[${ part }]`).join('');
+        this.scope = scope;
+        this.errors = errors;
+        this.expectedType = expectedType;
+    }
 }
+var ParsingContext$1 = ParsingContext;
 function isConstant(expression) {
-    if (expression instanceof Var) {
+    if (expression instanceof Var$1) {
         return isConstant(expression.boundExpression);
-    } else if (expression instanceof CompoundExpression && expression.name === 'error') {
+    } else if (expression instanceof CompoundExpression$1 && expression.name === 'error') {
         return false;
     } else if (expression instanceof CollatorExpression) {
         return false;
-    } else if (expression instanceof Within) {
+    } else if (expression instanceof Within$1) {
         return false;
     }
-    const isTypeAnnotation = expression instanceof Coercion || expression instanceof Assertion;
+    const isTypeAnnotation = expression instanceof Coercion$1 || expression instanceof Assertion$1;
     let childrenConstant = true;
     expression.eachChild(child => {
         if (isTypeAnnotation) {
             childrenConstant = childrenConstant && isConstant(child);
         } else {
-            childrenConstant = childrenConstant && child instanceof Literal;
+            childrenConstant = childrenConstant && child instanceof Literal$1;
         }
     });
     if (!childrenConstant) {
@@ -5946,23 +5958,13 @@ function findStopLessThanOrEqualTo(stops, input) {
         } else if (currentValue > input) {
             upperIndex = currentIndex - 1;
         } else {
-            throw new RuntimeError('Input is not a number.');
+            throw new RuntimeError$1('Input is not a number.');
         }
     }
     return 0;
 }
 
 class Step {
-    constructor(type, input, stops) {
-        this.type = type;
-        this.input = input;
-        this.labels = [];
-        this.outputs = [];
-        for (const [label, expression] of stops) {
-            this.labels.push(label);
-            this.outputs.push(expression);
-        }
-    }
     static parse(args, context) {
         if (args.length - 1 < 4) {
             return context.error(`Expected at least 4 arguments, but found only ${ args.length - 1 }.`);
@@ -6039,13 +6041,24 @@ class Step {
         }
         return serialized;
     }
+    constructor(type, input, stops) {
+        this.type = type;
+        this.input = input;
+        this.labels = [];
+        this.outputs = [];
+        for (const [label, expression] of stops) {
+            this.labels.push(label);
+            this.outputs.push(expression);
+        }
+    }
 }
+var Step$1 = Step;
 
 function number(a, b, t) {
     return a * (1 - t) + b * t;
 }
 function color(from, to, t) {
-    return new Color(number(from.r, to.r, t), number(from.g, to.g, t), number(from.b, to.b, t), number(from.a, to.a, t));
+    return new Color$1(number(from.r, to.r, t), number(from.g, to.g, t), number(from.b, to.b, t), number(from.a, to.a, t));
 }
 function array(from, to, t) {
     return from.map((d, i) => {
@@ -6088,7 +6101,7 @@ function labToRgb(labColor) {
     y = Yn * lab2xyz(y);
     x = Xn * lab2xyz(x);
     z = Zn * lab2xyz(z);
-    return new Color(xyz2rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z), xyz2rgb(-0.969266 * x + 1.8760108 * y + 0.041556 * z), xyz2rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z), labColor.alpha);
+    return new Color$1(xyz2rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z), xyz2rgb(-0.969266 * x + 1.8760108 * y + 0.041556 * z), xyz2rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z), labColor.alpha);
 }
 function interpolateLab(from, to, t) {
     return {
@@ -6147,18 +6160,6 @@ hcl: hcl
 });
 
 class Interpolate {
-    constructor(type, operator, interpolation, input, stops) {
-        this.type = type;
-        this.operator = operator;
-        this.interpolation = interpolation;
-        this.input = input;
-        this.labels = [];
-        this.outputs = [];
-        for (const [label, expression] of stops) {
-            this.labels.push(label);
-            this.outputs.push(expression);
-        }
-    }
     static interpolationFactor(interpolation, input, lower, upper) {
         let t = 0;
         if (interpolation.name === 'exponential') {
@@ -6303,6 +6304,18 @@ class Interpolate {
         }
         return serialized;
     }
+    constructor(type, operator, interpolation, input, stops) {
+        this.type = type;
+        this.operator = operator;
+        this.interpolation = interpolation;
+        this.input = input;
+        this.labels = [];
+        this.outputs = [];
+        for (const [label, expression] of stops) {
+            this.labels.push(label);
+            this.outputs.push(expression);
+        }
+    }
 }
 function exponentialInterpolation(input, base, lowerValue, upperValue) {
     const difference = upperValue - lowerValue;
@@ -6315,12 +6328,9 @@ function exponentialInterpolation(input, base, lowerValue, upperValue) {
         return (Math.pow(base, progress) - 1) / (Math.pow(base, difference) - 1);
     }
 }
+var Interpolate$1 = Interpolate;
 
 class Coalesce {
-    constructor(type, args) {
-        this.type = type;
-        this.args = args;
-    }
     static parse(args, context) {
         if (args.length < 2) {
             return context.error('Expectected at least one argument.');
@@ -6331,8 +6341,8 @@ class Coalesce {
             outputType = expectedType;
         }
         const parsedArgs = [];
-        for (const arg of args.slice(1)) {
-            const parsed = context.parse(arg, 1 + parsedArgs.length, outputType, undefined, { typeAnnotation: 'omit' });
+        for (const arg1 of args.slice(1)) {
+            const parsed = context.parse(arg1, 1 + parsedArgs.length, outputType, undefined, { typeAnnotation: 'omit' });
             if (!parsed)
                 return null;
             outputType = outputType || parsed.type;
@@ -6375,14 +6385,14 @@ class Coalesce {
         });
         return serialized;
     }
+    constructor(type, args) {
+        this.type = type;
+        this.args = args;
+    }
 }
+var Coalesce$1 = Coalesce;
 
 class Let {
-    constructor(bindings, result) {
-        this.type = result.type;
-        this.bindings = [].concat(bindings);
-        this.result = result;
-    }
     evaluate(ctx) {
         return this.result.evaluate(ctx);
     }
@@ -6428,14 +6438,15 @@ class Let {
         serialized.push(this.result.serialize());
         return serialized;
     }
+    constructor(bindings, result) {
+        this.type = result.type;
+        this.bindings = [].concat(bindings);
+        this.result = result;
+    }
 }
+var Let$1 = Let;
 
 class At {
-    constructor(type, index, input) {
-        this.type = type;
-        this.index = index;
-        this.input = input;
-    }
     static parse(args, context) {
         if (args.length !== 3)
             return context.error(`Expected 2 arguments, but found ${ args.length - 1 } instead.`);
@@ -6448,17 +6459,17 @@ class At {
     }
     evaluate(ctx) {
         const index = this.index.evaluate(ctx);
-        const array = this.input.evaluate(ctx);
+        const array1 = this.input.evaluate(ctx);
         if (index < 0) {
-            throw new RuntimeError(`Array index out of bounds: ${ index } < 0.`);
+            throw new RuntimeError$1(`Array index out of bounds: ${ index } < 0.`);
         }
-        if (index >= array.length) {
-            throw new RuntimeError(`Array index out of bounds: ${ index } > ${ array.length - 1 }.`);
+        if (index >= array1.length) {
+            throw new RuntimeError$1(`Array index out of bounds: ${ index } > ${ array1.length - 1 }.`);
         }
         if (index !== Math.floor(index)) {
-            throw new RuntimeError(`Array index must be an integer, but found ${ index } instead.`);
+            throw new RuntimeError$1(`Array index must be an integer, but found ${ index } instead.`);
         }
-        return array[index];
+        return array1[index];
     }
     eachChild(fn) {
         fn(this.index);
@@ -6474,14 +6485,15 @@ class At {
             this.input.serialize()
         ];
     }
+    constructor(type, index, input) {
+        this.type = type;
+        this.index = index;
+        this.input = input;
+    }
 }
+var At$1 = At;
 
 class In {
-    constructor(needle, haystack) {
-        this.type = BooleanType;
-        this.needle = needle;
-        this.haystack = haystack;
-    }
     static parse(args, context) {
         if (args.length !== 3) {
             return context.error(`Expected 2 arguments, but found ${ args.length - 1 } instead.`);
@@ -6512,13 +6524,13 @@ class In {
                 'number',
                 'null'
             ])) {
-            throw new RuntimeError(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(typeOf(needle)) } instead.`);
+            throw new RuntimeError$1(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(typeOf(needle)) } instead.`);
         }
         if (!isValidNativeType(haystack, [
                 'string',
                 'array'
             ])) {
-            throw new RuntimeError(`Expected second argument to be of type array or string, but found ${ toString$1(typeOf(haystack)) } instead.`);
+            throw new RuntimeError$1(`Expected second argument to be of type array or string, but found ${ toString$1(typeOf(haystack)) } instead.`);
         }
         return haystack.indexOf(needle) >= 0;
     }
@@ -6536,15 +6548,15 @@ class In {
             this.haystack.serialize()
         ];
     }
-}
-
-class IndexOf {
-    constructor(needle, haystack, fromIndex) {
-        this.type = NumberType;
+    constructor(needle, haystack) {
+        this.type = BooleanType;
         this.needle = needle;
         this.haystack = haystack;
-        this.fromIndex = fromIndex;
     }
+}
+var In$1 = In;
+
+class IndexOf {
     static parse(args, context) {
         if (args.length <= 2 || args.length >= 5) {
             return context.error(`Expected 3 or 4 arguments, but found ${ args.length - 1 } instead.`);
@@ -6580,13 +6592,13 @@ class IndexOf {
                 'number',
                 'null'
             ])) {
-            throw new RuntimeError(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(typeOf(needle)) } instead.`);
+            throw new RuntimeError$1(`Expected first argument to be of type boolean, string, number or null, but found ${ toString$1(typeOf(needle)) } instead.`);
         }
         if (!isValidNativeType(haystack, [
                 'string',
                 'array'
             ])) {
-            throw new RuntimeError(`Expected second argument to be of type array or string, but found ${ toString$1(typeOf(haystack)) } instead.`);
+            throw new RuntimeError$1(`Expected second argument to be of type array or string, but found ${ toString$1(typeOf(haystack)) } instead.`);
         }
         if (this.fromIndex) {
             const fromIndex = this.fromIndex.evaluate(ctx);
@@ -6620,17 +6632,16 @@ class IndexOf {
             this.haystack.serialize()
         ];
     }
+    constructor(needle, haystack, fromIndex) {
+        this.type = NumberType;
+        this.needle = needle;
+        this.haystack = haystack;
+        this.fromIndex = fromIndex;
+    }
 }
+var IndexOf$1 = IndexOf;
 
 class Match {
-    constructor(inputType, outputType, input, cases, outputs, otherwise) {
-        this.inputType = inputType;
-        this.type = outputType;
-        this.input = input;
-        this.cases = cases;
-        this.outputs = outputs;
-        this.otherwise = otherwise;
-    }
     static parse(args, context) {
         if (args.length < 5)
             return context.error(`Expected at least 4 arguments, but found only ${ args.length - 1 }.`);
@@ -6708,16 +6719,16 @@ class Match {
         const sortedLabels = Object.keys(this.cases).sort();
         const groupedByOutput = [];
         const outputLookup = {};
-        for (const label of sortedLabels) {
-            const outputIndex = outputLookup[this.cases[label]];
+        for (const label1 of sortedLabels) {
+            const outputIndex = outputLookup[this.cases[label1]];
             if (outputIndex === undefined) {
-                outputLookup[this.cases[label]] = groupedByOutput.length;
+                outputLookup[this.cases[label1]] = groupedByOutput.length;
                 groupedByOutput.push([
-                    this.cases[label],
-                    [label]
+                    this.cases[label1],
+                    [label1]
                 ]);
             } else {
-                groupedByOutput[outputIndex][1].push(label);
+                groupedByOutput[outputIndex][1].push(label1);
             }
         }
         const coerceLabel = label => this.inputType.kind === 'number' ? Number(label) : label;
@@ -6732,14 +6743,18 @@ class Match {
         serialized.push(this.otherwise.serialize());
         return serialized;
     }
-}
-
-class Case {
-    constructor(type, branches, otherwise) {
-        this.type = type;
-        this.branches = branches;
+    constructor(inputType, outputType, input, cases, outputs, otherwise) {
+        this.inputType = inputType;
+        this.type = outputType;
+        this.input = input;
+        this.cases = cases;
+        this.outputs = outputs;
         this.otherwise = otherwise;
     }
+}
+var Match$1 = Match;
+
+class Case {
     static parse(args, context) {
         if (args.length < 4)
             return context.error(`Expected at least 3 arguments, but found only ${ args.length - 1 }.`);
@@ -6793,15 +6808,15 @@ class Case {
         });
         return serialized;
     }
+    constructor(type, branches, otherwise) {
+        this.type = type;
+        this.branches = branches;
+        this.otherwise = otherwise;
+    }
 }
+var Case$1 = Case;
 
 class Slice {
-    constructor(type, input, beginIndex, endIndex) {
-        this.type = type;
-        this.input = input;
-        this.beginIndex = beginIndex;
-        this.endIndex = endIndex;
-    }
     static parse(args, context) {
         if (args.length <= 2 || args.length >= 5) {
             return context.error(`Expected 3 or 4 arguments, but found ${ args.length - 1 } instead.`);
@@ -6833,7 +6848,7 @@ class Slice {
                 'string',
                 'array'
             ])) {
-            throw new RuntimeError(`Expected first argument to be of type array or string, but found ${ toString$1(typeOf(input)) } instead.`);
+            throw new RuntimeError$1(`Expected first argument to be of type array or string, but found ${ toString$1(typeOf(input)) } instead.`);
         }
         if (this.endIndex) {
             const endIndex = this.endIndex.evaluate(ctx);
@@ -6867,7 +6882,14 @@ class Slice {
             this.beginIndex.serialize()
         ];
     }
+    constructor(type, input, beginIndex, endIndex) {
+        this.type = type;
+        this.input = input;
+        this.beginIndex = beginIndex;
+        this.endIndex = endIndex;
+    }
 }
+var Slice$1 = Slice;
 
 function isComparableType(op, type) {
     if (op === '==' || op === '!=') {
@@ -6912,16 +6934,9 @@ function lteqCollate(ctx, a, b, c) {
 function gteqCollate(ctx, a, b, c) {
     return c.compare(a, b) >= 0;
 }
-function makeComparison(op, compareBasic, compareWithCollator) {
-    const isOrderComparison = op !== '==' && op !== '!=';
+function makeComparison(op1, compareBasic, compareWithCollator) {
+    const isOrderComparison = op1 !== '==' && op1 !== '!=';
     return class Comparison {
-        constructor(lhs, rhs, collator) {
-            this.type = BooleanType;
-            this.lhs = lhs;
-            this.rhs = rhs;
-            this.collator = collator;
-            this.hasUntypedArgument = lhs.type.kind === 'value' || rhs.type.kind === 'value';
-        }
         static parse(args, context) {
             if (args.length !== 3 && args.length !== 4)
                 return context.error('Expected two or three arguments.');
@@ -6943,9 +6958,9 @@ function makeComparison(op, compareBasic, compareWithCollator) {
             }
             if (isOrderComparison) {
                 if (lhs.type.kind === 'value' && rhs.type.kind !== 'value') {
-                    lhs = new Assertion(rhs.type, [lhs]);
+                    lhs = new Assertion$1(rhs.type, [lhs]);
                 } else if (lhs.type.kind !== 'value' && rhs.type.kind === 'value') {
-                    rhs = new Assertion(lhs.type, [rhs]);
+                    rhs = new Assertion$1(lhs.type, [rhs]);
                 }
             }
             let collator = null;
@@ -6963,16 +6978,16 @@ function makeComparison(op, compareBasic, compareWithCollator) {
             const lhs = this.lhs.evaluate(ctx);
             const rhs = this.rhs.evaluate(ctx);
             if (isOrderComparison && this.hasUntypedArgument) {
-                const lt = typeOf(lhs);
+                const lt1 = typeOf(lhs);
                 const rt = typeOf(rhs);
-                if (lt.kind !== rt.kind || !(lt.kind === 'string' || lt.kind === 'number')) {
-                    throw new RuntimeError(`Expected arguments for "${ op }" to be (string, string) or (number, number), but found (${ lt.kind }, ${ rt.kind }) instead.`);
+                if (lt1.kind !== rt.kind || !(lt1.kind === 'string' || lt1.kind === 'number')) {
+                    throw new RuntimeError$1(`Expected arguments for "${ op1 }" to be (string, string) or (number, number), but found (${ lt1.kind }, ${ rt.kind }) instead.`);
                 }
             }
             if (this.collator && !isOrderComparison && this.hasUntypedArgument) {
-                const lt = typeOf(lhs);
+                const lt2 = typeOf(lhs);
                 const rt = typeOf(rhs);
-                if (lt.kind !== 'string' || rt.kind !== 'string') {
+                if (lt2.kind !== 'string' || rt.kind !== 'string') {
                     return compareBasic(ctx, lhs, rhs);
                 }
             }
@@ -6989,11 +7004,18 @@ function makeComparison(op, compareBasic, compareWithCollator) {
             return true;
         }
         serialize() {
-            const serialized = [op];
+            const serialized = [op1];
             this.eachChild(child => {
                 serialized.push(child.serialize());
             });
             return serialized;
+        }
+        constructor(lhs, rhs, collator) {
+            this.type = BooleanType;
+            this.lhs = lhs;
+            this.rhs = rhs;
+            this.collator = collator;
+            this.hasUntypedArgument = lhs.type.kind === 'value' || rhs.type.kind === 'value';
         }
     };
 }
@@ -7005,14 +7027,6 @@ const LessThanOrEqual = makeComparison('<=', lteq, lteqCollate);
 const GreaterThanOrEqual = makeComparison('>=', gteq, gteqCollate);
 
 class NumberFormat {
-    constructor(number, locale, currency, minFractionDigits, maxFractionDigits) {
-        this.type = StringType;
-        this.number = number;
-        this.locale = locale;
-        this.currency = currency;
-        this.minFractionDigits = minFractionDigits;
-        this.maxFractionDigits = maxFractionDigits;
-    }
     static parse(args, context) {
         if (args.length !== 3)
             return context.error('Expected two arguments.');
@@ -7094,13 +7108,17 @@ class NumberFormat {
             options
         ];
     }
+    constructor(number, locale, currency, minFractionDigits, maxFractionDigits) {
+        this.type = StringType;
+        this.number = number;
+        this.locale = locale;
+        this.currency = currency;
+        this.minFractionDigits = minFractionDigits;
+        this.maxFractionDigits = maxFractionDigits;
+    }
 }
 
 class Length {
-    constructor(input) {
-        this.type = NumberType;
-        this.input = input;
-    }
     static parse(args, context) {
         if (args.length !== 2)
             return context.error(`Expected 1 argument, but found ${ args.length - 1 } instead.`);
@@ -7118,7 +7136,7 @@ class Length {
         } else if (Array.isArray(input)) {
             return input.length;
         } else {
-            throw new RuntimeError(`Expected value to be of type string or array, but found ${ toString$1(typeOf(input)) } instead.`);
+            throw new RuntimeError$1(`Expected value to be of type string or array, but found ${ toString$1(typeOf(input)) } instead.`);
         }
     }
     eachChild(fn) {
@@ -7134,7 +7152,12 @@ class Length {
         });
         return serialized;
     }
+    constructor(input) {
+        this.type = NumberType;
+        this.input = input;
+    }
 }
+var Length$1 = Length;
 
 const expressions = {
     '==': Equals,
@@ -7143,35 +7166,35 @@ const expressions = {
     '<': LessThan,
     '>=': GreaterThanOrEqual,
     '<=': LessThanOrEqual,
-    'array': Assertion,
-    'at': At,
-    'boolean': Assertion,
-    'case': Case,
-    'coalesce': Coalesce,
+    'array': Assertion$1,
+    'at': At$1,
+    'boolean': Assertion$1,
+    'case': Case$1,
+    'coalesce': Coalesce$1,
     'collator': CollatorExpression,
     'format': FormatExpression,
     'image': ImageExpression,
-    'in': In,
-    'index-of': IndexOf,
-    'interpolate': Interpolate,
-    'interpolate-hcl': Interpolate,
-    'interpolate-lab': Interpolate,
-    'length': Length,
-    'let': Let,
-    'literal': Literal,
-    'match': Match,
-    'number': Assertion,
+    'in': In$1,
+    'index-of': IndexOf$1,
+    'interpolate': Interpolate$1,
+    'interpolate-hcl': Interpolate$1,
+    'interpolate-lab': Interpolate$1,
+    'length': Length$1,
+    'let': Let$1,
+    'literal': Literal$1,
+    'match': Match$1,
+    'number': Assertion$1,
     'number-format': NumberFormat,
-    'object': Assertion,
-    'slice': Slice,
-    'step': Step,
-    'string': Assertion,
-    'to-boolean': Coercion,
-    'to-color': Coercion,
-    'to-number': Coercion,
-    'to-string': Coercion,
-    'var': Var,
-    'within': Within
+    'object': Assertion$1,
+    'slice': Slice$1,
+    'step': Step$1,
+    'string': Assertion$1,
+    'to-boolean': Coercion$1,
+    'to-color': Coercion$1,
+    'to-number': Coercion$1,
+    'to-string': Coercion$1,
+    'var': Var$1,
+    'within': Within$1
 };
 function rgba(ctx, [r, g, b, a]) {
     r = r.evaluate(ctx);
@@ -7180,8 +7203,8 @@ function rgba(ctx, [r, g, b, a]) {
     const alpha = a ? a.evaluate(ctx) : 1;
     const error = validateRGBA(r, g, b, alpha);
     if (error)
-        throw new RuntimeError(error);
-    return new Color(r / 255 * alpha, g / 255 * alpha, b / 255 * alpha, alpha);
+        throw new RuntimeError$1(error);
+    return new Color$1(r / 255 * alpha, g / 255 * alpha, b / 255 * alpha, alpha);
 }
 function has(key, obj) {
     return key in obj;
@@ -7205,12 +7228,12 @@ function binarySearch(v, a, i, j) {
 function varargs(type) {
     return { type };
 }
-CompoundExpression.register(expressions, {
+CompoundExpression$1.register(expressions, {
     'error': [
         ErrorType,
         [StringType],
         (ctx, [v]) => {
-            throw new RuntimeError(v.evaluate(ctx));
+            throw new RuntimeError$1(v.evaluate(ctx));
         }
     ],
     'typeof': [
@@ -7695,6 +7718,7 @@ CompoundExpression.register(expressions, {
         (ctx, [collator]) => collator.evaluate(ctx).resolvedLocale()
     ]
 });
+var expressions$1 = expressions;
 
 function success(value) {
     return {
@@ -7753,14 +7777,14 @@ function createFunction(parameters, propertySpec) {
             parameters.stops = parameters.stops.map(stop => {
                 return [
                     stop[0],
-                    Color.parse(stop[1])
+                    Color$1.parse(stop[1])
                 ];
             });
         }
         if (parameters.default) {
-            parameters.default = Color.parse(parameters.default);
+            parameters.default = Color$1.parse(parameters.default);
         } else {
-            parameters.default = Color.parse(propertySpec.default);
+            parameters.default = Color$1.parse(propertySpec.default);
         }
     }
     if (parameters.colorSpace && parameters.colorSpace !== 'rgb' && !colorSpaces[parameters.colorSpace]) {
@@ -7788,8 +7812,8 @@ function createFunction(parameters, propertySpec) {
     if (zoomAndFeatureDependent) {
         const featureFunctions = {};
         const zoomStops = [];
-        for (let s = 0; s < parameters.stops.length; s++) {
-            const stop = parameters.stops[s];
+        for (let s1 = 0; s1 < parameters.stops.length; s1++) {
+            const stop = parameters.stops[s1];
             const zoom = stop[0].zoom;
             if (featureFunctions[zoom] === undefined) {
                 featureFunctions[zoom] = {
@@ -7817,7 +7841,7 @@ function createFunction(parameters, propertySpec) {
         return {
             kind: 'composite',
             interpolationType,
-            interpolationFactor: Interpolate.interpolationFactor.bind(undefined, interpolationType),
+            interpolationFactor: Interpolate$1.interpolationFactor.bind(undefined, interpolationType),
             zoomStops: featureFunctionStops.map(s => s[0]),
             evaluate({zoom}, properties) {
                 return evaluateExponentialFunction({
@@ -7834,7 +7858,7 @@ function createFunction(parameters, propertySpec) {
         return {
             kind: 'camera',
             interpolationType,
-            interpolationFactor: Interpolate.interpolationFactor.bind(undefined, interpolationType),
+            interpolationFactor: Interpolate$1.interpolationFactor.bind(undefined, interpolationType),
             zoomStops: parameters.stops.map(s => s[0]),
             evaluate: ({zoom}) => innerFun(parameters, propertySpec, zoom, hashedStops, categoricalKeyType)
         };
@@ -7912,7 +7936,7 @@ function evaluateExponentialFunction(parameters, propertySpec, input) {
 }
 function evaluateIdentityFunction(parameters, propertySpec, input) {
     if (propertySpec.type === 'color') {
-        input = Color.parse(input);
+        input = Color$1.parse(input);
     } else if (propertySpec.type === 'formatted') {
         input = Formatted.fromString(input.toString());
     } else if (propertySpec.type === 'resolvedImage') {
@@ -7935,13 +7959,6 @@ function interpolationFactor(input, base, lowerValue, upperValue) {
 }
 
 class StyleExpression {
-    constructor(expression, propertySpec) {
-        this.expression = expression;
-        this._warningHistory = {};
-        this._evaluator = new EvaluationContext();
-        this._defaultValue = propertySpec ? getDefaultValue(propertySpec) : null;
-        this._enumValues = propertySpec && propertySpec.type === 'enum' ? propertySpec.values : null;
-    }
     evaluateWithoutErrorHandling(globals, feature, featureState, canonical, availableImages, formattedSection) {
         this._evaluator.globals = globals;
         this._evaluator.feature = feature;
@@ -7964,7 +7981,7 @@ class StyleExpression {
                 return this._defaultValue;
             }
             if (this._enumValues && !(val in this._enumValues)) {
-                throw new RuntimeError(`Expected value to be one of ${ Object.keys(this._enumValues).map(v => JSON.stringify(v)).join(', ') }, but found ${ JSON.stringify(val) } instead.`);
+                throw new RuntimeError$1(`Expected value to be one of ${ Object.keys(this._enumValues).map(v => JSON.stringify(v)).join(', ') }, but found ${ JSON.stringify(val) } instead.`);
             }
             return val;
         } catch (e) {
@@ -7977,12 +7994,19 @@ class StyleExpression {
             return this._defaultValue;
         }
     }
+    constructor(expression, propertySpec) {
+        this.expression = expression;
+        this._warningHistory = {};
+        this._evaluator = new EvaluationContext$1();
+        this._defaultValue = propertySpec ? getDefaultValue(propertySpec) : null;
+        this._enumValues = propertySpec && propertySpec.type === 'enum' ? propertySpec.values : null;
+    }
 }
 function isExpression(expression) {
-    return Array.isArray(expression) && expression.length > 0 && typeof expression[0] === 'string' && expression[0] in expressions;
+    return Array.isArray(expression) && expression.length > 0 && typeof expression[0] === 'string' && expression[0] in expressions$1;
 }
 function createExpression(expression, propertySpec) {
-    const parser = new ParsingContext(expressions, [], propertySpec ? getExpectedType(propertySpec) : undefined);
+    const parser = new ParsingContext$1(expressions$1, [], propertySpec ? getExpectedType(propertySpec) : undefined);
     const parsed = parser.parse(expression, undefined, undefined, undefined, propertySpec && propertySpec.type === 'string' ? { typeAnnotation: 'coerce' } : undefined);
     if (!parsed) {
         return error(parser.errors);
@@ -7990,26 +8014,19 @@ function createExpression(expression, propertySpec) {
     return success(new StyleExpression(parsed, propertySpec));
 }
 class ZoomConstantExpression {
-    constructor(kind, expression) {
-        this.kind = kind;
-        this._styleExpression = expression;
-        this.isStateDependent = kind !== 'constant' && !isStateConstant(expression.expression);
-    }
     evaluateWithoutErrorHandling(globals, feature, featureState, canonical, availableImages, formattedSection) {
         return this._styleExpression.evaluateWithoutErrorHandling(globals, feature, featureState, canonical, availableImages, formattedSection);
     }
     evaluate(globals, feature, featureState, canonical, availableImages, formattedSection) {
         return this._styleExpression.evaluate(globals, feature, featureState, canonical, availableImages, formattedSection);
     }
+    constructor(kind, expression) {
+        this.kind = kind;
+        this._styleExpression = expression;
+        this.isStateDependent = kind !== 'constant' && !isStateConstant(expression.expression);
+    }
 }
 class ZoomDependentExpression {
-    constructor(kind, expression, zoomStops, interpolationType) {
-        this.kind = kind;
-        this.zoomStops = zoomStops;
-        this._styleExpression = expression;
-        this.isStateDependent = kind !== 'camera' && !isStateConstant(expression.expression);
-        this.interpolationType = interpolationType;
-    }
     evaluateWithoutErrorHandling(globals, feature, featureState, canonical, availableImages, formattedSection) {
         return this._styleExpression.evaluateWithoutErrorHandling(globals, feature, featureState, canonical, availableImages, formattedSection);
     }
@@ -8018,10 +8035,17 @@ class ZoomDependentExpression {
     }
     interpolationFactor(input, lower, upper) {
         if (this.interpolationType) {
-            return Interpolate.interpolationFactor(this.interpolationType, input, lower, upper);
+            return Interpolate$1.interpolationFactor(this.interpolationType, input, lower, upper);
         } else {
             return 0;
         }
+    }
+    constructor(kind, expression, zoomStops, interpolationType) {
+        this.kind = kind;
+        this.zoomStops = zoomStops;
+        this._styleExpression = expression;
+        this.isStateDependent = kind !== 'camera' && !isStateConstant(expression.expression);
+        this.interpolationType = interpolationType;
     }
 }
 function createPropertyExpression(expressionInput, propertySpec) {
@@ -8032,32 +8056,27 @@ function createPropertyExpression(expressionInput, propertySpec) {
     const parsed = expression.value.expression;
     const isFeatureConstant$1 = isFeatureConstant(parsed);
     if (!isFeatureConstant$1 && !supportsPropertyExpression(propertySpec)) {
-        return error([new ParsingError('', 'data expressions not supported')]);
+        return error([new ParsingError$1('', 'data expressions not supported')]);
     }
     const isZoomConstant = isGlobalPropertyConstant(parsed, ['zoom']);
     if (!isZoomConstant && !supportsZoomExpression(propertySpec)) {
-        return error([new ParsingError('', 'zoom expressions not supported')]);
+        return error([new ParsingError$1('', 'zoom expressions not supported')]);
     }
     const zoomCurve = findZoomCurve(parsed);
     if (!zoomCurve && !isZoomConstant) {
-        return error([new ParsingError('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.')]);
-    } else if (zoomCurve instanceof ParsingError) {
+        return error([new ParsingError$1('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.')]);
+    } else if (zoomCurve instanceof ParsingError$1) {
         return error([zoomCurve]);
-    } else if (zoomCurve instanceof Interpolate && !supportsInterpolation(propertySpec)) {
-        return error([new ParsingError('', '"interpolate" expressions cannot be used with this property')]);
+    } else if (zoomCurve instanceof Interpolate$1 && !supportsInterpolation(propertySpec)) {
+        return error([new ParsingError$1('', '"interpolate" expressions cannot be used with this property')]);
     }
     if (!zoomCurve) {
         return success(isFeatureConstant$1 ? new ZoomConstantExpression('constant', expression.value) : new ZoomConstantExpression('source', expression.value));
     }
-    const interpolationType = zoomCurve instanceof Interpolate ? zoomCurve.interpolation : undefined;
+    const interpolationType = zoomCurve instanceof Interpolate$1 ? zoomCurve.interpolation : undefined;
     return success(isFeatureConstant$1 ? new ZoomDependentExpression('camera', expression.value, zoomCurve.labels, interpolationType) : new ZoomDependentExpression('composite', expression.value, zoomCurve.labels, interpolationType));
 }
 class StylePropertyFunction {
-    constructor(parameters, specification) {
-        this._parameters = parameters;
-        this._specification = specification;
-        extend(this, createFunction(this._parameters, this._specification));
-    }
     static deserialize(serialized) {
         return new StylePropertyFunction(serialized._parameters, serialized._specification);
     }
@@ -8066,6 +8085,11 @@ class StylePropertyFunction {
             _parameters: input._parameters,
             _specification: input._specification
         };
+    }
+    constructor(parameters, specification) {
+        this._parameters = parameters;
+        this._specification = specification;
+        extend(this, createFunction(this._parameters, this._specification));
     }
 }
 function normalizePropertyExpression(value, specification) {
@@ -8080,7 +8104,7 @@ function normalizePropertyExpression(value, specification) {
     } else {
         let constant = value;
         if (typeof value === 'string' && specification.type === 'color') {
-            constant = Color.parse(value);
+            constant = Color$1.parse(value);
         }
         return {
             kind: 'constant',
@@ -8090,29 +8114,29 @@ function normalizePropertyExpression(value, specification) {
 }
 function findZoomCurve(expression) {
     let result = null;
-    if (expression instanceof Let) {
+    if (expression instanceof Let$1) {
         result = findZoomCurve(expression.result);
-    } else if (expression instanceof Coalesce) {
+    } else if (expression instanceof Coalesce$1) {
         for (const arg of expression.args) {
             result = findZoomCurve(arg);
             if (result) {
                 break;
             }
         }
-    } else if ((expression instanceof Step || expression instanceof Interpolate) && expression.input instanceof CompoundExpression && expression.input.name === 'zoom') {
+    } else if ((expression instanceof Step$1 || expression instanceof Interpolate$1) && expression.input instanceof CompoundExpression$1 && expression.input.name === 'zoom') {
         result = expression;
     }
-    if (result instanceof ParsingError) {
+    if (result instanceof ParsingError$1) {
         return result;
     }
     expression.eachChild(child => {
         const childResult = findZoomCurve(child);
-        if (childResult instanceof ParsingError) {
+        if (childResult instanceof ParsingError$1) {
             result = childResult;
         } else if (!result && childResult) {
-            result = new ParsingError('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.');
+            result = new ParsingError$1('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.');
         } else if (result && childResult && result !== childResult) {
-            result = new ParsingError('', 'Only one zoom-based "step" or "interpolate" subexpression may be used in an expression.');
+            result = new ParsingError$1('', 'Only one zoom-based "step" or "interpolate" subexpression may be used in an expression.');
         }
     });
     return result;
@@ -8134,9 +8158,9 @@ function getExpectedType(spec) {
 }
 function getDefaultValue(spec) {
     if (spec.type === 'color' && isFunction(spec.default)) {
-        return new Color(0, 0, 0, 0);
+        return new Color$1(0, 0, 0, 0);
     } else if (spec.type === 'color') {
-        return Color.parse(spec.default) || null;
+        return Color$1.parse(spec.default) || null;
     } else if (spec.default === undefined) {
         return null;
     } else {
@@ -8254,47 +8278,47 @@ function validateNumber(options) {
     return [];
 }
 
-function validateFunction(options) {
-    const functionValueSpec = options.valueSpec;
-    const functionType = unbundle(options.value.type);
+function validateFunction(options1) {
+    const functionValueSpec = options1.valueSpec;
+    const functionType = unbundle(options1.value.type);
     let stopKeyType;
     let stopDomainValues = {};
     let previousStopDomainValue;
     let previousStopDomainZoom;
-    const isZoomFunction = functionType !== 'categorical' && options.value.property === undefined;
+    const isZoomFunction = functionType !== 'categorical' && options1.value.property === undefined;
     const isPropertyFunction = !isZoomFunction;
-    const isZoomAndPropertyFunction = getType(options.value.stops) === 'array' && getType(options.value.stops[0]) === 'array' && getType(options.value.stops[0][0]) === 'object';
-    const errors = validateObject({
-        key: options.key,
-        value: options.value,
-        valueSpec: options.styleSpec.function,
-        style: options.style,
-        styleSpec: options.styleSpec,
+    const isZoomAndPropertyFunction = getType(options1.value.stops) === 'array' && getType(options1.value.stops[0]) === 'array' && getType(options1.value.stops[0][0]) === 'object';
+    const errors1 = validateObject({
+        key: options1.key,
+        value: options1.value,
+        valueSpec: options1.styleSpec.function,
+        style: options1.style,
+        styleSpec: options1.styleSpec,
         objectElementValidators: {
             stops: validateFunctionStops,
             default: validateFunctionDefault
         }
     });
     if (functionType === 'identity' && isZoomFunction) {
-        errors.push(new ValidationError(options.key, options.value, 'missing required property "property"'));
+        errors1.push(new ValidationError(options1.key, options1.value, 'missing required property "property"'));
     }
-    if (functionType !== 'identity' && !options.value.stops) {
-        errors.push(new ValidationError(options.key, options.value, 'missing required property "stops"'));
+    if (functionType !== 'identity' && !options1.value.stops) {
+        errors1.push(new ValidationError(options1.key, options1.value, 'missing required property "stops"'));
     }
-    if (functionType === 'exponential' && options.valueSpec.expression && !supportsInterpolation(options.valueSpec)) {
-        errors.push(new ValidationError(options.key, options.value, 'exponential functions not supported'));
+    if (functionType === 'exponential' && options1.valueSpec.expression && !supportsInterpolation(options1.valueSpec)) {
+        errors1.push(new ValidationError(options1.key, options1.value, 'exponential functions not supported'));
     }
-    if (options.styleSpec.$version >= 8) {
-        if (isPropertyFunction && !supportsPropertyExpression(options.valueSpec)) {
-            errors.push(new ValidationError(options.key, options.value, 'property functions not supported'));
-        } else if (isZoomFunction && !supportsZoomExpression(options.valueSpec)) {
-            errors.push(new ValidationError(options.key, options.value, 'zoom functions not supported'));
+    if (options1.styleSpec.$version >= 8) {
+        if (isPropertyFunction && !supportsPropertyExpression(options1.valueSpec)) {
+            errors1.push(new ValidationError(options1.key, options1.value, 'property functions not supported'));
+        } else if (isZoomFunction && !supportsZoomExpression(options1.valueSpec)) {
+            errors1.push(new ValidationError(options1.key, options1.value, 'zoom functions not supported'));
         }
     }
-    if ((functionType === 'categorical' || isZoomAndPropertyFunction) && options.value.property === undefined) {
-        errors.push(new ValidationError(options.key, options.value, '"property" property is required'));
+    if ((functionType === 'categorical' || isZoomAndPropertyFunction) && options1.value.property === undefined) {
+        errors1.push(new ValidationError(options1.key, options1.value, '"property" property is required'));
     }
-    return errors;
+    return errors1;
     function validateFunctionStops(options) {
         if (functionType === 'identity') {
             return [new ValidationError(options.key, options.value, 'identity function may not have a "stops" property')];
@@ -8511,7 +8535,7 @@ function isExpressionFilter(filter) {
     case '>=':
     case '<':
     case '<=':
-        return filter.length !== 3 || (Array.isArray(filter[1]) || Array.isArray(filter[2]));
+        return filter.length !== 3 || Array.isArray(filter[1]) || Array.isArray(filter[2]);
     case 'any':
     case 'all':
         for (const f of filter.slice(1)) {
@@ -8735,10 +8759,10 @@ function validateNonExpressionFilter(options) {
     case 'any':
     case 'all':
     case 'none':
-        for (let i = 1; i < value.length; i++) {
+        for (let i1 = 1; i1 < value.length; i1++) {
             errors = errors.concat(validateNonExpressionFilter({
-                key: `${ key }[${ i }]`,
-                value: value[i],
+                key: `${ key }[${ i1 }]`,
+                value: value[i1],
                 style: options.style,
                 styleSpec: options.styleSpec
             }));
@@ -8821,27 +8845,27 @@ function validateLayoutProperty$1(options) {
     return validateProperty(options, 'layout');
 }
 
-function validateLayer(options) {
+function validateLayer(options1) {
     let errors = [];
-    const layer = options.value;
-    const key = options.key;
-    const style = options.style;
-    const styleSpec = options.styleSpec;
-    if (!layer.type && !layer.ref) {
-        errors.push(new ValidationError(key, layer, 'either "type" or "ref" is required'));
+    const layer1 = options1.value;
+    const key = options1.key;
+    const style = options1.style;
+    const styleSpec = options1.styleSpec;
+    if (!layer1.type && !layer1.ref) {
+        errors.push(new ValidationError(key, layer1, 'either "type" or "ref" is required'));
     }
-    let type = unbundle(layer.type);
-    const ref = unbundle(layer.ref);
-    if (layer.id) {
-        const layerId = unbundle(layer.id);
-        for (let i = 0; i < options.arrayIndex; i++) {
+    let type = unbundle(layer1.type);
+    const ref = unbundle(layer1.ref);
+    if (layer1.id) {
+        const layerId = unbundle(layer1.id);
+        for (let i = 0; i < options1.arrayIndex; i++) {
             const otherLayer = style.layers[i];
             if (unbundle(otherLayer.id) === layerId) {
-                errors.push(new ValidationError(key, layer.id, `duplicate layer id "${ layer.id }", previously used at line ${ otherLayer.id.__line__ }`));
+                errors.push(new ValidationError(key, layer1.id, `duplicate layer id "${ layer1.id }", previously used at line ${ otherLayer.id.__line__ }`));
             }
         }
     }
-    if ('ref' in layer) {
+    if ('ref' in layer1) {
         [
             'type',
             'source',
@@ -8849,8 +8873,8 @@ function validateLayer(options) {
             'filter',
             'layout'
         ].forEach(p => {
-            if (p in layer) {
-                errors.push(new ValidationError(key, layer[p], `"${ p }" is prohibited for ref layers`));
+            if (p in layer1) {
+                errors.push(new ValidationError(key, layer1[p], `"${ p }" is prohibited for ref layers`));
             }
         });
         let parent;
@@ -8859,39 +8883,39 @@ function validateLayer(options) {
                 parent = layer;
         });
         if (!parent) {
-            errors.push(new ValidationError(key, layer.ref, `ref layer "${ ref }" not found`));
+            errors.push(new ValidationError(key, layer1.ref, `ref layer "${ ref }" not found`));
         } else if (parent.ref) {
-            errors.push(new ValidationError(key, layer.ref, 'ref cannot reference another ref layer'));
+            errors.push(new ValidationError(key, layer1.ref, 'ref cannot reference another ref layer'));
         } else {
             type = unbundle(parent.type);
         }
     } else if (type !== 'background') {
-        if (!layer.source) {
-            errors.push(new ValidationError(key, layer, 'missing required property "source"'));
+        if (!layer1.source) {
+            errors.push(new ValidationError(key, layer1, 'missing required property "source"'));
         } else {
-            const source = style.sources && style.sources[layer.source];
+            const source = style.sources && style.sources[layer1.source];
             const sourceType = source && unbundle(source.type);
             if (!source) {
-                errors.push(new ValidationError(key, layer.source, `source "${ layer.source }" not found`));
+                errors.push(new ValidationError(key, layer1.source, `source "${ layer1.source }" not found`));
             } else if (sourceType === 'vector' && type === 'raster') {
-                errors.push(new ValidationError(key, layer.source, `layer "${ layer.id }" requires a raster source`));
+                errors.push(new ValidationError(key, layer1.source, `layer "${ layer1.id }" requires a raster source`));
             } else if (sourceType === 'raster' && type !== 'raster') {
-                errors.push(new ValidationError(key, layer.source, `layer "${ layer.id }" requires a vector source`));
-            } else if (sourceType === 'vector' && !layer['source-layer']) {
-                errors.push(new ValidationError(key, layer, `layer "${ layer.id }" must specify a "source-layer"`));
+                errors.push(new ValidationError(key, layer1.source, `layer "${ layer1.id }" requires a vector source`));
+            } else if (sourceType === 'vector' && !layer1['source-layer']) {
+                errors.push(new ValidationError(key, layer1, `layer "${ layer1.id }" must specify a "source-layer"`));
             } else if (sourceType === 'raster-dem' && type !== 'hillshade') {
-                errors.push(new ValidationError(key, layer.source, 'raster-dem source can only be used with layer type \'hillshade\'.'));
-            } else if (type === 'line' && layer.paint && layer.paint['line-gradient'] && (sourceType !== 'geojson' || !source.lineMetrics)) {
-                errors.push(new ValidationError(key, layer, `layer "${ layer.id }" specifies a line-gradient, which requires a GeoJSON source with \`lineMetrics\` enabled.`));
+                errors.push(new ValidationError(key, layer1.source, 'raster-dem source can only be used with layer type \'hillshade\'.'));
+            } else if (type === 'line' && layer1.paint && layer1.paint['line-gradient'] && (sourceType !== 'geojson' || !source.lineMetrics)) {
+                errors.push(new ValidationError(key, layer1, `layer "${ layer1.id }" specifies a line-gradient, which requires a GeoJSON source with \`lineMetrics\` enabled.`));
             }
         }
     }
     errors = errors.concat(validateObject({
         key,
-        value: layer,
+        value: layer1,
         valueSpec: styleSpec.layer,
-        style: options.style,
-        styleSpec: options.styleSpec,
+        style: options1.style,
+        styleSpec: options1.styleSpec,
         objectElementValidators: {
             '*'() {
                 return [];
@@ -8899,22 +8923,22 @@ function validateLayer(options) {
             type() {
                 return validate({
                     key: `${ key }.type`,
-                    value: layer.type,
+                    value: layer1.type,
                     valueSpec: styleSpec.layer.type,
-                    style: options.style,
-                    styleSpec: options.styleSpec,
-                    object: layer,
+                    style: options1.style,
+                    styleSpec: options1.styleSpec,
+                    object: layer1,
                     objectKey: 'type'
                 });
             },
             filter: validateFilter,
-            layout(options) {
+            layout(options2) {
                 return validateObject({
-                    layer,
-                    key: options.key,
-                    value: options.value,
-                    style: options.style,
-                    styleSpec: options.styleSpec,
+                    layer: layer1,
+                    key: options2.key,
+                    value: options2.value,
+                    style: options2.style,
+                    styleSpec: options2.styleSpec,
                     objectElementValidators: {
                         '*'(options) {
                             return validateLayoutProperty$1(extend({ layerType: type }, options));
@@ -8922,13 +8946,13 @@ function validateLayer(options) {
                     }
                 });
             },
-            paint(options) {
+            paint(options3) {
                 return validateObject({
-                    layer,
-                    key: options.key,
-                    value: options.value,
-                    style: options.style,
-                    styleSpec: options.styleSpec,
+                    layer: layer1,
+                    key: options3.key,
+                    value: options3.value,
+                    style: options3.style,
+                    styleSpec: options3.styleSpec,
                     objectElementValidators: {
                         '*'(options) {
                             return validatePaintProperty$1(extend({ layerType: type }, options));
@@ -9225,42 +9249,6 @@ function emitValidationErrors(emitter, errors) {
 
 const NUM_PARAMS = 3;
 class TransferableGridIndex {
-    constructor(extent, n, padding) {
-        const cells = this.cells = [];
-        if (extent instanceof ArrayBuffer) {
-            this.arrayBuffer = extent;
-            const array = new Int32Array(this.arrayBuffer);
-            extent = array[0];
-            n = array[1];
-            padding = array[2];
-            this.d = n + 2 * padding;
-            for (let k = 0; k < this.d * this.d; k++) {
-                const start = array[NUM_PARAMS + k];
-                const end = array[NUM_PARAMS + k + 1];
-                cells.push(start === end ? null : array.subarray(start, end));
-            }
-            const keysOffset = array[NUM_PARAMS + cells.length];
-            const bboxesOffset = array[NUM_PARAMS + cells.length + 1];
-            this.keys = array.subarray(keysOffset, bboxesOffset);
-            this.bboxes = array.subarray(bboxesOffset);
-            this.insert = this._insertReadonly;
-        } else {
-            this.d = n + 2 * padding;
-            for (let i = 0; i < this.d * this.d; i++) {
-                cells.push([]);
-            }
-            this.keys = [];
-            this.bboxes = [];
-        }
-        this.n = n;
-        this.extent = extent;
-        this.padding = padding;
-        this.scale = n / extent;
-        this.uid = 0;
-        const p = padding / n * extent;
-        this.min = -p;
-        this.max = extent + p;
-    }
     insert(key, x1, y1, x2, y2) {
         this._forEachCell(x1, y1, x2, y2, this._insertCell, this.uid++, undefined, undefined);
         this.keys.push(key);
@@ -9365,15 +9353,51 @@ class TransferableGridIndex {
     static deserialize(serialized) {
         return new TransferableGridIndex(serialized.buffer);
     }
+    constructor(extent, n, padding) {
+        const cells = this.cells = [];
+        if (extent instanceof ArrayBuffer) {
+            this.arrayBuffer = extent;
+            const array = new Int32Array(this.arrayBuffer);
+            extent = array[0];
+            n = array[1];
+            padding = array[2];
+            this.d = n + 2 * padding;
+            for (let k = 0; k < this.d * this.d; k++) {
+                const start = array[NUM_PARAMS + k];
+                const end = array[NUM_PARAMS + k + 1];
+                cells.push(start === end ? null : array.subarray(start, end));
+            }
+            const keysOffset = array[NUM_PARAMS + cells.length];
+            const bboxesOffset = array[NUM_PARAMS + cells.length + 1];
+            this.keys = array.subarray(keysOffset, bboxesOffset);
+            this.bboxes = array.subarray(bboxesOffset);
+            this.insert = this._insertReadonly;
+        } else {
+            this.d = n + 2 * padding;
+            for (let i = 0; i < this.d * this.d; i++) {
+                cells.push([]);
+            }
+            this.keys = [];
+            this.bboxes = [];
+        }
+        this.n = n;
+        this.extent = extent;
+        this.padding = padding;
+        this.scale = n / extent;
+        this.uid = 0;
+        const p = padding / n * extent;
+        this.min = -p;
+        this.max = extent + p;
+    }
 }
 
 const registry = {};
-function register(name, klass, options = {}) {
+function register(name1, klass, options = {}) {
     Object.defineProperty(klass, '_classRegistryKey', {
-        value: name,
+        value: name1,
         writeable: false
     });
-    registry[name] = {
+    registry[name1] = {
         klass,
         omit: options.omit || [],
         shallow: options.shallow || []
@@ -9381,18 +9405,18 @@ function register(name, klass, options = {}) {
 }
 register('Object', Object);
 register('TransferableGridIndex', TransferableGridIndex);
-register('Color', Color);
+register('Color', Color$1);
 register('Error', Error);
 register('ResolvedImage', ResolvedImage);
 register('StylePropertyFunction', StylePropertyFunction);
 register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
 register('ZoomDependentExpression', ZoomDependentExpression);
 register('ZoomConstantExpression', ZoomConstantExpression);
-register('CompoundExpression', CompoundExpression, { omit: ['_evaluate'] });
-for (const name in expressions) {
-    if (expressions[name]._classRegistryKey)
+register('CompoundExpression', CompoundExpression$1, { omit: ['_evaluate'] });
+for (const name in expressions$1) {
+    if (expressions$1[name]._classRegistryKey)
         continue;
-    register(`Expression_${ name }`, expressions[name]);
+    register(`Expression_${ name }`, expressions$1[name]);
 }
 function isArrayBuffer(value) {
     return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
@@ -9435,8 +9459,8 @@ function serialize(input, transferables) {
     }
     if (typeof input === 'object') {
         const klass = input.constructor;
-        const name = klass._classRegistryKey;
-        if (!name) {
+        const name2 = klass._classRegistryKey;
+        if (!name2) {
             throw new Error('can\'t serialize object of unregistered class');
         }
         const properties = klass.serialize ? klass.serialize(input, transferables) : {};
@@ -9444,10 +9468,10 @@ function serialize(input, transferables) {
             for (const key in input) {
                 if (!input.hasOwnProperty(key))
                     continue;
-                if (registry[name].omit.indexOf(key) >= 0)
+                if (registry[name2].omit.indexOf(key) >= 0)
                     continue;
                 const property = input[key];
-                properties[key] = registry[name].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
+                properties[key] = registry[name2].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
             }
             if (input instanceof Error) {
                 properties.message = input.message;
@@ -9456,8 +9480,8 @@ function serialize(input, transferables) {
         if (properties.$name) {
             throw new Error('$name property is reserved for worker serialization logic.');
         }
-        if (name !== 'Object') {
-            properties.$name = name;
+        if (name2 !== 'Object') {
+            properties.$name = name2;
         }
         return properties;
     }
@@ -9471,13 +9495,13 @@ function deserialize(input) {
         return input.map(deserialize);
     }
     if (typeof input === 'object') {
-        const name = input.$name || 'Object';
-        if (!registry[name]) {
-            throw new Error(`can't deserialize unregistered class ${ name }`);
+        const name3 = input.$name || 'Object';
+        if (!registry[name3]) {
+            throw new Error(`can't deserialize unregistered class ${ name3 }`);
         }
-        const {klass} = registry[name];
+        const {klass} = registry[name3];
         if (!klass) {
-            throw new Error(`can't deserialize unregistered class ${ name }`);
+            throw new Error(`can't deserialize unregistered class ${ name3 }`);
         }
         if (klass.deserialize) {
             return klass.deserialize(input);
@@ -9487,7 +9511,7 @@ function deserialize(input) {
             if (key === '$name')
                 continue;
             const value = input[key];
-            result[key] = registry[name].shallow.indexOf(key) >= 0 ? value : deserialize(value);
+            result[key] = registry[name3].shallow.indexOf(key) >= 0 ? value : deserialize(value);
         }
         return result;
     }
@@ -9495,9 +9519,6 @@ function deserialize(input) {
 }
 
 class ZoomHistory {
-    constructor() {
-        this.first = true;
-    }
     update(z, now) {
         const floorZ = Math.floor(z);
         if (this.first) {
@@ -9521,6 +9542,9 @@ class ZoomHistory {
             return true;
         }
         return false;
+    }
+    constructor() {
+        this.first = true;
     }
 }
 
@@ -9913,20 +9937,6 @@ const lazyLoadRTLTextPlugin = function () {
 };
 
 class EvaluationParameters {
-    constructor(zoom, options) {
-        this.zoom = zoom;
-        if (options) {
-            this.now = options.now;
-            this.fadeDuration = options.fadeDuration;
-            this.zoomHistory = options.zoomHistory;
-            this.transition = options.transition;
-        } else {
-            this.now = 0;
-            this.fadeDuration = 0;
-            this.zoomHistory = new ZoomHistory();
-            this.transition = {};
-        }
-    }
     isSupportedScript(str) {
         return isStringInSupportedScript(str, plugin.isLoaded());
     }
@@ -9951,38 +9961,48 @@ class EvaluationParameters {
             t: 1 - (1 - t) * fraction
         };
     }
+    constructor(zoom, options) {
+        this.zoom = zoom;
+        if (options) {
+            this.now = options.now;
+            this.fadeDuration = options.fadeDuration;
+            this.zoomHistory = options.zoomHistory;
+            this.transition = options.transition;
+        } else {
+            this.now = 0;
+            this.fadeDuration = 0;
+            this.zoomHistory = new ZoomHistory();
+            this.transition = {};
+        }
+    }
 }
 
 class PropertyValue {
-    constructor(property, value) {
-        this.property = property;
-        this.value = value;
-        this.expression = normalizePropertyExpression(value === undefined ? property.specification.default : value, property.specification);
-    }
     isDataDriven() {
         return this.expression.kind === 'source' || this.expression.kind === 'composite';
     }
     possiblyEvaluate(parameters, canonical, availableImages) {
         return this.property.possiblyEvaluate(this, parameters, canonical, availableImages);
     }
+    constructor(property, value) {
+        this.property = property;
+        this.value = value;
+        this.expression = normalizePropertyExpression(value === undefined ? property.specification.default : value, property.specification);
+    }
 }
 class TransitionablePropertyValue {
-    constructor(property) {
-        this.property = property;
-        this.value = new PropertyValue(property, undefined);
-    }
     transitioned(parameters, prior) {
         return new TransitioningPropertyValue(this.property, this.value, prior, extend$1({}, parameters.transition, this.transition), parameters.now);
     }
     untransitioned() {
         return new TransitioningPropertyValue(this.property, this.value, null, {}, 0);
     }
+    constructor(property) {
+        this.property = property;
+        this.value = new PropertyValue(property, undefined);
+    }
 }
 class Transitionable {
-    constructor(properties) {
-        this._properties = properties;
-        this._values = Object.create(properties.defaultTransitionablePropertyValues);
-    }
     getValue(name) {
         return clone$1(this._values[name].value.value);
     }
@@ -10029,17 +10049,12 @@ class Transitionable {
         }
         return result;
     }
+    constructor(properties) {
+        this._properties = properties;
+        this._values = Object.create(properties.defaultTransitionablePropertyValues);
+    }
 }
 class TransitioningPropertyValue {
-    constructor(property, value, prior, transition, now) {
-        this.property = property;
-        this.value = value;
-        this.begin = now + transition.delay || 0;
-        this.end = this.begin + transition.duration || 0;
-        if (property.specification.transition && (transition.delay || transition.duration)) {
-            this.prior = prior;
-        }
-    }
     possiblyEvaluate(parameters, canonical, availableImages) {
         const now = parameters.now || 0;
         const finalValue = this.value.possiblyEvaluate(parameters, canonical, availableImages);
@@ -10059,12 +10074,17 @@ class TransitioningPropertyValue {
             return this.property.interpolate(prior.possiblyEvaluate(parameters, canonical, availableImages), finalValue, easeCubicInOut(t));
         }
     }
+    constructor(property, value, prior, transition, now) {
+        this.property = property;
+        this.value = value;
+        this.begin = now + transition.delay || 0;
+        this.end = this.begin + transition.duration || 0;
+        if (property.specification.transition && (transition.delay || transition.duration)) {
+            this.prior = prior;
+        }
+    }
 }
 class Transitioning {
-    constructor(properties) {
-        this._properties = properties;
-        this._values = Object.create(properties.defaultTransitioningPropertyValues);
-    }
     possiblyEvaluate(parameters, canonical, availableImages) {
         const result = new PossiblyEvaluated(this._properties);
         for (const property of Object.keys(this._values)) {
@@ -10080,12 +10100,12 @@ class Transitioning {
         }
         return false;
     }
-}
-class Layout {
     constructor(properties) {
         this._properties = properties;
-        this._values = Object.create(properties.defaultPropertyValues);
+        this._values = Object.create(properties.defaultTransitioningPropertyValues);
     }
+}
+class Layout {
     getValue(name) {
         return clone$1(this._values[name].value);
     }
@@ -10109,13 +10129,12 @@ class Layout {
         }
         return result;
     }
+    constructor(properties) {
+        this._properties = properties;
+        this._values = Object.create(properties.defaultPropertyValues);
+    }
 }
 class PossiblyEvaluatedPropertyValue {
-    constructor(property, value, parameters) {
-        this.property = property;
-        this.value = value;
-        this.parameters = parameters;
-    }
     isConstant() {
         return this.value.kind === 'constant';
     }
@@ -10129,20 +10148,22 @@ class PossiblyEvaluatedPropertyValue {
     evaluate(feature, featureState, canonical, availableImages) {
         return this.property.evaluate(this.value, this.parameters, feature, featureState, canonical, availableImages);
     }
+    constructor(property, value, parameters) {
+        this.property = property;
+        this.value = value;
+        this.parameters = parameters;
+    }
 }
 class PossiblyEvaluated {
+    get(name) {
+        return this._values[name];
+    }
     constructor(properties) {
         this._properties = properties;
         this._values = Object.create(properties.defaultPossiblyEvaluatedValues);
     }
-    get(name) {
-        return this._values[name];
-    }
 }
 class DataConstantProperty {
-    constructor(specification) {
-        this.specification = specification;
-    }
     possiblyEvaluate(value, parameters) {
         return value.expression.evaluate(parameters);
     }
@@ -10154,12 +10175,11 @@ class DataConstantProperty {
             return a;
         }
     }
+    constructor(specification) {
+        this.specification = specification;
+    }
 }
 class DataDrivenProperty {
-    constructor(specification, overrides) {
-        this.specification = specification;
-        this.overrides = overrides;
-    }
     possiblyEvaluate(value, parameters, canonical, availableImages) {
         if (value.expression.kind === 'constant' || value.expression.kind === 'camera') {
             return new PossiblyEvaluatedPropertyValue(this, {
@@ -10196,6 +10216,10 @@ class DataDrivenProperty {
         } else {
             return value.evaluate(parameters, feature, featureState, canonical, availableImages);
         }
+    }
+    constructor(specification, overrides) {
+        this.specification = specification;
+        this.overrides = overrides;
     }
 }
 class CrossFadedDataDrivenProperty extends DataDrivenProperty {
@@ -10249,9 +10273,6 @@ class CrossFadedDataDrivenProperty extends DataDrivenProperty {
     }
 }
 class CrossFadedProperty {
-    constructor(specification) {
-        this.specification = specification;
-    }
     possiblyEvaluate(value, parameters, canonical, availableImages) {
         if (value.value === undefined) {
             return undefined;
@@ -10275,16 +10296,19 @@ class CrossFadedProperty {
     interpolate(a) {
         return a;
     }
-}
-class ColorRampProperty {
     constructor(specification) {
         this.specification = specification;
     }
+}
+class ColorRampProperty {
     possiblyEvaluate(value, parameters, canonical, availableImages) {
         return !!value.expression.evaluate(parameters, null, {}, canonical, availableImages);
     }
     interpolate() {
         return false;
+    }
+    constructor(specification) {
+        this.specification = specification;
     }
 }
 class Properties {
@@ -10315,40 +10339,6 @@ register('ColorRampProperty', ColorRampProperty);
 
 const TRANSITION_SUFFIX = '-transition';
 class StyleLayer extends Evented {
-    constructor(layer, properties) {
-        super();
-        this.id = layer.id;
-        this.type = layer.type;
-        this._featureFilter = {
-            filter: () => true,
-            needGeometry: false
-        };
-        if (layer.type === 'custom')
-            return;
-        layer = layer;
-        this.metadata = layer.metadata;
-        this.minzoom = layer.minzoom;
-        this.maxzoom = layer.maxzoom;
-        if (layer.type !== 'background') {
-            this.source = layer.source;
-            this.sourceLayer = layer['source-layer'];
-            this.filter = layer.filter;
-        }
-        if (properties.layout) {
-            this._unevaluatedLayout = new Layout(properties.layout);
-        }
-        if (properties.paint) {
-            this._transitionablePaint = new Transitionable(properties.paint);
-            for (const property in layer.paint) {
-                this.setPaintProperty(property, layer.paint[property], { validate: false });
-            }
-            for (const property in layer.layout) {
-                this.setLayoutProperty(property, layer.layout[property], { validate: false });
-            }
-            this._transitioningPaint = this._transitionablePaint.untransitioned();
-            this.paint = new PossiblyEvaluated(properties.paint);
-        }
-    }
     getCrossfadeParameters() {
         return this._crossfadeParameters;
     }
@@ -10487,6 +10477,40 @@ class StyleLayer extends Evented {
         }
         return false;
     }
+    constructor(layer, properties) {
+        super();
+        this.id = layer.id;
+        this.type = layer.type;
+        this._featureFilter = {
+            filter: () => true,
+            needGeometry: false
+        };
+        if (layer.type === 'custom')
+            return;
+        layer = layer;
+        this.metadata = layer.metadata;
+        this.minzoom = layer.minzoom;
+        this.maxzoom = layer.maxzoom;
+        if (layer.type !== 'background') {
+            this.source = layer.source;
+            this.sourceLayer = layer['source-layer'];
+            this.filter = layer.filter;
+        }
+        if (properties.layout) {
+            this._unevaluatedLayout = new Layout(properties.layout);
+        }
+        if (properties.paint) {
+            this._transitionablePaint = new Transitionable(properties.paint);
+            for (const property in layer.paint) {
+                this.setPaintProperty(property, layer.paint[property], { validate: false });
+            }
+            for (const property1 in layer.layout) {
+                this.setLayoutProperty(property1, layer.layout[property1], { validate: false });
+            }
+            this._transitioningPaint = this._transitionablePaint.untransitioned();
+            this.paint = new PossiblyEvaluated(properties.paint);
+        }
+    }
 }
 
 const viewTypes = {
@@ -10510,11 +10534,6 @@ class Struct {
 const DEFAULT_CAPACITY = 128;
 const RESIZE_MULTIPLIER = 5;
 class StructArray {
-    constructor() {
-        this.isTransferred = false;
-        this.capacity = -1;
-        this.resize(0);
-    }
     static serialize(array, transferables) {
         array._trim();
         if (transferables) {
@@ -10560,6 +10579,11 @@ class StructArray {
     }
     _refreshViews() {
         throw new Error('_refreshViews() must be implemented by each concrete StructArray layout');
+    }
+    constructor() {
+        this.isTransferred = false;
+        this.capacity = -1;
+        this.resize(0);
     }
 }
 function createLayout(members, alignment = 1) {
@@ -11402,9 +11426,6 @@ const layout$6 = createLayout([{
 const {members: members$4, size: size$4, alignment: alignment$4} = layout$6;
 
 class SegmentVector {
-    constructor(segments = []) {
-        this.segments = segments;
-    }
     prepareSegment(numVertices, layoutVertexArray, indexArray, sortKey) {
         let segment = this.segments[this.segments.length - 1];
         if (numVertices > SegmentVector.MAX_VERTEX_ARRAY_LENGTH)
@@ -11441,6 +11462,9 @@ class SegmentVector {
                 vaos: {},
                 sortKey: 0
             }]);
+    }
+    constructor(segments = []) {
+        this.segments = segments;
     }
 }
 SegmentVector.MAX_VERTEX_ARRAY_LENGTH = Math.pow(2, 16) - 1;
@@ -11567,11 +11591,6 @@ murmurhashJs.exports.murmur2 = murmur2;
 var murmur3$1 = murmurhashJs.exports;
 
 class FeaturePositionMap {
-    constructor() {
-        this.ids = [];
-        this.positions = [];
-        this.indexed = false;
-    }
     add(id, index, start, end) {
         this.ids.push(getNumericId(id));
         this.positions.push(index, start, end);
@@ -11620,6 +11639,11 @@ class FeaturePositionMap {
         map.positions = obj.positions;
         map.indexed = true;
         return map;
+    }
+    constructor() {
+        this.ids = [];
+        this.positions = [];
+        this.indexed = false;
     }
 }
 function getNumericId(value) {
@@ -11671,61 +11695,67 @@ class Uniform {
     }
 }
 class Uniform1i extends Uniform {
-    constructor(context, location) {
-        super(context, location);
-        this.current = 0;
-    }
     set(v) {
         if (this.current !== v) {
             this.current = v;
             this.gl.uniform1i(this.location, v);
         }
     }
-}
-class Uniform1f extends Uniform {
     constructor(context, location) {
         super(context, location);
         this.current = 0;
     }
+}
+class Uniform1f extends Uniform {
     set(v) {
         if (this.current !== v) {
             this.current = v;
             this.gl.uniform1f(this.location, v);
         }
     }
-}
-class Uniform2f extends Uniform {
     constructor(context, location) {
         super(context, location);
-        this.current = [
-            0,
-            0
-        ];
+        this.current = 0;
     }
+}
+class Uniform2f extends Uniform {
     set(v) {
         if (v[0] !== this.current[0] || v[1] !== this.current[1]) {
             this.current = v;
             this.gl.uniform2f(this.location, v[0], v[1]);
         }
     }
-}
-class Uniform3f extends Uniform {
     constructor(context, location) {
         super(context, location);
         this.current = [
             0,
-            0,
             0
         ];
     }
+}
+class Uniform3f extends Uniform {
     set(v) {
         if (v[0] !== this.current[0] || v[1] !== this.current[1] || v[2] !== this.current[2]) {
             this.current = v;
             this.gl.uniform3f(this.location, v[0], v[1], v[2]);
         }
     }
+    constructor(context, location) {
+        super(context, location);
+        this.current = [
+            0,
+            0,
+            0
+        ];
+    }
 }
 class Uniform4f extends Uniform {
+    set(v) {
+        if (v[0] !== this.current[0] || v[1] !== this.current[1] || v[2] !== this.current[2] || v[3] !== this.current[3]) {
+            this.current = v;
+            this.gl.uniform4f(this.location, v[0], v[1], v[2], v[3]);
+        }
+    }
     constructor(context, location) {
         super(context, location);
         this.current = [
@@ -11735,31 +11765,21 @@ class Uniform4f extends Uniform {
             0
         ];
     }
-    set(v) {
-        if (v[0] !== this.current[0] || v[1] !== this.current[1] || v[2] !== this.current[2] || v[3] !== this.current[3]) {
-            this.current = v;
-            this.gl.uniform4f(this.location, v[0], v[1], v[2], v[3]);
-        }
-    }
 }
 class UniformColor extends Uniform {
-    constructor(context, location) {
-        super(context, location);
-        this.current = Color.transparent;
-    }
     set(v) {
         if (v.r !== this.current.r || v.g !== this.current.g || v.b !== this.current.b || v.a !== this.current.a) {
             this.current = v;
             this.gl.uniform4f(this.location, v.r, v.g, v.b, v.a);
         }
     }
+    constructor(context, location) {
+        super(context, location);
+        this.current = Color$1.transparent;
+    }
 }
 const emptyMat4 = new Float32Array(16);
 class UniformMatrix4f extends Uniform {
-    constructor(context, location) {
-        super(context, location);
-        this.current = emptyMat4;
-    }
     set(v) {
         if (v[12] !== this.current[12] || v[0] !== this.current[0]) {
             this.current = v;
@@ -11774,6 +11794,10 @@ class UniformMatrix4f extends Uniform {
             }
         }
     }
+    constructor(context, location) {
+        super(context, location);
+        this.current = emptyMat4;
+    }
 }
 
 function packColor(color) {
@@ -11783,26 +11807,19 @@ function packColor(color) {
     ];
 }
 class ConstantBinder {
-    constructor(value, names, type) {
-        this.value = value;
-        this.uniformNames = names.map(name => `u_${ name }`);
-        this.type = type;
-    }
     setUniform(uniform, globals, currentValue) {
         uniform.set(currentValue.constantOr(this.value));
     }
     getBinding(context, location, _) {
         return this.type === 'color' ? new UniformColor(context, location) : new Uniform1f(context, location);
     }
+    constructor(value, names, type) {
+        this.value = value;
+        this.uniformNames = names.map(name => `u_${ name }`);
+        this.type = type;
+    }
 }
 class CrossFadedConstantBinder {
-    constructor(value, names) {
-        this.uniformNames = names.map(name => `u_${ name }`);
-        this.patternFrom = null;
-        this.patternTo = null;
-        this.pixelRatioFrom = 1;
-        this.pixelRatioTo = 1;
-    }
     setConstantPatternPositions(posTo, posFrom) {
         this.pixelRatioFrom = posFrom.pixelRatio;
         this.pixelRatioTo = posTo.pixelRatio;
@@ -11817,20 +11834,15 @@ class CrossFadedConstantBinder {
     getBinding(context, location, name) {
         return name.substr(0, 9) === 'u_pattern' ? new Uniform4f(context, location) : new Uniform1f(context, location);
     }
+    constructor(value, names) {
+        this.uniformNames = names.map(name => `u_${ name }`);
+        this.patternFrom = null;
+        this.patternTo = null;
+        this.pixelRatioFrom = 1;
+        this.pixelRatioTo = 1;
+    }
 }
 class SourceExpressionBinder {
-    constructor(expression, names, type, PaintVertexArray) {
-        this.expression = expression;
-        this.type = type;
-        this.maxValue = 0;
-        this.paintVertexAttributes = names.map(name => ({
-            name: `a_${ name }`,
-            type: 'Float32',
-            components: type === 'color' ? 2 : 1,
-            offset: 0
-        }));
-        this.paintVertexArray = new PaintVertexArray();
-    }
     populatePaintArray(newLength, feature, imagePositions, canonical, formattedSection) {
         const start = this.paintVertexArray.length;
         const value = this.expression.evaluate(new EvaluationParameters(0), feature, {}, canonical, [], formattedSection);
@@ -11868,23 +11880,20 @@ class SourceExpressionBinder {
             this.paintVertexBuffer.destroy();
         }
     }
-}
-class CompositeExpressionBinder {
-    constructor(expression, names, type, useIntegerZoom, zoom, PaintVertexArray) {
+    constructor(expression, names, type, PaintVertexArray) {
         this.expression = expression;
-        this.uniformNames = names.map(name => `u_${ name }_t`);
         this.type = type;
-        this.useIntegerZoom = useIntegerZoom;
-        this.zoom = zoom;
         this.maxValue = 0;
         this.paintVertexAttributes = names.map(name => ({
             name: `a_${ name }`,
             type: 'Float32',
-            components: type === 'color' ? 4 : 2,
+            components: type === 'color' ? 2 : 1,
             offset: 0
         }));
         this.paintVertexArray = new PaintVertexArray();
     }
+}
+class CompositeExpressionBinder {
     populatePaintArray(newLength, feature, imagePositions, canonical, formattedSection) {
         const min = this.expression.evaluate(new EvaluationParameters(this.zoom), feature, {}, canonical, [], formattedSection);
         const max = this.expression.evaluate(new EvaluationParameters(this.zoom + 1), feature, {}, canonical, [], formattedSection);
@@ -11933,17 +11942,23 @@ class CompositeExpressionBinder {
     getBinding(context, location, _) {
         return new Uniform1f(context, location);
     }
-}
-class CrossFadedCompositeBinder {
-    constructor(expression, type, useIntegerZoom, zoom, PaintVertexArray, layerId) {
+    constructor(expression, names, type, useIntegerZoom, zoom, PaintVertexArray) {
         this.expression = expression;
+        this.uniformNames = names.map(name => `u_${ name }_t`);
         this.type = type;
         this.useIntegerZoom = useIntegerZoom;
         this.zoom = zoom;
-        this.layerId = layerId;
-        this.zoomInPaintVertexArray = new PaintVertexArray();
-        this.zoomOutPaintVertexArray = new PaintVertexArray();
+        this.maxValue = 0;
+        this.paintVertexAttributes = names.map(name => ({
+            name: `a_${ name }`,
+            type: 'Float32',
+            components: type === 'color' ? 4 : 2,
+            offset: 0
+        }));
+        this.paintVertexArray = new PaintVertexArray();
     }
+}
+class CrossFadedCompositeBinder {
     populatePaintArray(length, feature, imagePositions) {
         const start = this.zoomInPaintVertexArray.length;
         this.zoomInPaintVertexArray.resize(length);
@@ -11979,40 +11994,17 @@ class CrossFadedCompositeBinder {
         if (this.zoomInPaintVertexBuffer)
             this.zoomInPaintVertexBuffer.destroy();
     }
+    constructor(expression, type, useIntegerZoom, zoom, PaintVertexArray, layerId) {
+        this.expression = expression;
+        this.type = type;
+        this.useIntegerZoom = useIntegerZoom;
+        this.zoom = zoom;
+        this.layerId = layerId;
+        this.zoomInPaintVertexArray = new PaintVertexArray();
+        this.zoomOutPaintVertexArray = new PaintVertexArray();
+    }
 }
 class ProgramConfiguration {
-    constructor(layer, zoom, filterProperties) {
-        this.binders = {};
-        this._buffers = [];
-        const keys = [];
-        for (const property in layer.paint._values) {
-            if (!filterProperties(property))
-                continue;
-            const value = layer.paint.get(property);
-            if (!(value instanceof PossiblyEvaluatedPropertyValue) || !supportsPropertyExpression(value.property.specification)) {
-                continue;
-            }
-            const names = paintAttributeNames(property, layer.type);
-            const expression = value.value;
-            const type = value.property.specification.type;
-            const useIntegerZoom = value.property.useIntegerZoom;
-            const propType = value.property.specification['property-type'];
-            const isCrossFaded = propType === 'cross-faded' || propType === 'cross-faded-data-driven';
-            if (expression.kind === 'constant') {
-                this.binders[property] = isCrossFaded ? new CrossFadedConstantBinder(expression.value, names) : new ConstantBinder(expression.value, names, type);
-                keys.push(`/u_${ property }`);
-            } else if (expression.kind === 'source' || isCrossFaded) {
-                const StructArrayLayout = layoutType(property, type, 'source');
-                this.binders[property] = isCrossFaded ? new CrossFadedCompositeBinder(expression, type, useIntegerZoom, zoom, StructArrayLayout, layer.id) : new SourceExpressionBinder(expression, names, type, StructArrayLayout);
-                keys.push(`/a_${ property }`);
-            } else {
-                const StructArrayLayout = layoutType(property, type, 'composite');
-                this.binders[property] = new CompositeExpressionBinder(expression, names, type, useIntegerZoom, zoom, StructArrayLayout);
-                keys.push(`/z_${ property }`);
-            }
-        }
-        this.cacheKey = keys.sort().join('');
-    }
     getMaxValue(property) {
         const binder = this.binders[property];
         return binder instanceof SourceExpressionBinder || binder instanceof CompositeExpressionBinder ? binder.maxValue : 0;
@@ -12143,17 +12135,40 @@ class ProgramConfiguration {
                 binder.destroy();
         }
     }
+    constructor(layer, zoom, filterProperties) {
+        this.binders = {};
+        this._buffers = [];
+        const keys = [];
+        for (const property in layer.paint._values) {
+            if (!filterProperties(property))
+                continue;
+            const value = layer.paint.get(property);
+            if (!(value instanceof PossiblyEvaluatedPropertyValue) || !supportsPropertyExpression(value.property.specification)) {
+                continue;
+            }
+            const names = paintAttributeNames(property, layer.type);
+            const expression = value.value;
+            const type = value.property.specification.type;
+            const useIntegerZoom = value.property.useIntegerZoom;
+            const propType = value.property.specification['property-type'];
+            const isCrossFaded = propType === 'cross-faded' || propType === 'cross-faded-data-driven';
+            if (expression.kind === 'constant') {
+                this.binders[property] = isCrossFaded ? new CrossFadedConstantBinder(expression.value, names) : new ConstantBinder(expression.value, names, type);
+                keys.push(`/u_${ property }`);
+            } else if (expression.kind === 'source' || isCrossFaded) {
+                const StructArrayLayout = layoutType(property, type, 'source');
+                this.binders[property] = isCrossFaded ? new CrossFadedCompositeBinder(expression, type, useIntegerZoom, zoom, StructArrayLayout, layer.id) : new SourceExpressionBinder(expression, names, type, StructArrayLayout);
+                keys.push(`/a_${ property }`);
+            } else {
+                const StructArrayLayout = layoutType(property, type, 'composite');
+                this.binders[property] = new CompositeExpressionBinder(expression, names, type, useIntegerZoom, zoom, StructArrayLayout);
+                keys.push(`/z_${ property }`);
+            }
+        }
+        this.cacheKey = keys.sort().join('');
+    }
 }
 class ProgramConfigurationSet {
-    constructor(layers, zoom, filterProperties = () => true) {
-        this.programConfigurations = {};
-        for (const layer of layers) {
-            this.programConfigurations[layer.id] = new ProgramConfiguration(layer, zoom, filterProperties);
-        }
-        this.needsUpload = false;
-        this._featureMap = new FeaturePositionMap();
-        this._bufferOffset = 0;
-    }
     populatePaintArrays(length, feature, index, imagePositions, canonical, formattedSection) {
         for (const key in this.programConfigurations) {
             this.programConfigurations[key].populatePaintArrays(length, feature, imagePositions, canonical, formattedSection);
@@ -12184,6 +12199,15 @@ class ProgramConfigurationSet {
         for (const layerId in this.programConfigurations) {
             this.programConfigurations[layerId].destroy();
         }
+    }
+    constructor(layers, zoom, filterProperties = () => true) {
+        this.programConfigurations = {};
+        for (const layer of layers) {
+            this.programConfigurations[layer.id] = new ProgramConfiguration(layer, zoom, filterProperties);
+        }
+        this.needsUpload = false;
+        this._featureMap = new FeaturePositionMap();
+        this._bufferOffset = 0;
     }
 }
 function paintAttributeNames(property, type) {
@@ -12296,19 +12320,6 @@ function addCircleVertex(layoutVertexArray, x, y, extrudeX, extrudeY) {
     layoutVertexArray.emplaceBack(x * 2 + (extrudeX + 1) / 2, y * 2 + (extrudeY + 1) / 2);
 }
 class CircleBucket {
-    constructor(options) {
-        this.zoom = options.zoom;
-        this.overscaling = options.overscaling;
-        this.layers = options.layers;
-        this.layerIds = this.layers.map(layer => layer.id);
-        this.index = options.index;
-        this.hasPattern = false;
-        this.layoutVertexArray = new CircleLayoutArray();
-        this.indexArray = new TriangleIndexArray();
-        this.segments = new SegmentVector();
-        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
-        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
-    }
     populate(features, options, canonical) {
         const styleLayer = this.layers[0];
         const bucketFeatures = [];
@@ -12394,6 +12405,19 @@ class CircleBucket {
         }
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, {}, canonical);
     }
+    constructor(options) {
+        this.zoom = options.zoom;
+        this.overscaling = options.overscaling;
+        this.layers = options.layers;
+        this.layerIds = this.layers.map(layer => layer.id);
+        this.index = options.index;
+        this.hasPattern = false;
+        this.layoutVertexArray = new CircleLayoutArray();
+        this.indexArray = new TriangleIndexArray();
+        this.segments = new SegmentVector();
+        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
+        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
+    }
 }
 register('CircleBucket', CircleBucket, { omit: ['layers'] });
 
@@ -12402,8 +12426,8 @@ function polygonIntersectsPolygon(polygonA, polygonB) {
         if (polygonContainsPoint(polygonB, polygonA[i]))
             return true;
     }
-    for (let i = 0; i < polygonB.length; i++) {
-        if (polygonContainsPoint(polygonA, polygonB[i]))
+    for (let i1 = 0; i1 < polygonB.length; i1++) {
+        if (polygonContainsPoint(polygonA, polygonB[i1]))
             return true;
     }
     if (lineIntersectsLine(polygonA, polygonB))
@@ -12574,14 +12598,14 @@ function getMaximumPaintValue(property, layer, bucket) {
         return bucket.programConfigurations.get(layer.id).getMaxValue(property);
     }
 }
-function translateDistance(translate) {
-    return Math.sqrt(translate[0] * translate[0] + translate[1] * translate[1]);
+function translateDistance(translate1) {
+    return Math.sqrt(translate1[0] * translate1[0] + translate1[1] * translate1[1]);
 }
-function translate$1(queryGeometry, translate, translateAnchor, bearing, pixelsToTileUnits) {
-    if (!translate[0] && !translate[1]) {
+function translate$1(queryGeometry, translate2, translateAnchor, bearing, pixelsToTileUnits) {
+    if (!translate2[0] && !translate2[1]) {
         return queryGeometry;
     }
-    const pt = pointGeometry.convert(translate)._mult(pixelsToTileUnits);
+    const pt = pointGeometry.convert(translate2)._mult(pixelsToTileUnits);
     if (translateAnchor === 'viewport') {
         pt._rotate(-bearing);
     }
@@ -13053,9 +13077,6 @@ var mul = multiply;
 })();
 
 class CircleStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$8);
-    }
     createBucket(parameters) {
         return new CircleBucket(parameters);
     }
@@ -13087,6 +13108,9 @@ class CircleStyleLayer extends StyleLayer {
         }
         return false;
     }
+    constructor(layer) {
+        super(layer, properties$8);
+    }
 }
 function projectPoint(p, pixelPosMatrix) {
     const point = transformMat4(create(), fromValues(p.x, p.y, 0, 1), pixelPosMatrix);
@@ -13117,7 +13141,7 @@ function createImage(image, {width, height}, channels, data) {
     } else if (data instanceof Uint8ClampedArray) {
         data = new Uint8Array(data.buffer);
     } else if (data.length !== width * height * channels) {
-        throw new RangeError('mismatched image size');
+        throw new RangeError(`mismatched image size. expected: ${ data.length } but got: ${ width * height * channels }`);
     }
     image.width = width;
     image.height = height;
@@ -13168,9 +13192,6 @@ function copyImage(srcImg, dstImg, srcPt, dstPt, size, channels) {
     return dstImg;
 }
 class AlphaImage {
-    constructor(size, data) {
-        createImage(this, size, 1, data);
-    }
     resize(size) {
         resizeImage(this, size, 1);
     }
@@ -13183,11 +13204,11 @@ class AlphaImage {
     static copy(srcImg, dstImg, srcPt, dstPt, size) {
         copyImage(srcImg, dstImg, srcPt, dstPt, size, 1);
     }
+    constructor(size, data) {
+        createImage(this, size, 1, data);
+    }
 }
 class RGBAImage {
-    constructor(size, data) {
-        createImage(this, size, 4, data);
-    }
     resize(size) {
         resizeImage(this, size, 4);
     }
@@ -13208,6 +13229,9 @@ class RGBAImage {
     }
     static copy(srcImg, dstImg, srcPt, dstPt, size) {
         copyImage(srcImg, dstImg, srcPt, dstPt, size, 4);
+    }
+    constructor(size, data) {
+        createImage(this, size, 4, data);
     }
 }
 register('AlphaImage', AlphaImage);
@@ -13248,10 +13272,6 @@ function renderColorRamp(params) {
 }
 
 class HeatmapStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$7);
-        this._updateColorRamp();
-    }
     createBucket(options) {
         return new HeatmapBucket(options);
     }
@@ -13284,6 +13304,10 @@ class HeatmapStyleLayer extends StyleLayer {
     hasOffscreenPass() {
         return this.paint.get('heatmap-opacity') !== 0 && this.visibility !== 'none';
     }
+    constructor(layer) {
+        super(layer, properties$7);
+        this._updateColorRamp();
+    }
 }
 
 const paint$6 = new Properties({
@@ -13297,11 +13321,11 @@ const paint$6 = new Properties({
 var properties$6 = { paint: paint$6 };
 
 class HillshadeStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$6);
-    }
     hasOffscreenPass() {
         return this.paint.get('hillshade-exaggeration') !== 0 && this.visibility !== 'none';
+    }
+    constructor(layer) {
+        super(layer, properties$6);
     }
 }
 
@@ -13870,20 +13894,20 @@ function compareAreas(a, b) {
 
 function hasPattern(type, layers, options) {
     const patterns = options.patternDependencies;
-    let hasPattern = false;
+    let hasPattern1 = false;
     for (const layer of layers) {
         const patternProperty = layer.paint.get(`${ type }-pattern`);
         if (!patternProperty.isConstant()) {
-            hasPattern = true;
+            hasPattern1 = true;
         }
         const constantPattern = patternProperty.constantOr(null);
         if (constantPattern) {
-            hasPattern = true;
+            hasPattern1 = true;
             patterns[constantPattern.to] = true;
             patterns[constantPattern.from] = true;
         }
     }
-    return hasPattern;
+    return hasPattern1;
 }
 function addPatternDependencies(type, layers, patternFeature, zoom, options) {
     const patterns = options.patternDependencies;
@@ -13912,22 +13936,6 @@ function addPatternDependencies(type, layers, patternFeature, zoom, options) {
 
 const EARCUT_MAX_RINGS$1 = 500;
 class FillBucket {
-    constructor(options) {
-        this.zoom = options.zoom;
-        this.overscaling = options.overscaling;
-        this.layers = options.layers;
-        this.layerIds = this.layers.map(layer => layer.id);
-        this.index = options.index;
-        this.hasPattern = false;
-        this.patternFeatures = [];
-        this.layoutVertexArray = new FillLayoutArray();
-        this.indexArray = new TriangleIndexArray();
-        this.indexArray2 = new LineIndexArray();
-        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
-        this.segments = new SegmentVector();
-        this.segments2 = new SegmentVector();
-        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
-    }
     populate(features, options, canonical) {
         this.hasPattern = hasPattern('fill', this.layers, options);
         const fillSortKey = this.layers[0].layout.get('fill-sort-key');
@@ -14011,27 +14019,27 @@ class FillBucket {
             const triangleIndex = triangleSegment.vertexLength;
             const flattened = [];
             const holeIndices = [];
-            for (const ring of polygon) {
-                if (ring.length === 0) {
+            for (const ring1 of polygon) {
+                if (ring1.length === 0) {
                     continue;
                 }
-                if (ring !== polygon[0]) {
+                if (ring1 !== polygon[0]) {
                     holeIndices.push(flattened.length / 2);
                 }
-                const lineSegment = this.segments2.prepareSegment(ring.length, this.layoutVertexArray, this.indexArray2);
+                const lineSegment = this.segments2.prepareSegment(ring1.length, this.layoutVertexArray, this.indexArray2);
                 const lineIndex = lineSegment.vertexLength;
-                this.layoutVertexArray.emplaceBack(ring[0].x, ring[0].y);
-                this.indexArray2.emplaceBack(lineIndex + ring.length - 1, lineIndex);
-                flattened.push(ring[0].x);
-                flattened.push(ring[0].y);
-                for (let i = 1; i < ring.length; i++) {
-                    this.layoutVertexArray.emplaceBack(ring[i].x, ring[i].y);
+                this.layoutVertexArray.emplaceBack(ring1[0].x, ring1[0].y);
+                this.indexArray2.emplaceBack(lineIndex + ring1.length - 1, lineIndex);
+                flattened.push(ring1[0].x);
+                flattened.push(ring1[0].y);
+                for (let i = 1; i < ring1.length; i++) {
+                    this.layoutVertexArray.emplaceBack(ring1[i].x, ring1[i].y);
                     this.indexArray2.emplaceBack(lineIndex + i - 1, lineIndex + i);
-                    flattened.push(ring[i].x);
-                    flattened.push(ring[i].y);
+                    flattened.push(ring1[i].x);
+                    flattened.push(ring1[i].y);
                 }
-                lineSegment.vertexLength += ring.length;
-                lineSegment.primitiveLength += ring.length;
+                lineSegment.vertexLength += ring1.length;
+                lineSegment.primitiveLength += ring1.length;
             }
             const indices = earcut$1(flattened, holeIndices);
             for (let i = 0; i < indices.length; i += 3) {
@@ -14041,6 +14049,22 @@ class FillBucket {
             triangleSegment.primitiveLength += indices.length / 3;
         }
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, imagePositions, canonical);
+    }
+    constructor(options) {
+        this.zoom = options.zoom;
+        this.overscaling = options.overscaling;
+        this.layers = options.layers;
+        this.layerIds = this.layers.map(layer => layer.id);
+        this.index = options.index;
+        this.hasPattern = false;
+        this.patternFeatures = [];
+        this.layoutVertexArray = new FillLayoutArray();
+        this.indexArray = new TriangleIndexArray();
+        this.indexArray2 = new LineIndexArray();
+        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
+        this.segments = new SegmentVector();
+        this.segments2 = new SegmentVector();
+        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
     }
 }
 register('FillBucket', FillBucket, {
@@ -14066,9 +14090,6 @@ var properties$5 = {
 };
 
 class FillStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$5);
-    }
     recalculate(parameters, availableImages) {
         super.recalculate(parameters, availableImages);
         const outlineColor = this.paint._values['fill-outline-color'];
@@ -14088,6 +14109,9 @@ class FillStyleLayer extends StyleLayer {
     }
     isTileClipped() {
         return true;
+    }
+    constructor(layer) {
+        super(layer, properties$5);
     }
 }
 
@@ -14365,20 +14389,6 @@ function addVertex$1(vertexArray, x, y, nx, ny, nz, t, e) {
     vertexArray.emplaceBack(x, y, Math.floor(nx * FACTOR) * 2 + t, ny * FACTOR * 2, nz * FACTOR * 2, Math.round(e));
 }
 class FillExtrusionBucket {
-    constructor(options) {
-        this.zoom = options.zoom;
-        this.overscaling = options.overscaling;
-        this.layers = options.layers;
-        this.layerIds = this.layers.map(layer => layer.id);
-        this.index = options.index;
-        this.hasPattern = false;
-        this.layoutVertexArray = new FillExtrusionLayoutArray();
-        this.centroidVertexArray = new PosArray();
-        this.indexArray = new TriangleIndexArray();
-        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
-        this.segments = new SegmentVector();
-        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
-    }
     populate(features, options, canonical) {
         this.features = [];
         this.hasPattern = hasPattern('fill-extrusion', this.layers, options);
@@ -14451,18 +14461,18 @@ class FillExtrusionBucket {
                 numVertices += ring.length;
             }
             let segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
-            for (const ring of polygon) {
-                if (ring.length === 0) {
+            for (const ring1 of polygon) {
+                if (ring1.length === 0) {
                     continue;
                 }
-                if (isEntirelyOutside(ring)) {
+                if (isEntirelyOutside(ring1)) {
                     continue;
                 }
                 let edgeDistance = 0;
-                for (let p = 0; p < ring.length; p++) {
-                    const p1 = ring[p];
+                for (let p = 0; p < ring1.length; p++) {
+                    const p1 = ring1[p];
                     if (p >= 1) {
-                        const p2 = ring[p - 1];
+                        const p2 = ring1[p - 1];
                         if (!isBoundaryEdge(p1, p2)) {
                             if (segment.vertexLength + 4 > SegmentVector.MAX_VERTEX_ARRAY_LENGTH) {
                                 segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
@@ -14499,15 +14509,15 @@ class FillExtrusionBucket {
             const flattened = [];
             const holeIndices = [];
             const triangleIndex = segment.vertexLength;
-            for (const ring of polygon) {
-                if (ring.length === 0) {
+            for (const ring2 of polygon) {
+                if (ring2.length === 0) {
                     continue;
                 }
-                if (ring !== polygon[0]) {
+                if (ring2 !== polygon[0]) {
                     holeIndices.push(flattened.length / 2);
                 }
-                for (let i = 0; i < ring.length; i++) {
-                    const p = ring[i];
+                for (let i = 0; i < ring2.length; i++) {
+                    const p = ring2[i];
                     addVertex$1(this.layoutVertexArray, p.x, p.y, 0, 0, 1, 1, 0);
                     centroid.x += p.x;
                     centroid.y += p.y;
@@ -14526,6 +14536,20 @@ class FillExtrusionBucket {
         for (let i = 0; i < centroid.vertexCount; i++)
             this.centroidVertexArray.emplaceBack(Math.floor(centroid.x / centroid.vertexCount), Math.floor(centroid.y / centroid.vertexCount));
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, imagePositions, canonical);
+    }
+    constructor(options) {
+        this.zoom = options.zoom;
+        this.overscaling = options.overscaling;
+        this.layers = options.layers;
+        this.layerIds = this.layers.map(layer => layer.id);
+        this.index = options.index;
+        this.hasPattern = false;
+        this.layoutVertexArray = new FillExtrusionLayoutArray();
+        this.centroidVertexArray = new PosArray();
+        this.indexArray = new TriangleIndexArray();
+        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
+        this.segments = new SegmentVector();
+        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
     }
 }
 register('FillExtrusionBucket', FillExtrusionBucket, {
@@ -14554,9 +14578,6 @@ const paint$4 = new Properties({
 var properties$4 = { paint: paint$4 };
 
 class FillExtrusionStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$4);
-    }
     createBucket(parameters) {
         return new FillExtrusionBucket(parameters);
     }
@@ -14575,6 +14596,9 @@ class FillExtrusionStyleLayer extends StyleLayer {
         const projectedBase = projected[0];
         const projectedTop = projected[1];
         return checkIntersection(projectedBase, projectedTop, projectedQueryGeometry);
+    }
+    constructor(layer) {
+        super(layer, properties$4);
     }
 }
 function dot(a, b) {
@@ -14736,27 +14760,6 @@ const LINE_DISTANCE_BUFFER_BITS = 15;
 const LINE_DISTANCE_SCALE = 1 / 2;
 const MAX_LINE_DISTANCE = Math.pow(2, LINE_DISTANCE_BUFFER_BITS - 1) / LINE_DISTANCE_SCALE;
 class LineBucket {
-    constructor(options) {
-        this.zoom = options.zoom;
-        this.overscaling = options.overscaling;
-        this.layers = options.layers;
-        this.layerIds = this.layers.map(layer => layer.id);
-        this.index = options.index;
-        this.hasPattern = false;
-        this.patternFeatures = [];
-        this.lineClipsArray = [];
-        this.gradients = {};
-        this.layers.forEach(layer => {
-            this.gradients[layer.id] = {};
-        });
-        this.layoutVertexArray = new LineLayoutArray();
-        this.layoutVertexArray2 = new LineExtLayoutArray();
-        this.indexArray = new TriangleIndexArray();
-        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
-        this.segments = new SegmentVector();
-        this.maxLineLength = 0;
-        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
-    }
     populate(features, options, canonical) {
         this.hasPattern = hasPattern('line', this.layers, options);
         const lineSortKey = this.layers[0].layout.get('line-sort-key');
@@ -15043,6 +15046,27 @@ class LineBucket {
         this.distance += prev.dist(next);
         this.updateScaledDistance();
     }
+    constructor(options) {
+        this.zoom = options.zoom;
+        this.overscaling = options.overscaling;
+        this.layers = options.layers;
+        this.layerIds = this.layers.map(layer => layer.id);
+        this.index = options.index;
+        this.hasPattern = false;
+        this.patternFeatures = [];
+        this.lineClipsArray = [];
+        this.gradients = {};
+        this.layers.forEach(layer => {
+            this.gradients[layer.id] = {};
+        });
+        this.layoutVertexArray = new LineLayoutArray();
+        this.layoutVertexArray2 = new LineExtLayoutArray();
+        this.indexArray = new TriangleIndexArray();
+        this.programConfigurations = new ProgramConfigurationSet(options.layers, options.zoom);
+        this.segments = new SegmentVector();
+        this.maxLineLength = 0;
+        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
+    }
 }
 register('LineBucket', LineBucket, {
     omit: [
@@ -15094,14 +15118,10 @@ class LineFloorwidthProperty extends DataDrivenProperty {
 const lineFloorwidthProperty = new LineFloorwidthProperty(properties$3.paint.properties['line-width'].specification);
 lineFloorwidthProperty.useIntegerZoom = true;
 class LineStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$3);
-        this.gradientVersion = 0;
-    }
     _handleSpecialPaintPropertyUpdate(name) {
         if (name === 'line-gradient') {
             const expression = this._transitionablePaint._values['line-gradient'].value.expression;
-            this.stepInterpolant = expression._styleExpression.expression instanceof Step;
+            this.stepInterpolant = expression._styleExpression.expression instanceof Step$1;
             this.gradientVersion = (this.gradientVersion + 1) % Number.MAX_SAFE_INTEGER;
         }
     }
@@ -15132,6 +15152,10 @@ class LineStyleLayer extends StyleLayer {
     }
     isTileClipped() {
         return true;
+    }
+    constructor(layer) {
+        super(layer, properties$3);
+        this.gradientVersion = 0;
     }
 }
 function getLineWidth(lineWidth, lineGapWidth) {
@@ -15527,12 +15551,12 @@ function mergeLines (features) {
         const point = onRight ? geom[0][geom[0].length - 1] : geom[0][0];
         return `${ text }:${ point.x }:${ point.y }`;
     }
-    for (let k = 0; k < features.length; k++) {
-        const feature = features[k];
+    for (let k1 = 0; k1 < features.length; k1++) {
+        const feature = features[k1];
         const geom = feature.geometry;
         const text = feature.text ? feature.text.toString() : null;
         if (!text) {
-            add(k);
+            add(k1);
             continue;
         }
         const leftKey = getKey(text, geom), rightKey = getKey(text, geom, true);
@@ -15548,7 +15572,7 @@ function mergeLines (features) {
         } else if (rightKey in leftIndex) {
             mergeFromLeft(leftKey, rightKey, geom);
         } else {
-            add(k);
+            add(k1);
             leftIndex[leftKey] = mergedIndex - 1;
             rightIndex[rightKey] = mergedIndex - 1;
         }
@@ -16488,14 +16512,6 @@ function potpack(boxes) {
 
 const IMAGE_PADDING = 1;
 class ImagePosition {
-    constructor(paddedRect, {pixelRatio, version, stretchX, stretchY, content}) {
-        this.paddedRect = paddedRect;
-        this.pixelRatio = pixelRatio;
-        this.stretchX = stretchX;
-        this.stretchY = stretchY;
-        this.content = content;
-        this.version = version;
-    }
     get tl() {
         return [
             this.paddedRect.x + IMAGE_PADDING,
@@ -16517,8 +16533,51 @@ class ImagePosition {
             (this.paddedRect.h - IMAGE_PADDING * 2) / this.pixelRatio
         ];
     }
+    constructor(paddedRect, {pixelRatio, version, stretchX, stretchY, content}) {
+        this.paddedRect = paddedRect;
+        this.pixelRatio = pixelRatio;
+        this.stretchX = stretchX;
+        this.stretchY = stretchY;
+        this.content = content;
+        this.version = version;
+    }
 }
 class ImageAtlas {
+    addImages(images, positions, bins) {
+        for (const id in images) {
+            const src = images[id];
+            const bin = {
+                x: 0,
+                y: 0,
+                w: src.data.width + 2 * IMAGE_PADDING,
+                h: src.data.height + 2 * IMAGE_PADDING
+            };
+            bins.push(bin);
+            positions[id] = new ImagePosition(bin, src);
+            if (src.hasRenderCallback) {
+                this.haveRenderCallbacks.push(id);
+            }
+        }
+    }
+    patchUpdatedImages(imageManager, texture) {
+        imageManager.dispatchRenderCallbacks(this.haveRenderCallbacks);
+        for (const name in imageManager.updatedImages) {
+            this.patchUpdatedImage(this.iconPositions[name], imageManager.getImage(name), texture);
+            this.patchUpdatedImage(this.patternPositions[name], imageManager.getImage(name), texture);
+        }
+    }
+    patchUpdatedImage(position, image, texture) {
+        if (!position || !image)
+            return;
+        if (position.version === image.version)
+            return;
+        position.version = image.version;
+        const [x, y] = position.tl;
+        texture.update(image.data, undefined, {
+            x,
+            y
+        });
+    }
     constructor(icons, patterns) {
         const iconPositions = {}, patternPositions = {};
         this.haveRenderCallbacks = [];
@@ -16541,9 +16600,9 @@ class ImageAtlas {
                 y: bin.y + IMAGE_PADDING
             }, src.data);
         }
-        for (const id in patterns) {
-            const src = patterns[id];
-            const bin = patternPositions[id].paddedRect;
+        for (const id1 in patterns) {
+            const src = patterns[id1];
+            const bin = patternPositions[id1].paddedRect;
             const x = bin.x + IMAGE_PADDING, y = bin.y + IMAGE_PADDING, w = src.data.width, h = src.data.height;
             RGBAImage.copy(src.data, image, {
                 x: 0,
@@ -16597,41 +16656,6 @@ class ImageAtlas {
         this.iconPositions = iconPositions;
         this.patternPositions = patternPositions;
     }
-    addImages(images, positions, bins) {
-        for (const id in images) {
-            const src = images[id];
-            const bin = {
-                x: 0,
-                y: 0,
-                w: src.data.width + 2 * IMAGE_PADDING,
-                h: src.data.height + 2 * IMAGE_PADDING
-            };
-            bins.push(bin);
-            positions[id] = new ImagePosition(bin, src);
-            if (src.hasRenderCallback) {
-                this.haveRenderCallbacks.push(id);
-            }
-        }
-    }
-    patchUpdatedImages(imageManager, texture) {
-        imageManager.dispatchRenderCallbacks(this.haveRenderCallbacks);
-        for (const name in imageManager.updatedImages) {
-            this.patchUpdatedImage(this.iconPositions[name], imageManager.getImage(name), texture);
-            this.patchUpdatedImage(this.patternPositions[name], imageManager.getImage(name), texture);
-        }
-    }
-    patchUpdatedImage(position, image, texture) {
-        if (!position || !image)
-            return;
-        if (position.version === image.version)
-            return;
-        position.version = image.version;
-        const [x, y] = position.tl;
-        texture.update(image.data, undefined, {
-            x,
-            y
-        });
-    }
 }
 register('ImagePosition', ImagePosition);
 register('ImageAtlas', ImageAtlas);
@@ -16655,11 +16679,6 @@ function isEmpty(positionedLines) {
 const PUAbegin = 57344;
 const PUAend = 63743;
 class SectionOptions {
-    constructor() {
-        this.scale = 1;
-        this.fontStack = '';
-        this.imageName = null;
-    }
     static forText(scale, fontStack) {
         const textOptions = new SectionOptions();
         textOptions.scale = scale || 1;
@@ -16671,14 +16690,13 @@ class SectionOptions {
         imageOptions.imageName = imageName;
         return imageOptions;
     }
+    constructor() {
+        this.scale = 1;
+        this.fontStack = '';
+        this.imageName = null;
+    }
 }
 class TaggedString {
-    constructor() {
-        this.text = '';
-        this.sectionIndex = [];
-        this.sections = [];
-        this.imageSectionID = null;
-    }
     static fromFeature(text, defaultFontStack) {
         const result = new TaggedString();
         for (let i = 0; i < text.sections.length; i++) {
@@ -16712,7 +16730,7 @@ class TaggedString {
             beginningWhitespace++;
         }
         let trailingWhitespace = this.text.length;
-        for (let i = this.text.length - 1; i >= 0 && i >= beginningWhitespace && whitespace[this.text.charCodeAt(i)]; i--) {
+        for (let i1 = this.text.length - 1; i1 >= 0 && i1 >= beginningWhitespace && whitespace[this.text.charCodeAt(i1)]; i1--) {
             trailingWhitespace--;
         }
         this.text = this.text.substring(beginningWhitespace, trailingWhitespace);
@@ -16762,6 +16780,12 @@ class TaggedString {
         if (this.imageSectionID >= PUAend)
             return null;
         return ++this.imageSectionID;
+    }
+    constructor() {
+        this.text = '';
+        this.sectionIndex = [];
+        this.sections = [];
+        this.imageSectionID = null;
     }
 }
 function breakLines(input, lineBreakPoints) {
@@ -17242,7 +17266,7 @@ function evaluateSizeForZoom(sizeData, zoom) {
         uSize = sizeData.layoutSize;
     } else if (sizeData.kind !== 'source') {
         const {interpolationType, minZoom, maxZoom} = sizeData;
-        const t = !interpolationType ? 0 : clamp(Interpolate.interpolationFactor(interpolationType, zoom, minZoom, maxZoom), 0, 1);
+        const t = !interpolationType ? 0 : clamp(Interpolate$1.interpolationFactor(interpolationType, zoom, minZoom, maxZoom), 0, 1);
         if (sizeData.kind === 'camera') {
             uSize = number(sizeData.minSize, sizeData.maxSize, t);
         } else {
@@ -17264,15 +17288,15 @@ SIZE_PACK_FACTOR: SIZE_PACK_FACTOR
 });
 
 class Anchor extends pointGeometry {
+    clone() {
+        return new Anchor(this.x, this.y, this.angle, this.segment);
+    }
     constructor(x, y, angle, segment) {
         super(x, y);
         this.angle = angle;
         if (segment !== undefined) {
             this.segment = segment;
         }
-    }
-    clone() {
-        return new Anchor(this.x, this.y, this.angle, this.segment);
     }
 }
 register('Anchor', Anchor);
@@ -17916,7 +17940,7 @@ function getCentroidCell(polygon) {
 
 const baselineOffset = 7;
 const INVALID_TEXT_OFFSET = Number.POSITIVE_INFINITY;
-function evaluateVariableOffset(anchor, offset) {
+function evaluateVariableOffset(anchor1, offset) {
     function fromRadialOffset(anchor, radialOffset) {
         let x = 0, y = 0;
         if (radialOffset < 0)
@@ -17992,7 +18016,7 @@ function evaluateVariableOffset(anchor, offset) {
             y
         ];
     }
-    return offset[1] !== INVALID_TEXT_OFFSET ? fromTextOffset(anchor, offset[0], offset[1]) : fromRadialOffset(anchor, offset[0]);
+    return offset[1] !== INVALID_TEXT_OFFSET ? fromTextOffset(anchor1, offset[0], offset[1]) : fromRadialOffset(anchor1, offset[0]);
 }
 function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePositions, showCollisionBoxes, canonical) {
     bucket.createArrays();
@@ -18230,7 +18254,7 @@ function getDefaultHorizontalShaping(horizontalShaping) {
     }
     return null;
 }
-function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textBoxScale, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, canonical, layoutTextSize) {
+function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textBoxScale, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature1, sizes, isSDFIcon, canonical, layoutTextSize) {
     const lineArray = bucket.addToLineVertexArray(anchor, line);
     let textCollisionFeature, iconCollisionFeature, verticalTextCollisionFeature, verticalIconCollisionFeature;
     let numIconVertices = 0;
@@ -18244,13 +18268,13 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
     let textOffset0 = 0;
     let textOffset1 = 0;
     if (layer._unevaluatedLayout.getValue('text-radial-offset') === undefined) {
-        [textOffset0, textOffset1] = layer.layout.get('text-offset').evaluate(feature, {}, canonical).map(t => t * ONE_EM);
+        [textOffset0, textOffset1] = layer.layout.get('text-offset').evaluate(feature1, {}, canonical).map(t => t * ONE_EM);
     } else {
-        textOffset0 = layer.layout.get('text-radial-offset').evaluate(feature, {}, canonical) * ONE_EM;
+        textOffset0 = layer.layout.get('text-radial-offset').evaluate(feature1, {}, canonical) * ONE_EM;
         textOffset1 = INVALID_TEXT_OFFSET;
     }
     if (bucket.allowVerticalPlacement && shapedTextOrientations.vertical) {
-        const textRotation = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
+        const textRotation = layer.layout.get('text-rotate').evaluate(feature1, {}, canonical);
         const verticalTextRotation = textRotation + 90;
         const verticalShaping = shapedTextOrientations.vertical;
         verticalTextCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, verticalShaping, textBoxScale, textPadding, textAlongLine, verticalTextRotation);
@@ -18259,7 +18283,7 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         }
     }
     if (shapedIcon) {
-        const iconRotate = layer.layout.get('icon-rotate').evaluate(feature, {});
+        const iconRotate = layer.layout.get('icon-rotate').evaluate(feature1, {});
         const hasIconTextFit = layer.layout.get('icon-text-fit') !== 'none';
         const iconQuads = getIconQuads(shapedIcon, iconRotate, isSDFIcon, hasIconTextFit);
         const verticalIconQuads = verticallyShapedIcon ? getIconQuads(verticallyShapedIcon, iconRotate, isSDFIcon, hasIconTextFit) : undefined;
@@ -18268,24 +18292,24 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         const sizeData = bucket.iconSizeData;
         let iconSizeData = null;
         if (sizeData.kind === 'source') {
-            iconSizeData = [SIZE_PACK_FACTOR * layer.layout.get('icon-size').evaluate(feature, {})];
+            iconSizeData = [SIZE_PACK_FACTOR * layer.layout.get('icon-size').evaluate(feature1, {})];
             if (iconSizeData[0] > MAX_PACKED_SIZE) {
                 warnOnce(`${ bucket.layerIds[0] }: Value for "icon-size" is >= ${ MAX_GLYPH_ICON_SIZE }. Reduce your "icon-size".`);
             }
         } else if (sizeData.kind === 'composite') {
             iconSizeData = [
-                SIZE_PACK_FACTOR * sizes.compositeIconSizes[0].evaluate(feature, {}, canonical),
-                SIZE_PACK_FACTOR * sizes.compositeIconSizes[1].evaluate(feature, {}, canonical)
+                SIZE_PACK_FACTOR * sizes.compositeIconSizes[0].evaluate(feature1, {}, canonical),
+                SIZE_PACK_FACTOR * sizes.compositeIconSizes[1].evaluate(feature1, {}, canonical)
             ];
             if (iconSizeData[0] > MAX_PACKED_SIZE || iconSizeData[1] > MAX_PACKED_SIZE) {
                 warnOnce(`${ bucket.layerIds[0] }: Value for "icon-size" is >= ${ MAX_GLYPH_ICON_SIZE }. Reduce your "icon-size".`);
             }
         }
-        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
+        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature1, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
         placedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
         if (verticalIconQuads) {
             numVerticalIconVertices = verticalIconQuads.length * 4;
-            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
+            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature1, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
             verticalPlacedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
         }
     }
@@ -18294,17 +18318,17 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         const shaping = shapedTextOrientations.horizontal[justification];
         if (!textCollisionFeature) {
             key = murmur3$1(shaping.text);
-            const textRotate = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
+            const textRotate = layer.layout.get('text-rotate').evaluate(feature1, {}, canonical);
             textCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textBoxScale, textPadding, textAlongLine, textRotate);
         }
         const singleLine = shaping.positionedLines.length === 1;
-        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
+        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature1, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
         if (singleLine) {
             break;
         }
     }
     if (shapedTextOrientations.vertical) {
-        numVerticalGlyphVertices += addTextVertices(bucket, anchor, shapedTextOrientations.vertical, imageMap, layer, textAlongLine, feature, textOffset, lineArray, exports.WritingMode.vertical, ['vertical'], placedTextSymbolIndices, verticalPlacedIconSymbolIndex, sizes, canonical);
+        numVerticalGlyphVertices += addTextVertices(bucket, anchor, shapedTextOrientations.vertical, imageMap, layer, textAlongLine, feature1, textOffset, lineArray, exports.WritingMode.vertical, ['vertical'], placedTextSymbolIndices, verticalPlacedIconSymbolIndex, sizes, canonical);
     }
     const textBoxStartIndex = textCollisionFeature ? textCollisionFeature.boxStartIndex : bucket.collisionBoxArray.length;
     const textBoxEndIndex = textCollisionFeature ? textCollisionFeature.boxEndIndex : bucket.collisionBoxArray.length;
@@ -18329,8 +18353,8 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         collisionCircleDiameter *= layoutTextSize / ONE_EM;
     if (bucket.glyphOffsetArray.length >= SymbolBucket.MAX_GLYPHS)
         warnOnce('Too many glyphs being rendered in a tile. See https://github.com/mapbox/mapbox-gl-js/issues/2907');
-    if (feature.sortKey !== undefined) {
-        bucket.addToSortKeyRanges(bucket.symbolInstances.length, feature.sortKey);
+    if (feature1.sortKey !== undefined) {
+        bucket.addToSortKeyRanges(bucket.symbolInstances.length, feature1.sortKey);
     }
     bucket.symbolInstances.emplaceBack(anchor.x, anchor.y, placedTextSymbolIndices.right >= 0 ? placedTextSymbolIndices.right : -1, placedTextSymbolIndices.center >= 0 ? placedTextSymbolIndices.center : -1, placedTextSymbolIndices.left >= 0 ? placedTextSymbolIndices.left : -1, placedTextSymbolIndices.vertical || -1, placedIconSymbolIndex, verticalPlacedIconSymbolIndex, key, textBoxStartIndex, textBoxEndIndex, verticalTextBoxStartIndex, verticalTextBoxEndIndex, iconBoxStartIndex, iconBoxEndIndex, verticalIconBoxStartIndex, verticalIconBoxEndIndex, featureIndex, numHorizontalGlyphVertices, numVerticalGlyphVertices, numIconVertices, numVerticalIconVertices, useRuntimeCollisionCircles, 0, textBoxScale, textOffset0, textOffset1, collisionCircleDiameter);
 }
@@ -18377,15 +18401,6 @@ function containsRTLText(formattedText) {
     return false;
 }
 class SymbolBuffers {
-    constructor(programConfigurations) {
-        this.layoutVertexArray = new SymbolLayoutArray();
-        this.indexArray = new TriangleIndexArray();
-        this.programConfigurations = programConfigurations;
-        this.segments = new SegmentVector();
-        this.dynamicLayoutVertexArray = new SymbolDynamicLayoutArray();
-        this.opacityVertexArray = new SymbolOpacityArray();
-        this.placedSymbolArray = new PlacedSymbolArray();
-    }
     isEmpty() {
         return this.layoutVertexArray.length === 0 && this.indexArray.length === 0 && this.dynamicLayoutVertexArray.length === 0 && this.opacityVertexArray.length === 0;
     }
@@ -18414,16 +18429,18 @@ class SymbolBuffers {
         this.dynamicLayoutVertexBuffer.destroy();
         this.opacityVertexBuffer.destroy();
     }
+    constructor(programConfigurations) {
+        this.layoutVertexArray = new SymbolLayoutArray();
+        this.indexArray = new TriangleIndexArray();
+        this.programConfigurations = programConfigurations;
+        this.segments = new SegmentVector();
+        this.dynamicLayoutVertexArray = new SymbolDynamicLayoutArray();
+        this.opacityVertexArray = new SymbolOpacityArray();
+        this.placedSymbolArray = new PlacedSymbolArray();
+    }
 }
 register('SymbolBuffers', SymbolBuffers);
 class CollisionBuffers {
-    constructor(LayoutArray, layoutAttributes, IndexArray) {
-        this.layoutVertexArray = new LayoutArray();
-        this.layoutAttributes = layoutAttributes;
-        this.indexArray = new IndexArray();
-        this.segments = new SegmentVector();
-        this.collisionVertexArray = new CollisionVertexArray();
-    }
     upload(context) {
         this.layoutVertexBuffer = context.createVertexBuffer(this.layoutVertexArray, this.layoutAttributes);
         this.indexBuffer = context.createIndexBuffer(this.indexArray);
@@ -18437,41 +18454,16 @@ class CollisionBuffers {
         this.segments.destroy();
         this.collisionVertexBuffer.destroy();
     }
+    constructor(LayoutArray, layoutAttributes, IndexArray) {
+        this.layoutVertexArray = new LayoutArray();
+        this.layoutAttributes = layoutAttributes;
+        this.indexArray = new IndexArray();
+        this.segments = new SegmentVector();
+        this.collisionVertexArray = new CollisionVertexArray();
+    }
 }
 register('CollisionBuffers', CollisionBuffers);
 class SymbolBucket {
-    constructor(options) {
-        this.collisionBoxArray = options.collisionBoxArray;
-        this.zoom = options.zoom;
-        this.overscaling = options.overscaling;
-        this.layers = options.layers;
-        this.layerIds = this.layers.map(layer => layer.id);
-        this.index = options.index;
-        this.pixelRatio = options.pixelRatio;
-        this.sourceLayerIndex = options.sourceLayerIndex;
-        this.hasPattern = false;
-        this.hasRTLText = false;
-        this.sortKeyRanges = [];
-        this.collisionCircleArray = [];
-        this.placementInvProjMatrix = identity([]);
-        this.placementViewportMatrix = identity([]);
-        const layer = this.layers[0];
-        const unevaluatedLayoutValues = layer._unevaluatedLayout._values;
-        this.textSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['text-size']);
-        this.iconSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['icon-size']);
-        const layout = this.layers[0].layout;
-        const sortKey = layout.get('symbol-sort-key');
-        const zOrder = layout.get('symbol-z-order');
-        this.canOverlap = getOverlapMode(layout, 'text-overlap', 'text-allow-overlap') !== 'never' || getOverlapMode(layout, 'icon-overlap', 'icon-allow-overlap') !== 'never' || layout.get('text-ignore-placement') || layout.get('icon-ignore-placement');
-        this.sortFeaturesByKey = zOrder !== 'viewport-y' && !sortKey.isConstant();
-        const zOrderByViewportY = zOrder === 'viewport-y' || zOrder === 'auto' && !this.sortFeaturesByKey;
-        this.sortFeaturesByY = zOrderByViewportY && this.canOverlap;
-        if (layout.get('symbol-placement') === 'point') {
-            this.writingModes = layout.get('text-writing-mode').map(wm => exports.WritingMode[wm]);
-        }
-        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
-        this.sourceID = options.sourceID;
-    }
     createArrays() {
         this.text = new SymbolBuffers(new ProgramConfigurationSet(this.layers, this.zoom, property => /^text/.test(property)));
         this.icon = new SymbolBuffers(new ProgramConfigurationSet(this.layers, this.zoom, property => /^icon/.test(property)));
@@ -18627,18 +18619,18 @@ class SymbolBucket {
                     sumForwardLength += line[i + 1].dist(line[i]);
                 }
             }
-            for (let i = anchor.segment || 0; i >= 0; i--) {
-                vertices[i] = {
-                    x: line[i].x,
-                    y: line[i].y,
+            for (let i1 = anchor.segment || 0; i1 >= 0; i1--) {
+                vertices[i1] = {
+                    x: line[i1].x,
+                    y: line[i1].y,
                     tileUnitDistanceFromAnchor: sumBackwardLength
                 };
-                if (i > 0) {
-                    sumBackwardLength += line[i - 1].dist(line[i]);
+                if (i1 > 0) {
+                    sumBackwardLength += line[i1 - 1].dist(line[i1]);
                 }
             }
-            for (let i = 0; i < line.length; i++) {
-                const vertex = vertices[i];
+            for (let i2 = 0; i2 < line.length; i2++) {
+                const vertex = vertices[i2];
                 this.lineVertexArray.emplaceBack(vertex.x, vertex.y, vertex.tileUnitDistanceFromAnchor);
             }
         }
@@ -18737,8 +18729,8 @@ class SymbolBucket {
             collisionArrays.textFeatureIndex = box.featureIndex;
             break;
         }
-        for (let k = verticalTextStartIndex; k < verticalTextEndIndex; k++) {
-            const box = collisionBoxArray.get(k);
+        for (let k1 = verticalTextStartIndex; k1 < verticalTextEndIndex; k1++) {
+            const box = collisionBoxArray.get(k1);
             collisionArrays.verticalTextBox = {
                 x1: box.x1,
                 y1: box.y1,
@@ -18750,8 +18742,8 @@ class SymbolBucket {
             collisionArrays.verticalTextFeatureIndex = box.featureIndex;
             break;
         }
-        for (let k = iconStartIndex; k < iconEndIndex; k++) {
-            const box = collisionBoxArray.get(k);
+        for (let k2 = iconStartIndex; k2 < iconEndIndex; k2++) {
+            const box = collisionBoxArray.get(k2);
             collisionArrays.iconBox = {
                 x1: box.x1,
                 y1: box.y1,
@@ -18763,8 +18755,8 @@ class SymbolBucket {
             collisionArrays.iconFeatureIndex = box.featureIndex;
             break;
         }
-        for (let k = verticalIconStartIndex; k < verticalIconEndIndex; k++) {
-            const box = collisionBoxArray.get(k);
+        for (let k3 = verticalIconStartIndex; k3 < verticalIconEndIndex; k3++) {
+            const box = collisionBoxArray.get(k3);
             collisionArrays.verticalIconBox = {
                 x1: box.x1,
                 y1: box.y1,
@@ -18852,8 +18844,8 @@ class SymbolBucket {
         this.text.indexArray.clear();
         this.icon.indexArray.clear();
         this.featureSortOrder = [];
-        for (const i of this.symbolInstanceIndexes) {
-            const symbolInstance = this.symbolInstances.get(i);
+        for (const i3 of this.symbolInstanceIndexes) {
+            const symbolInstance = this.symbolInstances.get(i3);
             this.featureSortOrder.push(symbolInstance.featureIndex);
             [
                 symbolInstance.rightJustifiedTextSymbolIndex,
@@ -18878,6 +18870,38 @@ class SymbolBucket {
             this.text.indexBuffer.updateData(this.text.indexArray);
         if (this.icon.indexBuffer)
             this.icon.indexBuffer.updateData(this.icon.indexArray);
+    }
+    constructor(options) {
+        this.collisionBoxArray = options.collisionBoxArray;
+        this.zoom = options.zoom;
+        this.overscaling = options.overscaling;
+        this.layers = options.layers;
+        this.layerIds = this.layers.map(layer => layer.id);
+        this.index = options.index;
+        this.pixelRatio = options.pixelRatio;
+        this.sourceLayerIndex = options.sourceLayerIndex;
+        this.hasPattern = false;
+        this.hasRTLText = false;
+        this.sortKeyRanges = [];
+        this.collisionCircleArray = [];
+        this.placementInvProjMatrix = identity([]);
+        this.placementViewportMatrix = identity([]);
+        const layer1 = this.layers[0];
+        const unevaluatedLayoutValues = layer1._unevaluatedLayout._values;
+        this.textSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['text-size']);
+        this.iconSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['icon-size']);
+        const layout = this.layers[0].layout;
+        const sortKey = layout.get('symbol-sort-key');
+        const zOrder = layout.get('symbol-z-order');
+        this.canOverlap = getOverlapMode(layout, 'text-overlap', 'text-allow-overlap') !== 'never' || getOverlapMode(layout, 'icon-overlap', 'icon-allow-overlap') !== 'never' || layout.get('text-ignore-placement') || layout.get('icon-ignore-placement');
+        this.sortFeaturesByKey = zOrder !== 'viewport-y' && !sortKey.isConstant();
+        const zOrderByViewportY = zOrder === 'viewport-y' || zOrder === 'auto' && !this.sortFeaturesByKey;
+        this.sortFeaturesByY = zOrderByViewportY && this.canOverlap;
+        if (layout.get('symbol-placement') === 'point') {
+            this.writingModes = layout.get('text-writing-mode').map(wm => exports.WritingMode[wm]);
+        }
+        this.stateDependentLayerIds = this.layers.filter(l => l.isStateDependent()).map(l => l.id);
+        this.sourceID = options.sourceID;
     }
 }
 register('SymbolBucket', SymbolBucket, {
@@ -18968,10 +18992,6 @@ var properties$2 = {
 };
 
 class FormatSectionOverride {
-    constructor(defaultValue) {
-        this.type = defaultValue.property.overrides ? defaultValue.property.overrides.runtimeType : NullType;
-        this.defaultValue = defaultValue;
-    }
     evaluate(ctx) {
         if (ctx.formattedSection) {
             const overrides = this.defaultValue.property.overrides;
@@ -18996,13 +19016,14 @@ class FormatSectionOverride {
     serialize() {
         return null;
     }
+    constructor(defaultValue) {
+        this.type = defaultValue.property.overrides ? defaultValue.property.overrides.runtimeType : NullType;
+        this.defaultValue = defaultValue;
+    }
 }
 register('FormatSectionOverride', FormatSectionOverride, { omit: ['defaultValue'] });
 
 class SymbolStyleLayer extends StyleLayer {
-    constructor(layer) {
-        super(layer, properties$2);
-    }
     recalculate(parameters, availableImages) {
         super.recalculate(parameters, availableImages);
         if (this.layout.get('icon-rotation-alignment') === 'auto') {
@@ -19098,7 +19119,7 @@ class SymbolStyleLayer extends StyleLayer {
             const checkExpression = expression => {
                 if (hasOverrides)
                     return;
-                if (expression instanceof Literal && typeOf(expression.value) === FormattedType) {
+                if (expression instanceof Literal$1 && typeOf(expression.value) === FormattedType) {
                     const formatted = expression.value;
                     checkSections(formatted.sections);
                 } else if (expression instanceof FormatExpression) {
@@ -19113,6 +19134,9 @@ class SymbolStyleLayer extends StyleLayer {
             }
         }
         return hasOverrides;
+    }
+    constructor(layer) {
+        super(layer, properties$2);
     }
 }
 function getOverlapMode(layout, overlapProp, allowOverlapProp) {
@@ -19172,20 +19196,6 @@ function validateCustomStyleLayer(layerObject) {
     return errors;
 }
 class CustomStyleLayer extends StyleLayer {
-    constructor(implementation) {
-        super(implementation, {});
-        this.onAdd = map => {
-            if (this.implementation.onAdd) {
-                this.implementation.onAdd(map, map.painter.context.gl);
-            }
-        };
-        this.onRemove = map => {
-            if (this.implementation.onRemove) {
-                this.implementation.onRemove(map, map.painter.context.gl);
-            }
-        };
-        this.implementation = implementation;
-    }
     is3D() {
         return this.implementation.renderingMode === '3d';
     }
@@ -19200,6 +19210,20 @@ class CustomStyleLayer extends StyleLayer {
         return false;
     }
     serialize() {
+    }
+    constructor(implementation) {
+        super(implementation, {});
+        this.onAdd = map => {
+            if (this.implementation.onAdd) {
+                this.implementation.onAdd(map, map.painter.context.gl);
+            }
+        };
+        this.onRemove = map => {
+            if (this.implementation.onRemove) {
+                this.implementation.onRemove(map, map.painter.context.gl);
+            }
+        };
+        this.implementation = implementation;
     }
 }
 
@@ -19223,17 +19247,6 @@ function createStyleLayer(layer) {
 }
 
 class ThrottledInvoker {
-    constructor(callback) {
-        this._callback = callback;
-        this._triggered = false;
-        if (typeof MessageChannel !== 'undefined') {
-            this._channel = new MessageChannel();
-            this._channel.port2.onmessage = () => {
-                this._triggered = false;
-                this._callback();
-            };
-        }
-    }
     trigger() {
         if (!this._triggered) {
             this._triggered = true;
@@ -19252,25 +19265,20 @@ class ThrottledInvoker {
         this._callback = () => {
         };
     }
+    constructor(callback) {
+        this._callback = callback;
+        this._triggered = false;
+        if (typeof MessageChannel !== 'undefined') {
+            this._channel = new MessageChannel();
+            this._channel.port2.onmessage = () => {
+                this._triggered = false;
+                this._callback();
+            };
+        }
+    }
 }
 
 class Actor {
-    constructor(target, parent, mapId) {
-        this.target = target;
-        this.parent = parent;
-        this.mapId = mapId;
-        this.callbacks = {};
-        this.tasks = {};
-        this.taskQueue = [];
-        this.cancelCallbacks = {};
-        bindAll([
-            'receive',
-            'process'
-        ], this);
-        this.invoker = new ThrottledInvoker(this.process);
-        this.target.addEventListener('message', this.receive, false);
-        this.globalScope = isWorker() ? target : window;
-    }
     send(type, data, callback, targetMapId, mustQueue = false) {
         const id = Math.round(Math.random() * 1000000000000000000).toString(36).substring(0, 10);
         if (callback) {
@@ -19387,20 +19395,26 @@ class Actor {
         this.invoker.remove();
         this.target.removeEventListener('message', this.receive, false);
     }
+    constructor(target, parent, mapId) {
+        this.target = target;
+        this.parent = parent;
+        this.mapId = mapId;
+        this.callbacks = {};
+        this.tasks = {};
+        this.taskQueue = [];
+        this.cancelCallbacks = {};
+        bindAll([
+            'receive',
+            'process'
+        ], this);
+        this.invoker = new ThrottledInvoker(this.process);
+        this.target.addEventListener('message', this.receive, false);
+        this.globalScope = isWorker() ? target : window;
+    }
 }
 
 const earthRadius = 6371008.8;
 class LngLat {
-    constructor(lng, lat) {
-        if (isNaN(lng) || isNaN(lat)) {
-            throw new Error(`Invalid LngLat object: (${ lng }, ${ lat })`);
-        }
-        this.lng = +lng;
-        this.lat = +lat;
-        if (this.lat > 90 || this.lat < -90) {
-            throw new Error('Invalid LngLat latitude value: must be between -90 and 90');
-        }
-    }
     wrap() {
         return new LngLat(wrap(this.lng, -180, 180), this.lat);
     }
@@ -19438,24 +19452,19 @@ class LngLat {
         }
         throw new Error('`LngLatLike` argument must be specified as a LngLat instance, an object {lng: <lng>, lat: <lat>}, an object {lon: <lng>, lat: <lat>}, or an array of [<lng>, <lat>]');
     }
+    constructor(lng, lat) {
+        if (isNaN(lng) || isNaN(lat)) {
+            throw new Error(`Invalid LngLat object: (${ lng }, ${ lat })`);
+        }
+        this.lng = +lng;
+        this.lat = +lat;
+        if (this.lat > 90 || this.lat < -90) {
+            throw new Error('Invalid LngLat latitude value: must be between -90 and 90');
+        }
+    }
 }
 
 class LngLatBounds {
-    constructor(sw, ne) {
-        if (!sw) ; else if (ne) {
-            this.setSouthWest(sw).setNorthEast(ne);
-        } else if (sw.length === 4) {
-            this.setSouthWest([
-                sw[0],
-                sw[1]
-            ]).setNorthEast([
-                sw[2],
-                sw[3]
-            ]);
-        } else {
-            this.setSouthWest(sw[0]).setNorthEast(sw[1]);
-        }
-    }
     setNorthEast(ne) {
         this._ne = ne instanceof LngLat ? new LngLat(ne.lng, ne.lat) : LngLat.convert(ne);
         return this;
@@ -19553,6 +19562,21 @@ class LngLatBounds {
             return input;
         return new LngLatBounds(input);
     }
+    constructor(sw, ne) {
+        if (!sw) ; else if (ne) {
+            this.setSouthWest(sw).setNorthEast(ne);
+        } else if (sw.length === 4) {
+            this.setSouthWest([
+                sw[0],
+                sw[1]
+            ]).setNorthEast([
+                sw[2],
+                sw[3]
+            ]);
+        } else {
+            this.setSouthWest(sw[0]).setNorthEast(sw[1]);
+        }
+    }
 }
 
 const earthCircumfrence = 2 * Math.PI * earthRadius;
@@ -19582,11 +19606,6 @@ function mercatorScale(lat) {
     return 1 / Math.cos(lat * Math.PI / 180);
 }
 class MercatorCoordinate {
-    constructor(x, y, z = 0) {
-        this.x = +x;
-        this.y = +y;
-        this.z = +z;
-    }
     static fromLngLat(lngLatLike, altitude = 0) {
         const lngLat = LngLat.convert(lngLatLike);
         return new MercatorCoordinate(mercatorXfromLng(lngLat.lng), mercatorYfromLat(lngLat.lat), mercatorZfromAltitude(altitude, lngLat.lat));
@@ -19599,6 +19618,11 @@ class MercatorCoordinate {
     }
     meterInMercatorCoordinateUnits() {
         return 1 / earthCircumfrence * mercatorScale(latFromMercatorY(this.y));
+    }
+    constructor(x, y, z = 0) {
+        this.x = +x;
+        this.y = +y;
+        this.z = +z;
     }
 }
 
@@ -19616,12 +19640,6 @@ function getMercCoords(x, y, z) {
 }
 
 class CanonicalTileID {
-    constructor(z, x, y) {
-        this.z = z;
-        this.x = x;
-        this.y = y;
-        this.key = calculateKey(0, z, z, x, y);
-    }
     equals(id) {
         return this.z === id.z && this.x === id.x && this.y === id.y;
     }
@@ -19641,6 +19659,12 @@ class CanonicalTileID {
     toString() {
         return `${ this.z }/${ this.x }/${ this.y }`;
     }
+    constructor(z, x, y) {
+        this.z = z;
+        this.x = x;
+        this.y = y;
+        this.key = calculateKey(0, z, z, x, y);
+    }
 }
 class UnwrappedTileID {
     constructor(wrap, canonical) {
@@ -19650,12 +19674,6 @@ class UnwrappedTileID {
     }
 }
 class OverscaledTileID {
-    constructor(overscaledZ, wrap, z, x, y) {
-        this.overscaledZ = overscaledZ;
-        this.wrap = wrap;
-        this.canonical = new CanonicalTileID(z, +x, +y);
-        this.key = calculateKey(wrap, overscaledZ, z, x, y);
-    }
     clone() {
         return new OverscaledTileID(this.overscaledZ, this.wrap, this.canonical.z, this.canonical.x, this.canonical.y);
     }
@@ -19734,6 +19752,12 @@ class OverscaledTileID {
     getTilePoint(coord) {
         return this.canonical.getTilePoint(new MercatorCoordinate(coord.x - this.wrap, coord.y));
     }
+    constructor(overscaledZ, wrap, z, x, y) {
+        this.overscaledZ = overscaledZ;
+        this.wrap = wrap;
+        this.canonical = new CanonicalTileID(z, +x, +y);
+        this.key = calculateKey(wrap, overscaledZ, z, x, y);
+    }
 }
 function calculateKey(wrap, overscaledZ, z, x, y) {
     wrap *= 2;
@@ -19754,39 +19778,6 @@ register('CanonicalTileID', CanonicalTileID);
 register('OverscaledTileID', OverscaledTileID, { omit: ['posMatrix'] });
 
 class DEMData {
-    constructor(uid, data, encoding) {
-        this.uid = uid;
-        if (data.height !== data.width)
-            throw new RangeError('DEM tiles must be square');
-        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
-            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".`);
-            return;
-        }
-        this.stride = data.height;
-        const dim = this.dim = data.height - 2;
-        this.data = new Uint32Array(data.data.buffer);
-        this.encoding = encoding || 'mapbox';
-        for (let x = 0; x < dim; x++) {
-            this.data[this._idx(-1, x)] = this.data[this._idx(0, x)];
-            this.data[this._idx(dim, x)] = this.data[this._idx(dim - 1, x)];
-            this.data[this._idx(x, -1)] = this.data[this._idx(x, 0)];
-            this.data[this._idx(x, dim)] = this.data[this._idx(x, dim - 1)];
-        }
-        this.data[this._idx(-1, -1)] = this.data[this._idx(0, 0)];
-        this.data[this._idx(dim, -1)] = this.data[this._idx(dim - 1, 0)];
-        this.data[this._idx(-1, dim)] = this.data[this._idx(0, dim - 1)];
-        this.data[this._idx(dim, dim)] = this.data[this._idx(dim - 1, dim - 1)];
-        this.min = Number.MAX_SAFE_INTEGER;
-        this.max = Number.MIN_SAFE_INTEGER;
-        for (let x = 0; x < dim; x++)
-            for (let y = 0; y < dim; y++) {
-                const ele = this.get(x, y);
-                if (ele > this.max)
-                    this.max = ele;
-                if (ele < this.min)
-                    this.min = ele;
-            }
-    }
     get(x, y) {
         const pixels = new Uint8Array(this.data.buffer);
         const index = this._idx(x, y) * 4;
@@ -19882,10 +19873,49 @@ class DEMData {
             }
         }
     }
+    constructor(uid, data, encoding) {
+        this.uid = uid;
+        if (data.height !== data.width)
+            throw new RangeError('DEM tiles must be square');
+        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
+            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".`);
+            return;
+        }
+        this.stride = data.height;
+        const dim = this.dim = data.height - 2;
+        this.data = new Uint32Array(data.data.buffer);
+        this.encoding = encoding || 'mapbox';
+        for (let x = 0; x < dim; x++) {
+            this.data[this._idx(-1, x)] = this.data[this._idx(0, x)];
+            this.data[this._idx(dim, x)] = this.data[this._idx(dim - 1, x)];
+            this.data[this._idx(x, -1)] = this.data[this._idx(x, 0)];
+            this.data[this._idx(x, dim)] = this.data[this._idx(x, dim - 1)];
+        }
+        this.data[this._idx(-1, -1)] = this.data[this._idx(0, 0)];
+        this.data[this._idx(dim, -1)] = this.data[this._idx(dim - 1, 0)];
+        this.data[this._idx(-1, dim)] = this.data[this._idx(0, dim - 1)];
+        this.data[this._idx(dim, dim)] = this.data[this._idx(dim - 1, dim - 1)];
+        this.min = Number.MAX_SAFE_INTEGER;
+        this.max = Number.MIN_SAFE_INTEGER;
+        for (let x1 = 0; x1 < dim; x1++)
+            for (let y = 0; y < dim; y++) {
+                const ele = this.get(x1, y);
+                if (ele > this.max)
+                    this.max = ele;
+                if (ele < this.min)
+                    this.min = ele;
+            }
+    }
 }
 register('DEMData', DEMData);
 
 class DictionaryCoder {
+    encode(string) {
+        return this._stringToNumber[string];
+    }
+    decode(n) {
+        return this._numberToString[n];
+    }
     constructor(strings) {
         this._stringToNumber = {};
         this._numberToString = [];
@@ -19895,36 +19925,41 @@ class DictionaryCoder {
             this._numberToString[i] = string;
         }
     }
-    encode(string) {
-        return this._stringToNumber[string];
-    }
-    decode(n) {
-        return this._numberToString[n];
-    }
 }
 
-var __rest = undefined && undefined.__rest || function (s, e) {
-    var t = {};
-    for (var p in s)
-        if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-            t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === 'function')
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
+function _objectWithoutProperties(source, excluded) {
+    if (source == null)
+        return {};
+    var target = _objectWithoutPropertiesLoose(source, excluded);
+    var key, i;
+    if (Object.getOwnPropertySymbols) {
+        var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+        for (i = 0; i < sourceSymbolKeys.length; i++) {
+            key = sourceSymbolKeys[i];
+            if (excluded.indexOf(key) >= 0)
+                continue;
+            if (!Object.prototype.propertyIsEnumerable.call(source, key))
+                continue;
+            target[key] = source[key];
         }
-    return t;
-};
-class GeoJSONFeature {
-    constructor(vectorTileFeature, z, x, y, id) {
-        this.type = 'Feature';
-        this._vectorTileFeature = vectorTileFeature;
-        vectorTileFeature._z = z;
-        vectorTileFeature._x = x;
-        vectorTileFeature._y = y;
-        this.properties = vectorTileFeature.properties;
-        this.id = id;
     }
+    return target;
+}
+function _objectWithoutPropertiesLoose(source, excluded) {
+    if (source == null)
+        return {};
+    var target = {};
+    var sourceKeys = Object.keys(source);
+    var key, i;
+    for (i = 0; i < sourceKeys.length; i++) {
+        key = sourceKeys[i];
+        if (excluded.indexOf(key) >= 0)
+            continue;
+        target[key] = source[key];
+    }
+    return target;
+}
+class GeoJSONFeature {
     get geometry() {
         if (this._geometry === undefined) {
             this._geometry = this._vectorTileFeature.toGeoJSON(this._vectorTileFeature._x, this._vectorTileFeature._y, this._vectorTileFeature._z).geometry;
@@ -19935,26 +19970,25 @@ class GeoJSONFeature {
         this._geometry = g;
     }
     toJSON() {
-        const _a = this, json = __rest(_a, [
+        const _ref = this, json = _objectWithoutProperties(_ref, [
                 '_geometry',
                 '_vectorTileFeature'
             ]);
         json.geometry = this.geometry;
         return json;
     }
+    constructor(vectorTileFeature, z, x, y, id) {
+        this.type = 'Feature';
+        this._vectorTileFeature = vectorTileFeature;
+        vectorTileFeature._z = z;
+        vectorTileFeature._x = x;
+        vectorTileFeature._y = y;
+        this.properties = vectorTileFeature.properties;
+        this.id = id;
+    }
 }
 
 class FeatureIndex {
-    constructor(tileID, promoteId) {
-        this.tileID = tileID;
-        this.x = tileID.canonical.x;
-        this.y = tileID.canonical.y;
-        this.z = tileID.canonical.z;
-        this.grid = new TransferableGridIndex(EXTENT, 16, 0);
-        this.grid3D = new TransferableGridIndex(EXTENT, 16, 0);
-        this.featureIndexArray = new FeatureIndexArray();
-        this.promoteId = promoteId;
-    }
     insert(feature, geometry, featureIndex, sourceLayerIndex, bucketIndex, is3D) {
         const key = this.featureIndexArray.length;
         this.featureIndexArray.emplaceBack(featureIndex, sourceLayerIndex, bucketIndex);
@@ -20095,6 +20129,16 @@ class FeatureIndex {
         }
         return id;
     }
+    constructor(tileID, promoteId) {
+        this.tileID = tileID;
+        this.x = tileID.canonical.x;
+        this.y = tileID.canonical.y;
+        this.z = tileID.canonical.z;
+        this.grid = new TransferableGridIndex(EXTENT, 16, 0);
+        this.grid3D = new TransferableGridIndex(EXTENT, 16, 0);
+        this.featureIndexArray = new FeatureIndexArray();
+        this.promoteId = promoteId;
+    }
 }
 register('FeatureIndex', FeatureIndex, {
     omit: [
@@ -20147,6 +20191,18 @@ var PerformanceMarkers;
     PerformanceMarkers['fullLoad'] = 'fullLoad';
 }(PerformanceMarkers || (PerformanceMarkers = {})));
 class RequestPerformance {
+    finish() {
+        performance.mark(this._marks.end);
+        let resourceTimingData = performance.getEntriesByName(this._marks.measure);
+        if (resourceTimingData.length === 0) {
+            performance.measure(this._marks.measure, this._marks.start, this._marks.end);
+            resourceTimingData = performance.getEntriesByName(this._marks.measure);
+            performance.clearMarks(this._marks.start);
+            performance.clearMarks(this._marks.end);
+            performance.clearMeasures(this._marks.measure);
+        }
+        return resourceTimingData;
+    }
     constructor(request) {
         this._marks = {
             start: [
@@ -20161,18 +20217,6 @@ class RequestPerformance {
         };
         performance.mark(this._marks.start);
     }
-    finish() {
-        performance.mark(this._marks.end);
-        let resourceTimingData = performance.getEntriesByName(this._marks.measure);
-        if (resourceTimingData.length === 0) {
-            performance.measure(this._marks.measure, this._marks.start, this._marks.end);
-            resourceTimingData = performance.getEntriesByName(this._marks.measure);
-            performance.clearMarks(this._marks.start);
-            performance.clearMarks(this._marks.end);
-            performance.clearMeasures(this._marks.measure);
-        }
-        return resourceTimingData;
-    }
 }
 
 exports.ARRAY_TYPE = ARRAY_TYPE;
@@ -20181,7 +20225,7 @@ exports.AlphaImage = AlphaImage;
 exports.CanonicalTileID = CanonicalTileID;
 exports.CollisionBoxArray = CollisionBoxArray;
 exports.CollisionCircleLayoutArray = CollisionCircleLayoutArray;
-exports.Color = Color;
+exports.Color = Color$1;
 exports.DEMData = DEMData;
 exports.DataConstantProperty = DataConstantProperty;
 exports.DictionaryCoder = DictionaryCoder;
@@ -20366,24 +20410,18 @@ function groupByLayout(layers, cachedKeys) {
 }
 
 class StyleLayerIndex {
-    constructor(layerConfigs) {
-        this.keyCache = {};
-        if (layerConfigs) {
-            this.replace(layerConfigs);
-        }
-    }
     replace(layerConfigs) {
         this._layerConfigs = {};
         this._layers = {};
         this.update(layerConfigs, []);
     }
     update(layerConfigs, removedIds) {
-        for (const layerConfig of layerConfigs) {
-            this._layerConfigs[layerConfig.id] = layerConfig;
-            const layer = this._layers[layerConfig.id] = performance.createStyleLayer(layerConfig);
+        for (const layerConfig1 of layerConfigs) {
+            this._layerConfigs[layerConfig1.id] = layerConfig1;
+            const layer = this._layers[layerConfig1.id] = performance.createStyleLayer(layerConfig1);
             layer._featureFilter = performance.createFilter(layer.filter);
-            if (this.keyCache[layerConfig.id])
-                delete this.keyCache[layerConfig.id];
+            if (this.keyCache[layerConfig1.id])
+                delete this.keyCache[layerConfig1.id];
         }
         for (const id of removedIds) {
             delete this.keyCache[id];
@@ -20392,8 +20430,8 @@ class StyleLayerIndex {
         }
         this.familiesBySource = {};
         const groups = groupByLayout(Object.values(this._layerConfigs), this.keyCache);
-        for (const layerConfigs of groups) {
-            const layers = layerConfigs.map(layerConfig => this._layers[layerConfig.id]);
+        for (const layerConfigs1 of groups) {
+            const layers = layerConfigs1.map(layerConfig => this._layers[layerConfig.id]);
             const layer = layers[0];
             if (layer.visibility === 'none') {
                 continue;
@@ -20409,6 +20447,12 @@ class StyleLayerIndex {
                 sourceLayerFamilies = sourceGroup[sourceLayerId] = [];
             }
             sourceLayerFamilies.push(layers);
+        }
+    }
+    constructor(layerConfigs) {
+        this.keyCache = {};
+        if (layerConfigs) {
+            this.replace(layerConfigs);
         }
     }
 }
@@ -20443,13 +20487,13 @@ class GlyphAtlas {
             width: w || 1,
             height: h || 1
         });
-        for (const stack in stacks) {
-            const glyphs = stacks[stack];
+        for (const stack1 in stacks) {
+            const glyphs = stacks[stack1];
             for (const id in glyphs) {
                 const src = glyphs[+id];
                 if (!src || src.bitmap.width === 0 || src.bitmap.height === 0)
                     continue;
-                const bin = positions[stack][id].rect;
+                const bin = positions[stack1][id].rect;
                 performance.AlphaImage.copy(src.bitmap, image, {
                     x: 0,
                     y: 0
@@ -20466,19 +20510,6 @@ class GlyphAtlas {
 performance.register('GlyphAtlas', GlyphAtlas);
 
 class WorkerTile {
-    constructor(params) {
-        this.tileID = new performance.OverscaledTileID(params.tileID.overscaledZ, params.tileID.wrap, params.tileID.canonical.z, params.tileID.canonical.x, params.tileID.canonical.y);
-        this.uid = params.uid;
-        this.zoom = params.zoom;
-        this.pixelRatio = params.pixelRatio;
-        this.tileSize = params.tileSize;
-        this.source = params.source;
-        this.overscaling = this.tileID.overscaleFactor();
-        this.showCollisionBoxes = params.showCollisionBoxes;
-        this.collectResourceTiming = !!params.collectResourceTiming;
-        this.returnDependencies = !!params.returnDependencies;
-        this.promoteId = params.promoteId;
-    }
     parse(data, layerIndex, availableImages, actor, callback) {
         this.status = 'parsing';
         this.data = data;
@@ -20622,6 +20653,19 @@ class WorkerTile {
             }
         }
     }
+    constructor(params) {
+        this.tileID = new performance.OverscaledTileID(params.tileID.overscaledZ, params.tileID.wrap, params.tileID.canonical.z, params.tileID.canonical.x, params.tileID.canonical.y);
+        this.uid = params.uid;
+        this.zoom = params.zoom;
+        this.pixelRatio = params.pixelRatio;
+        this.tileSize = params.tileSize;
+        this.source = params.source;
+        this.overscaling = this.tileID.overscaleFactor();
+        this.showCollisionBoxes = params.showCollisionBoxes;
+        this.collectResourceTiming = !!params.collectResourceTiming;
+        this.returnDependencies = !!params.returnDependencies;
+        this.promoteId = params.promoteId;
+    }
 }
 function recalculateLayers(layers, zoom, availableImages) {
     const parameters = new performance.EvaluationParameters(zoom);
@@ -20649,26 +20693,18 @@ function loadVectorTile(params, callback) {
     };
 }
 class VectorTileWorkerSource {
-    constructor(actor, layerIndex, availableImages, loadVectorData) {
-        this.actor = actor;
-        this.layerIndex = layerIndex;
-        this.availableImages = availableImages;
-        this.loadVectorData = loadVectorData || loadVectorTile;
-        this.loading = {};
-        this.loaded = {};
-    }
     loadTile(params, callback) {
         const uid = params.uid;
         if (!this.loading)
             this.loading = {};
         const perf = params && params.request && params.request.collectResourceTiming ? new performance.RequestPerformance(params.request) : false;
         const workerTile = this.loading[uid] = new WorkerTile(params);
-        workerTile.abort = this.loadVectorData(params, (err, response) => {
+        workerTile.abort = this.loadVectorData(params, (err1, response) => {
             delete this.loading[uid];
-            if (err || !response) {
+            if (err1 || !response) {
                 workerTile.status = 'done';
                 this.loaded[uid] = workerTile;
-                return callback(err);
+                return callback(err1);
             }
             const rawTileData = response.rawData;
             const cacheControl = {};
@@ -20731,12 +20767,17 @@ class VectorTileWorkerSource {
         }
         callback();
     }
+    constructor(actor, layerIndex, availableImages, loadVectorData) {
+        this.actor = actor;
+        this.layerIndex = layerIndex;
+        this.availableImages = availableImages;
+        this.loadVectorData = loadVectorData || loadVectorTile;
+        this.loading = {};
+        this.loaded = {};
+    }
 }
 
 class RasterDEMTileWorkerSource {
-    constructor() {
-        this.loaded = {};
-    }
     loadTile(params, callback) {
         const {uid, encoding, rawImageData} = params;
         const imagePixels = performance.isImageBitmap(rawImageData) ? this.getImageData(rawImageData) : rawImageData;
@@ -20765,6 +20806,9 @@ class RasterDEMTileWorkerSource {
         if (loaded && loaded[uid]) {
             delete loaded[uid];
         }
+    }
+    constructor() {
+        this.loaded = {};
     }
 }
 
@@ -20809,15 +20853,6 @@ function rewindRing(ring, dir) {
 
 const toGeoJSON = performance.vectorTile.VectorTileFeature.prototype.toGeoJSON;
 class FeatureWrapper$1 {
-    constructor(feature) {
-        this._feature = feature;
-        this.extent = performance.EXTENT;
-        this.type = feature.type;
-        this.properties = feature.tags;
-        if ('id' in feature && !isNaN(feature.id)) {
-            this.id = parseInt(feature.id, 10);
-        }
-    }
     loadGeometry() {
         if (this._feature.type === 1) {
             const geometry = [];
@@ -20840,17 +20875,26 @@ class FeatureWrapper$1 {
     toGeoJSON(x, y, z) {
         return toGeoJSON.call(this, x, y, z);
     }
+    constructor(feature) {
+        this._feature = feature;
+        this.extent = performance.EXTENT;
+        this.type = feature.type;
+        this.properties = feature.tags;
+        if ('id' in feature && !isNaN(feature.id)) {
+            this.id = parseInt(feature.id, 10);
+        }
+    }
 }
 class GeoJSONWrapper$2 {
+    feature(i) {
+        return new FeatureWrapper$1(this._features[i]);
+    }
     constructor(features) {
         this.layers = { '_geojsonTileLayer': this };
         this.name = '_geojsonTileLayer';
         this.extent = performance.EXTENT;
         this.length = features.length;
         this._features = features;
-    }
-    feature(i) {
-        return new FeatureWrapper$1(this._features[i]);
     }
 }
 
@@ -22307,12 +22351,6 @@ function loadGeoJSONTile(params, callback) {
     });
 }
 class GeoJSONWorkerSource extends VectorTileWorkerSource {
-    constructor(actor, layerIndex, availableImages, loadGeoJSON) {
-        super(actor, layerIndex, availableImages, loadGeoJSONTile);
-        if (loadGeoJSON) {
-            this.loadGeoJSON = loadGeoJSON;
-        }
-    }
     loadData(params, callback) {
         if (this._pendingCallback) {
             this._pendingCallback(null, { abandoned: true });
@@ -22335,9 +22373,9 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
         delete this._pendingCallback;
         delete this._pendingLoadDataParams;
         const perf = params && params.request && params.request.collectResourceTiming ? new performance.RequestPerformance(params.request) : false;
-        this.loadGeoJSON(params, (err, data) => {
-            if (err || !data) {
-                return callback(err);
+        this.loadGeoJSON(params, (err1, data) => {
+            if (err1 || !data) {
+                return callback(err1);
             } else if (typeof data !== 'object') {
                 return callback(new Error(`Input data given to '${ params.source }' is not a valid GeoJSON object.`));
             } else {
@@ -22431,9 +22469,18 @@ class GeoJSONWorkerSource extends VectorTileWorkerSource {
             callback(e);
         }
     }
+    constructor(actor, layerIndex, availableImages, loadGeoJSON) {
+        super(actor, layerIndex, availableImages, loadGeoJSONTile);
+        if (loadGeoJSON) {
+            this.loadGeoJSON = loadGeoJSON;
+        }
+    }
 }
-function getSuperclusterOptions({superclusterOptions, clusterProperties}) {
-    if (!clusterProperties || !superclusterOptions)
+function getSuperclusterOptions({
+    superclusterOptions,
+    clusterProperties: clusterProperties1
+}) {
+    if (!clusterProperties1 || !superclusterOptions)
         return superclusterOptions;
     const mapExpressions = {};
     const reduceExpressions = {};
@@ -22442,20 +22489,20 @@ function getSuperclusterOptions({superclusterOptions, clusterProperties}) {
         zoom: 0
     };
     const feature = { properties: null };
-    const propertyNames = Object.keys(clusterProperties);
-    for (const key of propertyNames) {
-        const [operator, mapExpression] = clusterProperties[key];
+    const propertyNames = Object.keys(clusterProperties1);
+    for (const key1 of propertyNames) {
+        const [operator, mapExpression] = clusterProperties1[key1];
         const mapExpressionParsed = performance.createExpression(mapExpression);
         const reduceExpressionParsed = performance.createExpression(typeof operator === 'string' ? [
             operator,
             ['accumulated'],
             [
                 'get',
-                key
+                key1
             ]
         ] : operator);
-        mapExpressions[key] = mapExpressionParsed.value;
-        reduceExpressions[key] = reduceExpressionParsed.value;
+        mapExpressions[key1] = mapExpressionParsed.value;
+        reduceExpressions[key1] = reduceExpressionParsed.value;
     }
     superclusterOptions.map = pointProperties => {
         feature.properties = pointProperties;
@@ -22476,32 +22523,6 @@ function getSuperclusterOptions({superclusterOptions, clusterProperties}) {
 }
 
 class Worker {
-    constructor(self) {
-        this.self = self;
-        this.actor = new performance.Actor(self, this);
-        this.layerIndexes = {};
-        this.availableImages = {};
-        this.workerSourceTypes = {
-            vector: VectorTileWorkerSource,
-            geojson: GeoJSONWorkerSource
-        };
-        this.workerSources = {};
-        this.demWorkerSources = {};
-        this.self.registerWorkerSource = (name, WorkerSource) => {
-            if (this.workerSourceTypes[name]) {
-                throw new Error(`Worker source with name "${ name }" already registered.`);
-            }
-            this.workerSourceTypes[name] = WorkerSource;
-        };
-        this.self.registerRTLTextPlugin = rtlTextPlugin => {
-            if (performance.plugin.isParsed()) {
-                throw new Error('RTL text plugin already registered.');
-            }
-            performance.plugin['applyArabicShaping'] = rtlTextPlugin.applyArabicShaping;
-            performance.plugin['processBidirectionalText'] = rtlTextPlugin.processBidirectionalText;
-            performance.plugin['processStyledBidirectionalText'] = rtlTextPlugin.processStyledBidirectionalText;
-        };
-    }
     setReferrer(mapID, referrer) {
         this.referrer = referrer;
     }
@@ -22589,20 +22610,20 @@ class Worker {
         }
         return layerIndexes;
     }
-    getWorkerSource(mapId, type, source) {
+    getWorkerSource(mapId, type1, source) {
         if (!this.workerSources[mapId])
             this.workerSources[mapId] = {};
-        if (!this.workerSources[mapId][type])
-            this.workerSources[mapId][type] = {};
-        if (!this.workerSources[mapId][type][source]) {
+        if (!this.workerSources[mapId][type1])
+            this.workerSources[mapId][type1] = {};
+        if (!this.workerSources[mapId][type1][source]) {
             const actor = {
                 send: (type, data, callback) => {
                     this.actor.send(type, data, callback, mapId);
                 }
             };
-            this.workerSources[mapId][type][source] = new this.workerSourceTypes[type](actor, this.getLayerIndex(mapId), this.getAvailableImages(mapId));
+            this.workerSources[mapId][type1][source] = new this.workerSourceTypes[type1](actor, this.getLayerIndex(mapId), this.getAvailableImages(mapId));
         }
-        return this.workerSources[mapId][type][source];
+        return this.workerSources[mapId][type1][source];
     }
     getDEMWorkerSource(mapId, source) {
         if (!this.demWorkerSources[mapId])
@@ -22614,6 +22635,32 @@ class Worker {
     }
     enforceCacheSizeLimit(mapId, limit) {
         performance.enforceCacheSizeLimit(limit);
+    }
+    constructor(self) {
+        this.self = self;
+        this.actor = new performance.Actor(self, this);
+        this.layerIndexes = {};
+        this.availableImages = {};
+        this.workerSourceTypes = {
+            vector: VectorTileWorkerSource,
+            geojson: GeoJSONWorkerSource
+        };
+        this.workerSources = {};
+        this.demWorkerSources = {};
+        this.self.registerWorkerSource = (name, WorkerSource) => {
+            if (this.workerSourceTypes[name]) {
+                throw new Error(`Worker source with name "${ name }" already registered.`);
+            }
+            this.workerSourceTypes[name] = WorkerSource;
+        };
+        this.self.registerRTLTextPlugin = rtlTextPlugin => {
+            if (performance.plugin.isParsed()) {
+                throw new Error('RTL text plugin already registered.');
+            }
+            performance.plugin['applyArabicShaping'] = rtlTextPlugin.applyArabicShaping;
+            performance.plugin['processBidirectionalText'] = rtlTextPlugin.processBidirectionalText;
+            performance.plugin['processStyledBidirectionalText'] = rtlTextPlugin.processStyledBidirectionalText;
+        };
     }
 }
 if (typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope) {
@@ -22867,9 +22914,6 @@ DOM.transformProp = DOM.testProp([
 ]);
 
 class RequestManager {
-    constructor(transformRequestFn) {
-        this._transformRequestFn = transformRequestFn;
-    }
     transformRequest(url, type) {
         if (this._transformRequestFn) {
             return this._transformRequestFn(url, type) || { url };
@@ -22883,6 +22927,9 @@ class RequestManager {
     }
     setTransformRequest(transformRequest) {
         this._transformRequestFn = transformRequest;
+    }
+    constructor(transformRequestFn) {
+        this._transformRequestFn = transformRequestFn;
     }
 }
 const urlRe = /^(\w+):\/\/([^/?]*)(\/[^?]+)?\??(.+)?/;
@@ -23100,9 +23147,9 @@ var sqrLen = squaredLength;
     };
 })();
 
-function loadSprite (baseURL, requestManager, pixelRatio, callback) {
+function loadSprite (baseURL, requestManager, pixelRatio1, callback) {
     let json, image, error;
-    const format = pixelRatio > 1 ? '@2x' : '';
+    const format = pixelRatio1 > 1 ? '@2x' : '';
     let jsonRequest = performance.getJSON(requestManager.transformRequest(requestManager.normalizeSpriteURL(baseURL, format, '.json'), performance.ResourceType.SpriteJSON), (err, data) => {
         jsonRequest = null;
         if (!error) {
@@ -23168,12 +23215,6 @@ function loadSprite (baseURL, requestManager, pixelRatio, callback) {
 }
 
 class Texture {
-    constructor(context, image, format, options) {
-        this.context = context;
-        this.format = format;
-        this.texture = context.gl.createTexture();
-        this.update(image, options);
-    }
     update(image, options, position) {
         const {width, height} = image;
         const resize = (!this.size || this.size[0] !== width || this.size[1] !== height) && !position;
@@ -23235,6 +23276,12 @@ class Texture {
         gl.deleteTexture(this.texture);
         this.texture = null;
     }
+    constructor(context, image, format, options) {
+        this.context = context;
+        this.format = format;
+        this.texture = context.gl.createTexture();
+        this.update(image, options);
+    }
 }
 
 function renderStyleImage(image) {
@@ -23251,20 +23298,6 @@ function renderStyleImage(image) {
 
 const padding = 1;
 class ImageManager extends performance.Evented {
-    constructor() {
-        super();
-        this.images = {};
-        this.updatedImages = {};
-        this.callbackDispatchedThisFrame = {};
-        this.loaded = false;
-        this.requestors = [];
-        this.patterns = {};
-        this.atlasImage = new performance.RGBAImage({
-            width: 1,
-            height: 1
-        });
-        this.dirty = true;
-    }
     isLoaded() {
         return this.loaded;
     }
@@ -23450,11 +23483,11 @@ class ImageManager extends performance.Evented {
             width: w || 1,
             height: h || 1
         });
-        for (const id in this.patterns) {
-            const {bin} = this.patterns[id];
+        for (const id1 in this.patterns) {
+            const {bin} = this.patterns[id1];
             const x = bin.x + padding;
             const y = bin.y + padding;
-            const src = this.images[id].data;
+            const src = this.images[id1].data;
             const w = src.width;
             const h = src.height;
             performance.RGBAImage.copy(src, dst, {
@@ -23524,6 +23557,20 @@ class ImageManager extends performance.Evented {
                 this.updateImage(id, image);
             }
         }
+    }
+    constructor() {
+        super();
+        this.images = {};
+        this.updatedImages = {};
+        this.callbackDispatchedThisFrame = {};
+        this.loaded = false;
+        this.requestors = [];
+        this.patterns = {};
+        this.atlasImage = new performance.RGBAImage({
+            width: 1,
+            height: 1
+        });
+        this.dirty = true;
     }
 }
 
@@ -23660,25 +23707,23 @@ function edt1d(grid, offset, stride, length, f, v, z) {
 }
 
 class GlyphManager {
-    constructor(requestManager, localIdeographFontFamily) {
-        this.requestManager = requestManager;
-        this.localIdeographFontFamily = localIdeographFontFamily;
-        this.entries = {};
-    }
     setURL(url) {
         this.url = url;
     }
-    getGlyphs(glyphs, callback) {
+    getGlyphs(glyphs1, callback1) {
         const all = [];
-        for (const stack in glyphs) {
-            for (const id of glyphs[stack]) {
+        for (const stack1 in glyphs1) {
+            for (const id of glyphs1[stack1]) {
                 all.push({
-                    stack,
+                    stack: stack1,
                     id
                 });
             }
         }
-        performance.asyncAll(all, ({stack, id}, callback) => {
+        performance.asyncAll(all, ({
+            stack,
+            id: id1
+        }, callback) => {
             let entry = this.entries[stack];
             if (!entry) {
                 entry = this.entries[stack] = {
@@ -23687,26 +23732,26 @@ class GlyphManager {
                     ranges: {}
                 };
             }
-            let glyph = entry.glyphs[id];
+            let glyph = entry.glyphs[id1];
             if (glyph !== undefined) {
                 callback(null, {
                     stack,
-                    id,
+                    id: id1,
                     glyph
                 });
                 return;
             }
-            glyph = this._tinySDF(entry, stack, id);
+            glyph = this._tinySDF(entry, stack, id1);
             if (glyph) {
-                entry.glyphs[id] = glyph;
+                entry.glyphs[id1] = glyph;
                 callback(null, {
                     stack,
-                    id,
+                    id: id1,
                     glyph
                 });
                 return;
             }
-            const range = Math.floor(id / 256);
+            const range = Math.floor(id1 / 256);
             if (range * 256 > 65535) {
                 callback(new Error('glyphs > 65535 not supported'));
                 return;
@@ -23714,7 +23759,7 @@ class GlyphManager {
             if (entry.ranges[range]) {
                 callback(null, {
                     stack,
-                    id,
+                    id: id1,
                     glyph
                 });
                 return;
@@ -23743,14 +23788,14 @@ class GlyphManager {
                 } else if (result) {
                     callback(null, {
                         stack,
-                        id,
-                        glyph: result[id] || null
+                        id: id1,
+                        glyph: result[id1] || null
                     });
                 }
             });
         }, (err, glyphs) => {
             if (err) {
-                callback(err);
+                callback1(err);
             } else if (glyphs) {
                 const result = {};
                 for (const {stack, id, glyph} of glyphs) {
@@ -23760,7 +23805,7 @@ class GlyphManager {
                         metrics: glyph.metrics
                     };
                 }
-                callback(null, result);
+                callback1(null, result);
             }
         });
     }
@@ -23810,14 +23855,16 @@ class GlyphManager {
             }
         };
     }
+    constructor(requestManager, localIdeographFontFamily) {
+        this.requestManager = requestManager;
+        this.localIdeographFontFamily = localIdeographFontFamily;
+        this.entries = {};
+    }
 }
 GlyphManager.loadGlyphRange = loadGlyphRange;
 GlyphManager.TinySDF = TinySDF;
 
 class LightPositionProperty {
-    constructor() {
-        this.specification = performance.spec.light.position;
-    }
     possiblyEvaluate(value, parameters) {
         return performance.sphericalToCartesian(value.expression.evaluate(parameters));
     }
@@ -23828,6 +23875,9 @@ class LightPositionProperty {
             z: performance.number(a.z, b.z, t)
         };
     }
+    constructor() {
+        this.specification = performance.spec.light.position;
+    }
 }
 const properties = new performance.Properties({
     'anchor': new performance.DataConstantProperty(performance.spec.light.anchor),
@@ -23837,12 +23887,6 @@ const properties = new performance.Properties({
 });
 const TRANSITION_SUFFIX = '-transition';
 class Light extends performance.Evented {
-    constructor(lightOptions) {
-        super();
-        this._transitionable = new performance.Transitionable(properties);
-        this.setLight(lightOptions);
-        this._transitioning = this._transitionable.untransitioned();
-    }
     getLight() {
         return this._transitionable.serialize();
     }
@@ -23881,16 +23925,15 @@ class Light extends performance.Evented {
             styleSpec: performance.spec
         })));
     }
+    constructor(lightOptions) {
+        super();
+        this._transitionable = new performance.Transitionable(properties);
+        this.setLight(lightOptions);
+        this._transitioning = this._transitionable.untransitioned();
+    }
 }
 
 class LineAtlas {
-    constructor(width, height) {
-        this.width = width;
-        this.height = height;
-        this.nextRow = 0;
-        this.data = new Uint8Array(this.width * this.height);
-        this.dashEntry = {};
-    }
     getDash(dasharray, round) {
         const key = dasharray.join(',') + String(round);
         if (!this.dashEntry[key]) {
@@ -24030,22 +24073,16 @@ class LineAtlas {
             }
         }
     }
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.nextRow = 0;
+        this.data = new Uint8Array(this.width * this.height);
+        this.dashEntry = {};
+    }
 }
 
 class Dispatcher {
-    constructor(workerPool, parent) {
-        this.workerPool = workerPool;
-        this.actors = [];
-        this.currentActor = 0;
-        this.id = performance.uniqueId();
-        const workers = this.workerPool.acquire(this.id);
-        for (let i = 0; i < workers.length; i++) {
-            const worker = workers[i];
-            const actor = new Dispatcher.Actor(worker, parent, this.id);
-            actor.name = `Worker ${ i }`;
-            this.actors.push(actor);
-        }
-    }
     broadcast(type, data, cb) {
         cb = cb || function () {
         };
@@ -24063,6 +24100,19 @@ class Dispatcher {
         });
         this.actors = [];
         this.workerPool.release(this.id);
+    }
+    constructor(workerPool, parent) {
+        this.workerPool = workerPool;
+        this.actors = [];
+        this.currentActor = 0;
+        this.id = performance.uniqueId();
+        const workers = this.workerPool.acquire(this.id);
+        for (let i = 0; i < workers.length; i++) {
+            const worker = workers[i];
+            const actor = new Dispatcher.Actor(worker, parent, this.id);
+            actor.name = `Worker ${ i }`;
+            this.actors.push(actor);
+        }
     }
 }
 Dispatcher.Actor = performance.Actor;
@@ -24099,11 +24149,6 @@ function loadTileJSON (options, requestManager, callback) {
 }
 
 class TileBounds {
-    constructor(bounds, minzoom, maxzoom) {
-        this.bounds = performance.LngLatBounds.convert(this.validateBounds(bounds));
-        this.minzoom = minzoom || 0;
-        this.maxzoom = maxzoom || 24;
-    }
     validateBounds(bounds) {
         if (!Array.isArray(bounds) || bounds.length !== 4)
             return [
@@ -24130,34 +24175,14 @@ class TileBounds {
         const hit = tileID.x >= level.minX && tileID.x < level.maxX && tileID.y >= level.minY && tileID.y < level.maxY;
         return hit;
     }
+    constructor(bounds, minzoom, maxzoom) {
+        this.bounds = performance.LngLatBounds.convert(this.validateBounds(bounds));
+        this.minzoom = minzoom || 0;
+        this.maxzoom = maxzoom || 24;
+    }
 }
 
 class VectorTileSource extends performance.Evented {
-    constructor(id, options, dispatcher, eventedParent) {
-        super();
-        this.id = id;
-        this.dispatcher = dispatcher;
-        this.type = 'vector';
-        this.minzoom = 0;
-        this.maxzoom = 22;
-        this.scheme = 'xyz';
-        this.tileSize = 512;
-        this.reparseOverscaled = true;
-        this.isTileClipped = true;
-        this._loaded = false;
-        performance.extend(this, performance.pick(options, [
-            'url',
-            'scheme',
-            'tileSize',
-            'promoteId'
-        ]));
-        this._options = performance.extend({ type: 'vector' }, options);
-        this._collectResourceTiming = options.collectResourceTiming;
-        if (this.tileSize !== 512) {
-            throw new Error('vector tile sources must have a tileSize of 512');
-        }
-        this.setEventedParent(eventedParent);
-    }
     load() {
         this._loaded = false;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
@@ -24290,28 +24315,34 @@ class VectorTileSource extends performance.Evented {
     hasTransition() {
         return false;
     }
-}
-
-class RasterTileSource extends performance.Evented {
     constructor(id, options, dispatcher, eventedParent) {
         super();
         this.id = id;
         this.dispatcher = dispatcher;
-        this.setEventedParent(eventedParent);
-        this.type = 'raster';
+        this.type = 'vector';
         this.minzoom = 0;
         this.maxzoom = 22;
-        this.roundZoom = true;
         this.scheme = 'xyz';
         this.tileSize = 512;
+        this.reparseOverscaled = true;
+        this.isTileClipped = true;
         this._loaded = false;
-        this._options = performance.extend({ type: 'raster' }, options);
         performance.extend(this, performance.pick(options, [
             'url',
             'scheme',
-            'tileSize'
+            'tileSize',
+            'promoteId'
         ]));
+        this._options = performance.extend({ type: 'vector' }, options);
+        this._collectResourceTiming = options.collectResourceTiming;
+        if (this.tileSize !== 512) {
+            throw new Error('vector tile sources must have a tileSize of 512');
+        }
+        this.setEventedParent(eventedParent);
     }
+}
+
+class RasterTileSource extends performance.Evented {
     load() {
         this._loaded = false;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
@@ -24402,6 +24433,25 @@ class RasterTileSource extends performance.Evented {
     hasTransition() {
         return false;
     }
+    constructor(id, options, dispatcher, eventedParent) {
+        super();
+        this.id = id;
+        this.dispatcher = dispatcher;
+        this.setEventedParent(eventedParent);
+        this.type = 'raster';
+        this.minzoom = 0;
+        this.maxzoom = 22;
+        this.roundZoom = true;
+        this.scheme = 'xyz';
+        this.tileSize = 512;
+        this._loaded = false;
+        this._options = performance.extend({ type: 'raster' }, options);
+        performance.extend(this, performance.pick(options, [
+            'url',
+            'scheme',
+            'tileSize'
+        ]));
+    }
 }
 
 let supportsOffscreenCanvas;
@@ -24413,13 +24463,6 @@ function offscreenCanvasSupported() {
 }
 
 class RasterDEMTileSource extends RasterTileSource {
-    constructor(id, options, dispatcher, eventedParent) {
-        super(id, options, dispatcher, eventedParent);
-        this.type = 'raster-dem';
-        this.maxzoom = 22;
-        this._options = performance.extend({ type: 'raster-dem' }, options);
-        this.encoding = options.encoding || 'mapbox';
-    }
     serialize() {
         return {
             type: 'raster-dem',
@@ -24516,56 +24559,16 @@ class RasterDEMTileSource extends RasterTileSource {
             });
         }
     }
+    constructor(id, options, dispatcher, eventedParent) {
+        super(id, options, dispatcher, eventedParent);
+        this.type = 'raster-dem';
+        this.maxzoom = 22;
+        this._options = performance.extend({ type: 'raster-dem' }, options);
+        this.encoding = options.encoding || 'mapbox';
+    }
 }
 
 class GeoJSONSource extends performance.Evented {
-    constructor(id, options, dispatcher, eventedParent) {
-        super();
-        this.id = id;
-        this.type = 'geojson';
-        this.minzoom = 0;
-        this.maxzoom = 18;
-        this.tileSize = 512;
-        this.isTileClipped = true;
-        this.reparseOverscaled = true;
-        this._removed = false;
-        this._pendingLoads = 0;
-        this.actor = dispatcher.getActor();
-        this.setEventedParent(eventedParent);
-        this._data = options.data;
-        this._options = performance.extend({}, options);
-        this._collectResourceTiming = options.collectResourceTiming;
-        if (options.maxzoom !== undefined)
-            this.maxzoom = options.maxzoom;
-        if (options.type)
-            this.type = options.type;
-        if (options.attribution)
-            this.attribution = options.attribution;
-        this.promoteId = options.promoteId;
-        const scale = performance.EXTENT / this.tileSize;
-        this.workerOptions = performance.extend({
-            source: this.id,
-            cluster: options.cluster || false,
-            geojsonVtOptions: {
-                buffer: (options.buffer !== undefined ? options.buffer : 128) * scale,
-                tolerance: (options.tolerance !== undefined ? options.tolerance : 0.375) * scale,
-                extent: performance.EXTENT,
-                maxZoom: this.maxzoom,
-                lineMetrics: options.lineMetrics || false,
-                generateId: options.generateId || false
-            },
-            superclusterOptions: {
-                maxZoom: options.clusterMaxZoom !== undefined ? options.clusterMaxZoom : this.maxzoom - 1,
-                minPoints: Math.max(2, options.clusterMinPoints || 2),
-                extent: performance.EXTENT,
-                radius: (options.clusterRadius || 50) * scale,
-                log: false,
-                generateId: options.generateId || false
-            },
-            clusterProperties: options.clusterProperties,
-            filter: options.filter
-        }, options.workerOptions);
-    }
     load() {
         this._updateWorkerData('metadata');
     }
@@ -24603,12 +24606,12 @@ class GeoJSONSource extends performance.Evented {
     }
     _updateWorkerData(sourceDataType) {
         const options = performance.extend({}, this.workerOptions);
-        const data = this._data;
-        if (typeof data === 'string') {
-            options.request = this.map._requestManager.transformRequest(performance.exported.resolveURL(data), performance.ResourceType.Source);
+        const data1 = this._data;
+        if (typeof data1 === 'string') {
+            options.request = this.map._requestManager.transformRequest(performance.exported.resolveURL(data1), performance.ResourceType.Source);
             options.request.collectResourceTiming = this._collectResourceTiming;
         } else {
-            options.data = JSON.stringify(data);
+            options.data = JSON.stringify(data1);
         }
         this._pendingLoads++;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
@@ -24696,6 +24699,53 @@ class GeoJSONSource extends performance.Evented {
     hasTransition() {
         return false;
     }
+    constructor(id, options, dispatcher, eventedParent) {
+        super();
+        this.id = id;
+        this.type = 'geojson';
+        this.minzoom = 0;
+        this.maxzoom = 18;
+        this.tileSize = 512;
+        this.isTileClipped = true;
+        this.reparseOverscaled = true;
+        this._removed = false;
+        this._pendingLoads = 0;
+        this.actor = dispatcher.getActor();
+        this.setEventedParent(eventedParent);
+        this._data = options.data;
+        this._options = performance.extend({}, options);
+        this._collectResourceTiming = options.collectResourceTiming;
+        if (options.maxzoom !== undefined)
+            this.maxzoom = options.maxzoom;
+        if (options.type)
+            this.type = options.type;
+        if (options.attribution)
+            this.attribution = options.attribution;
+        this.promoteId = options.promoteId;
+        const scale = performance.EXTENT / this.tileSize;
+        this.workerOptions = performance.extend({
+            source: this.id,
+            cluster: options.cluster || false,
+            geojsonVtOptions: {
+                buffer: (options.buffer !== undefined ? options.buffer : 128) * scale,
+                tolerance: (options.tolerance !== undefined ? options.tolerance : 0.375) * scale,
+                extent: performance.EXTENT,
+                maxZoom: this.maxzoom,
+                lineMetrics: options.lineMetrics || false,
+                generateId: options.generateId || false
+            },
+            superclusterOptions: {
+                maxZoom: options.clusterMaxZoom !== undefined ? options.clusterMaxZoom : this.maxzoom - 1,
+                minPoints: Math.max(2, options.clusterMinPoints || 2),
+                extent: performance.EXTENT,
+                radius: (options.clusterRadius || 50) * scale,
+                log: false,
+                generateId: options.generateId || false
+            },
+            clusterProperties: options.clusterProperties,
+            filter: options.filter
+        }, options.workerOptions);
+    }
 }
 
 var rasterBoundsAttributes = performance.createLayout([
@@ -24712,20 +24762,6 @@ var rasterBoundsAttributes = performance.createLayout([
 ]);
 
 class ImageSource extends performance.Evented {
-    constructor(id, options, dispatcher, eventedParent) {
-        super();
-        this.id = id;
-        this.dispatcher = dispatcher;
-        this.coordinates = options.coordinates;
-        this.type = 'image';
-        this.minzoom = 0;
-        this.maxzoom = 22;
-        this.tileSize = 512;
-        this.tiles = {};
-        this._loaded = false;
-        this.setEventedParent(eventedParent);
-        this.options = options;
-    }
     load(newCoordinates, successCallback) {
         this._loaded = false;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
@@ -24837,6 +24873,20 @@ class ImageSource extends performance.Evented {
     hasTransition() {
         return false;
     }
+    constructor(id, options, dispatcher, eventedParent) {
+        super();
+        this.id = id;
+        this.dispatcher = dispatcher;
+        this.coordinates = options.coordinates;
+        this.type = 'image';
+        this.minzoom = 0;
+        this.maxzoom = 22;
+        this.tileSize = 512;
+        this.tiles = {};
+        this._loaded = false;
+        this.setEventedParent(eventedParent);
+        this.options = options;
+    }
 }
 function getCoordinatesCenterTileID(coords) {
     let minX = Infinity;
@@ -24858,12 +24908,6 @@ function getCoordinatesCenterTileID(coords) {
 }
 
 class VideoSource extends ImageSource {
-    constructor(id, options, dispatcher, eventedParent) {
-        super(id, options, dispatcher, eventedParent);
-        this.roundZoom = true;
-        this.type = 'video';
-        this.options = options;
-    }
     load() {
         this._loaded = false;
         const options = this.options;
@@ -24957,27 +25001,15 @@ class VideoSource extends ImageSource {
     hasTransition() {
         return this.video && !this.video.paused;
     }
+    constructor(id, options, dispatcher, eventedParent) {
+        super(id, options, dispatcher, eventedParent);
+        this.roundZoom = true;
+        this.type = 'video';
+        this.options = options;
+    }
 }
 
 class CanvasSource extends ImageSource {
-    constructor(id, options, dispatcher, eventedParent) {
-        super(id, options, dispatcher, eventedParent);
-        if (!options.coordinates) {
-            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, 'missing required property "coordinates"')));
-        } else if (!Array.isArray(options.coordinates) || options.coordinates.length !== 4 || options.coordinates.some(c => !Array.isArray(c) || c.length !== 2 || c.some(l => typeof l !== 'number'))) {
-            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, '"coordinates" property must be an array of 4 longitude/latitude array pairs')));
-        }
-        if (options.animate && typeof options.animate !== 'boolean') {
-            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, 'optional "animate" property must be a boolean value')));
-        }
-        if (!options.canvas) {
-            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, 'missing required property "canvas"')));
-        } else if (typeof options.canvas !== 'string' && !(options.canvas instanceof HTMLCanvasElement)) {
-            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, '"canvas" must be either a string representing the ID of the canvas element from which to read, or an HTMLCanvasElement instance')));
-        }
-        this.options = options;
-        this.animate = options.animate !== undefined ? options.animate : true;
-    }
     load() {
         this._loaded = true;
         if (!this.canvas) {
@@ -25068,6 +25100,24 @@ class CanvasSource extends ImageSource {
                 return true;
         }
         return false;
+    }
+    constructor(id, options, dispatcher, eventedParent) {
+        super(id, options, dispatcher, eventedParent);
+        if (!options.coordinates) {
+            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, 'missing required property "coordinates"')));
+        } else if (!Array.isArray(options.coordinates) || options.coordinates.length !== 4 || options.coordinates.some(c => !Array.isArray(c) || c.length !== 2 || c.some(l => typeof l !== 'number'))) {
+            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, '"coordinates" property must be an array of 4 longitude/latitude array pairs')));
+        }
+        if (options.animate && typeof options.animate !== 'boolean') {
+            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, 'optional "animate" property must be a boolean value')));
+        }
+        if (!options.canvas) {
+            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, 'missing required property "canvas"')));
+        } else if (typeof options.canvas !== 'string' && !(options.canvas instanceof HTMLCanvasElement)) {
+            this.fire(new performance.ErrorEvent(new performance.ValidationError(`sources.${ id }`, null, '"canvas" must be either a string representing the ID of the canvas element from which to read, or an HTMLCanvasElement instance')));
+        }
+        this.options = options;
+        this.animate = options.animate !== undefined ? options.animate : true;
     }
 }
 
@@ -25267,22 +25317,6 @@ function deserialize(input, style) {
 
 const CLOCK_SKEW_RETRY_TIMEOUT = 30000;
 class Tile {
-    constructor(tileID, size) {
-        this.tileID = tileID;
-        this.uid = performance.uniqueId();
-        this.uses = 0;
-        this.tileSize = size;
-        this.buckets = {};
-        this.expirationTime = null;
-        this.queryPadding = 0;
-        this.hasSymbolBuckets = false;
-        this.hasRTLText = false;
-        this.dependencies = {};
-        this.textures = [];
-        this.textureCoords = {};
-        this.expiredRequestCount = 0;
-        this.state = 'loading';
-    }
     registerFadeDuration(duration) {
         const fadeEndTime = duration + this.timeAdded;
         if (fadeEndTime < performance.exported.now())
@@ -25347,9 +25381,9 @@ class Tile {
             }
         }
         this.queryPadding = 0;
-        for (const id in this.buckets) {
-            const bucket = this.buckets[id];
-            this.queryPadding = Math.max(this.queryPadding, painter.style.getLayer(id).queryRadius(bucket));
+        for (const id1 in this.buckets) {
+            const bucket = this.buckets[id1];
+            this.queryPadding = Math.max(this.queryPadding, painter.style.getLayer(id1).queryRadius(bucket));
         }
         if (data.imageAtlas) {
             this.imageAtlas = data.imageAtlas;
@@ -25547,14 +25581,25 @@ class Tile {
         }
         return false;
     }
+    constructor(tileID, size) {
+        this.tileID = tileID;
+        this.uid = performance.uniqueId();
+        this.uses = 0;
+        this.tileSize = size;
+        this.buckets = {};
+        this.expirationTime = null;
+        this.queryPadding = 0;
+        this.hasSymbolBuckets = false;
+        this.hasRTLText = false;
+        this.dependencies = {};
+        this.textures = [];
+        this.textureCoords = {};
+        this.expiredRequestCount = 0;
+        this.state = 'loading';
+    }
 }
 
 class TileCache {
-    constructor(max, onRemove) {
-        this.max = max;
-        this.onRemove = onRemove;
-        this.reset();
-    }
     reset() {
         for (const key in this.data) {
             for (const removedData of this.data[key]) {
@@ -25659,14 +25704,14 @@ class TileCache {
             this.remove(r.value.tileID, r);
         }
     }
+    constructor(max, onRemove) {
+        this.max = max;
+        this.onRemove = onRemove;
+        this.reset();
+    }
 }
 
 class SourceFeatureState {
-    constructor() {
-        this.state = {};
-        this.stateChanges = {};
-        this.deletedStates = {};
-    }
     updateState(sourceLayer, featureId, newState) {
         const feature = String(featureId);
         this.stateChanges[sourceLayer] = this.stateChanges[sourceLayer] || {};
@@ -25751,29 +25796,29 @@ class SourceFeatureState {
             }
             featuresChanged[sourceLayer] = layerStates;
         }
-        for (const sourceLayer in this.deletedStates) {
-            this.state[sourceLayer] = this.state[sourceLayer] || {};
+        for (const sourceLayer1 in this.deletedStates) {
+            this.state[sourceLayer1] = this.state[sourceLayer1] || {};
             const layerStates = {};
-            if (this.deletedStates[sourceLayer] === null) {
-                for (const ft in this.state[sourceLayer]) {
+            if (this.deletedStates[sourceLayer1] === null) {
+                for (const ft in this.state[sourceLayer1]) {
                     layerStates[ft] = {};
-                    this.state[sourceLayer][ft] = {};
+                    this.state[sourceLayer1][ft] = {};
                 }
             } else {
-                for (const feature in this.deletedStates[sourceLayer]) {
-                    const deleteWholeFeatureState = this.deletedStates[sourceLayer][feature] === null;
+                for (const feature in this.deletedStates[sourceLayer1]) {
+                    const deleteWholeFeatureState = this.deletedStates[sourceLayer1][feature] === null;
                     if (deleteWholeFeatureState)
-                        this.state[sourceLayer][feature] = {};
+                        this.state[sourceLayer1][feature] = {};
                     else {
-                        for (const key of Object.keys(this.deletedStates[sourceLayer][feature])) {
-                            delete this.state[sourceLayer][feature][key];
+                        for (const key of Object.keys(this.deletedStates[sourceLayer1][feature])) {
+                            delete this.state[sourceLayer1][feature][key];
                         }
                     }
-                    layerStates[feature] = this.state[sourceLayer][feature];
+                    layerStates[feature] = this.state[sourceLayer1][feature];
                 }
             }
-            featuresChanged[sourceLayer] = featuresChanged[sourceLayer] || {};
-            performance.extend(featuresChanged[sourceLayer], layerStates);
+            featuresChanged[sourceLayer1] = featuresChanged[sourceLayer1] || {};
+            performance.extend(featuresChanged[sourceLayer1], layerStates);
         }
         this.stateChanges = {};
         this.deletedStates = {};
@@ -25784,36 +25829,14 @@ class SourceFeatureState {
             tile.setFeatureState(featuresChanged, painter);
         }
     }
+    constructor() {
+        this.state = {};
+        this.stateChanges = {};
+        this.deletedStates = {};
+    }
 }
 
 class SourceCache extends performance.Evented {
-    constructor(id, options, dispatcher) {
-        super();
-        this.id = id;
-        this.dispatcher = dispatcher;
-        this.on('data', e => {
-            if (e.dataType === 'source' && e.sourceDataType === 'metadata')
-                this._sourceLoaded = true;
-            if (this._sourceLoaded && !this._paused && e.dataType === 'source' && e.sourceDataType === 'content') {
-                this.reload();
-                if (this.transform) {
-                    this.update(this.transform);
-                }
-            }
-        });
-        this.on('error', () => {
-            this._sourceErrored = true;
-        });
-        this._source = create(id, options, dispatcher, this);
-        this._tiles = {};
-        this._cache = new TileCache(0, this._unloadTile.bind(this));
-        this._timers = {};
-        this._cacheTimers = {};
-        this._maxTileCacheSize = null;
-        this._loadedParentTiles = {};
-        this._coveredTiles = {};
-        this._state = new SourceFeatureState();
-    }
     onAdd(map) {
         this.map = map;
         this._maxTileCacheSize = map ? map._maxTileCacheSize : null;
@@ -25870,8 +25893,13 @@ class SourceCache extends performance.Evented {
     }
     _abortTile(tile) {
         if (this._source.abortTile)
-            return this._source.abortTile(tile, () => {
+            this._source.abortTile(tile, () => {
             });
+        this._source.fire(new performance.Event('dataabort', {
+            tile,
+            coord: tile.tileID,
+            dataType: 'source'
+        }));
     }
     serialize() {
         return this._source.serialize();
@@ -25892,9 +25920,9 @@ class SourceCache extends performance.Evented {
     }
     getRenderableIds(symbolLayer) {
         const renderables = [];
-        for (const id in this._tiles) {
-            if (this._isIdRenderable(id, symbolLayer))
-                renderables.push(this._tiles[id]);
+        for (const id1 in this._tiles) {
+            if (this._isIdRenderable(id1, symbolLayer))
+                renderables.push(this._tiles[id1]);
         }
         if (symbolLayer) {
             return renderables.sort((a_, b_) => {
@@ -25959,14 +25987,14 @@ class SourceCache extends performance.Evented {
             coord: tile.tileID
         }));
     }
-    _backfillDEM(tile) {
+    _backfillDEM(tile1) {
         const renderables = this.getRenderableIds();
         for (let i = 0; i < renderables.length; i++) {
             const borderId = renderables[i];
-            if (tile.neighboringTiles && tile.neighboringTiles[borderId]) {
+            if (tile1.neighboringTiles && tile1.neighboringTiles[borderId]) {
                 const borderTile = this.getTileByID(borderId);
-                fillBorder(tile, borderTile);
-                fillBorder(borderTile, tile);
+                fillBorder(tile1, borderTile);
+                fillBorder(borderTile, tile1);
             }
         }
         function fillBorder(tile, borderTile) {
@@ -26076,9 +26104,9 @@ class SourceCache extends performance.Evented {
                 clearTimeout(this._timers[id]);
                 delete this._timers[id];
             }
-            for (const id in this._tiles) {
-                const tile = this._tiles[id];
-                this._setTileReloadTimer(id, tile);
+            for (const id2 in this._tiles) {
+                const tile = this._tiles[id2];
+                this._setTileReloadTimer(id2, tile);
             }
         }
     }
@@ -26138,10 +26166,10 @@ class SourceCache extends performance.Evented {
                 fadingTiles[id] = tileID;
             }
             this._retainLoadedChildren(fadingTiles, zoom, maxCoveringZoom, retain);
-            for (const id in parentsForFading) {
-                if (!retain[id]) {
-                    this._coveredTiles[id] = true;
-                    retain[id] = parentsForFading[id];
+            for (const id3 in parentsForFading) {
+                if (!retain[id3]) {
+                    this._coveredTiles[id3] = true;
+                    retain[id3] = parentsForFading[id3];
                 }
             }
             if (this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
@@ -26160,22 +26188,22 @@ class SourceCache extends performance.Evented {
                         idealRasterTileIDs[children[1].key] = retain[children[1].key] = children[1];
                         idealRasterTileIDs[children[2].key] = retain[children[2].key] = children[2];
                         idealRasterTileIDs[children[3].key] = retain[children[3].key] = children[3];
-                        delete missingTileIDs[key];
+                        missingTileIDs[key] = null;
                     }
                 }
-                for (const key in missingTileIDs) {
-                    const parent = this.findLoadedParent(missingTileIDs[key], this._source.minzoom);
+                for (const key1 in missingTileIDs) {
+                    const parent = this.findLoadedParent(missingTileIDs[key1], this._source.minzoom);
                     if (parent) {
                         idealRasterTileIDs[parent.tileID.key] = retain[parent.tileID.key] = parent.tileID;
                         for (const key in idealRasterTileIDs) {
                             if (idealRasterTileIDs[key].isChildOf(parent.tileID))
-                                delete idealRasterTileIDs[key];
+                                idealRasterTileIDs[key] = null;
                         }
                     }
                 }
-                for (const key in this._tiles) {
-                    if (!idealRasterTileIDs[key])
-                        this._coveredTiles[key] = true;
+                for (const key2 in this._tiles) {
+                    if (!idealRasterTileIDs[key2])
+                        this._coveredTiles[key2] = true;
                 }
             }
         }
@@ -26216,25 +26244,25 @@ class SourceCache extends performance.Evented {
             }
         }
         this._retainLoadedChildren(missingTiles, zoom, maxCoveringZoom, retain);
-        for (const tileID of idealTileIDs) {
-            let tile = this._tiles[tileID.key];
+        for (const tileID1 of idealTileIDs) {
+            let tile = this._tiles[tileID1.key];
             if (tile.hasData())
                 continue;
             if (zoom + 1 > this._source.maxzoom) {
-                const childCoord = tileID.children(this._source.maxzoom)[0];
+                const childCoord = tileID1.children(this._source.maxzoom)[0];
                 const childTile = this.getTile(childCoord);
                 if (!!childTile && childTile.hasData()) {
                     retain[childCoord.key] = childCoord;
                     continue;
                 }
             } else {
-                const children = tileID.children(this._source.maxzoom);
+                const children = tileID1.children(this._source.maxzoom);
                 if (retain[children[0].key] && retain[children[1].key] && retain[children[2].key] && retain[children[3].key])
                     continue;
             }
             let parentWasRequested = tile.wasRequested();
-            for (let overscaledZ = tileID.overscaledZ - 1; overscaledZ >= minCoveringZoom; --overscaledZ) {
-                const parentId = tileID.scaledTo(overscaledZ);
+            for (let overscaledZ = tileID1.overscaledZ - 1; overscaledZ >= minCoveringZoom; --overscaledZ) {
+                const parentId = tileID1.scaledTo(overscaledZ);
                 if (checked[parentId.key])
                     break;
                 checked[parentId.key] = true;
@@ -26360,11 +26388,11 @@ class SourceCache extends performance.Evented {
         let minY = Infinity;
         let maxX = -Infinity;
         let maxY = -Infinity;
-        for (const p of cameraQueryGeometry) {
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, p.x);
-            maxY = Math.max(maxY, p.y);
+        for (const p1 of cameraQueryGeometry) {
+            minX = Math.min(minX, p1.x);
+            minY = Math.min(minY, p1.y);
+            maxX = Math.max(maxX, p1.x);
+            maxY = Math.max(maxY, p1.y);
         }
         for (let i = 0; i < ids.length; i++) {
             const tile = this._tiles[ids[i]];
@@ -26440,6 +26468,33 @@ class SourceCache extends performance.Evented {
         }
         this._cache.filter(tile => !tile.hasDependency(namespaces, keys));
     }
+    constructor(id, options, dispatcher) {
+        super();
+        this.id = id;
+        this.dispatcher = dispatcher;
+        this.on('data', e => {
+            if (e.dataType === 'source' && e.sourceDataType === 'metadata')
+                this._sourceLoaded = true;
+            if (this._sourceLoaded && !this._paused && e.dataType === 'source' && e.sourceDataType === 'content') {
+                this.reload();
+                if (this.transform) {
+                    this.update(this.transform);
+                }
+            }
+        });
+        this.on('error', () => {
+            this._sourceErrored = true;
+        });
+        this._source = create(id, options, dispatcher, this);
+        this._tiles = {};
+        this._cache = new TileCache(0, this._unloadTile.bind(this));
+        this._timers = {};
+        this._cacheTimers = {};
+        this._maxTileCacheSize = null;
+        this._loadedParentTiles = {};
+        this._coveredTiles = {};
+        this._state = new SourceFeatureState();
+    }
 }
 SourceCache.maxOverzooming = 10;
 SourceCache.maxUnderzooming = 3;
@@ -26459,62 +26514,6 @@ var posAttributes = performance.createLayout([{
     }]);
 
 class TerrainSourceCache extends performance.Evented {
-    constructor(style) {
-        super();
-        this._style = style;
-        this._tiles = {};
-        this._renderableTiles = [];
-        this._renderHistory = [];
-        this._demMatrixCache = {};
-        this._sourceTileCache = {};
-        this._coordsIndex = [];
-        this._coordsTextureSize = 1024;
-        this.minzoom = 0;
-        this.maxzoom = 22;
-        this.tileSize = 512;
-        this.meshSize = 128;
-        this.exaggeration = 1;
-        this.elevationOffset = 450;
-        this.qualityFactor = 2;
-        this.deltaZoom = 1;
-        const context = style.map.painter.context;
-        this._emptyDemUnpack = [
-            0,
-            0,
-            0,
-            0
-        ];
-        this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
-            width: 1,
-            height: 1
-        }), context.gl.RGBA, { premultiply: false });
-        this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        this._emptyDemMatrix = performance.identity([]);
-        const image = new performance.RGBAImage({
-            width: 1,
-            height: 1
-        }, new Uint8Array(1 * 4));
-        const texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
-        this._emptyDepthTexture = texture;
-        const size = this.tileSize * this.qualityFactor;
-        this.rttFramebuffer = context.createFramebuffer(size, size, true);
-        this.rttFramebuffer.depthAttachment.set(context.createRenderbuffer(context.gl.DEPTH_COMPONENT16, size, size));
-        style.on('data', e => {
-            if (e.dataType === 'source' && e.coord && this.isEnabled()) {
-                const transform = style.map.transform;
-                if (e.sourceId === this._sourceCache.id) {
-                    for (const key in this._tiles) {
-                        const tile = this._tiles[key];
-                        if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
-                            tile.timeLoaded = Date.now();
-                            tile.clearTextures(this._style.map.painter);
-                        }
-                    }
-                    transform.updateElevation();
-                }
-            }
-        });
-    }
     enable(sourceCache, options) {
         sourceCache.usedForTerrain = true;
         sourceCache.tileSize = this.tileSize * Math.pow(2, this.deltaZoom);
@@ -26568,7 +26567,7 @@ class TerrainSourceCache extends performance.Evented {
             const tile = this._tiles[this._renderHistory.shift()];
             if (tile && !tileIDs[tile.tileID.key]) {
                 tile.clearTextures(this._style.map.painter);
-                delete this._tiles[tile.tileID.key];
+                this._tiles[tile.tileID.key] = null;
             }
         }
     }
@@ -26773,10 +26772,10 @@ class TerrainSourceCache extends performance.Evented {
         for (let y = 0; y <= meshSize; y++)
             for (let x = 0; x <= meshSize; x++)
                 vertexArray.emplaceBack(x * delta, y * delta);
-        for (let y = 0; y < meshSize2; y += meshSize + 1)
-            for (let x = 0; x < meshSize; x++) {
-                indexArray.emplaceBack(x + y, meshSize + x + y + 1, meshSize + x + y + 2);
-                indexArray.emplaceBack(x + y, meshSize + x + y + 2, x + y + 1);
+        for (let y1 = 0; y1 < meshSize2; y1 += meshSize + 1)
+            for (let x1 = 0; x1 < meshSize; x1++) {
+                indexArray.emplaceBack(x1 + y1, meshSize + x1 + y1 + 1, meshSize + x1 + y1 + 2);
+                indexArray.emplaceBack(x1 + y1, meshSize + x1 + y1 + 2, x1 + y1 + 1);
             }
         this._mesh = {
             indexBuffer: context.createIndexBuffer(indexArray),
@@ -26805,6 +26804,62 @@ class TerrainSourceCache extends performance.Evented {
         this._coordsTexture = texture;
         return this._coordsTexture;
     }
+    constructor(style) {
+        super();
+        this._style = style;
+        this._tiles = {};
+        this._renderableTiles = [];
+        this._renderHistory = [];
+        this._demMatrixCache = {};
+        this._sourceTileCache = {};
+        this._coordsIndex = [];
+        this._coordsTextureSize = 1024;
+        this.minzoom = 0;
+        this.maxzoom = 22;
+        this.tileSize = 512;
+        this.meshSize = 128;
+        this.exaggeration = 1;
+        this.elevationOffset = 450;
+        this.qualityFactor = 2;
+        this.deltaZoom = 1;
+        const context = style.map.painter.context;
+        this._emptyDemUnpack = [
+            0,
+            0,
+            0,
+            0
+        ];
+        this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
+            width: 1,
+            height: 1
+        }), context.gl.RGBA, { premultiply: false });
+        this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+        this._emptyDemMatrix = performance.identity([]);
+        const image = new performance.RGBAImage({
+            width: 1,
+            height: 1
+        }, new Uint8Array(1 * 4));
+        const texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+        this._emptyDepthTexture = texture;
+        const size = this.tileSize * this.qualityFactor;
+        this.rttFramebuffer = context.createFramebuffer(size, size, true);
+        this.rttFramebuffer.depthAttachment.set(context.createRenderbuffer(context.gl.DEPTH_COMPONENT16, size, size));
+        style.on('data', e => {
+            if (e.dataType === 'source' && e.coord && this.isEnabled()) {
+                const transform = style.map.transform;
+                if (e.sourceId === this._sourceCache.id) {
+                    for (const key in this._tiles) {
+                        const tile = this._tiles[key];
+                        if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
+                            tile.timeLoaded = Date.now();
+                            tile.clearTextures(this._style.map.painter);
+                        }
+                    }
+                    transform.updateElevation();
+                }
+            }
+        });
+    }
 }
 
 function webWorkerFactory () {
@@ -26813,9 +26868,6 @@ function webWorkerFactory () {
 
 const PRELOAD_POOL_ID = 'mapboxgl_preloaded_worker_pool';
 class WorkerPool {
-    constructor() {
-        this.active = {};
-    }
     acquire(mapId) {
         if (!this.workers) {
             this.workers = [];
@@ -26840,6 +26892,9 @@ class WorkerPool {
     }
     numActive() {
         return Object.keys(this.active).length;
+    }
+    constructor() {
+        this.active = {};
     }
 }
 const availableLogicalProcessors = Math.floor(performance.exported.hardwareConcurrency / 2);
@@ -26870,9 +26925,9 @@ function clearPrewarmedResources() {
 
 function deref(layer, parent) {
     const result = {};
-    for (const k in layer) {
-        if (k !== 'ref') {
-            result[k] = layer[k];
+    for (const k1 in layer) {
+        if (k1 !== 'ref') {
+            result[k1] = layer[k1];
         }
     }
     performance.refProperties.forEach(k => {
@@ -26888,9 +26943,9 @@ function derefLayers(layers) {
     for (let i = 0; i < layers.length; i++) {
         map[layers[i].id] = layers[i];
     }
-    for (let i = 0; i < layers.length; i++) {
-        if ('ref' in layers[i]) {
-            layers[i] = deref(layers[i], map[layers[i].ref]);
+    for (let i1 = 0; i1 < layers.length; i1++) {
+        if ('ref' in layers[i1]) {
+            layers[i1] = deref(layers[i1], map[layers[i1].ref]);
         }
     }
     return layers;
@@ -27269,9 +27324,6 @@ function diffStyles(before, after) {
 }
 
 class PathInterpolator {
-    constructor(points_, padding_) {
-        this.reset(points_, padding_);
-    }
     reset(points_, padding_) {
         this.points = points_ || [];
         this._distances = [0];
@@ -27299,6 +27351,9 @@ class PathInterpolator {
         const segmentT = segmentLength > 0 ? (distToTarget - distOfPrevIdx) / segmentLength : 0;
         return this.points[idxOfPrevPoint].mult(1 - segmentT).add(this.points[currentIndex].mult(segmentT));
     }
+    constructor(points_, padding_) {
+        this.reset(points_, padding_);
+    }
 }
 
 function overlapAllowed(overlapA, overlapB) {
@@ -27309,26 +27364,6 @@ function overlapAllowed(overlapA, overlapB) {
     return allowed;
 }
 class GridIndex {
-    constructor(width, height, cellSize) {
-        const boxCells = this.boxCells = [];
-        const circleCells = this.circleCells = [];
-        this.xCellCount = Math.ceil(width / cellSize);
-        this.yCellCount = Math.ceil(height / cellSize);
-        for (let i = 0; i < this.xCellCount * this.yCellCount; i++) {
-            boxCells.push([]);
-            circleCells.push([]);
-        }
-        this.circleKeys = [];
-        this.boxKeys = [];
-        this.bboxes = [];
-        this.circles = [];
-        this.width = width;
-        this.height = height;
-        this.xScale = this.xCellCount / width;
-        this.yScale = this.yCellCount / height;
-        this.boxUid = 0;
-        this.circleUid = 0;
-    }
     keysLength() {
         return this.boxKeys.length + this.circleKeys.length;
     }
@@ -27565,6 +27600,26 @@ class GridIndex {
         const dx = distX - halfRectWidth;
         const dy = distY - halfRectHeight;
         return dx * dx + dy * dy <= radius * radius;
+    }
+    constructor(width, height, cellSize) {
+        const boxCells = this.boxCells = [];
+        const circleCells = this.circleCells = [];
+        this.xCellCount = Math.ceil(width / cellSize);
+        this.yCellCount = Math.ceil(height / cellSize);
+        for (let i = 0; i < this.xCellCount * this.yCellCount; i++) {
+            boxCells.push([]);
+            circleCells.push([]);
+        }
+        this.circleKeys = [];
+        this.boxKeys = [];
+        this.bboxes = [];
+        this.circles = [];
+        this.width = width;
+        this.height = height;
+        this.xScale = this.xCellCount / width;
+        this.yScale = this.yCellCount / height;
+        this.boxUid = 0;
+        this.circleUid = 0;
     }
 }
 
@@ -27820,16 +27875,6 @@ function hideGlyphs(num, dynamicLayoutVertexArray) {
 
 const viewportPadding = 100;
 class CollisionIndex {
-    constructor(transform, grid = new GridIndex(transform.width + 2 * viewportPadding, transform.height + 2 * viewportPadding, 25), ignoredGrid = new GridIndex(transform.width + 2 * viewportPadding, transform.height + 2 * viewportPadding, 25)) {
-        this.transform = transform;
-        this.grid = grid;
-        this.ignoredGrid = ignoredGrid;
-        this.pitchfactor = Math.cos(transform._pitch) * transform.cameraToCenterDistance;
-        this.screenRightBoundary = transform.width + viewportPadding;
-        this.screenBottomBoundary = transform.height + viewportPadding;
-        this.gridRightBoundary = transform.width + 2 * viewportPadding;
-        this.gridBottomBoundary = transform.height + 2 * viewportPadding;
-    }
     placeCollisionBox(collisionBox, overlapMode, textPixelRatio, posMatrix, collisionGroupPredicate, getElevation) {
         const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY, getElevation);
         const tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
@@ -27879,8 +27924,8 @@ class CollisionIndex {
             for (let i = first.path.length - 1; i >= 1; i--) {
                 projectedPath.push(first.path[i]);
             }
-            for (let i = 1; i < last.path.length; i++) {
-                projectedPath.push(last.path[i]);
+            for (let i1 = 1; i1 < last.path.length; i1++) {
+                projectedPath.push(last.path[i1]);
             }
             const circleDist = radius * 2.5;
             if (labelToScreenMatrix) {
@@ -28039,6 +28084,16 @@ class CollisionIndex {
         ]);
         return m;
     }
+    constructor(transform, grid = new GridIndex(transform.width + 2 * viewportPadding, transform.height + 2 * viewportPadding, 25), ignoredGrid = new GridIndex(transform.width + 2 * viewportPadding, transform.height + 2 * viewportPadding, 25)) {
+        this.transform = transform;
+        this.grid = grid;
+        this.ignoredGrid = ignoredGrid;
+        this.pitchfactor = Math.cos(transform._pitch) * transform.cameraToCenterDistance;
+        this.screenRightBoundary = transform.width + viewportPadding;
+        this.screenBottomBoundary = transform.height + viewportPadding;
+        this.gridRightBoundary = transform.width + 2 * viewportPadding;
+        this.gridBottomBoundary = transform.height + 2 * viewportPadding;
+    }
 }
 
 function pixelsToTileUnits (tile, pixelValue, z) {
@@ -28046,6 +28101,9 @@ function pixelsToTileUnits (tile, pixelValue, z) {
 }
 
 class OpacityState {
+    isHidden() {
+        return this.opacity === 0 && !this.placed;
+    }
     constructor(prevState, increment, placed, skipFade) {
         if (prevState) {
             this.opacity = Math.max(0, Math.min(1, prevState.opacity + (prevState.placed ? increment : -increment)));
@@ -28054,17 +28112,14 @@ class OpacityState {
         }
         this.placed = placed;
     }
-    isHidden() {
-        return this.opacity === 0 && !this.placed;
-    }
 }
 class JointOpacityState {
+    isHidden() {
+        return this.text.isHidden() && this.icon.isHidden();
+    }
     constructor(prevState, increment, placedText, placedIcon, skipFade) {
         this.text = new OpacityState(prevState ? prevState.text : null, increment, placedText, skipFade);
         this.icon = new OpacityState(prevState ? prevState.icon : null, increment, placedIcon, skipFade);
-    }
-    isHidden() {
-        return this.text.isHidden() && this.icon.isHidden();
     }
 }
 class JointPlacement {
@@ -28091,11 +28146,6 @@ class RetainedQueryData {
     }
 }
 class CollisionGroups {
-    constructor(crossSourceCollisions) {
-        this.crossSourceCollisions = crossSourceCollisions;
-        this.maxGroupID = 0;
-        this.collisionGroups = {};
-    }
     get(sourceID) {
         if (!this.crossSourceCollisions) {
             if (!this.collisionGroups[sourceID]) {
@@ -28114,6 +28164,11 @@ class CollisionGroups {
                 predicate: null
             };
         }
+    }
+    constructor(crossSourceCollisions) {
+        this.crossSourceCollisions = crossSourceCollisions;
+        this.maxGroupID = 0;
+        this.collisionGroups = {};
     }
 }
 function calculateVariableLayoutShift(anchor, width, height, textOffset, textBoxScale) {
@@ -28139,24 +28194,6 @@ function shiftVariableCollisionBox(collisionBox, shiftX, shiftY, rotateWithMap, 
     };
 }
 class Placement {
-    constructor(transform, fadeDuration, crossSourceCollisions, prevPlacement) {
-        this.transform = transform.clone();
-        this.collisionIndex = new CollisionIndex(this.transform);
-        this.placements = {};
-        this.opacities = {};
-        this.variableOffsets = {};
-        this.stale = false;
-        this.commitTime = 0;
-        this.fadeDuration = fadeDuration;
-        this.retainedQueryData = {};
-        this.collisionGroups = new CollisionGroups(crossSourceCollisions);
-        this.collisionCircleArrays = {};
-        this.prevPlacement = prevPlacement;
-        if (prevPlacement) {
-            prevPlacement.prevPlacement = undefined;
-        }
-        this.placedOrientations = {};
-    }
     getBucketParts(results, styleLayer, tile, sortAcrossTiles) {
         const symbolBucket = tile.getBucket(styleLayer);
         const bucketFeatureIndex = tile.latestFeatureIndex;
@@ -28573,24 +28610,24 @@ class Placement {
                 placementChanged = placementChanged || jointPlacement.text || jointPlacement.icon;
             }
         }
-        for (const crossTileID in prevOpacities) {
-            const prevOpacity = prevOpacities[crossTileID];
-            if (!this.opacities[crossTileID]) {
+        for (const crossTileID1 in prevOpacities) {
+            const prevOpacity = prevOpacities[crossTileID1];
+            if (!this.opacities[crossTileID1]) {
                 const jointOpacity = new JointOpacityState(prevOpacity, increment, false, false);
                 if (!jointOpacity.isHidden()) {
-                    this.opacities[crossTileID] = jointOpacity;
+                    this.opacities[crossTileID1] = jointOpacity;
                     placementChanged = placementChanged || prevOpacity.text.placed || prevOpacity.icon.placed;
                 }
             }
         }
-        for (const crossTileID in prevOffsets) {
-            if (!this.variableOffsets[crossTileID] && this.opacities[crossTileID] && !this.opacities[crossTileID].isHidden()) {
-                this.variableOffsets[crossTileID] = prevOffsets[crossTileID];
+        for (const crossTileID2 in prevOffsets) {
+            if (!this.variableOffsets[crossTileID2] && this.opacities[crossTileID2] && !this.opacities[crossTileID2].isHidden()) {
+                this.variableOffsets[crossTileID2] = prevOffsets[crossTileID2];
             }
         }
-        for (const crossTileID in prevOrientations) {
-            if (!this.placedOrientations[crossTileID] && this.opacities[crossTileID] && !this.opacities[crossTileID].isHidden()) {
-                this.placedOrientations[crossTileID] = prevOrientations[crossTileID];
+        for (const crossTileID3 in prevOrientations) {
+            if (!this.placedOrientations[crossTileID3] && this.opacities[crossTileID3] && !this.opacities[crossTileID3].isHidden()) {
+                this.placedOrientations[crossTileID3] = prevOrientations[crossTileID3];
             }
         }
         if (placementChanged) {
@@ -28769,6 +28806,24 @@ class Placement {
     setStale() {
         this.stale = true;
     }
+    constructor(transform, fadeDuration, crossSourceCollisions, prevPlacement) {
+        this.transform = transform.clone();
+        this.collisionIndex = new CollisionIndex(this.transform);
+        this.placements = {};
+        this.opacities = {};
+        this.variableOffsets = {};
+        this.stale = false;
+        this.commitTime = 0;
+        this.fadeDuration = fadeDuration;
+        this.retainedQueryData = {};
+        this.collisionGroups = new CollisionGroups(crossSourceCollisions);
+        this.collisionCircleArrays = {};
+        this.prevPlacement = prevPlacement;
+        if (prevPlacement) {
+            prevPlacement.prevPlacement = undefined;
+        }
+        this.placedOrientations = {};
+    }
 }
 function updateCollisionVertices(collisionVertexArray, placed, notUsed, shiftX, shiftY) {
     collisionVertexArray.emplaceBack(placed ? 1 : 0, notUsed ? 1 : 0, shiftX || 0, shiftY || 0);
@@ -28796,13 +28851,6 @@ function packOpacity(opacityState) {
 const PACKED_HIDDEN_OPACITY = 0;
 
 class LayerPlacement {
-    constructor(styleLayer) {
-        this._sortAcrossTiles = styleLayer.layout.get('symbol-z-order') !== 'viewport-y' && !styleLayer.layout.get('symbol-sort-key').isConstant();
-        this._currentTileIndex = 0;
-        this._currentPartIndex = 0;
-        this._seenCrossTileIDs = {};
-        this._bucketParts = [];
-    }
     continuePlacement(tiles, placement, showCollisionBoxes, styleLayer, shouldPausePlacement) {
         const bucketParts = this._bucketParts;
         while (this._currentTileIndex < tiles.length) {
@@ -28827,15 +28875,15 @@ class LayerPlacement {
         }
         return false;
     }
+    constructor(styleLayer) {
+        this._sortAcrossTiles = styleLayer.layout.get('symbol-z-order') !== 'viewport-y' && !styleLayer.layout.get('symbol-sort-key').isConstant();
+        this._currentTileIndex = 0;
+        this._currentPartIndex = 0;
+        this._seenCrossTileIDs = {};
+        this._bucketParts = [];
+    }
 }
 class PauseablePlacement {
-    constructor(transform, order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, prevPlacement) {
-        this.placement = new Placement(transform, fadeDuration, crossSourceCollisions, prevPlacement);
-        this._currentPlacementIndex = order.length - 1;
-        this._forceFullPlacement = forceFullPlacement;
-        this._showCollisionBoxes = showCollisionBoxes;
-        this._done = false;
-    }
     isDone() {
         return this._done;
     }
@@ -28867,26 +28915,17 @@ class PauseablePlacement {
         this.placement.commit(now);
         return this.placement;
     }
+    constructor(transform, order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, prevPlacement) {
+        this.placement = new Placement(transform, fadeDuration, crossSourceCollisions, prevPlacement);
+        this._currentPlacementIndex = order.length - 1;
+        this._forceFullPlacement = forceFullPlacement;
+        this._showCollisionBoxes = showCollisionBoxes;
+        this._done = false;
+    }
 }
 
 const roundingFactor = 512 / performance.EXTENT / 2;
 class TileLayerIndex {
-    constructor(tileID, symbolInstances, bucketInstanceId) {
-        this.tileID = tileID;
-        this.indexedSymbolInstances = {};
-        this.bucketInstanceId = bucketInstanceId;
-        for (let i = 0; i < symbolInstances.length; i++) {
-            const symbolInstance = symbolInstances.get(i);
-            const key = symbolInstance.key;
-            if (!this.indexedSymbolInstances[key]) {
-                this.indexedSymbolInstances[key] = [];
-            }
-            this.indexedSymbolInstances[key].push({
-                crossTileID: symbolInstance.crossTileID,
-                coord: this.getScaledCoordinates(symbolInstance, tileID)
-            });
-        }
-    }
     getScaledCoordinates(symbolInstance, childTileID) {
         const zDifference = childTileID.canonical.z - this.tileID.canonical.z;
         const scale = roundingFactor / Math.pow(2, zDifference);
@@ -28916,21 +28955,32 @@ class TileLayerIndex {
             }
         }
     }
+    constructor(tileID, symbolInstances, bucketInstanceId) {
+        this.tileID = tileID;
+        this.indexedSymbolInstances = {};
+        this.bucketInstanceId = bucketInstanceId;
+        for (let i = 0; i < symbolInstances.length; i++) {
+            const symbolInstance = symbolInstances.get(i);
+            const key = symbolInstance.key;
+            if (!this.indexedSymbolInstances[key]) {
+                this.indexedSymbolInstances[key] = [];
+            }
+            this.indexedSymbolInstances[key].push({
+                crossTileID: symbolInstance.crossTileID,
+                coord: this.getScaledCoordinates(symbolInstance, tileID)
+            });
+        }
+    }
 }
 class CrossTileIDs {
-    constructor() {
-        this.maxCrossTileID = 0;
-    }
     generate() {
         return ++this.maxCrossTileID;
     }
+    constructor() {
+        this.maxCrossTileID = 0;
+    }
 }
 class CrossTileSymbolLayerIndex {
-    constructor() {
-        this.indexes = {};
-        this.usedCrossTileIDs = {};
-        this.lng = 0;
-    }
     handleWrapJump(lng) {
         const wrapDelta = Math.round((lng - this.lng) / 360);
         if (wrapDelta !== 0) {
@@ -28980,8 +29030,8 @@ class CrossTileSymbolLayerIndex {
                 }
             }
         }
-        for (let i = 0; i < bucket.symbolInstances.length; i++) {
-            const symbolInstance = bucket.symbolInstances.get(i);
+        for (let i1 = 0; i1 < bucket.symbolInstances.length; i1++) {
+            const symbolInstance = bucket.symbolInstances.get(i1);
             if (!symbolInstance.crossTileID) {
                 symbolInstance.crossTileID = crossTileIDs.generate();
                 zoomCrossTileIDs[symbolInstance.crossTileID] = true;
@@ -29014,14 +29064,13 @@ class CrossTileSymbolLayerIndex {
         }
         return tilesChanged;
     }
+    constructor() {
+        this.indexes = {};
+        this.usedCrossTileIDs = {};
+        this.lng = 0;
+    }
 }
 class CrossTileSymbolIndex {
-    constructor() {
-        this.layerIndexes = {};
-        this.crossTileIDs = new CrossTileIDs();
-        this.maxBucketInstanceId = 0;
-        this.bucketsInCurrentPlacement = {};
-    }
     addLayer(styleLayer, tiles, lng) {
         let layerIndex = this.layerIndexes[styleLayer.id];
         if (layerIndex === undefined) {
@@ -29058,6 +29107,12 @@ class CrossTileSymbolIndex {
             }
         }
     }
+    constructor() {
+        this.layerIndexes = {};
+        this.crossTileIDs = new CrossTileIDs();
+        this.maxBucketInstanceId = 0;
+        this.bucketsInCurrentPlacement = {};
+    }
 }
 
 const emitValidationErrors = (evented, errors) => performance.emitValidationErrors(evented, errors && errors.filter(error => error.identifier !== 'source.canvas'));
@@ -29082,64 +29137,6 @@ const ignoredDiffOperations = performance.pick(operations, [
 ]);
 const empty = emptyStyle();
 class Style extends performance.Evented {
-    constructor(map, options = {}) {
-        super();
-        this.map = map;
-        this.dispatcher = new Dispatcher(getGlobalWorkerPool(), this);
-        this.imageManager = new ImageManager();
-        this.imageManager.setEventedParent(this);
-        this.glyphManager = new GlyphManager(map._requestManager, options.localIdeographFontFamily);
-        this.lineAtlas = new LineAtlas(256, 512);
-        this.crossTileSymbolIndex = new CrossTileSymbolIndex();
-        this._layers = {};
-        this._serializedLayers = {};
-        this._order = [];
-        this.sourceCaches = {};
-        this.terrainSourceCache = new TerrainSourceCache(this);
-        this.zoomHistory = new performance.ZoomHistory();
-        this._loaded = false;
-        this._availableImages = [];
-        map.transform.terrainSourceCache = this.terrainSourceCache;
-        this._resetUpdates();
-        this.dispatcher.broadcast('setReferrer', performance.getReferrer());
-        const self = this;
-        this._rtlTextPluginCallback = Style.registerForPluginStateChange(event => {
-            const state = {
-                pluginStatus: event.pluginStatus,
-                pluginURL: event.pluginURL
-            };
-            self.dispatcher.broadcast('syncRTLPluginState', state, (err, results) => {
-                performance.triggerPluginCompletionEvent(err);
-                if (results) {
-                    const allComplete = results.every(elem => elem);
-                    if (allComplete) {
-                        for (const id in self.sourceCaches) {
-                            self.sourceCaches[id].reload();
-                        }
-                    }
-                }
-            });
-        });
-        this.on('data', event => {
-            if (event.dataType !== 'source' || event.sourceDataType !== 'metadata') {
-                return;
-            }
-            const sourceCache = this.sourceCaches[event.sourceId];
-            if (!sourceCache) {
-                return;
-            }
-            const source = sourceCache.getSource();
-            if (!source || !source.vectorLayerIds) {
-                return;
-            }
-            for (const layerId in this._layers) {
-                const layer = this._layers[layerId];
-                if (layer.source === source.id) {
-                    this._validateLayer(layer);
-                }
-            }
-        });
-    }
     loadURL(url, options = {}) {
         this.fire(new performance.Event('dataloading', { dataType: 'style' }));
         const validate = typeof options.validate === 'boolean' ? options.validate : true;
@@ -29183,11 +29180,11 @@ class Style extends performance.Evented {
         this._order = layers.map(layer => layer.id);
         this._layers = {};
         this._serializedLayers = {};
-        for (let layer of layers) {
-            layer = performance.createStyleLayer(layer);
-            layer.setEventedParent(this, { layer: { id: layer.id } });
-            this._layers[layer.id] = layer;
-            this._serializedLayers[layer.id] = layer.serialize();
+        for (let layer1 of layers) {
+            layer1 = performance.createStyleLayer(layer1);
+            layer1.setEventedParent(this, { layer: { id: layer1.id } });
+            this._layers[layer1.id] = layer1;
+            this._serializedLayers[layer1.id] = layer1.serialize();
         }
         this.dispatcher.broadcast('setLayers', this._serializeLayers(this._order));
         this.light = new Light(this.stylesheet.light);
@@ -29255,8 +29252,8 @@ class Style extends performance.Evented {
                 return true;
             }
         }
-        for (const id in this._layers) {
-            if (this._layers[id].hasTransition()) {
+        for (const id1 in this._layers) {
+            if (this._layers[id1].hasTransition()) {
                 return true;
             }
         }
@@ -29287,8 +29284,8 @@ class Style extends performance.Evented {
                 }
             }
             this._updateTilesForChangedImages();
-            for (const id in this._updatedPaintProps) {
-                this._layers[id].updateTransitions(parameters);
+            for (const id2 in this._updatedPaintProps) {
+                this._layers[id2].updateTransitions(parameters);
             }
             this.light.updateTransitions(parameters);
             this._resetUpdates();
@@ -29306,13 +29303,13 @@ class Style extends performance.Evented {
                 this.sourceCaches[layer.source].used = true;
             }
         }
-        for (const sourceId in sourcesUsedBefore) {
-            const sourceCache = this.sourceCaches[sourceId];
-            if (sourcesUsedBefore[sourceId] !== sourceCache.used) {
+        for (const sourceId1 in sourcesUsedBefore) {
+            const sourceCache = this.sourceCaches[sourceId1];
+            if (sourcesUsedBefore[sourceId1] !== sourceCache.used) {
                 sourceCache.fire(new performance.Event('data', {
                     sourceDataType: 'visibility',
                     dataType: 'source',
-                    sourceId
+                    sourceId: sourceId1
                 }));
             }
         }
@@ -29678,7 +29675,7 @@ class Style extends performance.Evented {
             this.fire(new performance.ErrorEvent(new Error('The sourceLayer parameter must be provided for vector source types.')));
             return;
         }
-        if (key && (typeof target.id !== 'string' && typeof target.id !== 'number')) {
+        if (key && typeof target.id !== 'string' && typeof target.id !== 'number') {
             this.fire(new performance.ErrorEvent(new Error('A feature id is required to remove its specific state property.')));
             return;
         }
@@ -29758,12 +29755,12 @@ class Style extends performance.Evented {
             return b.intersectionZ - a.intersectionZ;
         });
         const features = [];
-        for (let l = this._order.length - 1; l >= 0; l--) {
-            const layerId = this._order[l];
+        for (let l1 = this._order.length - 1; l1 >= 0; l1--) {
+            const layerId = this._order[l1];
             if (isLayer3D(layerId)) {
                 for (let i = features3D.length - 1; i >= 0; i--) {
                     const topmost3D = features3D[i].feature;
-                    if (layerIndex[topmost3D.layer.id] < l)
+                    if (layerIndex[topmost3D.layer.id] < l1)
                         break;
                     features.push(topmost3D);
                     features3D.pop();
@@ -29971,122 +29968,180 @@ class Style extends performance.Evented {
     getResource(mapId, params, callback) {
         return performance.makeRequest(params, callback);
     }
+    constructor(map, options = {}) {
+        super();
+        this.map = map;
+        this.dispatcher = new Dispatcher(getGlobalWorkerPool(), this);
+        this.imageManager = new ImageManager();
+        this.imageManager.setEventedParent(this);
+        this.glyphManager = new GlyphManager(map._requestManager, options.localIdeographFontFamily);
+        this.lineAtlas = new LineAtlas(256, 512);
+        this.crossTileSymbolIndex = new CrossTileSymbolIndex();
+        this._layers = {};
+        this._serializedLayers = {};
+        this._order = [];
+        this.sourceCaches = {};
+        this.terrainSourceCache = new TerrainSourceCache(this);
+        this.zoomHistory = new performance.ZoomHistory();
+        this._loaded = false;
+        this._availableImages = [];
+        map.transform.terrainSourceCache = this.terrainSourceCache;
+        this._resetUpdates();
+        this.dispatcher.broadcast('setReferrer', performance.getReferrer());
+        const self = this;
+        this._rtlTextPluginCallback = Style.registerForPluginStateChange(event => {
+            const state = {
+                pluginStatus: event.pluginStatus,
+                pluginURL: event.pluginURL
+            };
+            self.dispatcher.broadcast('syncRTLPluginState', state, (err, results) => {
+                performance.triggerPluginCompletionEvent(err);
+                if (results) {
+                    const allComplete = results.every(elem => elem);
+                    if (allComplete) {
+                        for (const id in self.sourceCaches) {
+                            self.sourceCaches[id].reload();
+                        }
+                    }
+                }
+            });
+        });
+        this.on('data', event => {
+            if (event.dataType !== 'source' || event.sourceDataType !== 'metadata') {
+                return;
+            }
+            const sourceCache = this.sourceCaches[event.sourceId];
+            if (!sourceCache) {
+                return;
+            }
+            const source = sourceCache.getSource();
+            if (!source || !source.vectorLayerIds) {
+                return;
+            }
+            for (const layerId in this._layers) {
+                const layer = this._layers[layerId];
+                if (layer.source === source.id) {
+                    this._validateLayer(layer);
+                }
+            }
+        });
+    }
 }
 Style.getSourceType = getSourceType;
 Style.setSourceType = setSourceType;
 Style.registerForPluginStateChange = performance.registerForPluginStateChange;
 
-var preludeFrag = '#ifdef GL_ES\nprecision mediump float;\n#else\n\n#if !defined(lowp)\n#define lowp\n#endif\n\n#if !defined(mediump)\n#define mediump\n#endif\n\n#if !defined(highp)\n#define highp\n#endif\n\n#endif\n';
+var preludeFrag = '#ifdef GL_ES\nprecision mediump float;\n#else\n#if !defined(lowp)\n#define lowp\n#endif\n#if !defined(mediump)\n#define mediump\n#endif\n#if !defined(highp)\n#define highp\n#endif\n#endif';
 
-var preludeVert = '#ifdef GL_ES\nprecision highp float;\n#else\n\n#if !defined(lowp)\n#define lowp\n#endif\n\n#if !defined(mediump)\n#define mediump\n#endif\n\n#if !defined(highp)\n#define highp\n#endif\n\n#endif\n\n// Unpack a pair of values that have been packed into a single float.\n// The packed values are assumed to be 8-bit unsigned integers, and are\n// packed like so:\n// packedValue = floor(input[0]) * 256 + input[1],\nvec2 unpack_float(const float packedValue) {\n    int packedIntValue = int(packedValue);\n    int v0 = packedIntValue / 256;\n    return vec2(v0, packedIntValue - v0 * 256);\n}\n\nvec2 unpack_opacity(const float packedOpacity) {\n    int intOpacity = int(packedOpacity) / 2;\n    return vec2(float(intOpacity) / 127.0, mod(packedOpacity, 2.0));\n}\n\n// To minimize the number of attributes needed, we encode a 4-component\n// color into a pair of floats (i.e. a vec2) as follows:\n// [ floor(color.r * 255) * 256 + color.g * 255,\n//   floor(color.b * 255) * 256 + color.g * 255 ]\nvec4 decode_color(const vec2 encodedColor) {\n    return vec4(\n        unpack_float(encodedColor[0]) / 255.0,\n        unpack_float(encodedColor[1]) / 255.0\n    );\n}\n\n// Unpack a pair of paint values and interpolate between them.\nfloat unpack_mix_vec2(const vec2 packedValue, const float t) {\n    return mix(packedValue[0], packedValue[1], t);\n}\n\n// Unpack a pair of paint values and interpolate between them.\nvec4 unpack_mix_color(const vec4 packedColors, const float t) {\n    vec4 minColor = decode_color(vec2(packedColors[0], packedColors[1]));\n    vec4 maxColor = decode_color(vec2(packedColors[2], packedColors[3]));\n    return mix(minColor, maxColor, t);\n}\n\n// The offset depends on how many pixels are between the world origin and the edge of the tile:\n// vec2 offset = mod(pixel_coord, size)\n//\n// At high zoom levels there are a ton of pixels between the world origin and the edge of the tile.\n// The glsl spec only guarantees 16 bits of precision for highp floats. We need more than that.\n//\n// The pixel_coord is passed in as two 16 bit values:\n// pixel_coord_upper = floor(pixel_coord / 2^16)\n// pixel_coord_lower = mod(pixel_coord, 2^16)\n//\n// The offset is calculated in a series of steps that should preserve this precision:\nvec2 get_pattern_pos(const vec2 pixel_coord_upper, const vec2 pixel_coord_lower,\n    const vec2 pattern_size, const float tile_units_to_pixels, const vec2 pos) {\n\n    vec2 offset = mod(mod(mod(pixel_coord_upper, pattern_size) * 256.0, pattern_size) * 256.0 + pixel_coord_lower, pattern_size);\n    return (tile_units_to_pixels * pos + offset) / pattern_size;\n}\n\n// logic for terrain 3d\n\n#ifdef TERRAIN3D\nuniform sampler2D u_terrain;\nuniform float u_terrain_dim;\nuniform mat4 u_terrain_matrix;\nuniform vec4 u_terrain_unpack;\nuniform float u_terrain_offset;\nuniform float u_terrain_exaggeration;\nuniform highp sampler2D u_depth;\n#endif\n\n// methods for pack/unpack depth value to texture rgba\n// https://stackoverflow.com/questions/34963366/encode-floating-point-data-in-a-rgba-texture\nconst highp vec4 bitSh = vec4(256. * 256. * 256., 256. * 256., 256., 1.);\nconst highp vec4 bitShifts = vec4(1.) / bitSh;\n\nhighp float unpack(highp vec4 color) {\n   return dot(color , bitShifts);\n}\n\n// calculate the opacity behind terrain, returns a value between 0 and 1.\nhighp float depthOpacity(vec3 frag) {\n    #ifdef TERRAIN3D\n        // create the delta between frag.z + terrain.z.\n        highp float d = unpack(texture2D(u_depth, frag.xy * 0.5 + 0.5)) + 0.0001 - frag.z;\n        // visibility range is between 0 and 0.002. 0 is visible, 0.002 is fully invisible.\n        return 1.0 - max(0.0, min(1.0, -d * 500.0));\n    #else\n        return 1.0;\n    #endif\n}\n\n// calculate the visibility of a coordinate in terrain and return an opacity value.\n// if a coordinate is behind the terrain reduce its opacity\nfloat calculate_visibility(vec4 pos) {\n    #ifdef TERRAIN3D\n        vec3 frag = pos.xyz / pos.w;\n        // check if coordingate is fully visible\n        highp float d = depthOpacity(frag);\n        if (d > 0.95) return 1.0;\n        // if not, go some pixel above and check it this point is visible\n        return (d + depthOpacity(frag + vec3(0.0, 0.01, 0.0))) / 2.0;\n    #else\n        return 1.0;\n    #endif\n}\n\n// grab an elevation value from a raster-dem texture\nfloat ele(vec2 pos) {\n    #ifdef TERRAIN3D\n        vec4 rgb = (texture2D(u_terrain, pos) * 255.0) * u_terrain_unpack;\n        return rgb.r + rgb.g + rgb.b - u_terrain_unpack.a;\n    #else\n        return 0.0;\n    #endif\n}\n\n// calculate the elevation with linear interpolation for  a coordinate\nfloat get_elevation(vec2 pos) {\n    #ifdef TERRAIN3D\n        vec2 coord = (u_terrain_matrix * vec4(pos, 0.0, 1.0)).xy * u_terrain_dim + 1.0;\n        vec2 f = fract(coord);\n        vec2 c = (floor(coord) + 0.5) / (u_terrain_dim + 2.0); // get the pixel center\n        float d = 1.0 / (u_terrain_dim + 2.0);\n        float tl = ele(c);\n        float tr = ele(c + vec2(d, 0.0));\n        float bl = ele(c + vec2(0.0, d));\n        float br = ele(c + vec2(d, d));\n        float elevation = mix(mix(tl, tr, f.x), mix(bl, br, f.x), f.y);\n        return (elevation + u_terrain_offset) * u_terrain_exaggeration;\n    #else\n        return 0.0;\n    #endif\n}\n';
+var preludeVert = '#ifdef GL_ES\nprecision highp float;\n#else\n#if !defined(lowp)\n#define lowp\n#endif\n#if !defined(mediump)\n#define mediump\n#endif\n#if !defined(highp)\n#define highp\n#endif\n#endif\nvec2 unpack_float(const float packedValue) {int packedIntValue=int(packedValue);int v0=packedIntValue/256;return vec2(v0,packedIntValue-v0*256);}vec2 unpack_opacity(const float packedOpacity) {int intOpacity=int(packedOpacity)/2;return vec2(float(intOpacity)/127.0,mod(packedOpacity,2.0));}vec4 decode_color(const vec2 encodedColor) {return vec4(unpack_float(encodedColor[0])/255.0,unpack_float(encodedColor[1])/255.0\n);}float unpack_mix_vec2(const vec2 packedValue,const float t) {return mix(packedValue[0],packedValue[1],t);}vec4 unpack_mix_color(const vec4 packedColors,const float t) {vec4 minColor=decode_color(vec2(packedColors[0],packedColors[1]));vec4 maxColor=decode_color(vec2(packedColors[2],packedColors[3]));return mix(minColor,maxColor,t);}vec2 get_pattern_pos(const vec2 pixel_coord_upper,const vec2 pixel_coord_lower,const vec2 pattern_size,const float tile_units_to_pixels,const vec2 pos) {vec2 offset=mod(mod(mod(pixel_coord_upper,pattern_size)*256.0,pattern_size)*256.0+pixel_coord_lower,pattern_size);return (tile_units_to_pixels*pos+offset)/pattern_size;}\n#ifdef TERRAIN3D\nuniform sampler2D u_terrain;uniform float u_terrain_dim;uniform mat4 u_terrain_matrix;uniform vec4 u_terrain_unpack;uniform float u_terrain_offset;uniform float u_terrain_exaggeration;uniform highp sampler2D u_depth;\n#endif\nconst highp vec4 bitSh=vec4(256.*256.*256.,256.*256.,256.,1.);const highp vec4 bitShifts=vec4(1.)/bitSh;highp float unpack(highp vec4 color) {return dot(color,bitShifts);}highp float depthOpacity(vec3 frag) {\n#ifdef TERRAIN3D\nhighp float d=unpack(texture2D(u_depth,frag.xy*0.5+0.5))+0.0001-frag.z;return 1.0-max(0.0,min(1.0,-d*500.0));\n#else\nreturn 1.0;\n#endif\n}float calculate_visibility(vec4 pos) {\n#ifdef TERRAIN3D\nvec3 frag=pos.xyz/pos.w;highp float d=depthOpacity(frag);if (d > 0.95) return 1.0;return (d+depthOpacity(frag+vec3(0.0,0.01,0.0)))/2.0;\n#else\nreturn 1.0;\n#endif\n}float ele(vec2 pos) {\n#ifdef TERRAIN3D\nvec4 rgb=(texture2D(u_terrain,pos)*255.0)*u_terrain_unpack;return rgb.r+rgb.g+rgb.b-u_terrain_unpack.a;\n#else\nreturn 0.0;\n#endif\n}float get_elevation(vec2 pos) {\n#ifdef TERRAIN3D\nvec2 coord=(u_terrain_matrix*vec4(pos,0.0,1.0)).xy*u_terrain_dim+1.0;vec2 f=fract(coord);vec2 c=(floor(coord)+0.5)/(u_terrain_dim+2.0);float d=1.0/(u_terrain_dim+2.0);float tl=ele(c);float tr=ele(c+vec2(d,0.0));float bl=ele(c+vec2(0.0,d));float br=ele(c+vec2(d,d));float elevation=mix(mix(tl,tr,f.x),mix(bl,br,f.x),f.y);return (elevation+u_terrain_offset)*u_terrain_exaggeration;\n#else\nreturn 0.0;\n#endif\n}';
 
-var backgroundFrag = 'uniform vec4 u_color;\nuniform float u_opacity;\n\nvoid main() {\n    gl_FragColor = u_color * u_opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var backgroundFrag = 'uniform vec4 u_color;uniform float u_opacity;void main() {gl_FragColor=u_color*u_opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var backgroundVert = 'attribute vec2 a_pos;\n\nuniform mat4 u_matrix;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n}\n';
+var backgroundVert = 'attribute vec2 a_pos;uniform mat4 u_matrix;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);}';
 
-var backgroundPatternFrag = 'uniform vec2 u_pattern_tl_a;\nuniform vec2 u_pattern_br_a;\nuniform vec2 u_pattern_tl_b;\nuniform vec2 u_pattern_br_b;\nuniform vec2 u_texsize;\nuniform float u_mix;\nuniform float u_opacity;\n\nuniform sampler2D u_image;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\n\nvoid main() {\n    vec2 imagecoord = mod(v_pos_a, 1.0);\n    vec2 pos = mix(u_pattern_tl_a / u_texsize, u_pattern_br_a / u_texsize, imagecoord);\n    vec4 color1 = texture2D(u_image, pos);\n\n    vec2 imagecoord_b = mod(v_pos_b, 1.0);\n    vec2 pos2 = mix(u_pattern_tl_b / u_texsize, u_pattern_br_b / u_texsize, imagecoord_b);\n    vec4 color2 = texture2D(u_image, pos2);\n\n    gl_FragColor = mix(color1, color2, u_mix) * u_opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var backgroundPatternFrag = 'uniform vec2 u_pattern_tl_a;uniform vec2 u_pattern_br_a;uniform vec2 u_pattern_tl_b;uniform vec2 u_pattern_br_b;uniform vec2 u_texsize;uniform float u_mix;uniform float u_opacity;uniform sampler2D u_image;varying vec2 v_pos_a;varying vec2 v_pos_b;void main() {vec2 imagecoord=mod(v_pos_a,1.0);vec2 pos=mix(u_pattern_tl_a/u_texsize,u_pattern_br_a/u_texsize,imagecoord);vec4 color1=texture2D(u_image,pos);vec2 imagecoord_b=mod(v_pos_b,1.0);vec2 pos2=mix(u_pattern_tl_b/u_texsize,u_pattern_br_b/u_texsize,imagecoord_b);vec4 color2=texture2D(u_image,pos2);gl_FragColor=mix(color1,color2,u_mix)*u_opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var backgroundPatternVert = 'uniform mat4 u_matrix;\nuniform vec2 u_pattern_size_a;\nuniform vec2 u_pattern_size_b;\nuniform vec2 u_pixel_coord_upper;\nuniform vec2 u_pixel_coord_lower;\nuniform float u_scale_a;\nuniform float u_scale_b;\nuniform float u_tile_units_to_pixels;\n\nattribute vec2 a_pos;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n\n    v_pos_a = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, u_scale_a * u_pattern_size_a, u_tile_units_to_pixels, a_pos);\n    v_pos_b = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, u_scale_b * u_pattern_size_b, u_tile_units_to_pixels, a_pos);\n}\n';
+var backgroundPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pattern_size_a;uniform vec2 u_pattern_size_b;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform float u_scale_a;uniform float u_scale_b;uniform float u_tile_units_to_pixels;attribute vec2 a_pos;varying vec2 v_pos_a;varying vec2 v_pos_b;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,u_scale_a*u_pattern_size_a,u_tile_units_to_pixels,a_pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,u_scale_b*u_pattern_size_b,u_tile_units_to_pixels,a_pos);}';
 
-var circleFrag = 'varying vec3 v_data;\nvarying float v_visibility;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define mediump float radius\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define highp vec4 stroke_color\n#pragma mapbox: define mediump float stroke_width\n#pragma mapbox: define lowp float stroke_opacity\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize mediump float radius\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize highp vec4 stroke_color\n    #pragma mapbox: initialize mediump float stroke_width\n    #pragma mapbox: initialize lowp float stroke_opacity\n\n    vec2 extrude = v_data.xy;\n    float extrude_length = length(extrude);\n\n    lowp float antialiasblur = v_data.z;\n    float antialiased_blur = -max(blur, antialiasblur);\n\n    float opacity_t = smoothstep(0.0, antialiased_blur, extrude_length - 1.0);\n\n    float color_t = stroke_width < 0.01 ? 0.0 : smoothstep(\n        antialiased_blur,\n        0.0,\n        extrude_length - radius / (radius + stroke_width)\n    );\n\n    gl_FragColor = v_visibility * opacity_t * mix(color * opacity, stroke_color * stroke_opacity, color_t);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var circleFrag = 'varying vec3 v_data;varying float v_visibility;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define mediump float radius\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define highp vec4 stroke_color\n#pragma mapbox: define mediump float stroke_width\n#pragma mapbox: define lowp float stroke_opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize mediump float radius\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize highp vec4 stroke_color\n#pragma mapbox: initialize mediump float stroke_width\n#pragma mapbox: initialize lowp float stroke_opacity\nvec2 extrude=v_data.xy;float extrude_length=length(extrude);lowp float antialiasblur=v_data.z;float antialiased_blur=-max(blur,antialiasblur);float opacity_t=smoothstep(0.0,antialiased_blur,extrude_length-1.0);float color_t=stroke_width < 0.01 ? 0.0 : smoothstep(antialiased_blur,0.0,extrude_length-radius/(radius+stroke_width));gl_FragColor=v_visibility*opacity_t*mix(color*opacity,stroke_color*stroke_opacity,color_t);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var circleVert = 'uniform mat4 u_matrix;\nuniform bool u_scale_with_map;\nuniform bool u_pitch_with_map;\nuniform vec2 u_extrude_scale;\nuniform lowp float u_device_pixel_ratio;\nuniform highp float u_camera_to_center_distance;\n\nattribute vec2 a_pos;\n\nvarying vec3 v_data;\nvarying float v_visibility;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define mediump float radius\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define highp vec4 stroke_color\n#pragma mapbox: define mediump float stroke_width\n#pragma mapbox: define lowp float stroke_opacity\n\nvoid main(void) {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize mediump float radius\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize highp vec4 stroke_color\n    #pragma mapbox: initialize mediump float stroke_width\n    #pragma mapbox: initialize lowp float stroke_opacity\n\n    // unencode the extrusion vector that we snuck into the a_pos vector\n    vec2 extrude = vec2(mod(a_pos, 2.0) * 2.0 - 1.0);\n\n    // multiply a_pos by 0.5, since we had it * 2 in order to sneak\n    // in extrusion data\n    vec2 circle_center = floor(a_pos * 0.5);\n    float ele = get_elevation(circle_center);\n    v_visibility = calculate_visibility(u_matrix * vec4(circle_center, ele, 1.0));\n\n    if (u_pitch_with_map) {\n        vec2 corner_position = circle_center;\n        if (u_scale_with_map) {\n            corner_position += extrude * (radius + stroke_width) * u_extrude_scale;\n        } else {\n            // Pitching the circle with the map effectively scales it with the map\n            // To counteract the effect for pitch-scale: viewport, we rescale the\n            // whole circle based on the pitch scaling effect at its central point\n            vec4 projected_center = u_matrix * vec4(circle_center, 0, 1);\n            corner_position += extrude * (radius + stroke_width) * u_extrude_scale * (projected_center.w / u_camera_to_center_distance);\n        }\n\n        gl_Position = u_matrix * vec4(corner_position, ele, 1);\n    } else {\n        gl_Position = u_matrix * vec4(circle_center, ele, 1);\n\n        if (u_scale_with_map) {\n            gl_Position.xy += extrude * (radius + stroke_width) * u_extrude_scale * u_camera_to_center_distance;\n        } else {\n            gl_Position.xy += extrude * (radius + stroke_width) * u_extrude_scale * gl_Position.w;\n        }\n    }\n\n    // This is a minimum blur distance that serves as a faux-antialiasing for\n    // the circle. since blur is a ratio of the circle\'s size and the intent is\n    // to keep the blur at roughly 1px, the two are inversely related.\n    lowp float antialiasblur = 1.0 / u_device_pixel_ratio / (radius + stroke_width);\n\n    v_data = vec3(extrude.x, extrude.y, antialiasblur);\n}\n';
+var circleVert = 'uniform mat4 u_matrix;uniform bool u_scale_with_map;uniform bool u_pitch_with_map;uniform vec2 u_extrude_scale;uniform lowp float u_device_pixel_ratio;uniform highp float u_camera_to_center_distance;attribute vec2 a_pos;varying vec3 v_data;varying float v_visibility;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define mediump float radius\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define highp vec4 stroke_color\n#pragma mapbox: define mediump float stroke_width\n#pragma mapbox: define lowp float stroke_opacity\nvoid main(void) {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize mediump float radius\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize highp vec4 stroke_color\n#pragma mapbox: initialize mediump float stroke_width\n#pragma mapbox: initialize lowp float stroke_opacity\nvec2 extrude=vec2(mod(a_pos,2.0)*2.0-1.0);vec2 circle_center=floor(a_pos*0.5);float ele=get_elevation(circle_center);v_visibility=calculate_visibility(u_matrix*vec4(circle_center,ele,1.0));if (u_pitch_with_map) {vec2 corner_position=circle_center;if (u_scale_with_map) {corner_position+=extrude*(radius+stroke_width)*u_extrude_scale;} else {vec4 projected_center=u_matrix*vec4(circle_center,0,1);corner_position+=extrude*(radius+stroke_width)*u_extrude_scale*(projected_center.w/u_camera_to_center_distance);}gl_Position=u_matrix*vec4(corner_position,ele,1);} else {gl_Position=u_matrix*vec4(circle_center,ele,1);if (u_scale_with_map) {gl_Position.xy+=extrude*(radius+stroke_width)*u_extrude_scale*u_camera_to_center_distance;} else {gl_Position.xy+=extrude*(radius+stroke_width)*u_extrude_scale*gl_Position.w;}}lowp float antialiasblur=1.0/u_device_pixel_ratio/(radius+stroke_width);v_data=vec3(extrude.x,extrude.y,antialiasblur);}';
 
-var clippingMaskFrag = 'void main() {\n    gl_FragColor = vec4(1.0);\n}\n';
+var clippingMaskFrag = 'void main() {gl_FragColor=vec4(1.0);}';
 
-var clippingMaskVert = 'attribute vec2 a_pos;\n\nuniform mat4 u_matrix;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n}\n';
+var clippingMaskVert = 'attribute vec2 a_pos;uniform mat4 u_matrix;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);}';
 
-var heatmapFrag = 'uniform highp float u_intensity;\n\nvarying vec2 v_extrude;\n\n#pragma mapbox: define highp float weight\n\n// Gaussian kernel coefficient: 1 / sqrt(2 * PI)\n#define GAUSS_COEF 0.3989422804014327\n\nvoid main() {\n    #pragma mapbox: initialize highp float weight\n\n    // Kernel density estimation with a Gaussian kernel of size 5x5\n    float d = -0.5 * 3.0 * 3.0 * dot(v_extrude, v_extrude);\n    float val = weight * u_intensity * GAUSS_COEF * exp(d);\n\n    gl_FragColor = vec4(val, 1.0, 1.0, 1.0);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var heatmapFrag = 'uniform highp float u_intensity;varying vec2 v_extrude;\n#pragma mapbox: define highp float weight\n#define GAUSS_COEF 0.3989422804014327\nvoid main() {\n#pragma mapbox: initialize highp float weight\nfloat d=-0.5*3.0*3.0*dot(v_extrude,v_extrude);float val=weight*u_intensity*GAUSS_COEF*exp(d);gl_FragColor=vec4(val,1.0,1.0,1.0);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var heatmapVert = '\nuniform mat4 u_matrix;\nuniform float u_extrude_scale;\nuniform float u_opacity;\nuniform float u_intensity;\n\nattribute vec2 a_pos;\n\nvarying vec2 v_extrude;\n\n#pragma mapbox: define highp float weight\n#pragma mapbox: define mediump float radius\n\n// Effective "0" in the kernel density texture to adjust the kernel size to;\n// this empirically chosen number minimizes artifacts on overlapping kernels\n// for typical heatmap cases (assuming clustered source)\nconst highp float ZERO = 1.0 / 255.0 / 16.0;\n\n// Gaussian kernel coefficient: 1 / sqrt(2 * PI)\n#define GAUSS_COEF 0.3989422804014327\n\nvoid main(void) {\n    #pragma mapbox: initialize highp float weight\n    #pragma mapbox: initialize mediump float radius\n\n    // unencode the extrusion vector that we snuck into the a_pos vector\n    vec2 unscaled_extrude = vec2(mod(a_pos, 2.0) * 2.0 - 1.0);\n\n    // This \'extrude\' comes in ranging from [-1, -1], to [1, 1].  We\'ll use\n    // it to produce the vertices of a square mesh framing the point feature\n    // we\'re adding to the kernel density texture.  We\'ll also pass it as\n    // a varying, so that the fragment shader can determine the distance of\n    // each fragment from the point feature.\n    // Before we do so, we need to scale it up sufficiently so that the\n    // kernel falls effectively to zero at the edge of the mesh.\n    // That is, we want to know S such that\n    // weight * u_intensity * GAUSS_COEF * exp(-0.5 * 3.0^2 * S^2) == ZERO\n    // Which solves to:\n    // S = sqrt(-2.0 * log(ZERO / (weight * u_intensity * GAUSS_COEF))) / 3.0\n    float S = sqrt(-2.0 * log(ZERO / weight / u_intensity / GAUSS_COEF)) / 3.0;\n\n    // Pass the varying in units of radius\n    v_extrude = S * unscaled_extrude;\n\n    // Scale by radius and the zoom-based scale factor to produce actual\n    // mesh position\n    vec2 extrude = v_extrude * radius * u_extrude_scale;\n\n    // multiply a_pos by 0.5, since we had it * 2 in order to sneak\n    // in extrusion data\n    vec4 pos = vec4(floor(a_pos * 0.5) + extrude, 0, 1);\n\n    gl_Position = u_matrix * pos;\n}\n';
+var heatmapVert = 'uniform mat4 u_matrix;uniform float u_extrude_scale;uniform float u_opacity;uniform float u_intensity;attribute vec2 a_pos;varying vec2 v_extrude;\n#pragma mapbox: define highp float weight\n#pragma mapbox: define mediump float radius\nconst highp float ZERO=1.0/255.0/16.0;\n#define GAUSS_COEF 0.3989422804014327\nvoid main(void) {\n#pragma mapbox: initialize highp float weight\n#pragma mapbox: initialize mediump float radius\nvec2 unscaled_extrude=vec2(mod(a_pos,2.0)*2.0-1.0);float S=sqrt(-2.0*log(ZERO/weight/u_intensity/GAUSS_COEF))/3.0;v_extrude=S*unscaled_extrude;vec2 extrude=v_extrude*radius*u_extrude_scale;vec4 pos=vec4(floor(a_pos*0.5)+extrude,0,1);gl_Position=u_matrix*pos;}';
 
-var heatmapTextureFrag = 'uniform sampler2D u_image;\nuniform sampler2D u_color_ramp;\nuniform float u_opacity;\nvarying vec2 v_pos;\n\nvoid main() {\n    float t = texture2D(u_image, v_pos).r;\n    vec4 color = texture2D(u_color_ramp, vec2(t, 0.5));\n    gl_FragColor = color * u_opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(0.0);\n#endif\n}\n';
+var heatmapTextureFrag = 'uniform sampler2D u_image;uniform sampler2D u_color_ramp;uniform float u_opacity;varying vec2 v_pos;void main() {float t=texture2D(u_image,v_pos).r;vec4 color=texture2D(u_color_ramp,vec2(t,0.5));gl_FragColor=color*u_opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(0.0);\n#endif\n}';
 
-var heatmapTextureVert = 'uniform mat4 u_matrix;\nuniform vec2 u_world;\nattribute vec2 a_pos;\nvarying vec2 v_pos;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos * u_world, 0, 1);\n\n    v_pos.x = a_pos.x;\n    v_pos.y = 1.0 - a_pos.y;\n}\n';
+var heatmapTextureVert = 'uniform mat4 u_matrix;uniform vec2 u_world;attribute vec2 a_pos;varying vec2 v_pos;void main() {gl_Position=u_matrix*vec4(a_pos*u_world,0,1);v_pos.x=a_pos.x;v_pos.y=1.0-a_pos.y;}';
 
-var collisionBoxFrag = '\nvarying float v_placed;\nvarying float v_notUsed;\n\nvoid main() {\n\n    float alpha = 0.5;\n\n    // Red = collision, hide label\n    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0) * alpha;\n\n    // Blue = no collision, label is showing\n    if (v_placed > 0.5) {\n        gl_FragColor = vec4(0.0, 0.0, 1.0, 0.5) * alpha;\n    }\n\n    if (v_notUsed > 0.5) {\n        // This box not used, fade it out\n        gl_FragColor *= .1;\n    }\n}';
+var collisionBoxFrag = 'varying float v_placed;varying float v_notUsed;void main() {float alpha=0.5;gl_FragColor=vec4(1.0,0.0,0.0,1.0)*alpha;if (v_placed > 0.5) {gl_FragColor=vec4(0.0,0.0,1.0,0.5)*alpha;}if (v_notUsed > 0.5) {gl_FragColor*=.1;}}';
 
-var collisionBoxVert = '// FIXME-3D! use 3d coordinates\nattribute vec2 a_pos;\nattribute vec2 a_anchor_pos;\nattribute vec2 a_extrude;\nattribute vec2 a_placed;\nattribute vec2 a_shift;\n\nuniform mat4 u_matrix;\nuniform vec2 u_extrude_scale;\nuniform float u_camera_to_center_distance;\n\nvarying float v_placed;\nvarying float v_notUsed;\n\nvoid main() {\n    vec4 projectedPoint = u_matrix * vec4(a_anchor_pos, 0, 1);\n    highp float camera_to_anchor_distance = projectedPoint.w;\n    highp float collision_perspective_ratio = clamp(\n        0.5 + 0.5 * (u_camera_to_center_distance / camera_to_anchor_distance),\n        0.0, // Prevents oversized near-field boxes in pitched/overzoomed tiles\n        4.0);\n\n    gl_Position = u_matrix * vec4(a_pos, 0.0, 1.0);\n    gl_Position.xy += (a_extrude + a_shift) * u_extrude_scale * gl_Position.w * collision_perspective_ratio;\n\n    v_placed = a_placed.x;\n    v_notUsed = a_placed.y;\n}\n';
+var collisionBoxVert = '\nattribute vec2 a_pos;attribute vec2 a_anchor_pos;attribute vec2 a_extrude;attribute vec2 a_placed;attribute vec2 a_shift;uniform mat4 u_matrix;uniform vec2 u_extrude_scale;uniform float u_camera_to_center_distance;varying float v_placed;varying float v_notUsed;void main() {vec4 projectedPoint=u_matrix*vec4(a_anchor_pos,0,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float collision_perspective_ratio=clamp(0.5+0.5*(u_camera_to_center_distance/camera_to_anchor_distance),0.0,4.0);gl_Position=u_matrix*vec4(a_pos,0.0,1.0);gl_Position.xy+=(a_extrude+a_shift)*u_extrude_scale*gl_Position.w*collision_perspective_ratio;v_placed=a_placed.x;v_notUsed=a_placed.y;}';
 
-var collisionCircleFrag = 'varying float v_radius;\nvarying vec2 v_extrude;\nvarying float v_perspective_ratio;\nvarying float v_collision;\n\nvoid main() {\n    float alpha = 0.5 * min(v_perspective_ratio, 1.0);\n    float stroke_radius = 0.9 * max(v_perspective_ratio, 1.0);\n\n    float distance_to_center = length(v_extrude);\n    float distance_to_edge = abs(distance_to_center - v_radius);\n    float opacity_t = smoothstep(-stroke_radius, 0.0, -distance_to_edge);\n\n    vec4 color = mix(vec4(0.0, 0.0, 1.0, 0.5), vec4(1.0, 0.0, 0.0, 1.0), v_collision);\n\n    gl_FragColor = color * alpha * opacity_t;\n}\n';
+var collisionCircleFrag = 'varying float v_radius;varying vec2 v_extrude;varying float v_perspective_ratio;varying float v_collision;void main() {float alpha=0.5*min(v_perspective_ratio,1.0);float stroke_radius=0.9*max(v_perspective_ratio,1.0);float distance_to_center=length(v_extrude);float distance_to_edge=abs(distance_to_center-v_radius);float opacity_t=smoothstep(-stroke_radius,0.0,-distance_to_edge);vec4 color=mix(vec4(0.0,0.0,1.0,0.5),vec4(1.0,0.0,0.0,1.0),v_collision);gl_FragColor=color*alpha*opacity_t;}';
 
-var collisionCircleVert = 'attribute vec2 a_pos;\nattribute float a_radius;\nattribute vec2 a_flags;\n\nuniform mat4 u_matrix;\nuniform mat4 u_inv_matrix;\nuniform vec2 u_viewport_size;\nuniform float u_camera_to_center_distance;\n\nvarying float v_radius;\nvarying vec2 v_extrude;\nvarying float v_perspective_ratio;\nvarying float v_collision;\n\nvec3 toTilePosition(vec2 screenPos) {\n    // Shoot a ray towards the ground to reconstruct the depth-value\n    vec4 rayStart = u_inv_matrix * vec4(screenPos, -1.0, 1.0);\n    vec4 rayEnd   = u_inv_matrix * vec4(screenPos,  1.0, 1.0);\n\n    rayStart.xyz /= rayStart.w;\n    rayEnd.xyz   /= rayEnd.w;\n\n    highp float t = (0.0 - rayStart.z) / (rayEnd.z - rayStart.z);\n    return mix(rayStart.xyz, rayEnd.xyz, t);\n}\n\nvoid main() {\n    vec2 quadCenterPos = a_pos;\n    float radius = a_radius;\n    float collision = a_flags.x;\n    float vertexIdx = a_flags.y;\n\n    vec2 quadVertexOffset = vec2(\n        mix(-1.0, 1.0, float(vertexIdx >= 2.0)),\n        mix(-1.0, 1.0, float(vertexIdx >= 1.0 && vertexIdx <= 2.0)));\n\n    vec2 quadVertexExtent = quadVertexOffset * radius;\n\n    // Screen position of the quad might have been computed with different camera parameters.\n    // Transform the point to a proper position on the current viewport\n    vec3 tilePos = toTilePosition(quadCenterPos);\n    vec4 clipPos = u_matrix * vec4(tilePos, 1.0);\n\n    highp float camera_to_anchor_distance = clipPos.w;\n    highp float collision_perspective_ratio = clamp(\n        0.5 + 0.5 * (u_camera_to_center_distance / camera_to_anchor_distance),\n        0.0, // Prevents oversized near-field circles in pitched/overzoomed tiles\n        4.0);\n\n    // Apply small padding for the anti-aliasing effect to fit the quad\n    // Note that v_radius and v_extrude are in screen coordinates already\n    float padding_factor = 1.2;\n    v_radius = radius;\n    v_extrude = quadVertexExtent * padding_factor;\n    v_perspective_ratio = collision_perspective_ratio;\n    v_collision = collision;\n\n    gl_Position = vec4(clipPos.xyz / clipPos.w, 1.0) + vec4(quadVertexExtent * padding_factor / u_viewport_size * 2.0, 0.0, 0.0);\n}\n';
+var collisionCircleVert = 'attribute vec2 a_pos;attribute float a_radius;attribute vec2 a_flags;uniform mat4 u_matrix;uniform mat4 u_inv_matrix;uniform vec2 u_viewport_size;uniform float u_camera_to_center_distance;varying float v_radius;varying vec2 v_extrude;varying float v_perspective_ratio;varying float v_collision;vec3 toTilePosition(vec2 screenPos) {vec4 rayStart=u_inv_matrix*vec4(screenPos,-1.0,1.0);vec4 rayEnd  =u_inv_matrix*vec4(screenPos, 1.0,1.0);rayStart.xyz/=rayStart.w;rayEnd.xyz  /=rayEnd.w;highp float t=(0.0-rayStart.z)/(rayEnd.z-rayStart.z);return mix(rayStart.xyz,rayEnd.xyz,t);}void main() {vec2 quadCenterPos=a_pos;float radius=a_radius;float collision=a_flags.x;float vertexIdx=a_flags.y;vec2 quadVertexOffset=vec2(mix(-1.0,1.0,float(vertexIdx >=2.0)),mix(-1.0,1.0,float(vertexIdx >=1.0 && vertexIdx <=2.0)));vec2 quadVertexExtent=quadVertexOffset*radius;vec3 tilePos=toTilePosition(quadCenterPos);vec4 clipPos=u_matrix*vec4(tilePos,1.0);highp float camera_to_anchor_distance=clipPos.w;highp float collision_perspective_ratio=clamp(0.5+0.5*(u_camera_to_center_distance/camera_to_anchor_distance),0.0,4.0);float padding_factor=1.2;v_radius=radius;v_extrude=quadVertexExtent*padding_factor;v_perspective_ratio=collision_perspective_ratio;v_collision=collision;gl_Position=vec4(clipPos.xyz/clipPos.w,1.0)+vec4(quadVertexExtent*padding_factor/u_viewport_size*2.0,0.0,0.0);}';
 
-var debugFrag = 'uniform highp vec4 u_color;\nuniform sampler2D u_overlay;\n\nvarying vec2 v_uv;\n\nvoid main() {\n    vec4 overlay_color = texture2D(u_overlay, v_uv);\n    gl_FragColor = mix(u_color, overlay_color, overlay_color.a);\n}\n';
+var debugFrag = 'uniform highp vec4 u_color;uniform sampler2D u_overlay;varying vec2 v_uv;void main() {vec4 overlay_color=texture2D(u_overlay,v_uv);gl_FragColor=mix(u_color,overlay_color,overlay_color.a);}';
 
-var debugVert = 'attribute vec2 a_pos;\nvarying vec2 v_uv;\n\nuniform mat4 u_matrix;\nuniform float u_overlay_scale;\n\nvoid main() {\n    // This vertex shader expects a EXTENT x EXTENT quad,\n    // The UV co-ordinates for the overlay texture can be calculated using that knowledge\n    v_uv = a_pos / 8192.0;\n    gl_Position = u_matrix * vec4(a_pos * u_overlay_scale, 0, 1);\n}\n';
+var debugVert = 'attribute vec2 a_pos;varying vec2 v_uv;uniform mat4 u_matrix;uniform float u_overlay_scale;void main() {v_uv=a_pos/8192.0;gl_Position=u_matrix*vec4(a_pos*u_overlay_scale,0,1);}';
 
-var fillFrag = '#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize lowp float opacity\n\n    gl_FragColor = color * opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var fillFrag = '#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float opacity\ngl_FragColor=color*opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillVert = 'attribute vec2 a_pos;\n\nuniform mat4 u_matrix;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize lowp float opacity\n\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n}\n';
+var fillVert = 'attribute vec2 a_pos;uniform mat4 u_matrix;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float opacity\ngl_Position=u_matrix*vec4(a_pos,0,1);}';
 
-var fillOutlineFrag = 'varying vec2 v_pos;\n\n#pragma mapbox: define highp vec4 outline_color\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 outline_color\n    #pragma mapbox: initialize lowp float opacity\n\n    float dist = length(v_pos - gl_FragCoord.xy);\n    float alpha = 1.0 - smoothstep(0.0, 1.0, dist);\n    gl_FragColor = outline_color * (alpha * opacity);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var fillOutlineFrag = 'varying vec2 v_pos;\n#pragma mapbox: define highp vec4 outline_color\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 outline_color\n#pragma mapbox: initialize lowp float opacity\nfloat dist=length(v_pos-gl_FragCoord.xy);float alpha=1.0-smoothstep(0.0,1.0,dist);gl_FragColor=outline_color*(alpha*opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillOutlineVert = 'attribute vec2 a_pos;\n\nuniform mat4 u_matrix;\nuniform vec2 u_world;\n\nvarying vec2 v_pos;\n\n#pragma mapbox: define highp vec4 outline_color\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 outline_color\n    #pragma mapbox: initialize lowp float opacity\n\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n    v_pos = (gl_Position.xy / gl_Position.w + 1.0) / 2.0 * u_world;\n}\n';
+var fillOutlineVert = 'attribute vec2 a_pos;uniform mat4 u_matrix;uniform vec2 u_world;varying vec2 v_pos;\n#pragma mapbox: define highp vec4 outline_color\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 outline_color\n#pragma mapbox: initialize lowp float opacity\ngl_Position=u_matrix*vec4(a_pos,0,1);v_pos=(gl_Position.xy/gl_Position.w+1.0)/2.0*u_world;}';
 
-var fillOutlinePatternFrag = '\nuniform vec2 u_texsize;\nuniform sampler2D u_image;\nuniform float u_fade;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\nvarying vec2 v_pos;\n\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    vec2 imagecoord = mod(v_pos_a, 1.0);\n    vec2 pos = mix(pattern_tl_a / u_texsize, pattern_br_a / u_texsize, imagecoord);\n    vec4 color1 = texture2D(u_image, pos);\n\n    vec2 imagecoord_b = mod(v_pos_b, 1.0);\n    vec2 pos2 = mix(pattern_tl_b / u_texsize, pattern_br_b / u_texsize, imagecoord_b);\n    vec4 color2 = texture2D(u_image, pos2);\n\n    // find distance to outline for alpha interpolation\n\n    float dist = length(v_pos - gl_FragCoord.xy);\n    float alpha = 1.0 - smoothstep(0.0, 1.0, dist);\n\n\n    gl_FragColor = mix(color1, color2, u_fade) * alpha * opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var fillOutlinePatternFrag = 'uniform vec2 u_texsize;uniform sampler2D u_image;uniform float u_fade;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec2 v_pos;\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;vec2 imagecoord=mod(v_pos_a,1.0);vec2 pos=mix(pattern_tl_a/u_texsize,pattern_br_a/u_texsize,imagecoord);vec4 color1=texture2D(u_image,pos);vec2 imagecoord_b=mod(v_pos_b,1.0);vec2 pos2=mix(pattern_tl_b/u_texsize,pattern_br_b/u_texsize,imagecoord_b);vec4 color2=texture2D(u_image,pos2);float dist=length(v_pos-gl_FragCoord.xy);float alpha=1.0-smoothstep(0.0,1.0,dist);gl_FragColor=mix(color1,color2,u_fade)*alpha*opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillOutlinePatternVert = 'uniform mat4 u_matrix;\nuniform vec2 u_world;\nuniform vec2 u_pixel_coord_upper;\nuniform vec2 u_pixel_coord_lower;\nuniform vec3 u_scale;\n\nattribute vec2 a_pos;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\nvarying vec2 v_pos;\n\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n    #pragma mapbox: initialize lowp float pixel_ratio_from\n    #pragma mapbox: initialize lowp float pixel_ratio_to\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    float tileRatio = u_scale.x;\n    float fromScale = u_scale.y;\n    float toScale = u_scale.z;\n\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n\n    vec2 display_size_a = (pattern_br_a - pattern_tl_a) / pixel_ratio_from;\n    vec2 display_size_b = (pattern_br_b - pattern_tl_b) / pixel_ratio_to;\n\n    v_pos_a = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, fromScale * display_size_a, tileRatio, a_pos);\n    v_pos_b = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, toScale * display_size_b, tileRatio, a_pos);\n\n    v_pos = (gl_Position.xy / gl_Position.w + 1.0) / 2.0 * u_world;\n}\n';
+var fillOutlinePatternVert = 'uniform mat4 u_matrix;uniform vec2 u_world;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform vec3 u_scale;attribute vec2 a_pos;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec2 v_pos;\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;gl_Position=u_matrix*vec4(a_pos,0,1);vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileRatio,a_pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileRatio,a_pos);v_pos=(gl_Position.xy/gl_Position.w+1.0)/2.0*u_world;}';
 
-var fillPatternFrag = '#ifdef GL_ES\n    precision highp float;\n#endif\nuniform vec2 u_texsize;\nuniform float u_fade;\n\nuniform sampler2D u_image;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\n\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    vec2 imagecoord = mod(v_pos_a, 1.0);\n    vec2 pos = mix(pattern_tl_a / u_texsize, pattern_br_a / u_texsize, imagecoord);\n    vec4 color1 = texture2D(u_image, pos);\n\n    vec2 imagecoord_b = mod(v_pos_b, 1.0);\n    vec2 pos2 = mix(pattern_tl_b / u_texsize, pattern_br_b / u_texsize, imagecoord_b);\n    vec4 color2 = texture2D(u_image, pos2);\n\n    gl_FragColor = mix(color1, color2, u_fade) * opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var fillPatternFrag = '#ifdef GL_ES\nprecision highp float;\n#endif\nuniform vec2 u_texsize;uniform float u_fade;uniform sampler2D u_image;varying vec2 v_pos_a;varying vec2 v_pos_b;\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;vec2 imagecoord=mod(v_pos_a,1.0);vec2 pos=mix(pattern_tl_a/u_texsize,pattern_br_a/u_texsize,imagecoord);vec4 color1=texture2D(u_image,pos);vec2 imagecoord_b=mod(v_pos_b,1.0);vec2 pos2=mix(pattern_tl_b/u_texsize,pattern_br_b/u_texsize,imagecoord_b);vec4 color2=texture2D(u_image,pos2);gl_FragColor=mix(color1,color2,u_fade)*opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillPatternVert = 'uniform mat4 u_matrix;\nuniform vec2 u_pixel_coord_upper;\nuniform vec2 u_pixel_coord_lower;\nuniform vec3 u_scale;\n\nattribute vec2 a_pos;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\n\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n    #pragma mapbox: initialize lowp float pixel_ratio_from\n    #pragma mapbox: initialize lowp float pixel_ratio_to\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    float tileZoomRatio = u_scale.x;\n    float fromScale = u_scale.y;\n    float toScale = u_scale.z;\n\n    vec2 display_size_a = (pattern_br_a - pattern_tl_a) / pixel_ratio_from;\n    vec2 display_size_b = (pattern_br_b - pattern_tl_b) / pixel_ratio_to;\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n\n    v_pos_a = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, fromScale * display_size_a, tileZoomRatio, a_pos);\n    v_pos_b = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, toScale * display_size_b, tileZoomRatio, a_pos);\n}\n';
+var fillPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform vec3 u_scale;attribute vec2 a_pos;varying vec2 v_pos_a;varying vec2 v_pos_b;\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileZoomRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;gl_Position=u_matrix*vec4(a_pos,0,1);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileZoomRatio,a_pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileZoomRatio,a_pos);}';
 
-var fillExtrusionFrag = 'varying vec4 v_color;\n\nvoid main() {\n    gl_FragColor = v_color;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var fillExtrusionFrag = 'varying vec4 v_color;void main() {gl_FragColor=v_color;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillExtrusionVert = 'uniform mat4 u_matrix;\nuniform vec3 u_lightcolor;\nuniform lowp vec3 u_lightpos;\nuniform lowp float u_lightintensity;\nuniform float u_vertical_gradient;\nuniform lowp float u_opacity;\n\nattribute vec2 a_pos;\nattribute vec4 a_normal_ed;\nattribute vec2 a_centroid;\n\nvarying vec4 v_color;\n\n#pragma mapbox: define highp float base\n#pragma mapbox: define highp float height\n\n#pragma mapbox: define highp vec4 color\n\nvoid main() {\n    #pragma mapbox: initialize highp float base\n    #pragma mapbox: initialize highp float height\n    #pragma mapbox: initialize highp vec4 color\n\n    vec3 normal = a_normal_ed.xyz;\n\n    float ele = get_elevation(a_centroid);\n    #ifdef TERRAIN3D\n        // To avoid floating buildings in 3d-terrain, especially in heavy terrain,\n        // render the buildings a little below terrain. The unit is meter.\n        float baseDelta = 10.0;\n    #else\n        float baseDelta = 0.0;\n    #endif\n    base = max(0.0, ele + base - baseDelta);\n    height = max(0.0, ele + height);\n\n    float t = mod(normal.x, 2.0);\n\n    gl_Position = u_matrix * vec4(a_pos, t > 0.0 ? height : base, 1);\n\n    // Relative luminance (how dark/bright is the surface color?)\n    float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;\n\n    v_color = vec4(0.0, 0.0, 0.0, 1.0);\n\n    // Add slight ambient lighting so no extrusions are totally black\n    vec4 ambientlight = vec4(0.03, 0.03, 0.03, 1.0);\n    color += ambientlight;\n\n    // Calculate cos(theta), where theta is the angle between surface normal and diffuse light ray\n    float directional = clamp(dot(normal / 16384.0, u_lightpos), 0.0, 1.0);\n\n    // Adjust directional so that\n    // the range of values for highlight/shading is narrower\n    // with lower light intensity\n    // and with lighter/brighter surface colors\n    directional = mix((1.0 - u_lightintensity), max((1.0 - colorvalue + u_lightintensity), 1.0), directional);\n\n    // Add gradient along z axis of side surfaces\n    if (normal.y != 0.0) {\n        // This avoids another branching statement, but multiplies by a constant of 0.84 if no vertical gradient,\n        // and otherwise calculates the gradient based on base + height\n        directional *= (\n            (1.0 - u_vertical_gradient) +\n            (u_vertical_gradient * clamp((t + base) * pow(height / 150.0, 0.5), mix(0.7, 0.98, 1.0 - u_lightintensity), 1.0)));\n    }\n\n    // Assign final color based on surface + ambient light color, diffuse light directional, and light color\n    // with lower bounds adjusted to hue of light\n    // so that shading is tinted with the complementary (opposite) color to the light color\n    v_color.r += clamp(color.r * directional * u_lightcolor.r, mix(0.0, 0.3, 1.0 - u_lightcolor.r), 1.0);\n    v_color.g += clamp(color.g * directional * u_lightcolor.g, mix(0.0, 0.3, 1.0 - u_lightcolor.g), 1.0);\n    v_color.b += clamp(color.b * directional * u_lightcolor.b, mix(0.0, 0.3, 1.0 - u_lightcolor.b), 1.0);\n    v_color *= u_opacity;\n}\n';
+var fillExtrusionVert = 'uniform mat4 u_matrix;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;uniform float u_vertical_gradient;uniform lowp float u_opacity;attribute vec2 a_pos;attribute vec4 a_normal_ed;attribute vec2 a_centroid;varying vec4 v_color;\n#pragma mapbox: define highp float base\n#pragma mapbox: define highp float height\n#pragma mapbox: define highp vec4 color\nvoid main() {\n#pragma mapbox: initialize highp float base\n#pragma mapbox: initialize highp float height\n#pragma mapbox: initialize highp vec4 color\nvec3 normal=a_normal_ed.xyz;float ele=get_elevation(a_centroid);\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;\n#else\nfloat baseDelta=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);gl_Position=u_matrix*vec4(a_pos,t > 0.0 ? height : base,1);float colorvalue=color.r*0.2126+color.g*0.7152+color.b*0.0722;v_color=vec4(0.0,0.0,0.0,1.0);vec4 ambientlight=vec4(0.03,0.03,0.03,1.0);color+=ambientlight;float directional=clamp(dot(normal/16384.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((1.0-colorvalue+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_color.r+=clamp(color.r*directional*u_lightcolor.r,mix(0.0,0.3,1.0-u_lightcolor.r),1.0);v_color.g+=clamp(color.g*directional*u_lightcolor.g,mix(0.0,0.3,1.0-u_lightcolor.g),1.0);v_color.b+=clamp(color.b*directional*u_lightcolor.b,mix(0.0,0.3,1.0-u_lightcolor.b),1.0);v_color*=u_opacity;}';
 
-var fillExtrusionPatternFrag = 'uniform vec2 u_texsize;\nuniform float u_fade;\n\nuniform sampler2D u_image;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\nvarying vec4 v_lighting;\n\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float base\n    #pragma mapbox: initialize lowp float height\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n    #pragma mapbox: initialize lowp float pixel_ratio_from\n    #pragma mapbox: initialize lowp float pixel_ratio_to\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    vec2 imagecoord = mod(v_pos_a, 1.0);\n    vec2 pos = mix(pattern_tl_a / u_texsize, pattern_br_a / u_texsize, imagecoord);\n    vec4 color1 = texture2D(u_image, pos);\n\n    vec2 imagecoord_b = mod(v_pos_b, 1.0);\n    vec2 pos2 = mix(pattern_tl_b / u_texsize, pattern_br_b / u_texsize, imagecoord_b);\n    vec4 color2 = texture2D(u_image, pos2);\n\n    vec4 mixedColor = mix(color1, color2, u_fade);\n\n    gl_FragColor = mixedColor * v_lighting;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var fillExtrusionPatternFrag = 'uniform vec2 u_texsize;uniform float u_fade;uniform sampler2D u_image;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;vec2 imagecoord=mod(v_pos_a,1.0);vec2 pos=mix(pattern_tl_a/u_texsize,pattern_br_a/u_texsize,imagecoord);vec4 color1=texture2D(u_image,pos);vec2 imagecoord_b=mod(v_pos_b,1.0);vec2 pos2=mix(pattern_tl_b/u_texsize,pattern_br_b/u_texsize,imagecoord_b);vec4 color2=texture2D(u_image,pos2);vec4 mixedColor=mix(color1,color2,u_fade);gl_FragColor=mixedColor*v_lighting;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillExtrusionPatternVert = 'uniform mat4 u_matrix;\nuniform vec2 u_pixel_coord_upper;\nuniform vec2 u_pixel_coord_lower;\nuniform float u_height_factor;\nuniform vec3 u_scale;\nuniform float u_vertical_gradient;\nuniform lowp float u_opacity;\n\nuniform vec3 u_lightcolor;\nuniform lowp vec3 u_lightpos;\nuniform lowp float u_lightintensity;\n\nattribute vec2 a_pos;\nattribute vec4 a_normal_ed;\nattribute vec2 a_centroid;\n\nvarying vec2 v_pos_a;\nvarying vec2 v_pos_b;\nvarying vec4 v_lighting;\n\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float base\n    #pragma mapbox: initialize lowp float height\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n    #pragma mapbox: initialize lowp float pixel_ratio_from\n    #pragma mapbox: initialize lowp float pixel_ratio_to\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    float tileRatio = u_scale.x;\n    float fromScale = u_scale.y;\n    float toScale = u_scale.z;\n\n    vec3 normal = a_normal_ed.xyz;\n    float edgedistance = a_normal_ed.w;\n\n    vec2 display_size_a = (pattern_br_a - pattern_tl_a) / pixel_ratio_from;\n    vec2 display_size_b = (pattern_br_b - pattern_tl_b) / pixel_ratio_to;\n\n    float ele = get_elevation(a_centroid);\n    base = max(0.0, ele + base - 10.0);  // minus 10 to avoid floating buildings because centroid is used for elevation\n    height = max(0.0, ele + height);\n\n    float t = mod(normal.x, 2.0);\n    float z = t > 0.0 ? height : base;\n\n    gl_Position = u_matrix * vec4(a_pos, z, 1);\n\n    vec2 pos = normal.x == 1.0 && normal.y == 0.0 && normal.z == 16384.0\n        ? a_pos // extrusion top\n        : vec2(edgedistance, z * u_height_factor); // extrusion side\n\n    v_pos_a = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, fromScale * display_size_a, tileRatio, pos);\n    v_pos_b = get_pattern_pos(u_pixel_coord_upper, u_pixel_coord_lower, toScale * display_size_b, tileRatio, pos);\n\n    v_lighting = vec4(0.0, 0.0, 0.0, 1.0);\n    float directional = clamp(dot(normal / 16383.0, u_lightpos), 0.0, 1.0);\n    directional = mix((1.0 - u_lightintensity), max((0.5 + u_lightintensity), 1.0), directional);\n\n    if (normal.y != 0.0) {\n        // This avoids another branching statement, but multiplies by a constant of 0.84 if no vertical gradient,\n        // and otherwise calculates the gradient based on base + height\n        directional *= (\n            (1.0 - u_vertical_gradient) +\n            (u_vertical_gradient * clamp((t + base) * pow(height / 150.0, 0.5), mix(0.7, 0.98, 1.0 - u_lightintensity), 1.0)));\n    }\n\n    v_lighting.rgb += clamp(directional * u_lightcolor, mix(vec3(0.0), vec3(0.3), 1.0 - u_lightcolor), vec3(1.0));\n    v_lighting *= u_opacity;\n}\n';
+var fillExtrusionPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform float u_height_factor;uniform vec3 u_scale;uniform float u_vertical_gradient;uniform lowp float u_opacity;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;attribute vec2 a_pos;attribute vec4 a_normal_ed;attribute vec2 a_centroid;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec3 normal=a_normal_ed.xyz;float edgedistance=a_normal_ed.w;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;float ele=get_elevation(a_centroid);base=max(0.0,ele+base-10.0);height=max(0.0,ele+height);float t=mod(normal.x,2.0);float z=t > 0.0 ? height : base;gl_Position=u_matrix*vec4(a_pos,z,1);vec2 pos=normal.x==1.0 && normal.y==0.0 && normal.z==16384.0\n? a_pos\n: vec2(edgedistance,z*u_height_factor);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileRatio,pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileRatio,pos);v_lighting=vec4(0.0,0.0,0.0,1.0);float directional=clamp(dot(normal/16383.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((0.5+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_lighting.rgb+=clamp(directional*u_lightcolor,mix(vec3(0.0),vec3(0.3),1.0-u_lightcolor),vec3(1.0));v_lighting*=u_opacity;}';
 
-var hillshadePrepareFrag = '#ifdef GL_ES\nprecision highp float;\n#endif\n\nuniform sampler2D u_image;\nvarying vec2 v_pos;\nuniform vec2 u_dimension;\nuniform float u_zoom;\nuniform vec4 u_unpack;\n\nfloat getElevation(vec2 coord, float bias) {\n    // Convert encoded elevation value to meters\n    vec4 data = texture2D(u_image, coord) * 255.0;\n    data.a = -1.0;\n    return dot(data, u_unpack) / 4.0;\n}\n\nvoid main() {\n    vec2 epsilon = 1.0 / u_dimension;\n\n    // queried pixels:\n    // +-----------+\n    // |   |   |   |\n    // | a | b | c |\n    // |   |   |   |\n    // +-----------+\n    // |   |   |   |\n    // | d | e | f |\n    // |   |   |   |\n    // +-----------+\n    // |   |   |   |\n    // | g | h | i |\n    // |   |   |   |\n    // +-----------+\n\n    float a = getElevation(v_pos + vec2(-epsilon.x, -epsilon.y), 0.0);\n    float b = getElevation(v_pos + vec2(0, -epsilon.y), 0.0);\n    float c = getElevation(v_pos + vec2(epsilon.x, -epsilon.y), 0.0);\n    float d = getElevation(v_pos + vec2(-epsilon.x, 0), 0.0);\n    float e = getElevation(v_pos, 0.0);\n    float f = getElevation(v_pos + vec2(epsilon.x, 0), 0.0);\n    float g = getElevation(v_pos + vec2(-epsilon.x, epsilon.y), 0.0);\n    float h = getElevation(v_pos + vec2(0, epsilon.y), 0.0);\n    float i = getElevation(v_pos + vec2(epsilon.x, epsilon.y), 0.0);\n\n    // Here we divide the x and y slopes by 8 * pixel size\n    // where pixel size (aka meters/pixel) is:\n    // circumference of the world / (pixels per tile * number of tiles)\n    // which is equivalent to: 8 * 40075016.6855785 / (512 * pow(2, u_zoom))\n    // which can be reduced to: pow(2, 19.25619978527 - u_zoom).\n    // We want to vertically exaggerate the hillshading because otherwise\n    // it is barely noticeable at low zooms. To do this, we multiply this by\n    // a scale factor that is a function of zooms below 15, which is an arbitrary\n    // that corresponds to the max zoom level of Mapbox terrain-RGB tiles.\n    // See nickidlugash\'s awesome breakdown for more info:\n    // https://github.com/mapbox/mapbox-gl-js/pull/5286#discussion_r148419556\n\n    float exaggerationFactor = u_zoom < 2.0 ? 0.4 : u_zoom < 4.5 ? 0.35 : 0.3;\n    float exaggeration = u_zoom < 15.0 ? (u_zoom - 15.0) * exaggerationFactor : 0.0;\n\n    vec2 deriv = vec2(\n        (c + f + f + i) - (a + d + d + g),\n        (g + h + h + i) - (a + b + b + c)\n    ) / pow(2.0, exaggeration + (19.2562 - u_zoom));\n\n    gl_FragColor = clamp(vec4(\n        deriv.x / 2.0 + 0.5,\n        deriv.y / 2.0 + 0.5,\n        1.0,\n        1.0), 0.0, 1.0);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var hillshadePrepareFrag = '#ifdef GL_ES\nprecision highp float;\n#endif\nuniform sampler2D u_image;varying vec2 v_pos;uniform vec2 u_dimension;uniform float u_zoom;uniform vec4 u_unpack;float getElevation(vec2 coord,float bias) {vec4 data=texture2D(u_image,coord)*255.0;data.a=-1.0;return dot(data,u_unpack)/4.0;}void main() {vec2 epsilon=1.0/u_dimension;float a=getElevation(v_pos+vec2(-epsilon.x,-epsilon.y),0.0);float b=getElevation(v_pos+vec2(0,-epsilon.y),0.0);float c=getElevation(v_pos+vec2(epsilon.x,-epsilon.y),0.0);float d=getElevation(v_pos+vec2(-epsilon.x,0),0.0);float e=getElevation(v_pos,0.0);float f=getElevation(v_pos+vec2(epsilon.x,0),0.0);float g=getElevation(v_pos+vec2(-epsilon.x,epsilon.y),0.0);float h=getElevation(v_pos+vec2(0,epsilon.y),0.0);float i=getElevation(v_pos+vec2(epsilon.x,epsilon.y),0.0);float exaggerationFactor=u_zoom < 2.0 ? 0.4 : u_zoom < 4.5 ? 0.35 : 0.3;float exaggeration=u_zoom < 15.0 ? (u_zoom-15.0)*exaggerationFactor : 0.0;vec2 deriv=vec2((c+f+f+i)-(a+d+d+g),(g+h+h+i)-(a+b+b+c))/pow(2.0,exaggeration+(19.2562-u_zoom));gl_FragColor=clamp(vec4(deriv.x/2.0+0.5,deriv.y/2.0+0.5,1.0,1.0),0.0,1.0);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var hillshadePrepareVert = 'uniform mat4 u_matrix;\nuniform vec2 u_dimension;\n\nattribute vec2 a_pos;\nattribute vec2 a_texture_pos;\n\nvarying vec2 v_pos;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n\n    highp vec2 epsilon = 1.0 / u_dimension;\n    float scale = (u_dimension.x - 2.0) / u_dimension.x;\n    v_pos = (a_texture_pos / 8192.0) * scale + epsilon;\n}\n';
+var hillshadePrepareVert = 'uniform mat4 u_matrix;uniform vec2 u_dimension;attribute vec2 a_pos;attribute vec2 a_texture_pos;varying vec2 v_pos;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);highp vec2 epsilon=1.0/u_dimension;float scale=(u_dimension.x-2.0)/u_dimension.x;v_pos=(a_texture_pos/8192.0)*scale+epsilon;}';
 
-var hillshadeFrag = 'uniform sampler2D u_image;\nvarying vec2 v_pos;\n\nuniform vec2 u_latrange;\nuniform vec2 u_light;\nuniform vec4 u_shadow;\nuniform vec4 u_highlight;\nuniform vec4 u_accent;\n\n#define PI 3.141592653589793\n\nvoid main() {\n    vec4 pixel = texture2D(u_image, v_pos);\n\n    vec2 deriv = ((pixel.rg * 2.0) - 1.0);\n\n    // We divide the slope by a scale factor based on the cosin of the pixel\'s approximate latitude\n    // to account for mercator projection distortion. see #4807 for details\n    float scaleFactor = cos(radians((u_latrange[0] - u_latrange[1]) * (1.0 - v_pos.y) + u_latrange[1]));\n    // We also multiply the slope by an arbitrary z-factor of 1.25\n    float slope = atan(1.25 * length(deriv) / scaleFactor);\n    float aspect = deriv.x != 0.0 ? atan(deriv.y, -deriv.x) : PI / 2.0 * (deriv.y > 0.0 ? 1.0 : -1.0);\n\n    float intensity = u_light.x;\n    // We add PI to make this property match the global light object, which adds PI/2 to the light\'s azimuthal\n    // position property to account for 0deg corresponding to north/the top of the viewport in the style spec\n    // and the original shader was written to accept (-illuminationDirection - 90) as the azimuthal.\n    float azimuth = u_light.y + PI;\n\n    // We scale the slope exponentially based on intensity, using a calculation similar to\n    // the exponential interpolation function in the style spec:\n    // src/style-spec/expression/definitions/interpolate.js#L217-L228\n    // so that higher intensity values create more opaque hillshading.\n    float base = 1.875 - intensity * 1.75;\n    float maxValue = 0.5 * PI;\n    float scaledSlope = intensity != 0.5 ? ((pow(base, slope) - 1.0) / (pow(base, maxValue) - 1.0)) * maxValue : slope;\n\n    // The accent color is calculated with the cosine of the slope while the shade color is calculated with the sine\n    // so that the accent color\'s rate of change eases in while the shade color\'s eases out.\n    float accent = cos(scaledSlope);\n    // We multiply both the accent and shade color by a clamped intensity value\n    // so that intensities >= 0.5 do not additionally affect the color values\n    // while intensity values < 0.5 make the overall color more transparent.\n    vec4 accent_color = (1.0 - accent) * u_accent * clamp(intensity * 2.0, 0.0, 1.0);\n    float shade = abs(mod((aspect + azimuth) / PI + 0.5, 2.0) - 1.0);\n    vec4 shade_color = mix(u_shadow, u_highlight, shade) * sin(scaledSlope) * clamp(intensity * 2.0, 0.0, 1.0);\n    gl_FragColor = accent_color * (1.0 - shade_color.a) + shade_color;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var hillshadeFrag = 'uniform sampler2D u_image;varying vec2 v_pos;uniform vec2 u_latrange;uniform vec2 u_light;uniform vec4 u_shadow;uniform vec4 u_highlight;uniform vec4 u_accent;\n#define PI 3.141592653589793\nvoid main() {vec4 pixel=texture2D(u_image,v_pos);vec2 deriv=((pixel.rg*2.0)-1.0);float scaleFactor=cos(radians((u_latrange[0]-u_latrange[1])*(1.0-v_pos.y)+u_latrange[1]));float slope=atan(1.25*length(deriv)/scaleFactor);float aspect=deriv.x !=0.0 ? atan(deriv.y,-deriv.x) : PI/2.0*(deriv.y > 0.0 ? 1.0 :-1.0);float intensity=u_light.x;float azimuth=u_light.y+PI;float base=1.875-intensity*1.75;float maxValue=0.5*PI;float scaledSlope=intensity !=0.5 ? ((pow(base,slope)-1.0)/(pow(base,maxValue)-1.0))*maxValue : slope;float accent=cos(scaledSlope);vec4 accent_color=(1.0-accent)*u_accent*clamp(intensity*2.0,0.0,1.0);float shade=abs(mod((aspect+azimuth)/PI+0.5,2.0)-1.0);vec4 shade_color=mix(u_shadow,u_highlight,shade)*sin(scaledSlope)*clamp(intensity*2.0,0.0,1.0);gl_FragColor=accent_color*(1.0-shade_color.a)+shade_color;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var hillshadeVert = 'uniform mat4 u_matrix;\n\nattribute vec2 a_pos;\nattribute vec2 a_texture_pos;\n\nvarying vec2 v_pos;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n    v_pos = a_texture_pos / 8192.0;\n}\n';
+var hillshadeVert = 'uniform mat4 u_matrix;attribute vec2 a_pos;attribute vec2 a_texture_pos;varying vec2 v_pos;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);v_pos=a_texture_pos/8192.0;}';
 
-var lineFrag = 'uniform lowp float u_device_pixel_ratio;\n\nvarying vec2 v_width2;\nvarying vec2 v_normal;\nvarying float v_gamma_scale;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n\n    // Calculate the distance of the pixel from the line in pixels.\n    float dist = length(v_normal) * v_width2.s;\n\n    // Calculate the antialiasing fade factor. This is either when fading in\n    // the line in case of an offset line (v_width2.t) or when fading out\n    // (v_width2.s)\n    float blur2 = (blur + 1.0 / u_device_pixel_ratio) * v_gamma_scale;\n    float alpha = clamp(min(dist - (v_width2.t - blur2), v_width2.s - dist) / blur2, 0.0, 1.0);\n\n    gl_FragColor = color * (alpha * opacity);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var lineFrag = 'uniform lowp float u_device_pixel_ratio;varying vec2 v_width2;varying vec2 v_normal;varying float v_gamma_scale;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\nfloat dist=length(v_normal)*v_width2.s;float blur2=(blur+1.0/u_device_pixel_ratio)*v_gamma_scale;float alpha=clamp(min(dist-(v_width2.t-blur2),v_width2.s-dist)/blur2,0.0,1.0);gl_FragColor=color*(alpha*opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var lineVert = '// floor(127 / 2) == 63.0\n// the maximum allowed miter limit is 2.0 at the moment. the extrude normal is\n// stored in a byte (-128..127). we scale regular normals up to length 63, but\n// there are also "special" normals that have a bigger length (of up to 126 in\n// this case).\n// #define scale 63.0\n#define scale 0.015873016\n\nattribute vec2 a_pos_normal;\nattribute vec4 a_data;\n\nuniform mat4 u_matrix;\nuniform mediump float u_ratio;\nuniform vec2 u_units_to_pixels;\nuniform lowp float u_device_pixel_ratio;\n\nvarying vec2 v_normal;\nvarying vec2 v_width2;\nvarying float v_gamma_scale;\nvarying highp float v_linesofar;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float width\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump float gapwidth\n    #pragma mapbox: initialize lowp float offset\n    #pragma mapbox: initialize mediump float width\n\n    // the distance over which the line edge fades out.\n    // Retina devices need a smaller distance to avoid aliasing.\n    float ANTIALIASING = 1.0 / u_device_pixel_ratio / 2.0;\n\n    vec2 a_extrude = a_data.xy - 128.0;\n    float a_direction = mod(a_data.z, 4.0) - 1.0;\n\n    v_linesofar = (floor(a_data.z / 4.0) + a_data.w * 64.0) * 2.0;\n\n    vec2 pos = floor(a_pos_normal * 0.5);\n\n    // x is 1 if it\'s a round cap, 0 otherwise\n    // y is 1 if the normal points up, and -1 if it points down\n    // We store these in the least significant bit of a_pos_normal\n    mediump vec2 normal = a_pos_normal - 2.0 * pos;\n    normal.y = normal.y * 2.0 - 1.0;\n    v_normal = normal;\n\n    // these transformations used to be applied in the JS and native code bases.\n    // moved them into the shader for clarity and simplicity.\n    gapwidth = gapwidth / 2.0;\n    float halfwidth = width / 2.0;\n    offset = -1.0 * offset;\n\n    float inset = gapwidth + (gapwidth > 0.0 ? ANTIALIASING : 0.0);\n    float outset = gapwidth + halfwidth * (gapwidth > 0.0 ? 2.0 : 1.0) + (halfwidth == 0.0 ? 0.0 : ANTIALIASING);\n\n    // Scale the extrusion vector down to a normal and then up by the line width\n    // of this vertex.\n    mediump vec2 dist = outset * a_extrude * scale;\n\n    // Calculate the offset when drawing a line that is to the side of the actual line.\n    // We do this by creating a vector that points towards the extrude, but rotate\n    // it when we\'re drawing round end points (a_direction = -1 or 1) since their\n    // extrude vector points in another direction.\n    mediump float u = 0.5 * a_direction;\n    mediump float t = 1.0 - abs(u);\n    mediump vec2 offset2 = offset * a_extrude * scale * normal.y * mat2(t, -u, u, t);\n\n    vec4 projected_extrude = u_matrix * vec4(dist / u_ratio, 0.0, 0.0);\n    gl_Position = u_matrix * vec4(pos + offset2 / u_ratio, 0.0, 1.0) + projected_extrude;\n\n    // calculate how much the perspective view squishes or stretches the extrude\n    #ifdef TERRAIN3D\n        v_gamma_scale = 1.0; // not needed, because this is done automatically via the mesh\n    #else\n        float extrude_length_without_perspective = length(dist);\n        float extrude_length_with_perspective = length(projected_extrude.xy / gl_Position.w * u_units_to_pixels);\n        v_gamma_scale = extrude_length_without_perspective / extrude_length_with_perspective;\n    #endif\n\n    v_width2 = vec2(outset, inset);\n}\n';
+var lineVert = '\n#define scale 0.015873016\nattribute vec2 a_pos_normal;attribute vec4 a_data;uniform mat4 u_matrix;uniform mediump float u_ratio;uniform vec2 u_units_to_pixels;uniform lowp float u_device_pixel_ratio;varying vec2 v_normal;varying vec2 v_width2;varying float v_gamma_scale;varying highp float v_linesofar;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float width\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump float gapwidth\n#pragma mapbox: initialize lowp float offset\n#pragma mapbox: initialize mediump float width\nfloat ANTIALIASING=1.0/u_device_pixel_ratio/2.0;vec2 a_extrude=a_data.xy-128.0;float a_direction=mod(a_data.z,4.0)-1.0;v_linesofar=(floor(a_data.z/4.0)+a_data.w*64.0)*2.0;vec2 pos=floor(a_pos_normal*0.5);mediump vec2 normal=a_pos_normal-2.0*pos;normal.y=normal.y*2.0-1.0;v_normal=normal;gapwidth=gapwidth/2.0;float halfwidth=width/2.0;offset=-1.0*offset;float inset=gapwidth+(gapwidth > 0.0 ? ANTIALIASING : 0.0);float outset=gapwidth+halfwidth*(gapwidth > 0.0 ? 2.0 : 1.0)+(halfwidth==0.0 ? 0.0 : ANTIALIASING);mediump vec2 dist=outset*a_extrude*scale;mediump float u=0.5*a_direction;mediump float t=1.0-abs(u);mediump vec2 offset2=offset*a_extrude*scale*normal.y*mat2(t,-u,u,t);vec4 projected_extrude=u_matrix*vec4(dist/u_ratio,0.0,0.0);gl_Position=u_matrix*vec4(pos+offset2/u_ratio,0.0,1.0)+projected_extrude;\n#ifdef TERRAIN3D\nv_gamma_scale=1.0;\n#else\nfloat extrude_length_without_perspective=length(dist);float extrude_length_with_perspective=length(projected_extrude.xy/gl_Position.w*u_units_to_pixels);v_gamma_scale=extrude_length_without_perspective/extrude_length_with_perspective;\n#endif\nv_width2=vec2(outset,inset);}';
 
-var lineGradientFrag = 'uniform lowp float u_device_pixel_ratio;\nuniform sampler2D u_image;\n\nvarying vec2 v_width2;\nvarying vec2 v_normal;\nvarying float v_gamma_scale;\nvarying highp vec2 v_uv;\n\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n\n    // Calculate the distance of the pixel from the line in pixels.\n    float dist = length(v_normal) * v_width2.s;\n\n    // Calculate the antialiasing fade factor. This is either when fading in\n    // the line in case of an offset line (v_width2.t) or when fading out\n    // (v_width2.s)\n    float blur2 = (blur + 1.0 / u_device_pixel_ratio) * v_gamma_scale;\n    float alpha = clamp(min(dist - (v_width2.t - blur2), v_width2.s - dist) / blur2, 0.0, 1.0);\n\n    // For gradient lines, v_lineprogress is the ratio along the\n    // entire line, the gradient ramp is stored in a texture.\n    vec4 color = texture2D(u_image, v_uv);\n\n    gl_FragColor = color * (alpha * opacity);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var lineGradientFrag = 'uniform lowp float u_device_pixel_ratio;uniform sampler2D u_image;varying vec2 v_width2;varying vec2 v_normal;varying float v_gamma_scale;varying highp vec2 v_uv;\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\nfloat dist=length(v_normal)*v_width2.s;float blur2=(blur+1.0/u_device_pixel_ratio)*v_gamma_scale;float alpha=clamp(min(dist-(v_width2.t-blur2),v_width2.s-dist)/blur2,0.0,1.0);vec4 color=texture2D(u_image,v_uv);gl_FragColor=color*(alpha*opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var lineGradientVert = '// floor(127 / 2) == 63.0\n// the maximum allowed miter limit is 2.0 at the moment. the extrude normal is\n// stored in a byte (-128..127). we scale regular normals up to length 63, but\n// there are also "special" normals that have a bigger length (of up to 126 in\n// this case).\n// #define scale 63.0\n#define scale 0.015873016\n\nattribute vec2 a_pos_normal;\nattribute vec4 a_data;\nattribute float a_uv_x;\nattribute float a_split_index;\n\nuniform mat4 u_matrix;\nuniform mediump float u_ratio;\nuniform lowp float u_device_pixel_ratio;\nuniform vec2 u_units_to_pixels;\nuniform float u_image_height;\n\nvarying vec2 v_normal;\nvarying vec2 v_width2;\nvarying float v_gamma_scale;\nvarying highp vec2 v_uv;\n\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float width\n\nvoid main() {\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump float gapwidth\n    #pragma mapbox: initialize lowp float offset\n    #pragma mapbox: initialize mediump float width\n\n    // the distance over which the line edge fades out.\n    // Retina devices need a smaller distance to avoid aliasing.\n    float ANTIALIASING = 1.0 / u_device_pixel_ratio / 2.0;\n\n    vec2 a_extrude = a_data.xy - 128.0;\n    float a_direction = mod(a_data.z, 4.0) - 1.0;\n\n    highp float texel_height = 1.0 / u_image_height;\n    highp float half_texel_height = 0.5 * texel_height;\n    v_uv = vec2(a_uv_x, a_split_index * texel_height - half_texel_height);\n\n    vec2 pos = floor(a_pos_normal * 0.5);\n\n    // x is 1 if it\'s a round cap, 0 otherwise\n    // y is 1 if the normal points up, and -1 if it points down\n    // We store these in the least significant bit of a_pos_normal\n    mediump vec2 normal = a_pos_normal - 2.0 * pos;\n    normal.y = normal.y * 2.0 - 1.0;\n    v_normal = normal;\n\n    // these transformations used to be applied in the JS and native code bases.\n    // moved them into the shader for clarity and simplicity.\n    gapwidth = gapwidth / 2.0;\n    float halfwidth = width / 2.0;\n    offset = -1.0 * offset;\n\n    float inset = gapwidth + (gapwidth > 0.0 ? ANTIALIASING : 0.0);\n    float outset = gapwidth + halfwidth * (gapwidth > 0.0 ? 2.0 : 1.0) + (halfwidth == 0.0 ? 0.0 : ANTIALIASING);\n\n    // Scale the extrusion vector down to a normal and then up by the line width\n    // of this vertex.\n    mediump vec2 dist = outset * a_extrude * scale;\n\n    // Calculate the offset when drawing a line that is to the side of the actual line.\n    // We do this by creating a vector that points towards the extrude, but rotate\n    // it when we\'re drawing round end points (a_direction = -1 or 1) since their\n    // extrude vector points in another direction.\n    mediump float u = 0.5 * a_direction;\n    mediump float t = 1.0 - abs(u);\n    mediump vec2 offset2 = offset * a_extrude * scale * normal.y * mat2(t, -u, u, t);\n\n    vec4 projected_extrude = u_matrix * vec4(dist / u_ratio, 0.0, 0.0);\n    gl_Position = u_matrix * vec4(pos + offset2 / u_ratio, 0.0, 1.0) + projected_extrude;\n\n    // calculate how much the perspective view squishes or stretches the extrude\n    #ifdef TERRAIN3D\n        v_gamma_scale = 1.0; // not needed, because this is done automatically via the mesh\n    #else\n        float extrude_length_without_perspective = length(dist);\n        float extrude_length_with_perspective = length(projected_extrude.xy / gl_Position.w * u_units_to_pixels);\n        v_gamma_scale = extrude_length_without_perspective / extrude_length_with_perspective;\n    #endif\n\n    v_width2 = vec2(outset, inset);\n}\n';
+var lineGradientVert = '\n#define scale 0.015873016\nattribute vec2 a_pos_normal;attribute vec4 a_data;attribute float a_uv_x;attribute float a_split_index;uniform mat4 u_matrix;uniform mediump float u_ratio;uniform lowp float u_device_pixel_ratio;uniform vec2 u_units_to_pixels;uniform float u_image_height;varying vec2 v_normal;varying vec2 v_width2;varying float v_gamma_scale;varying highp vec2 v_uv;\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float width\nvoid main() {\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump float gapwidth\n#pragma mapbox: initialize lowp float offset\n#pragma mapbox: initialize mediump float width\nfloat ANTIALIASING=1.0/u_device_pixel_ratio/2.0;vec2 a_extrude=a_data.xy-128.0;float a_direction=mod(a_data.z,4.0)-1.0;highp float texel_height=1.0/u_image_height;highp float half_texel_height=0.5*texel_height;v_uv=vec2(a_uv_x,a_split_index*texel_height-half_texel_height);vec2 pos=floor(a_pos_normal*0.5);mediump vec2 normal=a_pos_normal-2.0*pos;normal.y=normal.y*2.0-1.0;v_normal=normal;gapwidth=gapwidth/2.0;float halfwidth=width/2.0;offset=-1.0*offset;float inset=gapwidth+(gapwidth > 0.0 ? ANTIALIASING : 0.0);float outset=gapwidth+halfwidth*(gapwidth > 0.0 ? 2.0 : 1.0)+(halfwidth==0.0 ? 0.0 : ANTIALIASING);mediump vec2 dist=outset*a_extrude*scale;mediump float u=0.5*a_direction;mediump float t=1.0-abs(u);mediump vec2 offset2=offset*a_extrude*scale*normal.y*mat2(t,-u,u,t);vec4 projected_extrude=u_matrix*vec4(dist/u_ratio,0.0,0.0);gl_Position=u_matrix*vec4(pos+offset2/u_ratio,0.0,1.0)+projected_extrude;\n#ifdef TERRAIN3D\nv_gamma_scale=1.0;\n#else\nfloat extrude_length_without_perspective=length(dist);float extrude_length_with_perspective=length(projected_extrude.xy/gl_Position.w*u_units_to_pixels);v_gamma_scale=extrude_length_without_perspective/extrude_length_with_perspective;\n#endif\nv_width2=vec2(outset,inset);}';
 
-var linePatternFrag = '#ifdef GL_ES\n    precision highp float;\n#endif\nuniform lowp float u_device_pixel_ratio;\nuniform vec2 u_texsize;\nuniform float u_fade;\nuniform mediump vec3 u_scale;\n\nuniform sampler2D u_image;\n\nvarying vec2 v_normal;\nvarying vec2 v_width2;\nvarying float v_linesofar;\nvarying float v_gamma_scale;\nvarying float v_width;\n\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n    #pragma mapbox: initialize lowp float pixel_ratio_from\n    #pragma mapbox: initialize lowp float pixel_ratio_to\n\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n\n    vec2 pattern_tl_a = pattern_from.xy;\n    vec2 pattern_br_a = pattern_from.zw;\n    vec2 pattern_tl_b = pattern_to.xy;\n    vec2 pattern_br_b = pattern_to.zw;\n\n    float tileZoomRatio = u_scale.x;\n    float fromScale = u_scale.y;\n    float toScale = u_scale.z;\n\n    vec2 display_size_a = (pattern_br_a - pattern_tl_a) / pixel_ratio_from;\n    vec2 display_size_b = (pattern_br_b - pattern_tl_b) / pixel_ratio_to;\n\n    vec2 pattern_size_a = vec2(display_size_a.x * fromScale / tileZoomRatio, display_size_a.y);\n    vec2 pattern_size_b = vec2(display_size_b.x * toScale / tileZoomRatio, display_size_b.y);\n\n    float aspect_a = display_size_a.y / v_width;\n    float aspect_b = display_size_b.y / v_width;\n\n    // Calculate the distance of the pixel from the line in pixels.\n    float dist = length(v_normal) * v_width2.s;\n\n    // Calculate the antialiasing fade factor. This is either when fading in\n    // the line in case of an offset line (v_width2.t) or when fading out\n    // (v_width2.s)\n    float blur2 = (blur + 1.0 / u_device_pixel_ratio) * v_gamma_scale;\n    float alpha = clamp(min(dist - (v_width2.t - blur2), v_width2.s - dist) / blur2, 0.0, 1.0);\n\n    float x_a = mod(v_linesofar / pattern_size_a.x * aspect_a, 1.0);\n    float x_b = mod(v_linesofar / pattern_size_b.x * aspect_b, 1.0);\n\n    float y = 0.5 * v_normal.y + 0.5;\n\n    vec2 texel_size = 1.0 / u_texsize;\n\n    vec2 pos_a = mix(pattern_tl_a * texel_size - texel_size, pattern_br_a * texel_size + texel_size, vec2(x_a, y));\n    vec2 pos_b = mix(pattern_tl_b * texel_size - texel_size, pattern_br_b * texel_size + texel_size, vec2(x_b, y));\n\n    vec4 color = mix(texture2D(u_image, pos_a), texture2D(u_image, pos_b), u_fade);\n\n    gl_FragColor = color * alpha * opacity;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var linePatternFrag = '#ifdef GL_ES\nprecision highp float;\n#endif\nuniform lowp float u_device_pixel_ratio;uniform vec2 u_texsize;uniform float u_fade;uniform mediump vec3 u_scale;uniform sampler2D u_image;varying vec2 v_normal;varying vec2 v_width2;varying float v_linesofar;varying float v_gamma_scale;varying float v_width;\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileZoomRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;vec2 pattern_size_a=vec2(display_size_a.x*fromScale/tileZoomRatio,display_size_a.y);vec2 pattern_size_b=vec2(display_size_b.x*toScale/tileZoomRatio,display_size_b.y);float aspect_a=display_size_a.y/v_width;float aspect_b=display_size_b.y/v_width;float dist=length(v_normal)*v_width2.s;float blur2=(blur+1.0/u_device_pixel_ratio)*v_gamma_scale;float alpha=clamp(min(dist-(v_width2.t-blur2),v_width2.s-dist)/blur2,0.0,1.0);float x_a=mod(v_linesofar/pattern_size_a.x*aspect_a,1.0);float x_b=mod(v_linesofar/pattern_size_b.x*aspect_b,1.0);float y=0.5*v_normal.y+0.5;vec2 texel_size=1.0/u_texsize;vec2 pos_a=mix(pattern_tl_a*texel_size-texel_size,pattern_br_a*texel_size+texel_size,vec2(x_a,y));vec2 pos_b=mix(pattern_tl_b*texel_size-texel_size,pattern_br_b*texel_size+texel_size,vec2(x_b,y));vec4 color=mix(texture2D(u_image,pos_a),texture2D(u_image,pos_b),u_fade);gl_FragColor=color*alpha*opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var linePatternVert = '// floor(127 / 2) == 63.0\n// the maximum allowed miter limit is 2.0 at the moment. the extrude normal is\n// stored in a byte (-128..127). we scale regular normals up to length 63, but\n// there are also "special" normals that have a bigger length (of up to 126 in\n// this case).\n// #define scale 63.0\n#define scale 0.015873016\n\n// We scale the distance before adding it to the buffers so that we can store\n// long distances for long segments. Use this value to unscale the distance.\n#define LINE_DISTANCE_SCALE 2.0\n\nattribute vec2 a_pos_normal;\nattribute vec4 a_data;\n\nuniform mat4 u_matrix;\nuniform vec2 u_units_to_pixels;\nuniform mediump float u_ratio;\nuniform lowp float u_device_pixel_ratio;\n\nvarying vec2 v_normal;\nvarying vec2 v_width2;\nvarying float v_linesofar;\nvarying float v_gamma_scale;\nvarying float v_width;\n\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define mediump float width\n#pragma mapbox: define lowp float floorwidth\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\n\nvoid main() {\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize lowp float offset\n    #pragma mapbox: initialize mediump float gapwidth\n    #pragma mapbox: initialize mediump float width\n    #pragma mapbox: initialize lowp float floorwidth\n    #pragma mapbox: initialize mediump vec4 pattern_from\n    #pragma mapbox: initialize mediump vec4 pattern_to\n    #pragma mapbox: initialize lowp float pixel_ratio_from\n    #pragma mapbox: initialize lowp float pixel_ratio_to\n\n    // the distance over which the line edge fades out.\n    // Retina devices need a smaller distance to avoid aliasing.\n    float ANTIALIASING = 1.0 / u_device_pixel_ratio / 2.0;\n\n    vec2 a_extrude = a_data.xy - 128.0;\n    float a_direction = mod(a_data.z, 4.0) - 1.0;\n    float a_linesofar = (floor(a_data.z / 4.0) + a_data.w * 64.0) * LINE_DISTANCE_SCALE;\n    // float tileRatio = u_scale.x;\n    vec2 pos = floor(a_pos_normal * 0.5);\n\n    // x is 1 if it\'s a round cap, 0 otherwise\n    // y is 1 if the normal points up, and -1 if it points down\n    // We store these in the least significant bit of a_pos_normal\n    mediump vec2 normal = a_pos_normal - 2.0 * pos;\n    normal.y = normal.y * 2.0 - 1.0;\n    v_normal = normal;\n\n    // these transformations used to be applied in the JS and native code bases.\n    // moved them into the shader for clarity and simplicity.\n    gapwidth = gapwidth / 2.0;\n    float halfwidth = width / 2.0;\n    offset = -1.0 * offset;\n\n    float inset = gapwidth + (gapwidth > 0.0 ? ANTIALIASING : 0.0);\n    float outset = gapwidth + halfwidth * (gapwidth > 0.0 ? 2.0 : 1.0) + (halfwidth == 0.0 ? 0.0 : ANTIALIASING);\n\n    // Scale the extrusion vector down to a normal and then up by the line width\n    // of this vertex.\n    mediump vec2 dist = outset * a_extrude * scale;\n\n    // Calculate the offset when drawing a line that is to the side of the actual line.\n    // We do this by creating a vector that points towards the extrude, but rotate\n    // it when we\'re drawing round end points (a_direction = -1 or 1) since their\n    // extrude vector points in another direction.\n    mediump float u = 0.5 * a_direction;\n    mediump float t = 1.0 - abs(u);\n    mediump vec2 offset2 = offset * a_extrude * scale * normal.y * mat2(t, -u, u, t);\n\n    vec4 projected_extrude = u_matrix * vec4(dist / u_ratio, 0.0, 0.0);\n    gl_Position = u_matrix * vec4(pos + offset2 / u_ratio, 0.0, 1.0) + projected_extrude;\n\n    // calculate how much the perspective view squishes or stretches the extrude\n    #ifdef TERRAIN3D\n        v_gamma_scale = 1.0; // not needed, because this is done automatically via the mesh\n    #else\n        float extrude_length_without_perspective = length(dist);\n        float extrude_length_with_perspective = length(projected_extrude.xy / gl_Position.w * u_units_to_pixels);\n        v_gamma_scale = extrude_length_without_perspective / extrude_length_with_perspective;\n    #endif\n\n    v_linesofar = a_linesofar;\n    v_width2 = vec2(outset, inset);\n    v_width = floorwidth;\n}\n';
+var linePatternVert = '\n#define scale 0.015873016\n#define LINE_DISTANCE_SCALE 2.0\nattribute vec2 a_pos_normal;attribute vec4 a_data;uniform mat4 u_matrix;uniform vec2 u_units_to_pixels;uniform mediump float u_ratio;uniform lowp float u_device_pixel_ratio;varying vec2 v_normal;varying vec2 v_width2;varying float v_linesofar;varying float v_gamma_scale;varying float v_width;\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define mediump float width\n#pragma mapbox: define lowp float floorwidth\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float offset\n#pragma mapbox: initialize mediump float gapwidth\n#pragma mapbox: initialize mediump float width\n#pragma mapbox: initialize lowp float floorwidth\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nfloat ANTIALIASING=1.0/u_device_pixel_ratio/2.0;vec2 a_extrude=a_data.xy-128.0;float a_direction=mod(a_data.z,4.0)-1.0;float a_linesofar=(floor(a_data.z/4.0)+a_data.w*64.0)*LINE_DISTANCE_SCALE;vec2 pos=floor(a_pos_normal*0.5);mediump vec2 normal=a_pos_normal-2.0*pos;normal.y=normal.y*2.0-1.0;v_normal=normal;gapwidth=gapwidth/2.0;float halfwidth=width/2.0;offset=-1.0*offset;float inset=gapwidth+(gapwidth > 0.0 ? ANTIALIASING : 0.0);float outset=gapwidth+halfwidth*(gapwidth > 0.0 ? 2.0 : 1.0)+(halfwidth==0.0 ? 0.0 : ANTIALIASING);mediump vec2 dist=outset*a_extrude*scale;mediump float u=0.5*a_direction;mediump float t=1.0-abs(u);mediump vec2 offset2=offset*a_extrude*scale*normal.y*mat2(t,-u,u,t);vec4 projected_extrude=u_matrix*vec4(dist/u_ratio,0.0,0.0);gl_Position=u_matrix*vec4(pos+offset2/u_ratio,0.0,1.0)+projected_extrude;\n#ifdef TERRAIN3D\nv_gamma_scale=1.0;\n#else\nfloat extrude_length_without_perspective=length(dist);float extrude_length_with_perspective=length(projected_extrude.xy/gl_Position.w*u_units_to_pixels);v_gamma_scale=extrude_length_without_perspective/extrude_length_with_perspective;\n#endif\nv_linesofar=a_linesofar;v_width2=vec2(outset,inset);v_width=floorwidth;}';
 
-var lineSDFFrag = '\nuniform lowp float u_device_pixel_ratio;\nuniform sampler2D u_image;\nuniform float u_sdfgamma;\nuniform float u_mix;\n\nvarying vec2 v_normal;\nvarying vec2 v_width2;\nvarying vec2 v_tex_a;\nvarying vec2 v_tex_b;\nvarying float v_gamma_scale;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float width\n#pragma mapbox: define lowp float floorwidth\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump float width\n    #pragma mapbox: initialize lowp float floorwidth\n\n    // Calculate the distance of the pixel from the line in pixels.\n    float dist = length(v_normal) * v_width2.s;\n\n    // Calculate the antialiasing fade factor. This is either when fading in\n    // the line in case of an offset line (v_width2.t) or when fading out\n    // (v_width2.s)\n    float blur2 = (blur + 1.0 / u_device_pixel_ratio) * v_gamma_scale;\n    float alpha = clamp(min(dist - (v_width2.t - blur2), v_width2.s - dist) / blur2, 0.0, 1.0);\n\n    float sdfdist_a = texture2D(u_image, v_tex_a).a;\n    float sdfdist_b = texture2D(u_image, v_tex_b).a;\n    float sdfdist = mix(sdfdist_a, sdfdist_b, u_mix);\n    alpha *= smoothstep(0.5 - u_sdfgamma / floorwidth, 0.5 + u_sdfgamma / floorwidth, sdfdist);\n\n    gl_FragColor = color * (alpha * opacity);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var lineSDFFrag = 'uniform lowp float u_device_pixel_ratio;uniform sampler2D u_image;uniform float u_sdfgamma;uniform float u_mix;varying vec2 v_normal;varying vec2 v_width2;varying vec2 v_tex_a;varying vec2 v_tex_b;varying float v_gamma_scale;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float width\n#pragma mapbox: define lowp float floorwidth\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump float width\n#pragma mapbox: initialize lowp float floorwidth\nfloat dist=length(v_normal)*v_width2.s;float blur2=(blur+1.0/u_device_pixel_ratio)*v_gamma_scale;float alpha=clamp(min(dist-(v_width2.t-blur2),v_width2.s-dist)/blur2,0.0,1.0);float sdfdist_a=texture2D(u_image,v_tex_a).a;float sdfdist_b=texture2D(u_image,v_tex_b).a;float sdfdist=mix(sdfdist_a,sdfdist_b,u_mix);alpha*=smoothstep(0.5-u_sdfgamma/floorwidth,0.5+u_sdfgamma/floorwidth,sdfdist);gl_FragColor=color*(alpha*opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var lineSDFVert = '// floor(127 / 2) == 63.0\n// the maximum allowed miter limit is 2.0 at the moment. the extrude normal is\n// stored in a byte (-128..127). we scale regular normals up to length 63, but\n// there are also "special" normals that have a bigger length (of up to 126 in\n// this case).\n// #define scale 63.0\n#define scale 0.015873016\n\n// We scale the distance before adding it to the buffers so that we can store\n// long distances for long segments. Use this value to unscale the distance.\n#define LINE_DISTANCE_SCALE 2.0\n\nattribute vec2 a_pos_normal;\nattribute vec4 a_data;\n\nuniform mat4 u_matrix;\nuniform mediump float u_ratio;\nuniform lowp float u_device_pixel_ratio;\nuniform vec2 u_patternscale_a;\nuniform float u_tex_y_a;\nuniform vec2 u_patternscale_b;\nuniform float u_tex_y_b;\nuniform vec2 u_units_to_pixels;\n\nvarying vec2 v_normal;\nvarying vec2 v_width2;\nvarying vec2 v_tex_a;\nvarying vec2 v_tex_b;\nvarying float v_gamma_scale;\n\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float width\n#pragma mapbox: define lowp float floorwidth\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 color\n    #pragma mapbox: initialize lowp float blur\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize mediump float gapwidth\n    #pragma mapbox: initialize lowp float offset\n    #pragma mapbox: initialize mediump float width\n    #pragma mapbox: initialize lowp float floorwidth\n\n    // the distance over which the line edge fades out.\n    // Retina devices need a smaller distance to avoid aliasing.\n    float ANTIALIASING = 1.0 / u_device_pixel_ratio / 2.0;\n\n    vec2 a_extrude = a_data.xy - 128.0;\n    float a_direction = mod(a_data.z, 4.0) - 1.0;\n    float a_linesofar = (floor(a_data.z / 4.0) + a_data.w * 64.0) * LINE_DISTANCE_SCALE;\n\n    vec2 pos = floor(a_pos_normal * 0.5);\n\n    // x is 1 if it\'s a round cap, 0 otherwise\n    // y is 1 if the normal points up, and -1 if it points down\n    // We store these in the least significant bit of a_pos_normal\n    mediump vec2 normal = a_pos_normal - 2.0 * pos;\n    normal.y = normal.y * 2.0 - 1.0;\n    v_normal = normal;\n\n    // these transformations used to be applied in the JS and native code bases.\n    // moved them into the shader for clarity and simplicity.\n    gapwidth = gapwidth / 2.0;\n    float halfwidth = width / 2.0;\n    offset = -1.0 * offset;\n\n    float inset = gapwidth + (gapwidth > 0.0 ? ANTIALIASING : 0.0);\n    float outset = gapwidth + halfwidth * (gapwidth > 0.0 ? 2.0 : 1.0) + (halfwidth == 0.0 ? 0.0 : ANTIALIASING);\n\n    // Scale the extrusion vector down to a normal and then up by the line width\n    // of this vertex.\n    mediump vec2 dist =outset * a_extrude * scale;\n\n    // Calculate the offset when drawing a line that is to the side of the actual line.\n    // We do this by creating a vector that points towards the extrude, but rotate\n    // it when we\'re drawing round end points (a_direction = -1 or 1) since their\n    // extrude vector points in another direction.\n    mediump float u = 0.5 * a_direction;\n    mediump float t = 1.0 - abs(u);\n    mediump vec2 offset2 = offset * a_extrude * scale * normal.y * mat2(t, -u, u, t);\n\n    vec4 projected_extrude = u_matrix * vec4(dist / u_ratio, 0.0, 0.0);\n    gl_Position = u_matrix * vec4(pos + offset2 / u_ratio, 0.0, 1.0) + projected_extrude;\n\n    // calculate how much the perspective view squishes or stretches the extrude\n    #ifdef TERRAIN3D\n        v_gamma_scale = 1.0; // not needed, because this is done automatically via the mesh\n    #else\n        float extrude_length_without_perspective = length(dist);\n        float extrude_length_with_perspective = length(projected_extrude.xy / gl_Position.w * u_units_to_pixels);\n        v_gamma_scale = extrude_length_without_perspective / extrude_length_with_perspective;\n    #endif\n\n    v_tex_a = vec2(a_linesofar * u_patternscale_a.x / floorwidth, normal.y * u_patternscale_a.y + u_tex_y_a);\n    v_tex_b = vec2(a_linesofar * u_patternscale_b.x / floorwidth, normal.y * u_patternscale_b.y + u_tex_y_b);\n    v_width2 = vec2(outset, inset);\n}\n';
+var lineSDFVert = '\n#define scale 0.015873016\n#define LINE_DISTANCE_SCALE 2.0\nattribute vec2 a_pos_normal;attribute vec4 a_data;uniform mat4 u_matrix;uniform mediump float u_ratio;uniform lowp float u_device_pixel_ratio;uniform vec2 u_patternscale_a;uniform float u_tex_y_a;uniform vec2 u_patternscale_b;uniform float u_tex_y_b;uniform vec2 u_units_to_pixels;varying vec2 v_normal;varying vec2 v_width2;varying vec2 v_tex_a;varying vec2 v_tex_b;varying float v_gamma_scale;\n#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float blur\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define mediump float gapwidth\n#pragma mapbox: define lowp float offset\n#pragma mapbox: define mediump float width\n#pragma mapbox: define lowp float floorwidth\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float blur\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize mediump float gapwidth\n#pragma mapbox: initialize lowp float offset\n#pragma mapbox: initialize mediump float width\n#pragma mapbox: initialize lowp float floorwidth\nfloat ANTIALIASING=1.0/u_device_pixel_ratio/2.0;vec2 a_extrude=a_data.xy-128.0;float a_direction=mod(a_data.z,4.0)-1.0;float a_linesofar=(floor(a_data.z/4.0)+a_data.w*64.0)*LINE_DISTANCE_SCALE;vec2 pos=floor(a_pos_normal*0.5);mediump vec2 normal=a_pos_normal-2.0*pos;normal.y=normal.y*2.0-1.0;v_normal=normal;gapwidth=gapwidth/2.0;float halfwidth=width/2.0;offset=-1.0*offset;float inset=gapwidth+(gapwidth > 0.0 ? ANTIALIASING : 0.0);float outset=gapwidth+halfwidth*(gapwidth > 0.0 ? 2.0 : 1.0)+(halfwidth==0.0 ? 0.0 : ANTIALIASING);mediump vec2 dist=outset*a_extrude*scale;mediump float u=0.5*a_direction;mediump float t=1.0-abs(u);mediump vec2 offset2=offset*a_extrude*scale*normal.y*mat2(t,-u,u,t);vec4 projected_extrude=u_matrix*vec4(dist/u_ratio,0.0,0.0);gl_Position=u_matrix*vec4(pos+offset2/u_ratio,0.0,1.0)+projected_extrude;\n#ifdef TERRAIN3D\nv_gamma_scale=1.0;\n#else\nfloat extrude_length_without_perspective=length(dist);float extrude_length_with_perspective=length(projected_extrude.xy/gl_Position.w*u_units_to_pixels);v_gamma_scale=extrude_length_without_perspective/extrude_length_with_perspective;\n#endif\nv_tex_a=vec2(a_linesofar*u_patternscale_a.x/floorwidth,normal.y*u_patternscale_a.y+u_tex_y_a);v_tex_b=vec2(a_linesofar*u_patternscale_b.x/floorwidth,normal.y*u_patternscale_b.y+u_tex_y_b);v_width2=vec2(outset,inset);}';
 
-var rasterFrag = 'uniform float u_fade_t;\nuniform float u_opacity;\nuniform sampler2D u_image0;\nuniform sampler2D u_image1;\nvarying vec2 v_pos0;\nvarying vec2 v_pos1;\n\nuniform float u_brightness_low;\nuniform float u_brightness_high;\n\nuniform float u_saturation_factor;\nuniform float u_contrast_factor;\nuniform vec3 u_spin_weights;\n\nvoid main() {\n\n    // read and cross-fade colors from the main and parent tiles\n    vec4 color0 = texture2D(u_image0, v_pos0);\n    vec4 color1 = texture2D(u_image1, v_pos1);\n    if (color0.a > 0.0) {\n        color0.rgb = color0.rgb / color0.a;\n    }\n    if (color1.a > 0.0) {\n        color1.rgb = color1.rgb / color1.a;\n    }\n    vec4 color = mix(color0, color1, u_fade_t);\n    color.a *= u_opacity;\n    vec3 rgb = color.rgb;\n\n    // spin\n    rgb = vec3(\n        dot(rgb, u_spin_weights.xyz),\n        dot(rgb, u_spin_weights.zxy),\n        dot(rgb, u_spin_weights.yzx));\n\n    // saturation\n    float average = (color.r + color.g + color.b) / 3.0;\n    rgb += (average - rgb) * u_saturation_factor;\n\n    // contrast\n    rgb = (rgb - 0.5) * u_contrast_factor + 0.5;\n\n    // brightness\n    vec3 u_high_vec = vec3(u_brightness_low, u_brightness_low, u_brightness_low);\n    vec3 u_low_vec = vec3(u_brightness_high, u_brightness_high, u_brightness_high);\n\n    gl_FragColor = vec4(mix(u_high_vec, u_low_vec, rgb) * color.a, color.a);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var rasterFrag = 'uniform float u_fade_t;uniform float u_opacity;uniform sampler2D u_image0;uniform sampler2D u_image1;varying vec2 v_pos0;varying vec2 v_pos1;uniform float u_brightness_low;uniform float u_brightness_high;uniform float u_saturation_factor;uniform float u_contrast_factor;uniform vec3 u_spin_weights;void main() {vec4 color0=texture2D(u_image0,v_pos0);vec4 color1=texture2D(u_image1,v_pos1);if (color0.a > 0.0) {color0.rgb=color0.rgb/color0.a;}if (color1.a > 0.0) {color1.rgb=color1.rgb/color1.a;}vec4 color=mix(color0,color1,u_fade_t);color.a*=u_opacity;vec3 rgb=color.rgb;rgb=vec3(dot(rgb,u_spin_weights.xyz),dot(rgb,u_spin_weights.zxy),dot(rgb,u_spin_weights.yzx));float average=(color.r+color.g+color.b)/3.0;rgb+=(average-rgb)*u_saturation_factor;rgb=(rgb-0.5)*u_contrast_factor+0.5;vec3 u_high_vec=vec3(u_brightness_low,u_brightness_low,u_brightness_low);vec3 u_low_vec=vec3(u_brightness_high,u_brightness_high,u_brightness_high);gl_FragColor=vec4(mix(u_high_vec,u_low_vec,rgb)*color.a,color.a);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var rasterVert = 'uniform mat4 u_matrix;\nuniform vec2 u_tl_parent;\nuniform float u_scale_parent;\nuniform float u_buffer_scale;\n\nattribute vec2 a_pos;\nattribute vec2 a_texture_pos;\n\nvarying vec2 v_pos0;\nvarying vec2 v_pos1;\n\nvoid main() {\n    gl_Position = u_matrix * vec4(a_pos, 0, 1);\n    // We are using Int16 for texture position coordinates to give us enough precision for\n    // fractional coordinates. We use 8192 to scale the texture coordinates in the buffer\n    // as an arbitrarily high number to preserve adequate precision when rendering.\n    // This is also the same value as the EXTENT we are using for our tile buffer pos coordinates,\n    // so math for modifying either is consistent.\n    v_pos0 = (((a_texture_pos / 8192.0) - 0.5) / u_buffer_scale ) + 0.5;\n    v_pos1 = (v_pos0 * u_scale_parent) + u_tl_parent;\n}\n';
+var rasterVert = 'uniform mat4 u_matrix;uniform vec2 u_tl_parent;uniform float u_scale_parent;uniform float u_buffer_scale;attribute vec2 a_pos;attribute vec2 a_texture_pos;varying vec2 v_pos0;varying vec2 v_pos1;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);v_pos0=(((a_texture_pos/8192.0)-0.5)/u_buffer_scale )+0.5;v_pos1=(v_pos0*u_scale_parent)+u_tl_parent;}';
 
-var symbolIconFrag = 'uniform sampler2D u_texture;\n\nvarying vec2 v_tex;\nvarying float v_fade_opacity;\nvarying float v_visibility;\n\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize lowp float opacity\n\n    lowp float alpha = opacity * v_fade_opacity;\n    gl_FragColor = texture2D(u_texture, v_tex) * alpha;\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var symbolIconFrag = 'uniform sampler2D u_texture;varying vec2 v_tex;varying float v_fade_opacity;varying float v_visibility;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nlowp float alpha=opacity*v_fade_opacity;gl_FragColor=texture2D(u_texture,v_tex)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var symbolIconVert = 'const float PI = 3.141592653589793;\n\nattribute vec4 a_pos_offset;\nattribute vec4 a_data;\nattribute vec4 a_pixeloffset;\nattribute vec3 a_projected_pos;\nattribute float a_fade_opacity;\n\nuniform bool u_is_size_zoom_constant;\nuniform bool u_is_size_feature_constant;\nuniform highp float u_size_t; // used to interpolate between zoom stops when size is a composite function\nuniform highp float u_size; // used when size is both zoom and feature constant\nuniform highp float u_camera_to_center_distance;\nuniform highp float u_pitch;\nuniform bool u_rotate_symbol;\nuniform highp float u_aspect_ratio;\nuniform float u_fade_change;\nuniform mat4 u_matrix;\nuniform mat4 u_label_plane_matrix;\nuniform mat4 u_coord_matrix;\nuniform bool u_is_text;\nuniform bool u_pitch_with_map;\nuniform vec2 u_texsize;\n\nvarying vec2 v_tex;\nvarying float v_fade_opacity;\n\n#pragma mapbox: define lowp float opacity\n\nvoid main() {\n    #pragma mapbox: initialize lowp float opacity\n\n    vec2 a_pos = a_pos_offset.xy;\n    vec2 a_offset = a_pos_offset.zw;\n\n    vec2 a_tex = a_data.xy;\n    vec2 a_size = a_data.zw;\n\n    float a_size_min = floor(a_size[0] * 0.5);\n    vec2 a_pxoffset = a_pixeloffset.xy;\n    vec2 a_minFontScale = a_pixeloffset.zw / 256.0;\n\n    float ele = get_elevation(a_pos);\n    highp float segment_angle = -a_projected_pos[2];\n    float size;\n\n    if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {\n        size = mix(a_size_min, a_size[1], u_size_t) / 128.0;\n    } else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {\n        size = a_size_min / 128.0;\n    } else {\n        size = u_size;\n    }\n\n    vec4 projectedPoint = u_matrix * vec4(a_pos, ele, 1);\n    highp float camera_to_anchor_distance = projectedPoint.w;\n    // See comments in symbol_sdf.vertex\n    highp float distance_ratio = u_pitch_with_map ?\n        camera_to_anchor_distance / u_camera_to_center_distance :\n        u_camera_to_center_distance / camera_to_anchor_distance;\n    highp float perspective_ratio = clamp(\n            0.5 + 0.5 * distance_ratio,\n            0.0, // Prevents oversized near-field symbols in pitched/overzoomed tiles\n            4.0);\n\n    size *= perspective_ratio;\n\n    float fontScale = u_is_text ? size / 24.0 : size;\n\n    highp float symbol_rotation = 0.0;\n    if (u_rotate_symbol) {\n        // See comments in symbol_sdf.vertex\n        vec4 offsetProjectedPoint = u_matrix * vec4(a_pos + vec2(1, 0), ele, 1);\n\n        vec2 a = projectedPoint.xy / projectedPoint.w;\n        vec2 b = offsetProjectedPoint.xy / offsetProjectedPoint.w;\n\n        symbol_rotation = atan((b.y - a.y) / u_aspect_ratio, b.x - a.x);\n    }\n\n    highp float angle_sin = sin(segment_angle + symbol_rotation);\n    highp float angle_cos = cos(segment_angle + symbol_rotation);\n    mat2 rotation_matrix = mat2(angle_cos, -1.0 * angle_sin, angle_sin, angle_cos);\n\n    vec4 projected_pos = u_label_plane_matrix * vec4(a_projected_pos.xy, ele, 1.0);\n    float z = float(u_pitch_with_map) * projected_pos.z / projected_pos.w;\n    gl_Position = u_coord_matrix * vec4(projected_pos.xy / projected_pos.w + rotation_matrix * (a_offset / 32.0 * max(a_minFontScale, fontScale) + a_pxoffset / 16.0), z, 1.0);\n\n    v_tex = a_tex / u_texsize;\n    vec2 fade_opacity = unpack_opacity(a_fade_opacity);\n    float fade_change = fade_opacity[1] > 0.5 ? u_fade_change : -u_fade_change;\n    float visibility = calculate_visibility(projectedPoint);\n    v_fade_opacity = max(0.0, min(visibility, fade_opacity[0] + fade_change));\n}\n';
+var symbolIconVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec4 a_pixeloffset;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform highp float u_camera_to_center_distance;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform float u_fade_change;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform vec2 u_texsize;varying vec2 v_tex;varying float v_fade_opacity;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);vec2 a_pxoffset=a_pixeloffset.xy;vec2 a_minFontScale=a_pixeloffset.zw/256.0;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=u_is_text ? size/24.0 : size;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*max(a_minFontScale,fontScale)+a_pxoffset/16.0),z,1.0);v_tex=a_tex/u_texsize;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float visibility=calculate_visibility(projectedPoint);v_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));}';
 
-var symbolSDFFrag = '#define SDF_PX 8.0\n\nuniform bool u_is_halo;\nuniform sampler2D u_texture;\nuniform highp float u_gamma_scale;\nuniform lowp float u_device_pixel_ratio;\nuniform bool u_is_text;\n\nvarying vec2 v_data0;\nvarying vec3 v_data1;\nvarying float v_visibility;\n\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 fill_color\n    #pragma mapbox: initialize highp vec4 halo_color\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize lowp float halo_width\n    #pragma mapbox: initialize lowp float halo_blur\n\n    float EDGE_GAMMA = 0.105 / u_device_pixel_ratio;\n\n    vec2 tex = v_data0.xy;\n    float gamma_scale = v_data1.x;\n    float size = v_data1.y;\n    float fade_opacity = v_data1[2];\n\n    float fontScale = u_is_text ? size / 24.0 : size;\n\n    lowp vec4 color = fill_color;\n    highp float gamma = EDGE_GAMMA / (fontScale * u_gamma_scale);\n    lowp float buff = (256.0 - 64.0) / 256.0;\n    if (u_is_halo) {\n        color = halo_color;\n        gamma = (halo_blur * 1.19 / SDF_PX + EDGE_GAMMA) / (fontScale * u_gamma_scale);\n        buff = (6.0 - halo_width / fontScale) / SDF_PX;\n    }\n\n    lowp float dist = texture2D(u_texture, tex).a;\n    highp float gamma_scaled = gamma * gamma_scale;\n    highp float alpha = smoothstep(buff - gamma_scaled, buff + gamma_scaled, dist);\n\n    gl_FragColor = color * (alpha * opacity * fade_opacity);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var symbolSDFFrag = '#define SDF_PX 8.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;uniform bool u_is_text;varying vec2 v_data0;varying vec3 v_data1;varying float v_visibility;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat EDGE_GAMMA=0.105/u_device_pixel_ratio;vec2 tex=v_data0.xy;float gamma_scale=v_data1.x;float size=v_data1.y;float fade_opacity=v_data1[2];float fontScale=u_is_text ? size/24.0 : size;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var symbolSDFVert = 'const float PI = 3.141592653589793;\n\nattribute vec4 a_pos_offset;\nattribute vec4 a_data;\nattribute vec4 a_pixeloffset;\nattribute vec3 a_projected_pos;\nattribute float a_fade_opacity;\n\n// contents of a_size vary based on the type of property value\n// used for {text,icon}-size.\n// For constants, a_size is disabled.\n// For source functions, we bind only one value per vertex: the value of {text,icon}-size evaluated for the current feature.\n// For composite functions:\n// [ text-size(lowerZoomStop, feature),\n//   text-size(upperZoomStop, feature) ]\nuniform bool u_is_size_zoom_constant;\nuniform bool u_is_size_feature_constant;\nuniform highp float u_size_t; // used to interpolate between zoom stops when size is a composite function\nuniform highp float u_size; // used when size is both zoom and feature constant\nuniform mat4 u_matrix;\nuniform mat4 u_label_plane_matrix;\nuniform mat4 u_coord_matrix;\nuniform bool u_is_text;\nuniform bool u_pitch_with_map;\nuniform highp float u_pitch;\nuniform bool u_rotate_symbol;\nuniform highp float u_aspect_ratio;\nuniform highp float u_camera_to_center_distance;\nuniform float u_fade_change;\nuniform vec2 u_texsize;\n\nvarying vec2 v_data0;\nvarying vec3 v_data1;\n\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 fill_color\n    #pragma mapbox: initialize highp vec4 halo_color\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize lowp float halo_width\n    #pragma mapbox: initialize lowp float halo_blur\n\n    vec2 a_pos = a_pos_offset.xy;\n    vec2 a_offset = a_pos_offset.zw;\n\n    vec2 a_tex = a_data.xy;\n    vec2 a_size = a_data.zw;\n\n    float a_size_min = floor(a_size[0] * 0.5);\n    vec2 a_pxoffset = a_pixeloffset.xy;\n\n    float ele = get_elevation(a_pos);\n    highp float segment_angle = -a_projected_pos[2];\n    float size;\n\n    if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {\n        size = mix(a_size_min, a_size[1], u_size_t) / 128.0;\n    } else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {\n        size = a_size_min / 128.0;\n    } else {\n        size = u_size;\n    }\n\n    vec4 projectedPoint = u_matrix * vec4(a_pos, ele, 1);\n    highp float camera_to_anchor_distance = projectedPoint.w;\n    // If the label is pitched with the map, layout is done in pitched space,\n    // which makes labels in the distance smaller relative to viewport space.\n    // We counteract part of that effect by multiplying by the perspective ratio.\n    // If the label isn\'t pitched with the map, we do layout in viewport space,\n    // which makes labels in the distance larger relative to the features around\n    // them. We counteract part of that effect by dividing by the perspective ratio.\n    highp float distance_ratio = u_pitch_with_map ?\n        camera_to_anchor_distance / u_camera_to_center_distance :\n        u_camera_to_center_distance / camera_to_anchor_distance;\n    highp float perspective_ratio = clamp(\n        0.5 + 0.5 * distance_ratio,\n        0.0, // Prevents oversized near-field symbols in pitched/overzoomed tiles\n        4.0);\n\n    size *= perspective_ratio;\n\n    float fontScale = u_is_text ? size / 24.0 : size;\n\n    highp float symbol_rotation = 0.0;\n    if (u_rotate_symbol) {\n        // Point labels with \'rotation-alignment: map\' are horizontal with respect to tile units\n        // To figure out that angle in projected space, we draw a short horizontal line in tile\n        // space, project it, and measure its angle in projected space.\n        vec4 offsetProjectedPoint = u_matrix * vec4(a_pos + vec2(1, 0), ele, 1);\n\n        vec2 a = projectedPoint.xy / projectedPoint.w;\n        vec2 b = offsetProjectedPoint.xy / offsetProjectedPoint.w;\n\n        symbol_rotation = atan((b.y - a.y) / u_aspect_ratio, b.x - a.x);\n    }\n\n    highp float angle_sin = sin(segment_angle + symbol_rotation);\n    highp float angle_cos = cos(segment_angle + symbol_rotation);\n    mat2 rotation_matrix = mat2(angle_cos, -1.0 * angle_sin, angle_sin, angle_cos);\n\n    vec4 projected_pos = u_label_plane_matrix * vec4(a_projected_pos.xy, ele, 1.0);\n    float z = float(u_pitch_with_map) * projected_pos.z / projected_pos.w;\n    gl_Position = u_coord_matrix * vec4(projected_pos.xy / projected_pos.w + rotation_matrix * (a_offset / 32.0 * fontScale + a_pxoffset), z, 1.0);\n    float gamma_scale = gl_Position.w;\n\n    vec2 fade_opacity = unpack_opacity(a_fade_opacity);\n    float visibility = calculate_visibility(projectedPoint);\n    float fade_change = fade_opacity[1] > 0.5 ? u_fade_change : -u_fade_change;\n    float interpolated_fade_opacity = max(0.0, min(visibility, fade_opacity[0] + fade_change));\n\n    v_data0 = a_tex / u_texsize;\n    v_data1 = vec3(gamma_scale, size, interpolated_fade_opacity);\n}\n';
+var symbolSDFVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec4 a_pixeloffset;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform highp float u_camera_to_center_distance;uniform float u_fade_change;uniform vec2 u_texsize;varying vec2 v_data0;varying vec3 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);vec2 a_pxoffset=a_pixeloffset.xy;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=u_is_text ? size/24.0 : size;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*fontScale+a_pxoffset),z,1.0);float gamma_scale=gl_Position.w;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float visibility=calculate_visibility(projectedPoint);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float interpolated_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));v_data0=a_tex/u_texsize;v_data1=vec3(gamma_scale,size,interpolated_fade_opacity);}';
 
-var symbolTextAndIconFrag = '#define SDF_PX 8.0\n\n#define SDF 1.0\n#define ICON 0.0\n\nuniform bool u_is_halo;\nuniform sampler2D u_texture;\nuniform sampler2D u_texture_icon;\nuniform highp float u_gamma_scale;\nuniform lowp float u_device_pixel_ratio;\n\nvarying vec4 v_data0;\nvarying vec4 v_data1;\nvarying float v_visibility;\n\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 fill_color\n    #pragma mapbox: initialize highp vec4 halo_color\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize lowp float halo_width\n    #pragma mapbox: initialize lowp float halo_blur\n\n    float fade_opacity = v_data1[2];\n\n    if (v_data1.w == ICON) {\n        vec2 tex_icon = v_data0.zw;\n        lowp float alpha = opacity * fade_opacity;\n        gl_FragColor = texture2D(u_texture_icon, tex_icon) * alpha;\n\n#ifdef OVERDRAW_INSPECTOR\n        gl_FragColor = vec4(1.0);\n#endif\n        return;\n    }\n\n    vec2 tex = v_data0.xy;\n\n    float EDGE_GAMMA = 0.105 / u_device_pixel_ratio;\n\n    float gamma_scale = v_data1.x;\n    float size = v_data1.y;\n\n    float fontScale = size / 24.0;\n\n    lowp vec4 color = fill_color;\n    highp float gamma = EDGE_GAMMA / (fontScale * u_gamma_scale);\n    lowp float buff = (256.0 - 64.0) / 256.0;\n    if (u_is_halo) {\n        color = halo_color;\n        gamma = (halo_blur * 1.19 / SDF_PX + EDGE_GAMMA) / (fontScale * u_gamma_scale);\n        buff = (6.0 - halo_width / fontScale) / SDF_PX;\n    }\n\n    lowp float dist = texture2D(u_texture, tex).a;\n    highp float gamma_scaled = gamma * gamma_scale;\n    highp float alpha = smoothstep(buff - gamma_scaled, buff + gamma_scaled, dist);\n\n    gl_FragColor = color * (alpha * opacity * fade_opacity);\n\n#ifdef OVERDRAW_INSPECTOR\n    gl_FragColor = vec4(1.0);\n#endif\n}\n';
+var symbolTextAndIconFrag = '#define SDF_PX 8.0\n#define SDF 1.0\n#define ICON 0.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform sampler2D u_texture_icon;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;varying vec4 v_data0;varying vec4 v_data1;varying float v_visibility;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat fade_opacity=v_data1[2];if (v_data1.w==ICON) {vec2 tex_icon=v_data0.zw;lowp float alpha=opacity*fade_opacity;gl_FragColor=texture2D(u_texture_icon,tex_icon)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\nreturn;}vec2 tex=v_data0.xy;float EDGE_GAMMA=0.105/u_device_pixel_ratio;float gamma_scale=v_data1.x;float size=v_data1.y;float fontScale=size/24.0;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var symbolTextAndIconVert = 'const float PI = 3.141592653589793;\n\nattribute vec4 a_pos_offset;\nattribute vec4 a_data;\nattribute vec3 a_projected_pos;\nattribute float a_fade_opacity;\n\n// contents of a_size vary based on the type of property value\n// used for {text,icon}-size.\n// For constants, a_size is disabled.\n// For source functions, we bind only one value per vertex: the value of {text,icon}-size evaluated for the current feature.\n// For composite functions:\n// [ text-size(lowerZoomStop, feature),\n//   text-size(upperZoomStop, feature) ]\nuniform bool u_is_size_zoom_constant;\nuniform bool u_is_size_feature_constant;\nuniform highp float u_size_t; // used to interpolate between zoom stops when size is a composite function\nuniform highp float u_size; // used when size is both zoom and feature constant\nuniform mat4 u_matrix;\nuniform mat4 u_label_plane_matrix;\nuniform mat4 u_coord_matrix;\nuniform bool u_is_text;\nuniform bool u_pitch_with_map;\nuniform highp float u_pitch;\nuniform bool u_rotate_symbol;\nuniform highp float u_aspect_ratio;\nuniform highp float u_camera_to_center_distance;\nuniform float u_fade_change;\nuniform vec2 u_texsize;\nuniform vec2 u_texsize_icon;\n\nvarying vec4 v_data0;\nvarying vec4 v_data1;\n\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\n\nvoid main() {\n    #pragma mapbox: initialize highp vec4 fill_color\n    #pragma mapbox: initialize highp vec4 halo_color\n    #pragma mapbox: initialize lowp float opacity\n    #pragma mapbox: initialize lowp float halo_width\n    #pragma mapbox: initialize lowp float halo_blur\n\n    vec2 a_pos = a_pos_offset.xy;\n    vec2 a_offset = a_pos_offset.zw;\n\n    vec2 a_tex = a_data.xy;\n    vec2 a_size = a_data.zw;\n\n    float a_size_min = floor(a_size[0] * 0.5);\n    float is_sdf = a_size[0] - 2.0 * a_size_min;\n\n    float ele = get_elevation(a_pos);\n    highp float segment_angle = -a_projected_pos[2];\n    float size;\n\n    if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {\n        size = mix(a_size_min, a_size[1], u_size_t) / 128.0;\n    } else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {\n        size = a_size_min / 128.0;\n    } else {\n        size = u_size;\n    }\n\n    vec4 projectedPoint = u_matrix * vec4(a_pos, ele, 1);\n    highp float camera_to_anchor_distance = projectedPoint.w;\n    // If the label is pitched with the map, layout is done in pitched space,\n    // which makes labels in the distance smaller relative to viewport space.\n    // We counteract part of that effect by multiplying by the perspective ratio.\n    // If the label isn\'t pitched with the map, we do layout in viewport space,\n    // which makes labels in the distance larger relative to the features around\n    // them. We counteract part of that effect by dividing by the perspective ratio.\n    highp float distance_ratio = u_pitch_with_map ?\n        camera_to_anchor_distance / u_camera_to_center_distance :\n        u_camera_to_center_distance / camera_to_anchor_distance;\n    highp float perspective_ratio = clamp(\n        0.5 + 0.5 * distance_ratio,\n        0.0, // Prevents oversized near-field symbols in pitched/overzoomed tiles\n        4.0);\n\n    size *= perspective_ratio;\n\n    float fontScale = size / 24.0;\n\n    highp float symbol_rotation = 0.0;\n    if (u_rotate_symbol) {\n        // Point labels with \'rotation-alignment: map\' are horizontal with respect to tile units\n        // To figure out that angle in projected space, we draw a short horizontal line in tile\n        // space, project it, and measure its angle in projected space.\n        vec4 offsetProjectedPoint = u_matrix * vec4(a_pos + vec2(1, 0), ele, 1);\n\n        vec2 a = projectedPoint.xy / projectedPoint.w;\n        vec2 b = offsetProjectedPoint.xy / offsetProjectedPoint.w;\n\n        symbol_rotation = atan((b.y - a.y) / u_aspect_ratio, b.x - a.x);\n    }\n\n    highp float angle_sin = sin(segment_angle + symbol_rotation);\n    highp float angle_cos = cos(segment_angle + symbol_rotation);\n    mat2 rotation_matrix = mat2(angle_cos, -1.0 * angle_sin, angle_sin, angle_cos);\n\n    vec4 projected_pos = u_label_plane_matrix * vec4(a_projected_pos.xy, ele, 1.0);\n    float z = float(u_pitch_with_map) * projected_pos.z / projected_pos.w;\n    gl_Position = u_coord_matrix * vec4(projected_pos.xy / projected_pos.w + rotation_matrix * (a_offset / 32.0 * fontScale), z, 1.0);\n    float gamma_scale = gl_Position.w;\n\n    vec2 fade_opacity = unpack_opacity(a_fade_opacity);\n    float visibility = calculate_visibility(projectedPoint);\n    float fade_change = fade_opacity[1] > 0.5 ? u_fade_change : -u_fade_change;\n    float interpolated_fade_opacity = max(0.0, min(visibility, fade_opacity[0] + fade_change));\n\n    v_data0.xy = a_tex / u_texsize;\n    v_data0.zw = a_tex / u_texsize_icon;\n    v_data1 = vec4(gamma_scale, size, interpolated_fade_opacity, is_sdf);\n}\n';
+var symbolTextAndIconVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform highp float u_camera_to_center_distance;uniform float u_fade_change;uniform vec2 u_texsize;uniform vec2 u_texsize_icon;varying vec4 v_data0;varying vec4 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);float is_sdf=a_size[0]-2.0*a_size_min;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=size/24.0;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*fontScale),z,1.0);float gamma_scale=gl_Position.w;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float visibility=calculate_visibility(projectedPoint);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float interpolated_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));v_data0.xy=a_tex/u_texsize;v_data0.zw=a_tex/u_texsize_icon;v_data1=vec4(gamma_scale,size,interpolated_fade_opacity,is_sdf);}';
 
-var terrainDepthFrag = 'varying float v_depth;\n\n// methods for pack/unpack depth value to texture rgba\n// https://stackoverflow.com/questions/34963366/encode-floating-point-data-in-a-rgba-texture\nconst highp vec4 bitSh = vec4(256. * 256. * 256., 256. * 256., 256., 1.);\nconst highp vec4 bitMsk = vec4(0.,vec3(1./256.0));\nhighp vec4 pack(highp float value) {\n    highp vec4 comp = fract(value * bitSh);\n    comp -= comp.xxyz * bitMsk;\n    return comp;\n}\n\nvoid main() {\n    gl_FragColor = pack(v_depth);\n}\n';
+var terrainDepthFrag = 'varying float v_depth;const highp vec4 bitSh=vec4(256.*256.*256.,256.*256.,256.,1.);const highp vec4 bitMsk=vec4(0.,vec3(1./256.0));highp vec4 pack(highp float value) {highp vec4 comp=fract(value*bitSh);comp-=comp.xxyz*bitMsk;return comp;}void main() {gl_FragColor=pack(v_depth);}';
 
-var terrainCoordsFrag = 'precision mediump float;\n\nuniform sampler2D u_texture;\nuniform float u_terrain_coords_id;\n\nvarying vec2 v_texture_pos;\n\nvoid main() {\n   vec4 rgba = texture2D(u_texture, v_texture_pos);\n   gl_FragColor = vec4(rgba.r, rgba.g, rgba.b, u_terrain_coords_id);\n}\n';
+var terrainCoordsFrag = 'precision mediump float;uniform sampler2D u_texture;uniform float u_terrain_coords_id;varying vec2 v_texture_pos;void main() {vec4 rgba=texture2D(u_texture,v_texture_pos);gl_FragColor=vec4(rgba.r,rgba.g,rgba.b,u_terrain_coords_id);}';
 
-var terrainFrag = 'uniform sampler2D u_texture;\n\nvarying vec2 v_texture_pos;\n\nvoid main() {\n    gl_FragColor = texture2D(u_texture, v_texture_pos);\n}\n';
+var terrainFrag = 'uniform sampler2D u_texture;varying vec2 v_texture_pos;void main() {gl_FragColor=texture2D(u_texture,v_texture_pos);}';
 
-var terrainVert = 'attribute vec2 a_pos;\n\nuniform mat4 u_matrix;\n\nvarying vec2 v_texture_pos;\nvarying float v_depth;\n\nvoid main() {\n    v_texture_pos = a_pos / 8192.0; // 8192.0 is the hardcoded vector-tiles coordinates resolution\n    gl_Position = u_matrix * vec4(a_pos, get_elevation(a_pos), 1.0);\n    v_depth = gl_Position.z / gl_Position.w;\n}\n';
+var terrainVert = 'attribute vec2 a_pos;uniform mat4 u_matrix;varying vec2 v_texture_pos;varying float v_depth;void main() {v_texture_pos=a_pos/8192.0;gl_Position=u_matrix*vec4(a_pos,get_elevation(a_pos),1.0);v_depth=gl_Position.z/gl_Position.w;}';
 
 var shaders = {
     prelude: compile(preludeFrag, preludeVert),
@@ -30217,15 +30272,6 @@ uniform ${ precision } ${ type } u_${ name };
 }
 
 class VertexArrayObject {
-    constructor() {
-        this.boundProgram = null;
-        this.boundLayoutVertexBuffer = null;
-        this.boundPaintVertexBuffers = [];
-        this.boundIndexBuffer = null;
-        this.boundVertexOffset = null;
-        this.boundDynamicVertexBuffer = null;
-        this.vao = null;
-    }
     bind(context, program, layoutVertexBuffer, paintVertexBuffers, indexBuffer, vertexOffset, dynamicVertexBuffer, dynamicVertexBuffer2, dynamicVertexBuffer3) {
         this.context = context;
         let paintBuffersDiffer = this.boundPaintVertexBuffers.length !== paintVertexBuffers.length;
@@ -30293,9 +30339,9 @@ class VertexArrayObject {
         }
         layoutVertexBuffer.bind();
         layoutVertexBuffer.setVertexAttribPointers(gl, program, vertexOffset);
-        for (const vertexBuffer of paintVertexBuffers) {
-            vertexBuffer.bind();
-            vertexBuffer.setVertexAttribPointers(gl, program, vertexOffset);
+        for (const vertexBuffer1 of paintVertexBuffers) {
+            vertexBuffer1.bind();
+            vertexBuffer1.setVertexAttribPointers(gl, program, vertexOffset);
         }
         if (dynamicVertexBuffer) {
             dynamicVertexBuffer.bind();
@@ -30319,6 +30365,15 @@ class VertexArrayObject {
             this.context.extVertexArrayObject.deleteVertexArrayOES(this.vao);
             this.vao = null;
         }
+    }
+    constructor() {
+        this.boundProgram = null;
+        this.boundLayoutVertexBuffer = null;
+        this.boundPaintVertexBuffers = [];
+        this.boundIndexBuffer = null;
+        this.boundVertexOffset = null;
+        this.boundDynamicVertexBuffer = null;
+        this.vao = null;
     }
 }
 
@@ -30363,6 +30418,42 @@ function getTokenizedAttributesAndUniforms(array) {
     return result;
 }
 class Program {
+    draw(context, drawMode, depthMode, stencilMode, colorMode, cullFaceMode, uniformValues, terrain, layerID, layoutVertexBuffer, indexBuffer, segments, currentProperties, zoom, configuration, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3) {
+        const gl = context.gl;
+        if (this.failedToCreate)
+            return;
+        context.program.set(this.program);
+        context.setDepthMode(depthMode);
+        context.setStencilMode(stencilMode);
+        context.setColorMode(colorMode);
+        context.setCullFace(cullFaceMode);
+        if (terrain) {
+            context.activeTexture.set(gl.TEXTURE2);
+            gl.bindTexture(gl.TEXTURE_2D, terrain.depthTexture);
+            context.activeTexture.set(gl.TEXTURE3);
+            gl.bindTexture(gl.TEXTURE_2D, terrain.texture);
+            for (const name in this.terrainUniforms) {
+                this.terrainUniforms[name].set(terrain[name]);
+            }
+        }
+        for (const name in this.fixedUniforms) {
+            this.fixedUniforms[name].set(uniformValues[name]);
+        }
+        if (configuration) {
+            configuration.setUniforms(context, this.binderUniforms, currentProperties, { zoom: zoom });
+        }
+        const primitiveSize = {
+            [gl.LINES]: 2,
+            [gl.TRIANGLES]: 3,
+            [gl.LINE_STRIP]: 1
+        }[drawMode];
+        for (const segment of segments.get()) {
+            const vaos = segment.vaos || (segment.vaos = {});
+            const vao = vaos[layerID] || (vaos[layerID] = new VertexArrayObject());
+            vao.bind(context, this, layoutVertexBuffer, configuration ? configuration.getPaintVertexBuffers() : [], indexBuffer, segment.vertexOffset, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3);
+            gl.drawElements(drawMode, segment.primitiveLength * primitiveSize, gl.UNSIGNED_SHORT, segment.primitiveOffset * primitiveSize * 2);
+        }
+    }
     constructor(context, name, source, configuration, fixedUniforms, showOverdrawInspector, useTerrain) {
         const gl = context.gl;
         this.program = gl.createProgram();
@@ -30427,42 +30518,6 @@ class Program {
         this.fixedUniforms = fixedUniforms(context, uniformLocations);
         this.terrainUniforms = terrainPreludeUniforms(context, uniformLocations);
         this.binderUniforms = configuration ? configuration.getUniforms(context, uniformLocations) : [];
-    }
-    draw(context, drawMode, depthMode, stencilMode, colorMode, cullFaceMode, uniformValues, terrain, layerID, layoutVertexBuffer, indexBuffer, segments, currentProperties, zoom, configuration, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3) {
-        const gl = context.gl;
-        if (this.failedToCreate)
-            return;
-        context.program.set(this.program);
-        context.setDepthMode(depthMode);
-        context.setStencilMode(stencilMode);
-        context.setColorMode(colorMode);
-        context.setCullFace(cullFaceMode);
-        if (terrain) {
-            context.activeTexture.set(gl.TEXTURE2);
-            gl.bindTexture(gl.TEXTURE_2D, terrain.depthTexture);
-            context.activeTexture.set(gl.TEXTURE3);
-            gl.bindTexture(gl.TEXTURE_2D, terrain.texture);
-            for (const name in this.terrainUniforms) {
-                this.terrainUniforms[name].set(terrain[name]);
-            }
-        }
-        for (const name in this.fixedUniforms) {
-            this.fixedUniforms[name].set(uniformValues[name]);
-        }
-        if (configuration) {
-            configuration.setUniforms(context, this.binderUniforms, currentProperties, { zoom: zoom });
-        }
-        const primitiveSize = {
-            [gl.LINES]: 2,
-            [gl.TRIANGLES]: 3,
-            [gl.LINE_STRIP]: 1
-        }[drawMode];
-        for (const segment of segments.get()) {
-            const vaos = segment.vaos || (segment.vaos = {});
-            const vao = vaos[layerID] || (vaos[layerID] = new VertexArrayObject());
-            vao.bind(context, this, layoutVertexBuffer, configuration ? configuration.getPaintVertexBuffers() : [], indexBuffer, segment.vertexOffset, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3);
-            gl.drawElements(drawMode, segment.primitiveLength * primitiveSize, gl.UNSIGNED_SHORT, segment.primitiveOffset * primitiveSize * 2);
-        }
     }
 }
 
@@ -31114,18 +31169,6 @@ const programUniforms = {
 };
 
 class IndexBuffer {
-    constructor(context, array, dynamicDraw) {
-        this.context = context;
-        const gl = context.gl;
-        this.buffer = gl.createBuffer();
-        this.dynamicDraw = Boolean(dynamicDraw);
-        this.context.unbindVAO();
-        context.bindElementBuffer.set(this.buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array.arrayBuffer, this.dynamicDraw ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
-        if (!this.dynamicDraw) {
-            delete array.arrayBuffer;
-        }
-    }
     bind() {
         this.context.bindElementBuffer.set(this.buffer);
     }
@@ -31142,6 +31185,18 @@ class IndexBuffer {
             delete this.buffer;
         }
     }
+    constructor(context, array, dynamicDraw) {
+        this.context = context;
+        const gl = context.gl;
+        this.buffer = gl.createBuffer();
+        this.dynamicDraw = Boolean(dynamicDraw);
+        this.context.unbindVAO();
+        context.bindElementBuffer.set(this.buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array.arrayBuffer, this.dynamicDraw ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+        if (!this.dynamicDraw) {
+            delete array.arrayBuffer;
+        }
+    }
 }
 
 const AttributeType = {
@@ -31154,20 +31209,6 @@ const AttributeType = {
     Float32: 'FLOAT'
 };
 class VertexBuffer {
-    constructor(context, array, attributes, dynamicDraw) {
-        this.length = array.length;
-        this.attributes = attributes;
-        this.itemSize = array.bytesPerElement;
-        this.dynamicDraw = dynamicDraw;
-        this.context = context;
-        const gl = context.gl;
-        this.buffer = gl.createBuffer();
-        context.bindVertexBuffer.set(this.buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, array.arrayBuffer, this.dynamicDraw ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
-        if (!this.dynamicDraw) {
-            delete array.arrayBuffer;
-        }
-    }
     bind() {
         this.context.bindVertexBuffer.set(this.buffer);
     }
@@ -31201,15 +31242,23 @@ class VertexBuffer {
             delete this.buffer;
         }
     }
+    constructor(context, array, attributes, dynamicDraw) {
+        this.length = array.length;
+        this.attributes = attributes;
+        this.itemSize = array.bytesPerElement;
+        this.dynamicDraw = dynamicDraw;
+        this.context = context;
+        const gl = context.gl;
+        this.buffer = gl.createBuffer();
+        context.bindVertexBuffer.set(this.buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, array.arrayBuffer, this.dynamicDraw ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+        if (!this.dynamicDraw) {
+            delete array.arrayBuffer;
+        }
+    }
 }
 
 class BaseValue {
-    constructor(context) {
-        this.gl = context.gl;
-        this.default = this.getDefault();
-        this.current = this.default;
-        this.dirty = false;
-    }
     get() {
         return this.current;
     }
@@ -31220,6 +31269,12 @@ class BaseValue {
     }
     setDefault() {
         this.set(this.default);
+    }
+    constructor(context) {
+        this.gl = context.gl;
+        this.default = this.getDefault();
+        this.current = this.default;
+        this.dirty = false;
     }
 }
 class ClearColor extends BaseValue {
@@ -31605,10 +31660,6 @@ class BindElementBuffer extends BaseValue {
     }
 }
 class BindVertexArrayOES extends BaseValue {
-    constructor(context) {
-        super(context);
-        this.vao = context.extVertexArrayObject;
-    }
     getDefault() {
         return null;
     }
@@ -31618,6 +31669,10 @@ class BindVertexArrayOES extends BaseValue {
         this.vao.bindVertexArrayOES(v);
         this.current = v;
         this.dirty = false;
+    }
+    constructor(context) {
+        super(context);
+        this.vao = context.extVertexArrayObject;
     }
 }
 class PixelStoreUnpack extends BaseValue {
@@ -31660,13 +31715,13 @@ class PixelStoreUnpackFlipY extends BaseValue {
     }
 }
 class FramebufferAttachment extends BaseValue {
+    getDefault() {
+        return null;
+    }
     constructor(context, parent) {
         super(context);
         this.context = context;
         this.parent = parent;
-    }
-    getDefault() {
-        return null;
     }
 }
 class ColorAttachment extends FramebufferAttachment {
@@ -31696,17 +31751,6 @@ class DepthAttachment extends FramebufferAttachment {
 }
 
 class Framebuffer {
-    constructor(context, width, height, hasDepth) {
-        this.context = context;
-        this.width = width;
-        this.height = height;
-        const gl = context.gl;
-        const fbo = this.framebuffer = gl.createFramebuffer();
-        this.colorAttachment = new ColorAttachment(context, fbo);
-        if (hasDepth) {
-            this.depthAttachment = new DepthAttachment(context, fbo);
-        }
-    }
     destroy() {
         const gl = this.context.gl;
         const texture = this.colorAttachment.get();
@@ -31718,6 +31762,17 @@ class Framebuffer {
                 gl.deleteRenderbuffer(renderbuffer);
         }
         gl.deleteFramebuffer(this.framebuffer);
+    }
+    constructor(context, width, height, hasDepth) {
+        this.context = context;
+        this.width = width;
+        this.height = height;
+        const gl = context.gl;
+        const fbo = this.framebuffer = gl.createFramebuffer();
+        this.colorAttachment = new ColorAttachment(context, fbo);
+        if (hasDepth) {
+            this.depthAttachment = new DepthAttachment(context, fbo);
+        }
     }
 }
 
@@ -31758,52 +31813,6 @@ ColorMode.alphaBlended = new ColorMode([
 ]);
 
 class Context {
-    constructor(gl) {
-        this.gl = gl;
-        this.extVertexArrayObject = this.gl.getExtension('OES_vertex_array_object');
-        this.clearColor = new ClearColor(this);
-        this.clearDepth = new ClearDepth(this);
-        this.clearStencil = new ClearStencil(this);
-        this.colorMask = new ColorMask(this);
-        this.depthMask = new DepthMask(this);
-        this.stencilMask = new StencilMask(this);
-        this.stencilFunc = new StencilFunc(this);
-        this.stencilOp = new StencilOp(this);
-        this.stencilTest = new StencilTest(this);
-        this.depthRange = new DepthRange(this);
-        this.depthTest = new DepthTest(this);
-        this.depthFunc = new DepthFunc(this);
-        this.blend = new Blend(this);
-        this.blendFunc = new BlendFunc(this);
-        this.blendColor = new BlendColor(this);
-        this.blendEquation = new BlendEquation(this);
-        this.cullFace = new CullFace(this);
-        this.cullFaceSide = new CullFaceSide(this);
-        this.frontFace = new FrontFace(this);
-        this.program = new ProgramValue(this);
-        this.activeTexture = new ActiveTextureUnit(this);
-        this.viewport = new Viewport(this);
-        this.bindFramebuffer = new BindFramebuffer(this);
-        this.bindRenderbuffer = new BindRenderbuffer(this);
-        this.bindTexture = new BindTexture(this);
-        this.bindVertexBuffer = new BindVertexBuffer(this);
-        this.bindElementBuffer = new BindElementBuffer(this);
-        this.bindVertexArrayOES = this.extVertexArrayObject && new BindVertexArrayOES(this);
-        this.pixelStoreUnpack = new PixelStoreUnpack(this);
-        this.pixelStoreUnpackPremultiplyAlpha = new PixelStoreUnpackPremultiplyAlpha(this);
-        this.pixelStoreUnpackFlipY = new PixelStoreUnpackFlipY(this);
-        this.extTextureFilterAnisotropic = gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('MOZ_EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
-        if (this.extTextureFilterAnisotropic) {
-            this.extTextureFilterAnisotropicMax = gl.getParameter(this.extTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
-        }
-        this.extTextureHalfFloat = gl.getExtension('OES_texture_half_float');
-        if (this.extTextureHalfFloat) {
-            gl.getExtension('OES_texture_half_float_linear');
-            this.extRenderToTextureHalfFloat = gl.getExtension('EXT_color_buffer_half_float');
-        }
-        this.extTimerQuery = gl.getExtension('EXT_disjoint_timer_query');
-        this.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    }
     setDefault() {
         this.unbindVAO();
         this.clearColor.setDefault();
@@ -31960,6 +31969,52 @@ class Context {
             this.bindVertexArrayOES.set(null);
         }
     }
+    constructor(gl) {
+        this.gl = gl;
+        this.extVertexArrayObject = this.gl.getExtension('OES_vertex_array_object');
+        this.clearColor = new ClearColor(this);
+        this.clearDepth = new ClearDepth(this);
+        this.clearStencil = new ClearStencil(this);
+        this.colorMask = new ColorMask(this);
+        this.depthMask = new DepthMask(this);
+        this.stencilMask = new StencilMask(this);
+        this.stencilFunc = new StencilFunc(this);
+        this.stencilOp = new StencilOp(this);
+        this.stencilTest = new StencilTest(this);
+        this.depthRange = new DepthRange(this);
+        this.depthTest = new DepthTest(this);
+        this.depthFunc = new DepthFunc(this);
+        this.blend = new Blend(this);
+        this.blendFunc = new BlendFunc(this);
+        this.blendColor = new BlendColor(this);
+        this.blendEquation = new BlendEquation(this);
+        this.cullFace = new CullFace(this);
+        this.cullFaceSide = new CullFaceSide(this);
+        this.frontFace = new FrontFace(this);
+        this.program = new ProgramValue(this);
+        this.activeTexture = new ActiveTextureUnit(this);
+        this.viewport = new Viewport(this);
+        this.bindFramebuffer = new BindFramebuffer(this);
+        this.bindRenderbuffer = new BindRenderbuffer(this);
+        this.bindTexture = new BindTexture(this);
+        this.bindVertexBuffer = new BindVertexBuffer(this);
+        this.bindElementBuffer = new BindElementBuffer(this);
+        this.bindVertexArrayOES = this.extVertexArrayObject && new BindVertexArrayOES(this);
+        this.pixelStoreUnpack = new PixelStoreUnpack(this);
+        this.pixelStoreUnpackPremultiplyAlpha = new PixelStoreUnpackPremultiplyAlpha(this);
+        this.pixelStoreUnpackFlipY = new PixelStoreUnpackFlipY(this);
+        this.extTextureFilterAnisotropic = gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('MOZ_EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+        if (this.extTextureFilterAnisotropic) {
+            this.extTextureFilterAnisotropicMax = gl.getParameter(this.extTextureFilterAnisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+        }
+        this.extTextureHalfFloat = gl.getExtension('OES_texture_half_float');
+        if (this.extTextureHalfFloat) {
+            gl.getExtension('OES_texture_half_float_linear');
+            this.extRenderToTextureHalfFloat = gl.getExtension('EXT_color_buffer_half_float');
+        }
+        this.extTimerQuery = gl.getExtension('EXT_disjoint_timer_query');
+        this.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    }
 }
 
 const ALWAYS$1 = 519;
@@ -32071,9 +32126,9 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
     }
     const indexBuffer = context.createIndexBuffer(quadTriangles, true);
     const vertexBuffer = context.createVertexBuffer(vertexData, performance.collisionCircleLayout.members, true);
-    for (const batch of tileBatches) {
-        const uniforms = collisionCircleUniformValues(batch.transform, batch.invTransform, painter.transform);
-        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch.circleOffset * 2, batch.circleArray.length, batch.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
+    for (const batch1 of tileBatches) {
+        const uniforms = collisionCircleUniformValues(batch1.transform, batch1.invTransform, painter.transform);
+        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch1.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch1.circleOffset * 2, batch1.circleArray.length, batch1.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
     }
     vertexBuffer.destroy();
     indexBuffer.destroy();
@@ -32144,7 +32199,7 @@ function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlig
         }
     }
 }
-function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
+function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize1, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
     const placedSymbols = bucket.text.placedSymbolArray;
     const dynamicTextLayoutVertexArray = bucket.text.dynamicLayoutVertexArray;
     const dynamicIconLayoutVertexArray = bucket.icon.dynamicLayoutVertexArray;
@@ -32160,7 +32215,7 @@ function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, var
             const tileAnchor = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
             const projectedAnchor = project(tileAnchor, pitchWithMap ? posMatrix : labelPlaneMatrix, getElevation);
             const perspectiveRatio = getPerspectiveRatio(transform.cameraToCenterDistance, projectedAnchor.signedDistanceFromCamera);
-            let renderTextSize = symbolSize.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
+            let renderTextSize = symbolSize1.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
             if (pitchWithMap) {
                 renderTextSize *= bucket.tilePixelRatio / tileScale;
             }
@@ -32590,7 +32645,7 @@ function drawFill(painter, sourceCache, layer, coords) {
     }
     const colorMode = painter.colorModeForRenderPass();
     const pattern = layer.paint.get('fill-pattern');
-    const pass = painter.opaquePassEnabledForLayer() && (!pattern.constantOr(1) && color.constantOr(performance.Color.transparent).a === 1 && opacity.constantOr(0) === 1) ? 'opaque' : 'translucent';
+    const pass = painter.opaquePassEnabledForLayer() && !pattern.constantOr(1) && color.constantOr(performance.Color.transparent).a === 1 && opacity.constantOr(0) === 1 ? 'opaque' : 'translucent';
     if (painter.renderPass === pass) {
         const depthMode = painter.depthModeForSublayer(1, painter.renderPass === 'opaque' ? DepthMode.ReadWrite : DepthMode.ReadOnly);
         drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode, false);
@@ -33065,9 +33120,9 @@ function updateTerrainFacilitators(painter, sourceCache) {
         color: performance.Color.transparent,
         depth: 1
     });
-    for (const tile of tiles) {
-        const terrain = sourceCache.getTerrain(tile.tileID);
-        const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
+    for (const tile1 of tiles) {
+        const terrain = sourceCache.getTerrain(tile1.tileID);
+        const posMatrix = painter.transform.calculatePosMatrix(tile1.tileID.toUnwrapped());
         const uniformValues = terrainDepthUniformValues(posMatrix);
         program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
     }
@@ -33137,20 +33192,6 @@ const draw = {
     custom: drawCustom
 };
 class Painter {
-    constructor(gl, transform) {
-        this.context = new Context(gl);
-        this.transform = transform;
-        this._tileTextures = {};
-        this.terrainFacilitator = {
-            matrix: performance.create(),
-            renderTime: 0
-        };
-        this.setup();
-        this.numSublayers = SourceCache.maxUnderzooming + SourceCache.maxOverzooming + 1;
-        this.depthEpsilon = 1 / Math.pow(2, 16);
-        this.crossTileSymbolIndex = new CrossTileSymbolIndex();
-        this.gpuTimers = {};
-    }
     resize(width, height, pixelRatio) {
         this.width = width * pixelRatio;
         this.height = height * pixelRatio;
@@ -33367,25 +33408,25 @@ class Painter {
         const coordsDescendingSymbol = {};
         const coordsDescendingInv = {};
         const coordsDescendingInvStr = {};
-        for (const id in sourceCaches) {
-            const sourceCache = sourceCaches[id];
-            coordsAscending[id] = sourceCache.getVisibleCoordinates();
-            coordsDescending[id] = coordsAscending[id].slice().reverse();
-            coordsDescendingSymbol[id] = sourceCache.getVisibleCoordinates(true).reverse();
+        for (const id1 in sourceCaches) {
+            const sourceCache = sourceCaches[id1];
+            coordsAscending[id1] = sourceCache.getVisibleCoordinates();
+            coordsDescending[id1] = coordsAscending[id1].slice().reverse();
+            coordsDescendingSymbol[id1] = sourceCache.getVisibleCoordinates(true).reverse();
             if (isTerrainEnabled) {
-                coordsDescendingInv[id] = {};
-                for (let c = 0; c < coordsDescending[id].length; c++) {
-                    const coords = this.style.terrainSourceCache.getTerrainCoords(coordsDescending[id][c]);
+                coordsDescendingInv[id1] = {};
+                for (let c = 0; c < coordsDescending[id1].length; c++) {
+                    const coords = this.style.terrainSourceCache.getTerrainCoords(coordsDescending[id1][c]);
                     for (const key in coords) {
-                        if (!coordsDescendingInv[id][key])
-                            coordsDescendingInv[id][key] = [];
-                        coordsDescendingInv[id][key].push(coords[key]);
+                        if (!coordsDescendingInv[id1][key])
+                            coordsDescendingInv[id1][key] = [];
+                        coordsDescendingInv[id1][key].push(coords[key]);
                     }
                 }
             }
         }
-        for (const id of layerIds) {
-            const layer = this.style._layers[id], source = layer.source;
+        for (const id2 of layerIds) {
+            const layer = this.style._layers[id2], source = layer.source;
             if (renderToTexture[layer.type]) {
                 if (!coordsDescendingInvStr[source]) {
                     coordsDescendingInvStr[source] = {};
@@ -33655,13 +33696,23 @@ class Painter {
             this.debugOverlayTexture.destroy();
         }
     }
+    constructor(gl, transform) {
+        this.context = new Context(gl);
+        this.transform = transform;
+        this._tileTextures = {};
+        this.terrainFacilitator = {
+            matrix: performance.create(),
+            renderTime: 0
+        };
+        this.setup();
+        this.numSublayers = SourceCache.maxUnderzooming + SourceCache.maxOverzooming + 1;
+        this.depthEpsilon = 1 / Math.pow(2, 16);
+        this.crossTileSymbolIndex = new CrossTileSymbolIndex();
+        this.gpuTimers = {};
+    }
 }
 
 class Frustum {
-    constructor(points, planes) {
-        this.points = points;
-        this.planes = planes;
-    }
     static fromInvProjectionMatrix(invProj, worldSize, zoom) {
         const clipSpaceCorners = [
             [
@@ -33760,13 +33811,12 @@ class Frustum {
         });
         return new Frustum(frustumCoords, frustumPlanes);
     }
+    constructor(points, planes) {
+        this.points = points;
+        this.planes = planes;
+    }
 }
 class Aabb {
-    constructor(min_, max_) {
-        this.min = min_;
-        this.max = max_;
-        this.center = scale([], add([], this.min, this.max), 0.5);
-    }
     quadrant(index) {
         const split = [
             index % 2 === 0,
@@ -33869,18 +33919,14 @@ class Aabb {
         }
         return 1;
     }
+    constructor(min_, max_) {
+        this.min = min_;
+        this.max = max_;
+        this.center = scale([], add([], this.min, this.max), 0.5);
+    }
 }
 
 class EdgeInsets {
-    constructor(top = 0, bottom = 0, left = 0, right = 0) {
-        if (isNaN(top) || top < 0 || isNaN(bottom) || bottom < 0 || isNaN(left) || left < 0 || isNaN(right) || right < 0) {
-            throw new Error('Invalid value for edge-insets, top, bottom, left and right must all be numbers');
-        }
-        this.top = top;
-        this.bottom = bottom;
-        this.left = left;
-        this.right = right;
-    }
     interpolate(start, target, t) {
         if (target.top != null && start.top != null)
             this.top = performance.number(start.top, target.top, t);
@@ -33911,32 +33957,18 @@ class EdgeInsets {
             right: this.right
         };
     }
+    constructor(top = 0, bottom = 0, left = 0, right = 0) {
+        if (isNaN(top) || top < 0 || isNaN(bottom) || bottom < 0 || isNaN(left) || left < 0 || isNaN(right) || right < 0) {
+            throw new Error('Invalid value for edge-insets, top, bottom, left and right must all be numbers');
+        }
+        this.top = top;
+        this.bottom = bottom;
+        this.left = left;
+        this.right = right;
+    }
 }
 
 class Transform {
-    constructor(minZoom, maxZoom, minPitch, maxPitch, renderWorldCopies) {
-        this.tileSize = 512;
-        this.maxValidLatitude = 85.051129;
-        this.freezeElevation = false;
-        this._renderWorldCopies = renderWorldCopies === undefined ? true : !!renderWorldCopies;
-        this._minZoom = minZoom || 0;
-        this._maxZoom = maxZoom || 22;
-        this._minPitch = minPitch === undefined || minPitch === null ? 0 : minPitch;
-        this._maxPitch = maxPitch === undefined || maxPitch === null ? 60 : maxPitch;
-        this.setMaxBounds();
-        this.width = 0;
-        this.height = 0;
-        this._center = new performance.LngLat(0, 0);
-        this._elevation = 0;
-        this.zoom = 0;
-        this.angle = 0;
-        this._fov = 0.6435011087932844;
-        this._pitch = 0;
-        this._unmodified = true;
-        this._edgeInsets = new EdgeInsets();
-        this._posMatrixCache = {};
-        this._alignedPosMatrixCache = {};
-    }
     clone() {
         const clone = new Transform(this._minZoom, this._maxZoom, this._minPitch, this.maxPitch, this._renderWorldCopies);
         clone.tileSize = this.tileSize;
@@ -34155,21 +34187,21 @@ class Transform {
         if (!tsc.isEnabled() && this.pitch <= 60 && this._edgeInsets.top < 0.1)
             minZoom = z;
         const radiusOfMaxLvlLodInTiles = 3;
-        const newRootTile = wrap => {
+        const newRootTile = wrap1 => {
             return {
                 aabb: new Aabb([
-                    wrap * numTiles,
+                    wrap1 * numTiles,
                     0,
                     0
                 ], [
-                    (wrap + 1) * numTiles,
+                    (wrap1 + 1) * numTiles,
                     numTiles,
                     0
                 ]),
                 zoom: 0,
                 x: 0,
                 y: 0,
-                wrap,
+                wrap: wrap1,
                 fullyVisible: false
             };
         };
@@ -34619,6 +34651,29 @@ class Transform {
             ];
         }
     }
+    constructor(minZoom, maxZoom, minPitch, maxPitch, renderWorldCopies) {
+        this.tileSize = 512;
+        this.maxValidLatitude = 85.051129;
+        this.freezeElevation = false;
+        this._renderWorldCopies = renderWorldCopies === undefined ? true : !!renderWorldCopies;
+        this._minZoom = minZoom || 0;
+        this._maxZoom = maxZoom || 22;
+        this._minPitch = minPitch === undefined || minPitch === null ? 0 : minPitch;
+        this._maxPitch = maxPitch === undefined || maxPitch === null ? 60 : maxPitch;
+        this.setMaxBounds();
+        this.width = 0;
+        this.height = 0;
+        this._center = new performance.LngLat(0, 0);
+        this._elevation = 0;
+        this.zoom = 0;
+        this.angle = 0;
+        this._fov = 0.6435011087932844;
+        this._pitch = 0;
+        this._unmodified = true;
+        this._edgeInsets = new EdgeInsets();
+        this._posMatrixCache = {};
+        this._alignedPosMatrixCache = {};
+    }
 }
 
 function throttle(fn, time) {
@@ -34642,15 +34697,6 @@ function throttle(fn, time) {
 }
 
 class Hash {
-    constructor(hashName) {
-        this._hashName = hashName && encodeURIComponent(hashName);
-        performance.bindAll([
-            '_getCurrentHash',
-            '_onHashChange',
-            '_updateHash'
-        ], this);
-        this._updateHash = throttle(this._updateHashUnthrottled.bind(this), 30 * 1000 / 100);
-    }
     addTo(map) {
         this._map = map;
         addEventListener('hashchange', this._onHashChange, false);
@@ -34731,6 +34777,15 @@ class Hash {
         } catch (SecurityError) {
         }
     }
+    constructor(hashName) {
+        this._hashName = hashName && encodeURIComponent(hashName);
+        performance.bindAll([
+            '_getCurrentHash',
+            '_onHashChange',
+            '_updateHash'
+        ], this);
+        this._updateHash = throttle(this._updateHashUnthrottled.bind(this), 30 * 1000 / 100);
+    }
 }
 
 const defaultInertiaOptions = {
@@ -34754,10 +34809,6 @@ const defaultPitchInertiaOptions = performance.extend({
     maxSpeed: 90
 }, defaultInertiaOptions);
 class HandlerInertia {
-    constructor(map) {
-        this._map = map;
-        this.clear();
-    }
     clear() {
         this._inertiaBuffer = [];
     }
@@ -34828,6 +34879,10 @@ class HandlerInertia {
         this.clear();
         return performance.extend(easeOptions, { noMoveStart: true });
     }
+    constructor(map) {
+        this._map = map;
+        this.clear();
+    }
 }
 function extendDuration(easeOptions, result) {
     if (!easeOptions.duration || easeOptions.duration < result.duration) {
@@ -34847,6 +34902,12 @@ function calculateEasing(amount, inertiaDuration, inertiaOptions) {
 }
 
 class MapMouseEvent extends performance.Event {
+    preventDefault() {
+        this._defaultPrevented = true;
+    }
+    get defaultPrevented() {
+        return this._defaultPrevented;
+    }
     constructor(type, map, originalEvent, data = {}) {
         const point = DOM.mousePos(map.getCanvasContainer(), originalEvent);
         const lngLat = map.unproject(point);
@@ -34858,14 +34919,14 @@ class MapMouseEvent extends performance.Event {
         this._defaultPrevented = false;
         this.target = map;
     }
+}
+class MapTouchEvent extends performance.Event {
     preventDefault() {
         this._defaultPrevented = true;
     }
     get defaultPrevented() {
         return this._defaultPrevented;
     }
-}
-class MapTouchEvent extends performance.Event {
     constructor(type, map, originalEvent) {
         const touches = type === 'touchend' ? originalEvent.changedTouches : originalEvent.touches;
         const points = DOM.touchPos(map.getCanvasContainer(), touches);
@@ -34883,31 +34944,21 @@ class MapTouchEvent extends performance.Event {
         });
         this._defaultPrevented = false;
     }
+}
+class MapWheelEvent extends performance.Event {
     preventDefault() {
         this._defaultPrevented = true;
     }
     get defaultPrevented() {
         return this._defaultPrevented;
     }
-}
-class MapWheelEvent extends performance.Event {
     constructor(type, map, originalEvent) {
         super(type, { originalEvent });
         this._defaultPrevented = false;
     }
-    preventDefault() {
-        this._defaultPrevented = true;
-    }
-    get defaultPrevented() {
-        return this._defaultPrevented;
-    }
 }
 
 class MapEventHandler {
-    constructor(map, options) {
-        this._map = map;
-        this._clickTolerance = options.clickTolerance;
-    }
     reset() {
         delete this._mousedownPos;
     }
@@ -34963,11 +35014,12 @@ class MapEventHandler {
     }
     disable() {
     }
+    constructor(map, options) {
+        this._map = map;
+        this._clickTolerance = options.clickTolerance;
+    }
 }
 class BlockableMapEventHandler {
-    constructor(map) {
-        this._map = map;
-    }
     reset() {
         this._delayContextMenu = false;
         delete this._contextMenuEvent;
@@ -35005,15 +35057,12 @@ class BlockableMapEventHandler {
     }
     disable() {
     }
+    constructor(map) {
+        this._map = map;
+    }
 }
 
 class BoxZoomHandler {
-    constructor(map, options) {
-        this._map = map;
-        this._el = map.getCanvasContainer();
-        this._container = map.getContainer();
-        this._clickTolerance = options.clickTolerance || 1;
-    }
     isEnabled() {
         return !!this._enabled;
     }
@@ -35095,6 +35144,12 @@ class BoxZoomHandler {
     _fireEvent(type, e) {
         return this._map.fire(new performance.Event(type, { originalEvent: e }));
     }
+    constructor(map, options) {
+        this._map = map;
+        this._el = map.getCanvasContainer();
+        this._container = map.getContainer();
+        this._clickTolerance = options.clickTolerance || 1;
+    }
 }
 
 function indexTouches(touches, points) {
@@ -35116,10 +35171,6 @@ const MAX_TAP_INTERVAL = 500;
 const MAX_TOUCH_TIME = 500;
 const MAX_DIST = 30;
 class SingleTapRecognizer {
-    constructor(options) {
-        this.reset();
-        this.numTouches = options.numTouches;
-    }
     reset() {
         delete this.centroid;
         delete this.startTime;
@@ -35164,13 +35215,12 @@ class SingleTapRecognizer {
                 return centroid;
         }
     }
+    constructor(options) {
+        this.reset();
+        this.numTouches = options.numTouches;
+    }
 }
 class TapRecognizer {
-    constructor(options) {
-        this.singleTap = new SingleTapRecognizer(options);
-        this.numTaps = options.numTaps;
-        this.reset();
-    }
     reset() {
         this.lastTime = Infinity;
         delete this.lastTap;
@@ -35200,20 +35250,14 @@ class TapRecognizer {
             }
         }
     }
+    constructor(options) {
+        this.singleTap = new SingleTapRecognizer(options);
+        this.numTaps = options.numTaps;
+        this.reset();
+    }
 }
 
 class TapZoomHandler {
-    constructor() {
-        this._zoomIn = new TapRecognizer({
-            numTouches: 1,
-            numTaps: 2
-        });
-        this._zoomOut = new TapRecognizer({
-            numTouches: 2,
-            numTaps: 1
-        });
-        this.reset();
-    }
     reset() {
         this._active = false;
         this._zoomIn.reset();
@@ -35270,6 +35314,17 @@ class TapZoomHandler {
     isActive() {
         return this._active;
     }
+    constructor() {
+        this._zoomIn = new TapRecognizer({
+            numTouches: 1,
+            numTaps: 2
+        });
+        this._zoomOut = new TapRecognizer({
+            numTouches: 2,
+            numTaps: 1
+        });
+        this.reset();
+    }
 }
 
 const LEFT_BUTTON = 0;
@@ -35283,10 +35338,6 @@ function buttonStillPressed(e, button) {
     return e.buttons === undefined || (e.buttons & flag) !== flag;
 }
 class MouseHandler {
-    constructor(options) {
-        this.reset();
-        this._clickTolerance = options.clickTolerance || 1;
-    }
     reset() {
         this._active = false;
         this._moved = false;
@@ -35346,6 +35397,10 @@ class MouseHandler {
     isActive() {
         return this._active;
     }
+    constructor(options) {
+        this.reset();
+        this._clickTolerance = options.clickTolerance || 1;
+    }
 }
 class MousePanHandler extends MouseHandler {
     mousedown(e, point) {
@@ -35397,11 +35452,6 @@ class MousePitchHandler extends MouseHandler {
 }
 
 class TouchPanHandler {
-    constructor(options) {
-        this._minTouches = 1;
-        this._clickTolerance = options.clickTolerance || 1;
-        this.reset();
-    }
     reset() {
         this._active = false;
         this._touches = {};
@@ -35468,12 +35518,14 @@ class TouchPanHandler {
     isActive() {
         return this._active;
     }
+    constructor(options) {
+        this._minTouches = 1;
+        this._clickTolerance = options.clickTolerance || 1;
+        this.reset();
+    }
 }
 
 class TwoTouchHandler {
-    constructor() {
-        this.reset();
-    }
     reset() {
         this._active = false;
         delete this._firstTwoTouches;
@@ -35538,6 +35590,9 @@ class TwoTouchHandler {
     }
     isActive() {
         return this._active;
+    }
+    constructor() {
+        this.reset();
     }
 }
 function getTouchById(mapTouches, points, identifier) {
@@ -35663,13 +35718,6 @@ const defaultOptions$5 = {
     pitchStep: 10
 };
 class KeyboardHandler {
-    constructor() {
-        const stepOptions = defaultOptions$5;
-        this._panStep = stepOptions.panStep;
-        this._bearingStep = stepOptions.bearingStep;
-        this._pitchStep = stepOptions.pitchStep;
-        this._rotationDisabled = false;
-    }
     reset() {
         this._active = false;
     }
@@ -35770,6 +35818,13 @@ class KeyboardHandler {
     enableRotation() {
         this._rotationDisabled = false;
     }
+    constructor() {
+        const stepOptions = defaultOptions$5;
+        this._panStep = stepOptions.panStep;
+        this._bearingStep = stepOptions.bearingStep;
+        this._pitchStep = stepOptions.pitchStep;
+        this._rotationDisabled = false;
+    }
 }
 function easeOut(t) {
     return t * (2 - t);
@@ -35780,20 +35835,11 @@ const defaultZoomRate = 1 / 100;
 const wheelZoomRate = 1 / 450;
 const maxScalePerFrame = 2;
 class ScrollZoomHandler {
-    constructor(map, handler) {
-        this._map = map;
-        this._el = map.getCanvasContainer();
-        this._handler = handler;
-        this._delta = 0;
-        this._defaultZoomRate = defaultZoomRate;
-        this._wheelZoomRate = wheelZoomRate;
-        performance.bindAll(['_onTimeout'], this);
-    }
     setZoomRate(zoomRate) {
         this._defaultZoomRate = zoomRate;
     }
-    setWheelZoomRate(wheelZoomRate) {
-        this._wheelZoomRate = wheelZoomRate;
+    setWheelZoomRate(wheelZoomRate1) {
+        this._wheelZoomRate = wheelZoomRate1;
     }
     isEnabled() {
         return !!this._enabled;
@@ -35952,13 +35998,18 @@ class ScrollZoomHandler {
     reset() {
         this._active = false;
     }
+    constructor(map, handler) {
+        this._map = map;
+        this._el = map.getCanvasContainer();
+        this._handler = handler;
+        this._delta = 0;
+        this._defaultZoomRate = defaultZoomRate;
+        this._wheelZoomRate = wheelZoomRate;
+        performance.bindAll(['_onTimeout'], this);
+    }
 }
 
 class DoubleClickZoomHandler {
-    constructor(clickZoom, TapZoom) {
-        this._clickZoom = clickZoom;
-        this._tapZoom = TapZoom;
-    }
     enable() {
         this._clickZoom.enable();
         this._tapZoom.enable();
@@ -35973,12 +36024,13 @@ class DoubleClickZoomHandler {
     isActive() {
         return this._clickZoom.isActive() || this._tapZoom.isActive();
     }
+    constructor(clickZoom, TapZoom) {
+        this._clickZoom = clickZoom;
+        this._tapZoom = TapZoom;
+    }
 }
 
 class ClickZoomHandler {
-    constructor() {
-        this.reset();
-    }
     reset() {
         this._active = false;
     }
@@ -36007,16 +36059,12 @@ class ClickZoomHandler {
     isActive() {
         return this._active;
     }
+    constructor() {
+        this.reset();
+    }
 }
 
 class TapDragZoomHandler {
-    constructor() {
-        this._tap = new TapRecognizer({
-            numTouches: 1,
-            numTaps: 1
-        });
-        this.reset();
-    }
     reset() {
         this._active = false;
         delete this._swipePoint;
@@ -36080,14 +36128,16 @@ class TapDragZoomHandler {
     isActive() {
         return this._active;
     }
+    constructor() {
+        this._tap = new TapRecognizer({
+            numTouches: 1,
+            numTaps: 1
+        });
+        this.reset();
+    }
 }
 
 class DragPanHandler {
-    constructor(el, mousePan, touchPan) {
-        this._el = el;
-        this._mousePan = mousePan;
-        this._touchPan = touchPan;
-    }
     enable(options) {
         this._inertiaOptions = options || {};
         this._mousePan.enable();
@@ -36105,14 +36155,14 @@ class DragPanHandler {
     isActive() {
         return this._mousePan.isActive() || this._touchPan.isActive();
     }
+    constructor(el, mousePan, touchPan) {
+        this._el = el;
+        this._mousePan = mousePan;
+        this._touchPan = touchPan;
+    }
 }
 
 class DragRotateHandler {
-    constructor(options, mouseRotate, mousePitch) {
-        this._pitchWithRotate = options.pitchWithRotate;
-        this._mouseRotate = mouseRotate;
-        this._mousePitch = mousePitch;
-    }
     enable() {
         this._mouseRotate.enable();
         if (this._pitchWithRotate)
@@ -36128,17 +36178,14 @@ class DragRotateHandler {
     isActive() {
         return this._mouseRotate.isActive() || this._mousePitch.isActive();
     }
+    constructor(options, mouseRotate, mousePitch) {
+        this._pitchWithRotate = options.pitchWithRotate;
+        this._mouseRotate = mouseRotate;
+        this._mousePitch = mousePitch;
+    }
 }
 
 class TouchZoomRotateHandler {
-    constructor(el, touchZoom, touchRotate, tapDragZoom) {
-        this._el = el;
-        this._touchZoom = touchZoom;
-        this._touchRotate = touchRotate;
-        this._tapDragZoom = tapDragZoom;
-        this._rotationDisabled = false;
-        this._enabled = true;
-    }
     enable(options) {
         this._touchZoom.enable(options);
         if (!this._rotationDisabled)
@@ -36167,6 +36214,14 @@ class TouchZoomRotateHandler {
         if (this._touchZoom.isEnabled())
             this._touchRotate.enable();
     }
+    constructor(el, touchZoom, touchRotate, tapDragZoom) {
+        this._el = el;
+        this._touchZoom = touchZoom;
+        this._touchRotate = touchRotate;
+        this._tapDragZoom = tapDragZoom;
+        this._rotationDisabled = false;
+        this._enabled = true;
+    }
 }
 
 const isMoving = p => p.zoom || p.drag || p.pitch || p.rotate;
@@ -36176,118 +36231,6 @@ function hasChange(result) {
     return result.panDelta && result.panDelta.mag() || result.zoomDelta || result.bearingDelta || result.pitchDelta;
 }
 class HandlerManager {
-    constructor(map, options) {
-        this._map = map;
-        this._el = this._map.getCanvasContainer();
-        this._handlers = [];
-        this._handlersById = {};
-        this._changes = [];
-        this._inertia = new HandlerInertia(map);
-        this._bearingSnap = options.bearingSnap;
-        this._previousActiveHandlers = {};
-        this._eventsInProgress = {};
-        this._addDefaultHandlers(options);
-        performance.bindAll([
-            'handleEvent',
-            'handleWindowEvent'
-        ], this);
-        const el = this._el;
-        this._listeners = [
-            [
-                el,
-                'touchstart',
-                { passive: true }
-            ],
-            [
-                el,
-                'touchmove',
-                { passive: false }
-            ],
-            [
-                el,
-                'touchend',
-                undefined
-            ],
-            [
-                el,
-                'touchcancel',
-                undefined
-            ],
-            [
-                el,
-                'mousedown',
-                undefined
-            ],
-            [
-                el,
-                'mousemove',
-                undefined
-            ],
-            [
-                el,
-                'mouseup',
-                undefined
-            ],
-            [
-                document,
-                'mousemove',
-                { capture: true }
-            ],
-            [
-                document,
-                'mouseup',
-                undefined
-            ],
-            [
-                el,
-                'mouseover',
-                undefined
-            ],
-            [
-                el,
-                'mouseout',
-                undefined
-            ],
-            [
-                el,
-                'dblclick',
-                undefined
-            ],
-            [
-                el,
-                'click',
-                undefined
-            ],
-            [
-                el,
-                'keydown',
-                { capture: false }
-            ],
-            [
-                el,
-                'keyup',
-                undefined
-            ],
-            [
-                el,
-                'wheel',
-                { passive: false }
-            ],
-            [
-                el,
-                'contextmenu',
-                undefined
-            ],
-            [
-                window,
-                'blur',
-                undefined
-            ]
-        ];
-        for (const [target, type, listenerOptions] of this._listeners) {
-            DOM.addEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
-        }
-    }
     destroy() {
         for (const [target, type, listenerOptions] of this._listeners) {
             DOM.removeEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
@@ -36579,22 +36522,22 @@ class HandlerManager {
         if (nowMoving) {
             this._fireEvent('move', nowMoving.originalEvent);
         }
-        for (const eventName in newEventsInProgress) {
-            const {originalEvent} = newEventsInProgress[eventName];
-            this._fireEvent(eventName, originalEvent);
+        for (const eventName1 in newEventsInProgress) {
+            const {originalEvent} = newEventsInProgress[eventName1];
+            this._fireEvent(eventName1, originalEvent);
         }
         const endEvents = {};
         let originalEndEvent;
-        for (const eventName in this._eventsInProgress) {
-            const {handlerName, originalEvent} = this._eventsInProgress[eventName];
+        for (const eventName2 in this._eventsInProgress) {
+            const {handlerName, originalEvent} = this._eventsInProgress[eventName2];
             if (!this._handlersById[handlerName].isActive()) {
-                delete this._eventsInProgress[eventName];
+                delete this._eventsInProgress[eventName2];
                 originalEndEvent = deactivatedHandlers[handlerName] || originalEvent;
-                endEvents[`${ eventName }end`] = originalEndEvent;
+                endEvents[`${ eventName2 }end`] = originalEndEvent;
             }
         }
-        for (const name in endEvents) {
-            this._fireEvent(name, endEvents[name]);
+        for (const name1 in endEvents) {
+            this._fireEvent(name1, endEvents[name1]);
         }
         const stillMoving = isMoving(this._eventsInProgress);
         if (allowEndAnimation && (wasMoving || nowMoving) && !stillMoving) {
@@ -36631,17 +36574,121 @@ class HandlerManager {
             this._frameId = this._requestFrame();
         }
     }
+    constructor(map, options) {
+        this._map = map;
+        this._el = this._map.getCanvasContainer();
+        this._handlers = [];
+        this._handlersById = {};
+        this._changes = [];
+        this._inertia = new HandlerInertia(map);
+        this._bearingSnap = options.bearingSnap;
+        this._previousActiveHandlers = {};
+        this._eventsInProgress = {};
+        this._addDefaultHandlers(options);
+        performance.bindAll([
+            'handleEvent',
+            'handleWindowEvent'
+        ], this);
+        const el = this._el;
+        this._listeners = [
+            [
+                el,
+                'touchstart',
+                { passive: true }
+            ],
+            [
+                el,
+                'touchmove',
+                { passive: false }
+            ],
+            [
+                el,
+                'touchend',
+                undefined
+            ],
+            [
+                el,
+                'touchcancel',
+                undefined
+            ],
+            [
+                el,
+                'mousedown',
+                undefined
+            ],
+            [
+                el,
+                'mousemove',
+                undefined
+            ],
+            [
+                el,
+                'mouseup',
+                undefined
+            ],
+            [
+                document,
+                'mousemove',
+                { capture: true }
+            ],
+            [
+                document,
+                'mouseup',
+                undefined
+            ],
+            [
+                el,
+                'mouseover',
+                undefined
+            ],
+            [
+                el,
+                'mouseout',
+                undefined
+            ],
+            [
+                el,
+                'dblclick',
+                undefined
+            ],
+            [
+                el,
+                'click',
+                undefined
+            ],
+            [
+                el,
+                'keydown',
+                { capture: false }
+            ],
+            [
+                el,
+                'keyup',
+                undefined
+            ],
+            [
+                el,
+                'wheel',
+                { passive: false }
+            ],
+            [
+                el,
+                'contextmenu',
+                undefined
+            ],
+            [
+                window,
+                'blur',
+                undefined
+            ]
+        ];
+        for (const [target, type, listenerOptions] of this._listeners) {
+            DOM.addEventListener(target, type, target === document ? this.handleWindowEvent : this.handleEvent, listenerOptions);
+        }
+    }
 }
 
 class Camera extends performance.Evented {
-    constructor(transform, options) {
-        super();
-        this._moving = false;
-        this._zooming = false;
-        this.transform = transform;
-        this._bearingSnap = options.bearingSnap;
-        performance.bindAll(['_renderFrameCallback'], this);
-    }
     getCenter() {
         return new performance.LngLat(this.transform.center.lng, this.transform.center.lat);
     }
@@ -36966,7 +37013,7 @@ class Camera extends performance.Evented {
         const bearing = 'bearing' in options ? this._normalizeBearing(options.bearing, startBearing) : startBearing;
         const pitch = 'pitch' in options ? +options.pitch : startPitch;
         const padding = 'padding' in options ? options.padding : tr.padding;
-        const scale = tr.zoomScale(zoom - startZoom);
+        const scale1 = tr.zoomScale(zoom - startZoom);
         const offsetAsPoint = performance.pointGeometry.convert(options.offset);
         let pointAtOffset = tr.centerPoint.add(offsetAsPoint);
         const locationAtOffset = tr.pointLocation(pointAtOffset);
@@ -36975,7 +37022,7 @@ class Camera extends performance.Evented {
         const from = tr.project(locationAtOffset);
         const delta = tr.project(center).sub(from);
         let rho = options.curve;
-        const w0 = Math.max(tr.width, tr.height), w1 = w0 / scale, u1 = delta.mag();
+        const w0 = Math.max(tr.width, tr.height), w1 = w0 / scale1, u1 = delta.mag();
         if ('minZoom' in options) {
             const minZoom = performance.clamp(Math.min(options.minZoom, startZoom, zoom), tr.minZoom, tr.maxZoom);
             const wMax = w0 / tr.zoomScale(minZoom - startZoom);
@@ -37110,18 +37157,17 @@ class Camera extends performance.Evented {
         const delta = center.lng - tr.center.lng;
         center.lng += delta > 180 ? -360 : delta < -180 ? 360 : 0;
     }
+    constructor(transform, options) {
+        super();
+        this._moving = false;
+        this._zooming = false;
+        this.transform = transform;
+        this._bearingSnap = options.bearingSnap;
+        performance.bindAll(['_renderFrameCallback'], this);
+    }
 }
 
 class AttributionControl {
-    constructor(options = {}) {
-        this.options = options;
-        performance.bindAll([
-            '_toggleAttribution',
-            '_updateData',
-            '_updateCompact',
-            '_updateCompactMinimize'
-        ], this);
-    }
     getDefaultPosition() {
         return 'bottom-right';
     }
@@ -37247,14 +37293,18 @@ class AttributionControl {
             }
         }
     }
+    constructor(options = {}) {
+        this.options = options;
+        performance.bindAll([
+            '_toggleAttribution',
+            '_updateData',
+            '_updateCompact',
+            '_updateCompactMinimize'
+        ], this);
+    }
 }
 
 class LogoControl {
-    constructor(options = {}) {
-        this.options = options;
-        performance.bindAll(['_updateLogo'], this);
-        performance.bindAll(['_updateCompact'], this);
-    }
     onAdd(map) {
         this._map = map;
         this._compact = this.options && this.options.compact;
@@ -37293,15 +37343,14 @@ class LogoControl {
             }
         }
     }
+    constructor(options = {}) {
+        this.options = options;
+        performance.bindAll(['_updateLogo'], this);
+        performance.bindAll(['_updateCompact'], this);
+    }
 }
 
 class TaskQueue {
-    constructor() {
-        this._queue = [];
-        this._id = 0;
-        this._cleared = false;
-        this._currentlyRunning = false;
-    }
     add(callback) {
         const id = ++this._id;
         const queue = this._queue;
@@ -37340,6 +37389,12 @@ class TaskQueue {
             this._cleared = true;
         }
         this._queue = [];
+    }
+    constructor() {
+        this._queue = [];
+        this._id = 0;
+        this._cleared = false;
+        this._currentlyRunning = false;
     }
 }
 
@@ -37407,111 +37462,6 @@ const defaultOptions$4 = {
     crossSourceCollisions: true
 };
 class Map extends Camera {
-    constructor(options) {
-        var _a;
-        options = performance.extend({}, defaultOptions$4, options);
-        if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
-            throw new Error('maxZoom must be greater than or equal to minZoom');
-        }
-        if (options.minPitch != null && options.maxPitch != null && options.minPitch > options.maxPitch) {
-            throw new Error('maxPitch must be greater than or equal to minPitch');
-        }
-        if (options.minPitch != null && options.minPitch < defaultMinPitch) {
-            throw new Error(`minPitch must be greater than or equal to ${ defaultMinPitch }`);
-        }
-        if (options.maxPitch != null && options.maxPitch > maxPitchThreshold) {
-            throw new Error(`maxPitch must be less than or equal to ${ maxPitchThreshold }`);
-        }
-        const transform = new Transform(options.minZoom, options.maxZoom, options.minPitch, options.maxPitch, options.renderWorldCopies);
-        super(transform, { bearingSnap: options.bearingSnap });
-        this._interactive = options.interactive;
-        this._maxTileCacheSize = options.maxTileCacheSize;
-        this._failIfMajorPerformanceCaveat = options.failIfMajorPerformanceCaveat;
-        this._preserveDrawingBuffer = options.preserveDrawingBuffer;
-        this._antialias = options.antialias;
-        this._trackResize = options.trackResize;
-        this._bearingSnap = options.bearingSnap;
-        this._refreshExpiredTiles = options.refreshExpiredTiles;
-        this._fadeDuration = options.fadeDuration;
-        this._crossSourceCollisions = options.crossSourceCollisions;
-        this._crossFadingFactor = 1;
-        this._collectResourceTiming = options.collectResourceTiming;
-        this._renderTaskQueue = new TaskQueue();
-        this._controls = [];
-        this._mapId = performance.uniqueId();
-        this._locale = performance.extend({}, defaultLocale, options.locale);
-        this._clickTolerance = options.clickTolerance;
-        this._pixelRatio = (_a = options.pixelRatio) !== null && _a !== void 0 ? _a : devicePixelRatio;
-        this._requestManager = new RequestManager(options.transformRequest);
-        if (typeof options.container === 'string') {
-            this._container = document.getElementById(options.container);
-            if (!this._container) {
-                throw new Error(`Container '${ options.container }' not found.`);
-            }
-        } else if (options.container instanceof HTMLElement) {
-            this._container = options.container;
-        } else {
-            throw new Error('Invalid type: \'container\' must be a String or HTMLElement.');
-        }
-        if (options.maxBounds) {
-            this.setMaxBounds(options.maxBounds);
-        }
-        performance.bindAll([
-            '_onWindowOnline',
-            '_onWindowResize',
-            '_onMapScroll',
-            '_contextLost',
-            '_contextRestored'
-        ], this);
-        this._setupContainer();
-        this._setupPainter();
-        if (this.painter === undefined) {
-            throw new Error('Failed to initialize WebGL.');
-        }
-        this.on('move', () => this._update(false));
-        this.on('moveend', () => this._update(false));
-        this.on('zoom', () => this._update(true));
-        if (typeof window !== 'undefined') {
-            addEventListener('online', this._onWindowOnline, false);
-            addEventListener('resize', this._onWindowResize, false);
-            addEventListener('orientationchange', this._onWindowResize, false);
-        }
-        this.handlers = new HandlerManager(this, options);
-        const hashName = typeof options.hash === 'string' && options.hash || undefined;
-        this._hash = options.hash && new Hash(hashName).addTo(this);
-        if (!this._hash || !this._hash._onHashChange()) {
-            this.jumpTo({
-                center: options.center,
-                zoom: options.zoom,
-                bearing: options.bearing,
-                pitch: options.pitch
-            });
-            if (options.bounds) {
-                this.resize();
-                this.fitBounds(options.bounds, performance.extend({}, options.fitBoundsOptions, { duration: 0 }));
-            }
-        }
-        this.resize();
-        this._localIdeographFontFamily = options.localIdeographFontFamily;
-        if (options.style)
-            this.setStyle(options.style, { localIdeographFontFamily: options.localIdeographFontFamily });
-        if (options.attributionControl)
-            this.addControl(new AttributionControl({ customAttribution: options.customAttribution }));
-        if (options.maplibreLogo)
-            this.addControl(new LogoControl(), options.logoPosition);
-        this.on('style.load', () => {
-            if (this.transform.unmodified) {
-                this.jumpTo(this.style.stylesheet);
-            }
-        });
-        this.on('data', event => {
-            this._update(event.dataType === 'style');
-            this.fire(new performance.Event(`${ event.dataType }data`, event));
-        });
-        this.on('dataloading', event => {
-            this.fire(new performance.Event(`${ event.dataType }dataloading`, event));
-        });
-    }
     _getMapId() {
         return this._mapId;
     }
@@ -38400,6 +38350,114 @@ class Map extends Camera {
     _setCacheLimits(limit, checkThreshold) {
         performance.setCacheLimits(limit, checkThreshold);
     }
+    constructor(options) {
+        options = performance.extend({}, defaultOptions$4, options);
+        if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
+            throw new Error('maxZoom must be greater than or equal to minZoom');
+        }
+        if (options.minPitch != null && options.maxPitch != null && options.minPitch > options.maxPitch) {
+            throw new Error('maxPitch must be greater than or equal to minPitch');
+        }
+        if (options.minPitch != null && options.minPitch < defaultMinPitch) {
+            throw new Error(`minPitch must be greater than or equal to ${ defaultMinPitch }`);
+        }
+        if (options.maxPitch != null && options.maxPitch > maxPitchThreshold) {
+            throw new Error(`maxPitch must be less than or equal to ${ maxPitchThreshold }`);
+        }
+        const transform = new Transform(options.minZoom, options.maxZoom, options.minPitch, options.maxPitch, options.renderWorldCopies);
+        super(transform, { bearingSnap: options.bearingSnap });
+        this._interactive = options.interactive;
+        this._maxTileCacheSize = options.maxTileCacheSize;
+        this._failIfMajorPerformanceCaveat = options.failIfMajorPerformanceCaveat;
+        this._preserveDrawingBuffer = options.preserveDrawingBuffer;
+        this._antialias = options.antialias;
+        this._trackResize = options.trackResize;
+        this._bearingSnap = options.bearingSnap;
+        this._refreshExpiredTiles = options.refreshExpiredTiles;
+        this._fadeDuration = options.fadeDuration;
+        this._crossSourceCollisions = options.crossSourceCollisions;
+        this._crossFadingFactor = 1;
+        this._collectResourceTiming = options.collectResourceTiming;
+        this._renderTaskQueue = new TaskQueue();
+        this._controls = [];
+        this._mapId = performance.uniqueId();
+        this._locale = performance.extend({}, defaultLocale, options.locale);
+        this._clickTolerance = options.clickTolerance;
+        var _pixelRatio;
+        this._pixelRatio = (_pixelRatio = options.pixelRatio) !== null && _pixelRatio !== void 0 ? _pixelRatio : devicePixelRatio;
+        this._requestManager = new RequestManager(options.transformRequest);
+        if (typeof options.container === 'string') {
+            this._container = document.getElementById(options.container);
+            if (!this._container) {
+                throw new Error(`Container '${ options.container }' not found.`);
+            }
+        } else if (options.container instanceof HTMLElement) {
+            this._container = options.container;
+        } else {
+            throw new Error('Invalid type: \'container\' must be a String or HTMLElement.');
+        }
+        if (options.maxBounds) {
+            this.setMaxBounds(options.maxBounds);
+        }
+        performance.bindAll([
+            '_onWindowOnline',
+            '_onWindowResize',
+            '_onMapScroll',
+            '_contextLost',
+            '_contextRestored'
+        ], this);
+        this._setupContainer();
+        this._setupPainter();
+        if (this.painter === undefined) {
+            throw new Error('Failed to initialize WebGL.');
+        }
+        this.on('move', () => this._update(false));
+        this.on('moveend', () => this._update(false));
+        this.on('zoom', () => this._update(true));
+        if (typeof window !== 'undefined') {
+            addEventListener('online', this._onWindowOnline, false);
+            addEventListener('resize', this._onWindowResize, false);
+            addEventListener('orientationchange', this._onWindowResize, false);
+        }
+        this.handlers = new HandlerManager(this, options);
+        const hashName = typeof options.hash === 'string' && options.hash || undefined;
+        this._hash = options.hash && new Hash(hashName).addTo(this);
+        if (!this._hash || !this._hash._onHashChange()) {
+            this.jumpTo({
+                center: options.center,
+                zoom: options.zoom,
+                bearing: options.bearing,
+                pitch: options.pitch
+            });
+            if (options.bounds) {
+                this.resize();
+                this.fitBounds(options.bounds, performance.extend({}, options.fitBoundsOptions, { duration: 0 }));
+            }
+        }
+        this.resize();
+        this._localIdeographFontFamily = options.localIdeographFontFamily;
+        if (options.style)
+            this.setStyle(options.style, { localIdeographFontFamily: options.localIdeographFontFamily });
+        if (options.attributionControl)
+            this.addControl(new AttributionControl({ customAttribution: options.customAttribution }));
+        if (options.maplibreLogo)
+            this.addControl(new LogoControl(), options.logoPosition);
+        this.on('style.load', () => {
+            if (this.transform.unmodified) {
+                this.jumpTo(this.style.stylesheet);
+            }
+        });
+        this.on('data', event => {
+            this._update(event.dataType === 'style');
+            this.fire(new performance.Event(`${ event.dataType }data`, event));
+        });
+        this.on('dataloading', event => {
+            this.fire(new performance.Event(`${ event.dataType }dataloading`, event));
+        });
+        this.on('dataabort', event => {
+            this.fire(new performance.Event('sourcedataabort', event));
+        });
+    }
 }
 
 const defaultOptions$3 = {
@@ -38408,33 +38466,6 @@ const defaultOptions$3 = {
     visualizePitch: false
 };
 class NavigationControl {
-    constructor(options) {
-        this.options = performance.extend({}, defaultOptions$3, options);
-        this._container = DOM.create('div', 'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group');
-        this._container.addEventListener('contextmenu', e => e.preventDefault());
-        if (this.options.showZoom) {
-            performance.bindAll([
-                '_setButtonTitle',
-                '_updateZoomButtons'
-            ], this);
-            this._zoomInButton = this._createButton('maplibregl-ctrl-zoom-in mapboxgl-ctrl-zoom-in', e => this._map.zoomIn({}, { originalEvent: e }));
-            DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._zoomInButton).setAttribute('aria-hidden', 'true');
-            this._zoomOutButton = this._createButton('maplibregl-ctrl-zoom-out mapboxgl-ctrl-zoom-out', e => this._map.zoomOut({}, { originalEvent: e }));
-            DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._zoomOutButton).setAttribute('aria-hidden', 'true');
-        }
-        if (this.options.showCompass) {
-            performance.bindAll(['_rotateCompassArrow'], this);
-            this._compass = this._createButton('maplibregl-ctrl-compass mapboxgl-ctrl-compass', e => {
-                if (this.options.visualizePitch) {
-                    this._map.resetNorthPitch({}, { originalEvent: e });
-                } else {
-                    this._map.resetNorth({}, { originalEvent: e });
-                }
-            });
-            this._compassIcon = DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._compass);
-            this._compassIcon.setAttribute('aria-hidden', 'true');
-        }
-    }
     _updateZoomButtons() {
         const zoom = this._map.getZoom();
         const isMax = zoom === this._map.getMaxZoom();
@@ -38493,30 +38524,35 @@ class NavigationControl {
         button.title = str;
         button.setAttribute('aria-label', str);
     }
+    constructor(options) {
+        this.options = performance.extend({}, defaultOptions$3, options);
+        this._container = DOM.create('div', 'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group');
+        this._container.addEventListener('contextmenu', e => e.preventDefault());
+        if (this.options.showZoom) {
+            performance.bindAll([
+                '_setButtonTitle',
+                '_updateZoomButtons'
+            ], this);
+            this._zoomInButton = this._createButton('maplibregl-ctrl-zoom-in mapboxgl-ctrl-zoom-in', e => this._map.zoomIn({}, { originalEvent: e }));
+            DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._zoomInButton).setAttribute('aria-hidden', 'true');
+            this._zoomOutButton = this._createButton('maplibregl-ctrl-zoom-out mapboxgl-ctrl-zoom-out', e => this._map.zoomOut({}, { originalEvent: e }));
+            DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._zoomOutButton).setAttribute('aria-hidden', 'true');
+        }
+        if (this.options.showCompass) {
+            performance.bindAll(['_rotateCompassArrow'], this);
+            this._compass = this._createButton('maplibregl-ctrl-compass mapboxgl-ctrl-compass', e => {
+                if (this.options.visualizePitch) {
+                    this._map.resetNorthPitch({}, { originalEvent: e });
+                } else {
+                    this._map.resetNorth({}, { originalEvent: e });
+                }
+            });
+            this._compassIcon = DOM.create('span', 'maplibregl-ctrl-icon mapboxgl-ctrl-icon', this._compass);
+            this._compassIcon.setAttribute('aria-hidden', 'true');
+        }
+    }
 }
 class MouseRotateWrapper {
-    constructor(map, element, pitch = false) {
-        this._clickTolerance = 10;
-        this.element = element;
-        this.mouseRotate = new MouseRotateHandler({ clickTolerance: map.dragRotate._mouseRotate._clickTolerance });
-        this.map = map;
-        if (pitch)
-            this.mousePitch = new MousePitchHandler({ clickTolerance: map.dragRotate._mousePitch._clickTolerance });
-        performance.bindAll([
-            'mousedown',
-            'mousemove',
-            'mouseup',
-            'touchstart',
-            'touchmove',
-            'touchend',
-            'reset'
-        ], this);
-        DOM.addEventListener(element, 'mousedown', this.mousedown);
-        DOM.addEventListener(element, 'touchstart', this.touchstart, { passive: false });
-        DOM.addEventListener(element, 'touchmove', this.touchmove);
-        DOM.addEventListener(element, 'touchend', this.touchend);
-        DOM.addEventListener(element, 'touchcancel', this.reset);
-    }
     down(e, point) {
         this.mouseRotate.mousedown(e, point);
         if (this.mousePitch)
@@ -38600,6 +38636,28 @@ class MouseRotateWrapper {
         delete this._lastPos;
         this.offTemp();
     }
+    constructor(map, element, pitch = false) {
+        this._clickTolerance = 10;
+        this.element = element;
+        this.mouseRotate = new MouseRotateHandler({ clickTolerance: map.dragRotate._mouseRotate._clickTolerance });
+        this.map = map;
+        if (pitch)
+            this.mousePitch = new MousePitchHandler({ clickTolerance: map.dragRotate._mousePitch._clickTolerance });
+        performance.bindAll([
+            'mousedown',
+            'mousemove',
+            'mouseup',
+            'touchstart',
+            'touchmove',
+            'touchend',
+            'reset'
+        ], this);
+        DOM.addEventListener(element, 'mousedown', this.mousedown);
+        DOM.addEventListener(element, 'touchstart', this.touchstart, { passive: false });
+        DOM.addEventListener(element, 'touchmove', this.touchmove);
+        DOM.addEventListener(element, 'touchend', this.touchend);
+        DOM.addEventListener(element, 'touchcancel', this.reset);
+    }
 }
 
 function smartWrap (lngLat, priorPos, transform) {
@@ -38648,152 +38706,6 @@ function applyAnchorClass(element, anchor, prefix) {
 }
 
 class Marker extends performance.Evented {
-    constructor(options, legacyOptions) {
-        super();
-        if (options instanceof HTMLElement || legacyOptions) {
-            options = performance.extend({ element: options }, legacyOptions);
-        }
-        performance.bindAll([
-            '_update',
-            '_onMove',
-            '_onUp',
-            '_addDragHandler',
-            '_onMapClick',
-            '_onKeyPress'
-        ], this);
-        this._anchor = options && options.anchor || 'center';
-        this._color = options && options.color || '#3FB1CE';
-        this._scale = options && options.scale || 1;
-        this._draggable = options && options.draggable || false;
-        this._clickTolerance = options && options.clickTolerance || 0;
-        this._isDragging = false;
-        this._state = 'inactive';
-        this._rotation = options && options.rotation || 0;
-        this._rotationAlignment = options && options.rotationAlignment || 'auto';
-        this._pitchAlignment = options && options.pitchAlignment && options.pitchAlignment !== 'auto' ? options.pitchAlignment : this._rotationAlignment;
-        if (!options || !options.element) {
-            this._defaultMarker = true;
-            this._element = DOM.create('div');
-            this._element.setAttribute('aria-label', 'Map marker');
-            const svg = DOM.createNS('http://www.w3.org/2000/svg', 'svg');
-            const defaultHeight = 41;
-            const defaultWidth = 27;
-            svg.setAttributeNS(null, 'display', 'block');
-            svg.setAttributeNS(null, 'height', `${ defaultHeight }px`);
-            svg.setAttributeNS(null, 'width', `${ defaultWidth }px`);
-            svg.setAttributeNS(null, 'viewBox', `0 0 ${ defaultWidth } ${ defaultHeight }`);
-            const markerLarge = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            markerLarge.setAttributeNS(null, 'stroke', 'none');
-            markerLarge.setAttributeNS(null, 'stroke-width', '1');
-            markerLarge.setAttributeNS(null, 'fill', 'none');
-            markerLarge.setAttributeNS(null, 'fill-rule', 'evenodd');
-            const page1 = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            page1.setAttributeNS(null, 'fill-rule', 'nonzero');
-            const shadow = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            shadow.setAttributeNS(null, 'transform', 'translate(3.0, 29.0)');
-            shadow.setAttributeNS(null, 'fill', '#000000');
-            const ellipses = [
-                {
-                    'rx': '10.5',
-                    'ry': '5.25002273'
-                },
-                {
-                    'rx': '10.5',
-                    'ry': '5.25002273'
-                },
-                {
-                    'rx': '9.5',
-                    'ry': '4.77275007'
-                },
-                {
-                    'rx': '8.5',
-                    'ry': '4.29549936'
-                },
-                {
-                    'rx': '7.5',
-                    'ry': '3.81822308'
-                },
-                {
-                    'rx': '6.5',
-                    'ry': '3.34094679'
-                },
-                {
-                    'rx': '5.5',
-                    'ry': '2.86367051'
-                },
-                {
-                    'rx': '4.5',
-                    'ry': '2.38636864'
-                }
-            ];
-            for (const data of ellipses) {
-                const ellipse = DOM.createNS('http://www.w3.org/2000/svg', 'ellipse');
-                ellipse.setAttributeNS(null, 'opacity', '0.04');
-                ellipse.setAttributeNS(null, 'cx', '10.5');
-                ellipse.setAttributeNS(null, 'cy', '5.80029008');
-                ellipse.setAttributeNS(null, 'rx', data['rx']);
-                ellipse.setAttributeNS(null, 'ry', data['ry']);
-                shadow.appendChild(ellipse);
-            }
-            const background = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            background.setAttributeNS(null, 'fill', this._color);
-            const bgPath = DOM.createNS('http://www.w3.org/2000/svg', 'path');
-            bgPath.setAttributeNS(null, 'd', 'M27,13.5 C27,19.074644 20.250001,27.000002 14.75,34.500002 C14.016665,35.500004 12.983335,35.500004 12.25,34.500002 C6.7499993,27.000002 0,19.222562 0,13.5 C0,6.0441559 6.0441559,0 13.5,0 C20.955844,0 27,6.0441559 27,13.5 Z');
-            background.appendChild(bgPath);
-            const border = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            border.setAttributeNS(null, 'opacity', '0.25');
-            border.setAttributeNS(null, 'fill', '#000000');
-            const borderPath = DOM.createNS('http://www.w3.org/2000/svg', 'path');
-            borderPath.setAttributeNS(null, 'd', 'M13.5,0 C6.0441559,0 0,6.0441559 0,13.5 C0,19.222562 6.7499993,27 12.25,34.5 C13,35.522727 14.016664,35.500004 14.75,34.5 C20.250001,27 27,19.074644 27,13.5 C27,6.0441559 20.955844,0 13.5,0 Z M13.5,1 C20.415404,1 26,6.584596 26,13.5 C26,15.898657 24.495584,19.181431 22.220703,22.738281 C19.945823,26.295132 16.705119,30.142167 13.943359,33.908203 C13.743445,34.180814 13.612715,34.322738 13.5,34.441406 C13.387285,34.322738 13.256555,34.180814 13.056641,33.908203 C10.284481,30.127985 7.4148684,26.314159 5.015625,22.773438 C2.6163816,19.232715 1,15.953538 1,13.5 C1,6.584596 6.584596,1 13.5,1 Z');
-            border.appendChild(borderPath);
-            const maki = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            maki.setAttributeNS(null, 'transform', 'translate(6.0, 7.0)');
-            maki.setAttributeNS(null, 'fill', '#FFFFFF');
-            const circleContainer = DOM.createNS('http://www.w3.org/2000/svg', 'g');
-            circleContainer.setAttributeNS(null, 'transform', 'translate(8.0, 8.0)');
-            const circle1 = DOM.createNS('http://www.w3.org/2000/svg', 'circle');
-            circle1.setAttributeNS(null, 'fill', '#000000');
-            circle1.setAttributeNS(null, 'opacity', '0.25');
-            circle1.setAttributeNS(null, 'cx', '5.5');
-            circle1.setAttributeNS(null, 'cy', '5.5');
-            circle1.setAttributeNS(null, 'r', '5.4999962');
-            const circle2 = DOM.createNS('http://www.w3.org/2000/svg', 'circle');
-            circle2.setAttributeNS(null, 'fill', '#FFFFFF');
-            circle2.setAttributeNS(null, 'cx', '5.5');
-            circle2.setAttributeNS(null, 'cy', '5.5');
-            circle2.setAttributeNS(null, 'r', '5.4999962');
-            circleContainer.appendChild(circle1);
-            circleContainer.appendChild(circle2);
-            page1.appendChild(shadow);
-            page1.appendChild(background);
-            page1.appendChild(border);
-            page1.appendChild(maki);
-            page1.appendChild(circleContainer);
-            svg.appendChild(page1);
-            svg.setAttributeNS(null, 'height', `${ defaultHeight * this._scale }px`);
-            svg.setAttributeNS(null, 'width', `${ defaultWidth * this._scale }px`);
-            this._element.appendChild(svg);
-            this._offset = performance.pointGeometry.convert(options && options.offset || [
-                0,
-                -14
-            ]);
-        } else {
-            this._element = options.element;
-            this._offset = performance.pointGeometry.convert(options && options.offset || [
-                0,
-                0
-            ]);
-        }
-        this._element.classList.add('maplibregl-marker', 'mapboxgl-marker');
-        this._element.addEventListener('dragstart', e => {
-            e.preventDefault();
-        });
-        this._element.addEventListener('mousedown', e => {
-            e.preventDefault();
-        });
-        applyAnchorClass(this._element, this._anchor, 'marker');
-        this._popup = null;
-    }
     addTo(map) {
         this.remove();
         this._map = map;
@@ -39045,6 +38957,152 @@ class Marker extends performance.Evented {
     getPitchAlignment() {
         return this._pitchAlignment;
     }
+    constructor(options, legacyOptions) {
+        super();
+        if (options instanceof HTMLElement || legacyOptions) {
+            options = performance.extend({ element: options }, legacyOptions);
+        }
+        performance.bindAll([
+            '_update',
+            '_onMove',
+            '_onUp',
+            '_addDragHandler',
+            '_onMapClick',
+            '_onKeyPress'
+        ], this);
+        this._anchor = options && options.anchor || 'center';
+        this._color = options && options.color || '#3FB1CE';
+        this._scale = options && options.scale || 1;
+        this._draggable = options && options.draggable || false;
+        this._clickTolerance = options && options.clickTolerance || 0;
+        this._isDragging = false;
+        this._state = 'inactive';
+        this._rotation = options && options.rotation || 0;
+        this._rotationAlignment = options && options.rotationAlignment || 'auto';
+        this._pitchAlignment = options && options.pitchAlignment && options.pitchAlignment !== 'auto' ? options.pitchAlignment : this._rotationAlignment;
+        if (!options || !options.element) {
+            this._defaultMarker = true;
+            this._element = DOM.create('div');
+            this._element.setAttribute('aria-label', 'Map marker');
+            const svg = DOM.createNS('http://www.w3.org/2000/svg', 'svg');
+            const defaultHeight = 41;
+            const defaultWidth = 27;
+            svg.setAttributeNS(null, 'display', 'block');
+            svg.setAttributeNS(null, 'height', `${ defaultHeight }px`);
+            svg.setAttributeNS(null, 'width', `${ defaultWidth }px`);
+            svg.setAttributeNS(null, 'viewBox', `0 0 ${ defaultWidth } ${ defaultHeight }`);
+            const markerLarge = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            markerLarge.setAttributeNS(null, 'stroke', 'none');
+            markerLarge.setAttributeNS(null, 'stroke-width', '1');
+            markerLarge.setAttributeNS(null, 'fill', 'none');
+            markerLarge.setAttributeNS(null, 'fill-rule', 'evenodd');
+            const page1 = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            page1.setAttributeNS(null, 'fill-rule', 'nonzero');
+            const shadow = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            shadow.setAttributeNS(null, 'transform', 'translate(3.0, 29.0)');
+            shadow.setAttributeNS(null, 'fill', '#000000');
+            const ellipses = [
+                {
+                    'rx': '10.5',
+                    'ry': '5.25002273'
+                },
+                {
+                    'rx': '10.5',
+                    'ry': '5.25002273'
+                },
+                {
+                    'rx': '9.5',
+                    'ry': '4.77275007'
+                },
+                {
+                    'rx': '8.5',
+                    'ry': '4.29549936'
+                },
+                {
+                    'rx': '7.5',
+                    'ry': '3.81822308'
+                },
+                {
+                    'rx': '6.5',
+                    'ry': '3.34094679'
+                },
+                {
+                    'rx': '5.5',
+                    'ry': '2.86367051'
+                },
+                {
+                    'rx': '4.5',
+                    'ry': '2.38636864'
+                }
+            ];
+            for (const data of ellipses) {
+                const ellipse = DOM.createNS('http://www.w3.org/2000/svg', 'ellipse');
+                ellipse.setAttributeNS(null, 'opacity', '0.04');
+                ellipse.setAttributeNS(null, 'cx', '10.5');
+                ellipse.setAttributeNS(null, 'cy', '5.80029008');
+                ellipse.setAttributeNS(null, 'rx', data['rx']);
+                ellipse.setAttributeNS(null, 'ry', data['ry']);
+                shadow.appendChild(ellipse);
+            }
+            const background = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            background.setAttributeNS(null, 'fill', this._color);
+            const bgPath = DOM.createNS('http://www.w3.org/2000/svg', 'path');
+            bgPath.setAttributeNS(null, 'd', 'M27,13.5 C27,19.074644 20.250001,27.000002 14.75,34.500002 C14.016665,35.500004 12.983335,35.500004 12.25,34.500002 C6.7499993,27.000002 0,19.222562 0,13.5 C0,6.0441559 6.0441559,0 13.5,0 C20.955844,0 27,6.0441559 27,13.5 Z');
+            background.appendChild(bgPath);
+            const border = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            border.setAttributeNS(null, 'opacity', '0.25');
+            border.setAttributeNS(null, 'fill', '#000000');
+            const borderPath = DOM.createNS('http://www.w3.org/2000/svg', 'path');
+            borderPath.setAttributeNS(null, 'd', 'M13.5,0 C6.0441559,0 0,6.0441559 0,13.5 C0,19.222562 6.7499993,27 12.25,34.5 C13,35.522727 14.016664,35.500004 14.75,34.5 C20.250001,27 27,19.074644 27,13.5 C27,6.0441559 20.955844,0 13.5,0 Z M13.5,1 C20.415404,1 26,6.584596 26,13.5 C26,15.898657 24.495584,19.181431 22.220703,22.738281 C19.945823,26.295132 16.705119,30.142167 13.943359,33.908203 C13.743445,34.180814 13.612715,34.322738 13.5,34.441406 C13.387285,34.322738 13.256555,34.180814 13.056641,33.908203 C10.284481,30.127985 7.4148684,26.314159 5.015625,22.773438 C2.6163816,19.232715 1,15.953538 1,13.5 C1,6.584596 6.584596,1 13.5,1 Z');
+            border.appendChild(borderPath);
+            const maki = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            maki.setAttributeNS(null, 'transform', 'translate(6.0, 7.0)');
+            maki.setAttributeNS(null, 'fill', '#FFFFFF');
+            const circleContainer = DOM.createNS('http://www.w3.org/2000/svg', 'g');
+            circleContainer.setAttributeNS(null, 'transform', 'translate(8.0, 8.0)');
+            const circle1 = DOM.createNS('http://www.w3.org/2000/svg', 'circle');
+            circle1.setAttributeNS(null, 'fill', '#000000');
+            circle1.setAttributeNS(null, 'opacity', '0.25');
+            circle1.setAttributeNS(null, 'cx', '5.5');
+            circle1.setAttributeNS(null, 'cy', '5.5');
+            circle1.setAttributeNS(null, 'r', '5.4999962');
+            const circle2 = DOM.createNS('http://www.w3.org/2000/svg', 'circle');
+            circle2.setAttributeNS(null, 'fill', '#FFFFFF');
+            circle2.setAttributeNS(null, 'cx', '5.5');
+            circle2.setAttributeNS(null, 'cy', '5.5');
+            circle2.setAttributeNS(null, 'r', '5.4999962');
+            circleContainer.appendChild(circle1);
+            circleContainer.appendChild(circle2);
+            page1.appendChild(shadow);
+            page1.appendChild(background);
+            page1.appendChild(border);
+            page1.appendChild(maki);
+            page1.appendChild(circleContainer);
+            svg.appendChild(page1);
+            svg.setAttributeNS(null, 'height', `${ defaultHeight * this._scale }px`);
+            svg.setAttributeNS(null, 'width', `${ defaultWidth * this._scale }px`);
+            this._element.appendChild(svg);
+            this._offset = performance.pointGeometry.convert(options && options.offset || [
+                0,
+                -14
+            ]);
+        } else {
+            this._element = options.element;
+            this._offset = performance.pointGeometry.convert(options && options.offset || [
+                0,
+                0
+            ]);
+        }
+        this._element.classList.add('maplibregl-marker', 'mapboxgl-marker');
+        this._element.addEventListener('dragstart', e => {
+            e.preventDefault();
+        });
+        this._element.addEventListener('mousedown', e => {
+            e.preventDefault();
+        });
+        applyAnchorClass(this._element, this._anchor, 'marker');
+        this._popup = null;
+    }
 }
 
 const defaultOptions$2 = {
@@ -39075,19 +39133,6 @@ function checkGeolocationSupport(callback) {
 let numberOfWatches = 0;
 let noTimeout = false;
 class GeolocateControl extends performance.Evented {
-    constructor(options) {
-        super();
-        this.options = performance.extend({}, defaultOptions$2, options);
-        performance.bindAll([
-            '_onSuccess',
-            '_onError',
-            '_onZoom',
-            '_finish',
-            '_setupUI',
-            '_updateCamera',
-            '_updateMarker'
-        ], this);
-    }
     onAdd(map) {
         this._map = map;
         this._container = DOM.create('div', 'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group');
@@ -39380,6 +39425,19 @@ class GeolocateControl extends performance.Evented {
             this._updateMarker(null);
         }
     }
+    constructor(options) {
+        super();
+        this.options = performance.extend({}, defaultOptions$2, options);
+        performance.bindAll([
+            '_onSuccess',
+            '_onError',
+            '_onZoom',
+            '_finish',
+            '_setupUI',
+            '_updateCamera',
+            '_updateMarker'
+        ], this);
+    }
 }
 
 const defaultOptions$1 = {
@@ -39387,13 +39445,6 @@ const defaultOptions$1 = {
     unit: 'metric'
 };
 class ScaleControl {
-    constructor(options) {
-        this.options = performance.extend({}, defaultOptions$1, options);
-        performance.bindAll([
-            '_onMove',
-            'setUnit'
-        ], this);
-    }
     getDefaultPosition() {
         return 'bottom-left';
     }
@@ -39415,6 +39466,13 @@ class ScaleControl {
     setUnit(unit) {
         this.options.unit = unit;
         updateScale(this._map, this._container, this.options);
+    }
+    constructor(options) {
+        this.options = performance.extend({}, defaultOptions$1, options);
+        performance.bindAll([
+            '_onMove',
+            'setUnit'
+        ], this);
     }
 }
 function updateScale(map, container, options) {
@@ -39464,29 +39522,6 @@ function getRoundNum(num) {
 }
 
 class FullscreenControl {
-    constructor(options) {
-        this._fullscreen = false;
-        if (options && options.container) {
-            if (options.container instanceof HTMLElement) {
-                this._container = options.container;
-            } else {
-                performance.warnOnce('Full screen control \'container\' must be a DOM element.');
-            }
-        }
-        performance.bindAll([
-            '_onClickFullscreen',
-            '_changeIcon'
-        ], this);
-        if ('onfullscreenchange' in document) {
-            this._fullscreenchange = 'fullscreenchange';
-        } else if ('onmozfullscreenchange' in document) {
-            this._fullscreenchange = 'mozfullscreenchange';
-        } else if ('onwebkitfullscreenchange' in document) {
-            this._fullscreenchange = 'webkitfullscreenchange';
-        } else if ('onmsfullscreenchange' in document) {
-            this._fullscreenchange = 'MSFullscreenChange';
-        }
-    }
     onAdd(map) {
         this._map = map;
         if (!this._container)
@@ -39559,16 +39594,32 @@ class FullscreenControl {
             this._container.webkitRequestFullscreen();
         }
     }
+    constructor(options) {
+        this._fullscreen = false;
+        if (options && options.container) {
+            if (options.container instanceof HTMLElement) {
+                this._container = options.container;
+            } else {
+                performance.warnOnce('Full screen control \'container\' must be a DOM element.');
+            }
+        }
+        performance.bindAll([
+            '_onClickFullscreen',
+            '_changeIcon'
+        ], this);
+        if ('onfullscreenchange' in document) {
+            this._fullscreenchange = 'fullscreenchange';
+        } else if ('onmozfullscreenchange' in document) {
+            this._fullscreenchange = 'mozfullscreenchange';
+        } else if ('onwebkitfullscreenchange' in document) {
+            this._fullscreenchange = 'webkitfullscreenchange';
+        } else if ('onmsfullscreenchange' in document) {
+            this._fullscreenchange = 'MSFullscreenChange';
+        }
+    }
 }
 
 class TerrainControl {
-    constructor(options = {}) {
-        this.options = options;
-        performance.bindAll([
-            '_toggleTerrain',
-            '_updateTerrainIcon'
-        ], this);
-    }
     onAdd(map) {
         this._map = map;
         this._container = DOM.create('div', 'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group');
@@ -39604,6 +39655,13 @@ class TerrainControl {
             this._terrainButton.title = this._map._getUIString('TerrainControl.enableTerrain');
         }
     }
+    constructor(options = {}) {
+        this.options = options;
+        performance.bindAll([
+            '_toggleTerrain',
+            '_updateTerrainIcon'
+        ], this);
+    }
 }
 
 const defaultOptions = {
@@ -39623,18 +39681,6 @@ const focusQuerySelector = [
     'textarea:not([disabled])'
 ].join(', ');
 class Popup extends performance.Evented {
-    constructor(options) {
-        super();
-        this.options = performance.extend(Object.create(defaultOptions), options);
-        performance.bindAll([
-            '_update',
-            '_onClose',
-            'remove',
-            '_onMouseMove',
-            '_onMouseUp',
-            '_onDrag'
-        ], this);
-    }
     addTo(map) {
         if (this._map)
             this.remove();
@@ -39861,6 +39907,18 @@ class Popup extends performance.Evented {
     }
     _onClose() {
         this.remove();
+    }
+    constructor(options) {
+        super();
+        this.options = performance.extend(Object.create(defaultOptions), options);
+        performance.bindAll([
+            '_update',
+            '_onClose',
+            'remove',
+            '_onMouseMove',
+            '_onMouseUp',
+            '_onDrag'
+        ], this);
     }
 }
 function normalizeOffset(offset) {
