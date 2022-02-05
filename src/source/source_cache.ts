@@ -585,7 +585,7 @@ class SourceCache extends Evented {
                         idealRasterTileIDs[children[1].key] = retain[children[1].key] = children[1];
                         idealRasterTileIDs[children[2].key] = retain[children[2].key] = children[2];
                         idealRasterTileIDs[children[3].key] = retain[children[3].key] = children[3];
-                        delete (missingTileIDs[key]);
+						missingTileIDs[key] = null;
                     }
                 }
                 // search for parent for each missing tile
@@ -595,7 +595,7 @@ class SourceCache extends Evented {
                         idealRasterTileIDs[parent.tileID.key] = retain[parent.tileID.key] = parent.tileID;
                         // remove idealTiles which would be rendered twice
                         for (const key in idealRasterTileIDs) {
-                            if (idealRasterTileIDs[key].isChildOf(parent.tileID)) delete (idealRasterTileIDs[key]);
+                            if (idealRasterTileIDs[key].isChildOf(parent.tileID)) idealRasterTileIDs[key] = null;
                         }
                     }
                 }
