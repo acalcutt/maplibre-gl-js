@@ -172,6 +172,10 @@
     "line": 907
   },
   {
+    "message": "layers[49].paint.fill-opacity: \"zoom\" expression may only be used as input to a top-level \"step\" or \"interpolate\" expression.",
+    "line": 916
+  },
+  {
     "message": "layers[50].layout.visibility: expected one of [visible, none], [\"literal\",true] found",
     "line": 925
   },
