@@ -37305,6 +37305,9 @@ class AttributionControl {
 }
 
 class LogoControl {
+    getDefaultPosition() {
+        return 'bottom-left';
+    }
     onAdd(map) {
         this._map = map;
         this._compact = this.options && this.options.compact;
@@ -37327,9 +37330,6 @@ class LogoControl {
         this._map = undefined;
         this._compact = undefined;
     }
-    getDefaultPosition() {
-        return 'bottom-left';
-    }
     _updateCompact() {
         const containerChildren = this._container.children;
         if (containerChildren.length) {
@@ -37345,8 +37345,10 @@ class LogoControl {
     }
     constructor(options = {}) {
         this.options = options;
-        performance.bindAll(['_updateLogo'], this);
-        performance.bindAll(['_updateCompact'], this);
+        performance.bindAll([
+            '_updateLogo',
+            '_updateCompact'
+        ], this);
     }
 }
 
@@ -37449,7 +37451,7 @@ const defaultOptions$4 = {
     pitchWithRotate: true,
     hash: false,
     attributionControl: true,
-    maplibreLogo: true,
+    maplibreLogo: false,
     failIfMajorPerformanceCaveat: false,
     preserveDrawingBuffer: false,
     trackResize: true,
