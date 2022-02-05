@@ -585,7 +585,7 @@ class SourceCache extends Evented {
                         idealRasterTileIDs[children[1].key] = retain[children[1].key] = children[1];
                         idealRasterTileIDs[children[2].key] = retain[children[2].key] = children[2];
                         idealRasterTileIDs[children[3].key] = retain[children[3].key] = children[3];
-						missingTileIDs[key] = null;
+                        missingTileIDs[key] = null;
                     }
                 }
                 // search for parent for each missing tile
