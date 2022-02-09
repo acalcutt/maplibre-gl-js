@@ -7,7 +7,7 @@ import Style from '../style/style';
 import Texture from '../render/texture';
 import {RGBAImage} from '../util/image';
 import {PosArray, TriangleIndexArray} from '../data/array_types.g';
-import {number as mix} from '../style-spec/util/interpolate';
+import {number as mix} from '../style-spec/util/interpolate.js';
 import posAttributes from '../data/pos_attributes';
 import SegmentVector from '../data/segment';
 import type Transform from '../geo/transform';
@@ -109,6 +109,8 @@ class TerrainSourceCache extends Evented {
     deltaZoom: number;
     // framebuffer-object to render tiles to texture
     rttFramebuffer: Framebuffer;
+    // remember all tiles which contains new data for a spezific source and tile-key.
+    rerender: {[_: string]: {[_: number]: boolean}};
 
     /**
      * @param {Style} style style
@@ -131,6 +133,7 @@ class TerrainSourceCache extends Evented {
         this.elevationOffset = 450; // ~ dead-sea
         this.qualityFactor = 2;
         this.deltaZoom = 1;
+        this.rerender = {};
 
         // create empty DEM Obejcts, which will used while raster-dem tiles will load.
         const context = style.map.painter.context;
@@ -152,9 +155,8 @@ class TerrainSourceCache extends Evented {
         // rerender corresponding tiles on terrain-dem source-tile updates
         style.on('data', e => {
             if (e.dataType === 'source' && e.coord && this.isEnabled()) {
-                const transform = style.map.transform;
+                // redraw current and overscaled terrain-tiles
                 if (e.sourceId === this._sourceCache.id) {
-                    // redraw current and overscaled terrain-tiles
                     for (const key in this._tiles) {
                         const tile = this._tiles[key];
                         if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
@@ -162,7 +164,12 @@ class TerrainSourceCache extends Evented {
                             tile.clearTextures(this._style.map.painter);
                         }
                     }
-                    transform.updateElevation();
+                    style.map.transform.updateElevation();
+                }
+                // remember GeoJson tile updates in rerender cache
+                if (e.source.type === 'geojson') {
+                    this.rerender[e.sourceId] = this.rerender[e.sourceId] || {};
+                    this.rerender[e.sourceId][e.tile.tileID.key] = true;
                 }
             }
         });
@@ -359,13 +366,13 @@ class TerrainSourceCache extends Evented {
         }
         // return uniform values & textures
         return {
-            u_depth: 2,
-            u_terrain: 3,
-            u_terrain_dim: sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
-            u_terrain_matrix: matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
-            u_terrain_unpack: sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
-            u_terrain_offset: this.elevationOffset,
-            u_terrain_exaggeration: this.exaggeration,
+            'u_depth': 2,
+            'u_terrain': 3,
+            'u_terrain_dim': sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
+            'u_terrain_matrix': matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
+            'u_terrain_unpack': sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
+            'u_terrain_offset': this.elevationOffset,
+            'u_terrain_exaggeration': this.exaggeration,
             texture: (sourceTile && sourceTile.demTexture || this._emptyDemTexture).texture,
             depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
             tile: sourceTile
@@ -420,7 +427,7 @@ class TerrainSourceCache extends Evented {
      */
     getFramebuffer(painter: Painter, texture: string): Framebuffer {
         const width = painter.width / devicePixelRatio;
-        const height = painter.height  / devicePixelRatio;
+        const height = painter.height / devicePixelRatio;
         if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
             this._fbo.destroy();
             this._fboCoordsTexture.destroy();
@@ -501,7 +508,7 @@ class TerrainSourceCache extends Evented {
         const texture = new Texture(context, image, context.gl.RGBA, {premultiply: false});
         texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
         this._coordsTexture = texture;
-        return this._coordsTexture;
+        return texture;
     }
 }
 

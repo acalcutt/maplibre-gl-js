@@ -334,7 +334,8 @@ function projectTruncatedLineSegment(previousTilePoint: Point, currentTilePoint:
     return previousProjectedPoint.add(projectedUnitSegment._mult(minimumLength / projectedUnitSegment.mag()));
 }
 
-function placeGlyphAlongLine(offsetX: number,
+function placeGlyphAlongLine(
+    offsetX: number,
     lineOffsetX: number,
     lineOffsetY: number,
     flip: boolean,

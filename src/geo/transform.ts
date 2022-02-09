@@ -495,7 +495,7 @@ class Transform {
     getCameraPosition() {
         const lngLat = this.pointLocation(this.getCameraPoint());
         const altitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
-        return {lngLat, altitude};
+        return {lngLat, altitude: altitude + this.elevation};
     }
 
     // this method only works in combination with freezeElevation, because in this case
@@ -504,13 +504,12 @@ class Transform {
         // find position the camera is looking on
         const center = this.pointLocation3D(this.centerPoint);
         const elevation = this.getElevation(center);
-        const deltaElevation = +this.elevation - elevation;
+        const deltaElevation = this.elevation - elevation;
         if (!deltaElevation) return;
 
         // calculate mercator distance between camera & target
-        const cameraAltitude = this.getCameraPosition().altitude + this.elevation;
-        const cameraLngLat = this.pointLocation(this.getCameraPoint());
-        const camera = MercatorCoordinate.fromLngLat(cameraLngLat, cameraAltitude);
+        const cameraPosition = this.getCameraPosition();
+        const camera = MercatorCoordinate.fromLngLat(cameraPosition.lngLat, cameraPosition.altitude);
         const target = MercatorCoordinate.fromLngLat(center, elevation);
         const dx = camera.x - target.x, dy = camera.y - target.y, dz = camera.z - target.z;
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -626,7 +625,7 @@ class Transform {
             interpolate(y0, y1, t) / this.worldSize);
     }
 
-    // FIXME-3D! mouseout events may contains coordinates outside the coords-framebuffer
+    // FIX ME-3D! mouseout events may contains coordinates outside the coords-framebuffer
     pointCoordinate3D(p: Point) {
         const rgba = new Uint8Array(4);
         const painter = this.terrainSourceCache._style.map.painter, context = painter.context, gl = context.gl;
@@ -639,13 +638,13 @@ class Transform {
         const y = rgba[1] + ((rgba[2] & 15) << 8);
         const tileID = this.terrainSourceCache._coordsIndex[255 - rgba[3]];
         const tile = tileID && this.terrainSourceCache.getTileByID(tileID);
-        if (!tile) return this.pointCoordinate(p); // FIXME! remove this hack
+        if (!tile) return this.pointCoordinate(p); // FIX ME! remove this hack
         const coordsSize = this.terrainSourceCache._coordsTextureSize;
         const worldSize = (1 << tile.tileID.canonical.z) * coordsSize;
         return new MercatorCoordinate(
             (tile.tileID.canonical.x * coordsSize + x) / worldSize,
             (tile.tileID.canonical.y * coordsSize + y) / worldSize,
-            this.terrainSourceCache.getElevation(tile.tileID, x, y, coordsSize)
+            this.terrainSourceCache.getElevationWithExaggeration(tile.tileID, x, y, coordsSize)
         );
     }
 
