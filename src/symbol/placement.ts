@@ -538,8 +538,8 @@ export class Placement {
                             textPixelRatio,
                             posMatrix,
                             collisionGroup.predicate,
-                            getElevation);
-
+                            getElevation
+                        );
                         if (placedFeature && placedFeature.box && placedFeature.box.length) {
                             this.markUsedOrientation(bucket, orientation, symbolInstance);
                             this.placedOrientations[symbolInstance.crossTileID] = orientation;
@@ -670,7 +670,8 @@ export class Placement {
                     collisionGroup.predicate,
                     circlePixelDiameter,
                     textPixelPadding,
-                    getElevation);
+                    getElevation
+                );
 
                 assert(!placedGlyphCircles.circles.length || (!placedGlyphCircles.collisionDetected || showCollisionBoxes));
                 // If text-overlap is set to 'always', force "placedCircles" to true
@@ -686,7 +687,6 @@ export class Placement {
             }
 
             if (collisionArrays.iconBox) {
-
                 const placeIconFeature = iconBox => {
                     const shiftedIconBox = hasIconTextFit && shift ?
                         shiftVariableCollisionBox(

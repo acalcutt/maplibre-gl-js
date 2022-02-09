@@ -1577,9 +1577,9 @@ class Map extends Camera {
      * Loads a 3D terrain mesh, based on a "raster-dem" source.
      *
      * @param {string} id The ID of the raster-dem source to use.
-     * @param options Options object.
-     * @param {number} options.exaggeration this number is the multiplicator (must be a power of 2) for the current tileSize.
-     * @param {number} options.elevationOffset defines the global offset of putting negative elevations (e.g. dead-sea) into positive values.
+     * @param options Allowed options are exaggeration, elevationOffset
+     * @param options.exaggeration
+     * @param options.elevationOffset
      * @returns {Map} `this`
      * @example
      * map.addTerrain('my-data');
