@@ -28,7 +28,7 @@ export const plugins = (minified: boolean, production: boolean, watch: boolean):
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }) : false,
-    buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
+    buble({transforms: {dangerousForOf: true}, objectAssign: 'Object.assign'}),
     minified ? terser({
         compress: {
             // eslint-disable-next-line camelcase
