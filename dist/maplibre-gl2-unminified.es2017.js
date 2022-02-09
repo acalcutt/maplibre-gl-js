@@ -1370,20 +1370,17 @@ if (typeof Object.freeze == 'function') {
     Object.freeze(ResourceType);
 }
 var AJAXError = function (Error) {
-    function AJAXError(message, status, url) {
-        Error.call(this, message);
+    function AJAXError(status, statusText, url, body) {
+        Error.call(this, 'AJAXError: ' + statusText + ' (' + status + '): ' + url);
         this.status = status;
+        this.statusText = statusText;
         this.url = url;
-        this.name = this.constructor.name;
-        this.message = message;
+        this.body = body;
     }
     if (Error)
         AJAXError.__proto__ = Error;
     AJAXError.prototype = Object.create(Error && Error.prototype);
     AJAXError.prototype.constructor = AJAXError;
-    AJAXError.prototype.toString = function toString() {
-        return this.name + ': ' + this.message + ' (' + this.status + '): ' + this.url;
-    };
     return AJAXError;
 }(Error);
 var getReferrer = isWorker() ? function () {
@@ -1427,7 +1424,9 @@ function makeFetchRequest(requestParameters, callback) {
                 var cacheableResponse = null;
                 return finishRequest(response, cacheableResponse, requestTime);
             } else {
-                return callback(new AJAXError(response.statusText, response.status, requestParameters.url));
+                return response.blob().then(function (body) {
+                    return callback(new AJAXError(response.status, response.statusText, requestParameters.url, body));
+                });
             }
         }).catch(function (error) {
             if (error.code === 20) {
@@ -1493,7 +1492,8 @@ function makeXMLHttpRequest(requestParameters, callback) {
             }
             callback(null, data, xhr.getResponseHeader('Cache-Control'), xhr.getResponseHeader('Expires'));
         } else {
-            callback(new AJAXError(xhr.statusText, xhr.status, requestParameters.url));
+            var body = new Blob([xhr.response], { type: xhr.getResponseHeader('Content-Type') });
+            callback(new AJAXError(xhr.status, xhr.statusText, requestParameters.url, body));
         }
     };
     xhr.send(requestParameters.body);
@@ -10633,6 +10633,7 @@ register('Object', Object);
 register('TransferableGridIndex', TransferableGridIndex);
 register('Color', Color$1);
 register('Error', Error);
+register('AJAXError', AJAXError);
 register('ResolvedImage', ResolvedImage);
 register('StylePropertyFunction', StylePropertyFunction);
 register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
@@ -10649,7 +10650,7 @@ function isArrayBuffer(value) {
     return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
 }
 function serialize(input, transferables) {
-    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp) {
+    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || input instanceof Blob) {
         return input;
     }
     if (isArrayBuffer(input)) {
@@ -10718,7 +10719,7 @@ function serialize(input, transferables) {
     throw new Error('can\'t serialize object of type ' + typeof input);
 }
 function deserialize(input) {
-    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
+    if (input === null || input === undefined || typeof input === 'boolean' || typeof input === 'number' || typeof input === 'string' || input instanceof Boolean || input instanceof Number || input instanceof String || input instanceof Date || input instanceof RegExp || input instanceof Blob || isArrayBuffer(input) || isImageBitmap(input) || ArrayBuffer.isView(input) || input instanceof ImageData) {
         return input;
     }
     if (Array.isArray(input)) {
@@ -22709,6 +22710,7 @@ RequestPerformance.prototype.finish = function finish() {
     return resourceTimingData;
 };
 
+exports.AJAXError = AJAXError;
 exports.ARRAY_TYPE = ARRAY_TYPE;
 exports.Actor = Actor;
 exports.AlphaImage = AlphaImage;
@@ -28181,7 +28183,9 @@ Tile.prototype.wasRequested = function wasRequested() {
     return this.state === 'errored' || this.state === 'loaded' || this.state === 'reloading';
 };
 Tile.prototype.clearTextures = function clearTextures(painter) {
-    this.demTexture && painter.saveTileTexture(this.demTexture);
+    if (this.demTexture) {
+        painter.saveTileTexture(this.demTexture);
+    }
     this.textures.forEach(function (t) {
         return painter.saveTileTexture(t);
     });
@@ -29477,6 +29481,7 @@ var TerrainSourceCache = function (Evented) {
         this.elevationOffset = 450;
         this.qualityFactor = 2;
         this.deltaZoom = 1;
+        this.rerender = {};
         var context = style.map.painter.context;
         this._emptyDemUnpack = [
             0,
@@ -29501,7 +29506,6 @@ var TerrainSourceCache = function (Evented) {
         this.rttFramebuffer.depthAttachment.set(context.createRenderbuffer(context.gl.DEPTH_COMPONENT16, size, size));
         style.on('data', function (e) {
             if (e.dataType === 'source' && e.coord && this$1$1.isEnabled()) {
-                var transform = style.map.transform;
                 if (e.sourceId === this$1$1._sourceCache.id) {
                     for (var key in this$1$1._tiles) {
                         var tile = this$1$1._tiles[key];
@@ -29510,7 +29514,11 @@ var TerrainSourceCache = function (Evented) {
                             tile.clearTextures(this$1$1._style.map.painter);
                         }
                     }
-                    transform.updateElevation();
+                    style.map.transform.updateElevation();
+                }
+                if (e.source.type === 'geojson') {
+                    this$1$1.rerender[e.sourceId] = this$1$1.rerender[e.sourceId] || {};
+                    this$1$1.rerender[e.sourceId][e.tile.tileID.key] = true;
                 }
             }
         });
@@ -29710,13 +29718,13 @@ var TerrainSourceCache = function (Evented) {
             };
         }
         return {
-            u_depth: 2,
-            u_terrain: 3,
-            u_terrain_dim: sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
-            u_terrain_matrix: matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
-            u_terrain_unpack: sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
-            u_terrain_offset: this.elevationOffset,
-            u_terrain_exaggeration: this.exaggeration,
+            'u_depth': 2,
+            'u_terrain': 3,
+            'u_terrain_dim': sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
+            'u_terrain_matrix': matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
+            'u_terrain_unpack': sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
+            'u_terrain_offset': this.elevationOffset,
+            'u_terrain_exaggeration': this.exaggeration,
             texture: (sourceTile && sourceTile.demTexture || this._emptyDemTexture).texture,
             depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
             tile: sourceTile
@@ -29847,7 +29855,7 @@ var TerrainSourceCache = function (Evented) {
         var texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
         texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
         this._coordsTexture = texture;
-        return this._coordsTexture;
+        return texture;
     };
     return TerrainSourceCache;
 }(performance.Evented);
@@ -36953,7 +36961,8 @@ Painter.prototype.render = function render(style, options) {
         line: true,
         raster: true
     };
-    var isTerrainEnabled = this.style.terrainSourceCache.isEnabled();
+    var tsc = this.style.terrainSourceCache;
+    var isTerrainEnabled = tsc.isEnabled();
     for (var id in sourceCaches) {
         var sourceCache = sourceCaches[id];
         if (sourceCache.used) {
@@ -36973,7 +36982,7 @@ Painter.prototype.render = function render(style, options) {
         if (isTerrainEnabled) {
             coordsDescendingInv[id1] = {};
             for (var c = 0; c < coordsDescending[id1].length; c++) {
-                var coords = this.style.terrainSourceCache.getTerrainCoords(coordsDescending[id1][c]);
+                var coords = tsc.getTerrainCoords(coordsDescending[id1][c]);
                 for (var key in coords) {
                     if (!coordsDescendingInv[id1][key]) {
                         coordsDescendingInv[id1][key] = [];
@@ -37007,11 +37016,11 @@ Painter.prototype.render = function render(style, options) {
     }
     if (isTerrainEnabled) {
         this.opaquePassCutoff = 0;
-        var newTiles = this.style.terrainSourceCache.tilesAfterTime(this.terrainFacilitator.renderTime);
+        var newTiles = tsc.tilesAfterTime(this.terrainFacilitator.renderTime);
         if (!performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
             performance.copy(this.terrainFacilitator.matrix, this.transform.projMatrix);
             this.terrainFacilitator.renderTime = Date.now();
-            updateTerrainFacilitators(this, this.style.terrainSourceCache);
+            updateTerrainFacilitators(this, tsc);
         }
     }
     this.renderPass = 'offscreen';
@@ -37054,35 +37063,43 @@ Painter.prototype.render = function render(style, options) {
     var rerender = {};
     var renderableTiles = [];
     if (isTerrainEnabled) {
-        renderableTiles = this.style.terrainSourceCache.getRenderableTiles();
+        renderableTiles = tsc.getRenderableTiles();
         renderableTiles.forEach(function (tile) {
             for (var source in coordsDescendingInvStr) {
                 var coords = coordsDescendingInvStr[source][tile.tileID.key];
                 if (coords && coords !== tile.textureCoords[source]) {
                     tile.clearTextures(this$1$1);
                 }
+                if (tsc.rerender[source] && tsc.rerender[source][tile.tileID.key]) {
+                    tile.clearTextures(this$1$1);
+                }
             }
             rerender[tile.tileID.key] = !tile.textures.length;
         });
+        tsc.rerender = {};
     }
     for (this.currentLayer = 0; this.currentLayer < layerIds.length; this.currentLayer++) {
         var layer$3 = this.style._layers[layerIds[this.currentLayer]];
         var sourceCache$3 = sourceCaches[layer$3.source];
         var type = layer$3.type;
         if (isTerrainEnabled) {
+            var isLastLayer = this.currentLayer + 1 === layerIds.length;
             if (renderToTexture[type]) {
                 if (!prevType || !renderToTexture[prevType]) {
                     stacks.push([]);
                 }
                 prevType = type;
                 stacks[stacks.length - 1].push(layerIds[this.currentLayer]);
-                continue;
-            } else if (renderToTexture[prevType] || type === 'hillshade') {
+                if (!isLastLayer) {
+                    continue;
+                }
+            }
+            if (renderToTexture[prevType] || type === 'hillshade' || renderToTexture[type] && isLastLayer) {
                 prevType = type;
                 var stack = stacks.length - 1, layers = stacks[stack] || [];
                 for (var i$3 = 0, list$2 = renderableTiles; i$3 < list$2.length; i$3 += 1) {
                     var tile = list$2[i$3];
-                    prepareTerrain(this, this.style.terrainSourceCache, tile, stack);
+                    prepareTerrain(this, tsc, tile, stack);
                     if (rerender[tile.tileID.key]) {
                         this.context.clear({ color: performance.Color.transparent });
                         for (var l = 0; l < layers.length; l++) {
@@ -37095,18 +37112,18 @@ Painter.prototype.render = function render(style, options) {
                             }
                         }
                     }
-                    drawTerrain(this, this.style.terrainSourceCache, tile);
+                    drawTerrain(this, tsc, tile);
                 }
                 if (type === 'hillshade') {
                     stacks.push([layerIds[this.currentLayer]]);
                     for (var i$4 = 0, list$3 = renderableTiles; i$4 < list$3.length; i$4 += 1) {
                         var tile$1 = list$3[i$4];
                         var coords$4 = coordsDescendingInv[layer$3.source][tile$1.tileID.key];
-                        prepareTerrain(this, this.style.terrainSourceCache, tile$1, stacks.length - 1);
+                        prepareTerrain(this, tsc, tile$1, stacks.length - 1);
                         this.context.clear({ color: performance.Color.transparent });
                         this._renderTileClippingMasks(layer$3, coords$4);
                         this.renderLayer(this, sourceCache$3, layer$3, coords$4);
-                        drawTerrain(this, this.style.terrainSourceCache, tile$1);
+                        drawTerrain(this, tsc, tile$1);
                     }
                     continue;
                 }
@@ -37945,19 +37962,18 @@ Transform.prototype.getCameraPosition = function getCameraPosition() {
     var altitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
     return {
         lngLat: lngLat,
-        altitude: altitude
+        altitude: altitude + this.elevation
     };
 };
 Transform.prototype.recalculateZoom = function recalculateZoom() {
     var center = this.pointLocation3D(this.centerPoint);
     var elevation = this.getElevation(center);
-    var deltaElevation = +this.elevation - elevation;
+    var deltaElevation = this.elevation - elevation;
     if (!deltaElevation) {
         return;
     }
-    var cameraAltitude = this.getCameraPosition().altitude + this.elevation;
-    var cameraLngLat = this.pointLocation(this.getCameraPoint());
-    var camera = performance.MercatorCoordinate.fromLngLat(cameraLngLat, cameraAltitude);
+    var cameraPosition = this.getCameraPosition();
+    var camera = performance.MercatorCoordinate.fromLngLat(cameraPosition.lngLat, cameraPosition.altitude);
     var target = performance.MercatorCoordinate.fromLngLat(center, elevation);
     var dx = camera.x - target.x, dy = camera.y - target.y, dz = camera.z - target.z;
     var distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -38036,7 +38052,7 @@ Transform.prototype.pointCoordinate3D = function pointCoordinate3D(p) {
     }
     var coordsSize = this.terrainSourceCache._coordsTextureSize;
     var worldSize = (1 << tile.tileID.canonical.z) * coordsSize;
-    return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.terrainSourceCache.getElevation(tile.tileID, x, y, coordsSize));
+    return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.terrainSourceCache.getElevationWithExaggeration(tile.tileID, x, y, coordsSize));
 };
 Transform.prototype.coordinatePoint = function coordinatePoint(coord, elevation) {
     if (elevation === void 0)
@@ -40762,6 +40778,7 @@ var Camera = function (Evented) {
         if (currently === void 0)
             currently = {};
         this._moving = true;
+        this.transform.freezeElevation = true;
         if (!noMoveStart && !currently.moving) {
             this.fire(new performance.Event('movestart', eventData));
         }
@@ -40792,6 +40809,8 @@ var Camera = function (Evented) {
             return;
         }
         delete this._easeId;
+        this.transform.freezeElevation = false;
+        this.transform.recalculateZoom();
         var wasZooming = this._zooming;
         var wasRotating = this._rotating;
         var wasPitching = this._pitching;
@@ -43984,7 +44003,15 @@ var exported = {
     Point: performance.pointGeometry,
     MercatorCoordinate: performance.MercatorCoordinate,
     Evented: performance.Evented,
+    AJAXError: performance.AJAXError,
     config: performance.config,
+    CanvasSource: CanvasSource,
+    GeoJSONSource: GeoJSONSource,
+    ImageSource: ImageSource,
+    RasterDEMTileSource: RasterDEMTileSource,
+    RasterTileSource: RasterTileSource,
+    VectorTileSource: VectorTileSource,
+    VideoSource: VideoSource,
     prewarm: prewarm,
     clearPrewarmedResources: clearPrewarmedResources,
     get workerCount() {
