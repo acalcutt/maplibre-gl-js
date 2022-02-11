@@ -300,7 +300,7 @@ function isImageBitmap(image) {
     return typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap;
 }
 
-var now = typeof window !== 'undefined' && performance && performance.now ? performance.now.bind(performance) : Date.now.bind(Date);
+var now = typeof performance !== 'undefined' && performance && performance.now ? performance.now.bind(performance) : Date.now.bind(Date);
 var linkEl;
 var reducedMotionQuery;
 var exported$1 = {
