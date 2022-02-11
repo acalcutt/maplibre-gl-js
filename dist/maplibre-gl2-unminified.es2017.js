@@ -108,9 +108,9 @@ function easeCubicInOut(t) {
     return 4 * (t < 0.5 ? t3 : 3 * (t - t2) + t3 - 0.75);
 }
 function bezier(p1x, p1y, p2x, p2y) {
-    var bezier1 = new unitbezier(p1x, p1y, p2x, p2y);
+    var bezier = new unitbezier(p1x, p1y, p2x, p2y);
     return function (t) {
-        return bezier1.solve(t);
+        return bezier.solve(t);
     };
 }
 var ease = bezier(0.25, 0.1, 0.25, 1);
@@ -1577,17 +1577,17 @@ var resetImageRequestQueue = function () {
     numImageRequests = 0;
 };
 resetImageRequestQueue();
-var getImage = function (requestParameters1, callback1) {
+var getImage = function (requestParameters, callback) {
     if (exported.supported) {
-        if (!requestParameters1.headers) {
-            requestParameters1.headers = {};
+        if (!requestParameters.headers) {
+            requestParameters.headers = {};
         }
-        requestParameters1.headers.accept = 'image/webp,*/*';
+        requestParameters.headers.accept = 'image/webp,*/*';
     }
     if (numImageRequests >= config.MAX_PARALLEL_IMAGE_REQUESTS) {
         var queued = {
-            requestParameters: requestParameters1,
-            callback: callback1,
+            requestParameters: requestParameters,
+            callback: callback,
             cancelled: false,
             cancel: function cancel() {
                 this.cancelled = true;
@@ -1614,17 +1614,17 @@ var getImage = function (requestParameters1, callback1) {
             }
         }
     };
-    var request1 = getArrayBuffer(requestParameters1, function (err, data, cacheControl, expires) {
+    var request = getArrayBuffer(requestParameters, function (err, data, cacheControl, expires) {
         advanceImageRequestQueue();
         if (err) {
-            callback1(err);
+            callback(err);
         } else if (data) {
-            arrayBufferToCanvasImageSource(data, callback1, cacheControl, expires);
+            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
         }
     });
     return {
         cancel: function () {
-            request1.cancel();
+            request.cancel();
             advanceImageRequestQueue();
         }
     };
@@ -1713,9 +1713,9 @@ Evented.prototype.fire = function fire(event, properties) {
         }
         var oneTimeListeners = this._oneTimeListeners && this._oneTimeListeners[type] ? this._oneTimeListeners[type].slice() : [];
         for (var i$1 = 0, list$1 = oneTimeListeners; i$1 < list$1.length; i$1 += 1) {
-            var listener1 = list$1[i$1];
-            _removeEventListener(type, listener1, this._oneTimeListeners);
-            listener1.call(this, event);
+            var listener$1 = list$1[i$1];
+            _removeEventListener(type, listener$1, this._oneTimeListeners);
+            listener$1.call(this, event);
         }
         var parent = this._eventedParent;
         if (parent) {
@@ -4265,7 +4265,6 @@ var ParsingError = function (Error) {
     ParsingError.prototype.constructor = ParsingError;
     return ParsingError;
 }(Error);
-var ParsingError$1 = ParsingError;
 
 var Scope = function Scope(parent, bindings) {
     if (bindings === void 0)
@@ -4297,7 +4296,6 @@ Scope.prototype.has = function has(name) {
     }
     return this.parent ? this.parent.has(name) : false;
 };
-var Scope$1 = Scope;
 
 var NullType = { kind: 'null' };
 var NumberType = { kind: 'number' };
@@ -5446,7 +5444,6 @@ Color.black = new Color(0, 0, 0, 1);
 Color.white = new Color(1, 1, 1, 1);
 Color.transparent = new Color(0, 0, 0, 0);
 Color.red = new Color(1, 0, 0, 1);
-var Color$1 = Color;
 
 var Collator = function Collator(caseSensitive, diacriticSensitive, locale) {
     if (caseSensitive) {
@@ -5589,7 +5586,7 @@ function isValue(mixed) {
         return true;
     } else if (typeof mixed === 'number') {
         return true;
-    } else if (mixed instanceof Color$1) {
+    } else if (mixed instanceof Color) {
         return true;
     } else if (mixed instanceof Collator) {
         return true;
@@ -5625,7 +5622,7 @@ function typeOf(value) {
         return BooleanType;
     } else if (typeof value === 'number') {
         return NumberType;
-    } else if (value instanceof Color$1) {
+    } else if (value instanceof Color) {
         return ColorType;
     } else if (value instanceof Collator) {
         return CollatorType;
@@ -5659,7 +5656,7 @@ function toString(value) {
         return '';
     } else if (type === 'string' || type === 'number' || type === 'boolean') {
         return String(value);
-    } else if (value instanceof Color$1 || value instanceof Formatted || value instanceof ResolvedImage) {
+    } else if (value instanceof Color || value instanceof Formatted || value instanceof ResolvedImage) {
         return value.toString();
     } else {
         return JSON.stringify(value);
@@ -5699,7 +5696,7 @@ Literal.prototype.serialize = function serialize() {
             'literal',
             this.value
         ];
-    } else if (this.value instanceof Color$1) {
+    } else if (this.value instanceof Color) {
         return ['rgba'].concat(this.value.toArray());
     } else if (this.value instanceof Formatted) {
         return this.value.serialize();
@@ -5707,7 +5704,6 @@ Literal.prototype.serialize = function serialize() {
         return this.value;
     }
 };
-var Literal$1 = Literal;
 
 var RuntimeError = function RuntimeError(message) {
     this.name = 'ExpressionEvaluationError';
@@ -5716,7 +5712,6 @@ var RuntimeError = function RuntimeError(message) {
 RuntimeError.prototype.toJSON = function toJSON() {
     return this.message;
 };
-var RuntimeError$1 = RuntimeError;
 
 var types$1 = {
     string: StringType,
@@ -5776,7 +5771,7 @@ Assertion.prototype.evaluate = function evaluate(ctx) {
         if (!error) {
             return value;
         } else if (i === this.args.length - 1) {
-            throw new RuntimeError$1('Expected value to be of type ' + toString$1(this.type) + ', but found ' + toString$1(typeOf(value)) + ' instead.');
+            throw new RuntimeError('Expected value to be of type ' + toString$1(this.type) + ', but found ' + toString$1(typeOf(value)) + ' instead.');
         }
     }
     return null;
@@ -5806,7 +5801,6 @@ Assertion.prototype.serialize = function serialize() {
         return arg.serialize();
     }));
 };
-var Assertion$1 = Assertion;
 
 var FormatExpression = function FormatExpression(sections) {
     this.type = FormattedType;
@@ -5993,7 +5987,7 @@ Coercion.prototype.evaluate = function evaluate(ctx) {
             var arg = list[i];
             input = arg.evaluate(ctx);
             error = null;
-            if (input instanceof Color$1) {
+            if (input instanceof Color) {
                 return input;
             } else if (typeof input === 'string') {
                 var c = ctx.parseColor(input);
@@ -6007,11 +6001,11 @@ Coercion.prototype.evaluate = function evaluate(ctx) {
                     error = validateRGBA(input[0], input[1], input[2], input[3]);
                 }
                 if (!error) {
-                    return new Color$1(input[0] / 255, input[1] / 255, input[2] / 255, input[3]);
+                    return new Color(input[0] / 255, input[1] / 255, input[2] / 255, input[3]);
                 }
             }
         }
-        throw new RuntimeError$1(error || 'Could not parse color from value \'' + (typeof input === 'string' ? input : String(JSON.stringify(input))) + '\'');
+        throw new RuntimeError(error || 'Could not parse color from value \'' + (typeof input === 'string' ? input : String(JSON.stringify(input))) + '\'');
     } else if (this.type.kind === 'number') {
         var value = null;
         for (var i$1 = 0, list$1 = this.args; i$1 < list$1.length; i$1 += 1) {
@@ -6026,7 +6020,7 @@ Coercion.prototype.evaluate = function evaluate(ctx) {
             }
             return num;
         }
-        throw new RuntimeError$1('Could not convert ' + JSON.stringify(value) + ' to number.');
+        throw new RuntimeError('Could not convert ' + JSON.stringify(value) + ' to number.');
     } else if (this.type.kind === 'formatted') {
         return Formatted.fromString(toString(this.args[0].evaluate(ctx)));
     } else if (this.type.kind === 'resolvedImage') {
@@ -6061,7 +6055,6 @@ Coercion.prototype.serialize = function serialize() {
     });
     return serialized;
 };
-var Coercion$1 = Coercion;
 
 var geometryTypes = [
     'Unknown',
@@ -6096,11 +6089,10 @@ EvaluationContext.prototype.properties = function properties() {
 EvaluationContext.prototype.parseColor = function parseColor(input) {
     var cached = this._parseColorCache[input];
     if (!cached) {
-        cached = this._parseColorCache[input] = Color$1.parse(input);
+        cached = this._parseColorCache[input] = Color.parse(input);
     }
     return cached;
 };
-var EvaluationContext$1 = EvaluationContext;
 
 var CompoundExpression = function CompoundExpression(name, type, evaluate, args) {
     this.name = name;
@@ -6139,16 +6131,16 @@ CompoundExpression.parse = function parse(args, context) {
         return !Array.isArray(signature) || signature.length === args.length - 1;
     });
     var signatureContext = null;
-    for (var i$2 = 0, list = overloads; i$2 < list.length; i$2 += 1) {
-        var ref = list[i$2];
-        var params1 = ref[0];
+    for (var i$3 = 0, list = overloads; i$3 < list.length; i$3 += 1) {
+        var ref = list[i$3];
+        var params = ref[0];
         var evaluate = ref[1];
-        signatureContext = new ParsingContext$1(context.registry, context.path, null, context.scope);
+        signatureContext = new ParsingContext(context.registry, context.path, null, context.scope);
         var parsedArgs = [];
         var argParseFailed = false;
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];
-            var expectedType = Array.isArray(params1) ? params1[i - 1] : params1.type;
+            var expectedType = Array.isArray(params) ? params[i - 1] : params.type;
             var parsed = signatureContext.parse(arg, 1 + parsedArgs.length, expectedType);
             if (!parsed) {
                 argParseFailed = true;
@@ -6159,16 +6151,16 @@ CompoundExpression.parse = function parse(args, context) {
         if (argParseFailed) {
             continue;
         }
-        if (Array.isArray(params1)) {
-            if (params1.length !== parsedArgs.length) {
-                signatureContext.error('Expected ' + params1.length + ' arguments, but found ' + parsedArgs.length + ' instead.');
+        if (Array.isArray(params)) {
+            if (params.length !== parsedArgs.length) {
+                signatureContext.error('Expected ' + params.length + ' arguments, but found ' + parsedArgs.length + ' instead.');
                 continue;
             }
         }
-        for (var i1 = 0; i1 < parsedArgs.length; i1++) {
-            var expected = Array.isArray(params1) ? params1[i1] : params1.type;
-            var arg$1 = parsedArgs[i1];
-            signatureContext.concat(i1 + 1).checkSubtype(expected, arg$1.type);
+        for (var i$1 = 0; i$1 < parsedArgs.length; i$1++) {
+            var expected = Array.isArray(params) ? params[i$1] : params.type;
+            var arg$1 = parsedArgs[i$1];
+            signatureContext.concat(i$1 + 1).checkSubtype(expected, arg$1.type);
         }
         if (signatureContext.errors.length === 0) {
             return new CompoundExpression(op, type, evaluate, parsedArgs);
@@ -6183,8 +6175,8 @@ CompoundExpression.parse = function parse(args, context) {
             return stringifySignature(params);
         }).join(' | ');
         var actualTypes = [];
-        for (var i$1 = 1; i$1 < args.length; i$1++) {
-            var parsed$1 = context.parse(args[i$1], 1 + actualTypes.length);
+        for (var i$2 = 1; i$2 < args.length; i$2++) {
+            var parsed$1 = context.parse(args[i$2], 1 + actualTypes.length);
             if (!parsed$1) {
                 return null;
             }
@@ -6207,7 +6199,6 @@ function stringifySignature(signature) {
         return '(' + toString$1(signature.type) + '...)';
     }
 }
-var CompoundExpression$1 = CompoundExpression;
 
 var CollatorExpression = function CollatorExpression(caseSensitive, diacriticSensitive, locale) {
     this.type = CollatorType;
@@ -6387,8 +6378,8 @@ function lineStringWithinPolygon(line, polygon) {
             return false;
         }
     }
-    for (var i1 = 0; i1 < line.length - 1; ++i1) {
-        if (lineIntersectPolygon(line[i1], line[i1 + 1], polygon)) {
+    for (var i$1 = 0; i$1 < line.length - 1; ++i$1) {
+        if (lineIntersectPolygon(line[i$1], line[i$1 + 1], polygon)) {
             return false;
         }
     }
@@ -6626,10 +6617,9 @@ Within.prototype.serialize = function serialize() {
         this.geojson
     ];
 };
-var Within$1 = Within;
 
 function isFeatureConstant(e) {
-    if (e instanceof CompoundExpression$1) {
+    if (e instanceof CompoundExpression) {
         if (e.name === 'get' && e.args.length === 1) {
             return false;
         } else if (e.name === 'feature-state') {
@@ -6642,7 +6632,7 @@ function isFeatureConstant(e) {
             return false;
         }
     }
-    if (e instanceof Within$1) {
+    if (e instanceof Within) {
         return false;
     }
     var result = true;
@@ -6654,7 +6644,7 @@ function isFeatureConstant(e) {
     return result;
 }
 function isStateConstant(e) {
-    if (e instanceof CompoundExpression$1) {
+    if (e instanceof CompoundExpression) {
         if (e.name === 'feature-state') {
             return false;
         }
@@ -6668,7 +6658,7 @@ function isStateConstant(e) {
     return result;
 }
 function isGlobalPropertyConstant(e, properties) {
-    if (e instanceof CompoundExpression$1 && properties.indexOf(e.name) >= 0) {
+    if (e instanceof CompoundExpression && properties.indexOf(e.name) >= 0) {
         return false;
     }
     var result = true;
@@ -6709,13 +6699,12 @@ Var.prototype.serialize = function serialize() {
         this.name
     ];
 };
-var Var$1 = Var;
 
 var ParsingContext = function ParsingContext(registry, path, expectedType, scope, errors) {
     if (path === void 0)
         path = [];
     if (scope === void 0)
-        scope = new Scope$1();
+        scope = new Scope();
     if (errors === void 0)
         errors = [];
     this.registry = registry;
@@ -6744,9 +6733,9 @@ ParsingContext.prototype._parse = function _parse(expr, options) {
     }
     function annotate(parsed, type, typeAnnotation) {
         if (typeAnnotation === 'assert') {
-            return new Assertion$1(type, [parsed]);
+            return new Assertion(type, [parsed]);
         } else if (typeAnnotation === 'coerce') {
-            return new Coercion$1(type, [parsed]);
+            return new Coercion(type, [parsed]);
         } else {
             return parsed;
         }
@@ -6777,10 +6766,10 @@ ParsingContext.prototype._parse = function _parse(expr, options) {
                     return null;
                 }
             }
-            if (!(parsed instanceof Literal$1) && parsed.type.kind !== 'resolvedImage' && isConstant(parsed)) {
-                var ec = new EvaluationContext$1();
+            if (!(parsed instanceof Literal) && parsed.type.kind !== 'resolvedImage' && isConstant(parsed)) {
+                var ec = new EvaluationContext();
                 try {
-                    parsed = new Literal$1(parsed.type, parsed.evaluate(ec));
+                    parsed = new Literal(parsed.type, parsed.evaluate(ec));
                 } catch (e) {
                     this.error(e.message);
                     return null;
@@ -6809,7 +6798,7 @@ ParsingContext.prototype.error = function error(error$1) {
     var key = '' + this.key + keys.map(function (k) {
         return '[' + k + ']';
     }).join('');
-    this.errors.push(new ParsingError$1(key, error$1));
+    this.errors.push(new ParsingError(key, error$1));
 };
 ParsingContext.prototype.checkSubtype = function checkSubtype$1(expected, t) {
     var error = checkSubtype(expected, t);
@@ -6818,24 +6807,23 @@ ParsingContext.prototype.checkSubtype = function checkSubtype$1(expected, t) {
     }
     return error;
 };
-var ParsingContext$1 = ParsingContext;
 function isConstant(expression) {
-    if (expression instanceof Var$1) {
+    if (expression instanceof Var) {
         return isConstant(expression.boundExpression);
-    } else if (expression instanceof CompoundExpression$1 && expression.name === 'error') {
+    } else if (expression instanceof CompoundExpression && expression.name === 'error') {
         return false;
     } else if (expression instanceof CollatorExpression) {
         return false;
-    } else if (expression instanceof Within$1) {
+    } else if (expression instanceof Within) {
         return false;
     }
-    var isTypeAnnotation = expression instanceof Coercion$1 || expression instanceof Assertion$1;
+    var isTypeAnnotation = expression instanceof Coercion || expression instanceof Assertion;
     var childrenConstant = true;
     expression.eachChild(function (child) {
         if (isTypeAnnotation) {
             childrenConstant = childrenConstant && isConstant(child);
         } else {
-            childrenConstant = childrenConstant && child instanceof Literal$1;
+            childrenConstant = childrenConstant && child instanceof Literal;
         }
     });
     if (!childrenConstant) {
@@ -6868,7 +6856,7 @@ function findStopLessThanOrEqualTo(stops, input) {
         } else if (currentValue > input) {
             upperIndex = currentIndex - 1;
         } else {
-            throw new RuntimeError$1('Input is not a number.');
+            throw new RuntimeError('Input is not a number.');
         }
     }
     return 0;
@@ -6968,13 +6956,12 @@ Step.prototype.serialize = function serialize() {
     }
     return serialized;
 };
-var Step$1 = Step;
 
 function number(a, b, t) {
     return a * (1 - t) + b * t;
 }
 function color(from, to, t) {
-    return new Color$1(number(from.r, to.r, t), number(from.g, to.g, t), number(from.b, to.b, t), number(from.a, to.a, t));
+    return new Color(number(from.r, to.r, t), number(from.g, to.g, t), number(from.b, to.b, t), number(from.a, to.a, t));
 }
 function array(from, to, t) {
     return from.map(function (d, i) {
@@ -7017,7 +7004,7 @@ function labToRgb(labColor) {
     y = Yn * lab2xyz(y);
     x = Xn * lab2xyz(x);
     z = Zn * lab2xyz(z);
-    return new Color$1(xyz2rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z), xyz2rgb(-0.969266 * x + 1.8760108 * y + 0.041556 * z), xyz2rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z), labColor.alpha);
+    return new Color(xyz2rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z), xyz2rgb(-0.969266 * x + 1.8760108 * y + 0.041556 * z), xyz2rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z), labColor.alpha);
 }
 function interpolateLab(from, to, t) {
     return {
@@ -7259,7 +7246,6 @@ function exponentialInterpolation(input, base, lowerValue, upperValue) {
         return (Math.pow(base, progress) - 1) / (Math.pow(base, difference) - 1);
     }
 }
-var Interpolate$1 = Interpolate;
 
 var Coalesce = function Coalesce(type, args) {
     this.type = type;
@@ -7276,8 +7262,8 @@ Coalesce.parse = function parse(args, context) {
     }
     var parsedArgs = [];
     for (var i = 0, list = args.slice(1); i < list.length; i += 1) {
-        var arg1 = list[i];
-        var parsed = context.parse(arg1, 1 + parsedArgs.length, outputType, undefined, { typeAnnotation: 'omit' });
+        var arg = list[i];
+        var parsed = context.parse(arg, 1 + parsedArgs.length, outputType, undefined, { typeAnnotation: 'omit' });
         if (!parsed) {
             return null;
         }
@@ -7327,7 +7313,6 @@ Coalesce.prototype.serialize = function serialize() {
     });
     return serialized;
 };
-var Coalesce$1 = Coalesce;
 
 var Let = function Let(bindings, result) {
     this.type = result.type;
@@ -7386,7 +7371,6 @@ Let.prototype.serialize = function serialize() {
     serialized.push(this.result.serialize());
     return serialized;
 };
-var Let$1 = Let;
 
 var At = function At(type, index, input) {
     this.type = type;
@@ -7407,17 +7391,17 @@ At.parse = function parse(args, context) {
 };
 At.prototype.evaluate = function evaluate(ctx) {
     var index = this.index.evaluate(ctx);
-    var array1 = this.input.evaluate(ctx);
+    var array = this.input.evaluate(ctx);
     if (index < 0) {
-        throw new RuntimeError$1('Array index out of bounds: ' + index + ' < 0.');
+        throw new RuntimeError('Array index out of bounds: ' + index + ' < 0.');
     }
-    if (index >= array1.length) {
-        throw new RuntimeError$1('Array index out of bounds: ' + index + ' > ' + (array1.length - 1) + '.');
+    if (index >= array.length) {
+        throw new RuntimeError('Array index out of bounds: ' + index + ' > ' + (array.length - 1) + '.');
     }
     if (index !== Math.floor(index)) {
-        throw new RuntimeError$1('Array index must be an integer, but found ' + index + ' instead.');
+        throw new RuntimeError('Array index must be an integer, but found ' + index + ' instead.');
     }
-    return array1[index];
+    return array[index];
 };
 At.prototype.eachChild = function eachChild(fn) {
     fn(this.index);
@@ -7433,7 +7417,6 @@ At.prototype.serialize = function serialize() {
         this.input.serialize()
     ];
 };
-var At$1 = At;
 
 var In = function In(needle, haystack) {
     this.type = BooleanType;
@@ -7472,13 +7455,13 @@ In.prototype.evaluate = function evaluate(ctx) {
             'number',
             'null'
         ])) {
-        throw new RuntimeError$1('Expected first argument to be of type boolean, string, number or null, but found ' + toString$1(typeOf(needle)) + ' instead.');
+        throw new RuntimeError('Expected first argument to be of type boolean, string, number or null, but found ' + toString$1(typeOf(needle)) + ' instead.');
     }
     if (!isValidNativeType(haystack, [
             'string',
             'array'
         ])) {
-        throw new RuntimeError$1('Expected second argument to be of type array or string, but found ' + toString$1(typeOf(haystack)) + ' instead.');
+        throw new RuntimeError('Expected second argument to be of type array or string, but found ' + toString$1(typeOf(haystack)) + ' instead.');
     }
     return haystack.indexOf(needle) >= 0;
 };
@@ -7496,7 +7479,6 @@ In.prototype.serialize = function serialize() {
         this.haystack.serialize()
     ];
 };
-var In$1 = In;
 
 var IndexOf = function IndexOf(needle, haystack, fromIndex) {
     this.type = NumberType;
@@ -7541,13 +7523,13 @@ IndexOf.prototype.evaluate = function evaluate(ctx) {
             'number',
             'null'
         ])) {
-        throw new RuntimeError$1('Expected first argument to be of type boolean, string, number or null, but found ' + toString$1(typeOf(needle)) + ' instead.');
+        throw new RuntimeError('Expected first argument to be of type boolean, string, number or null, but found ' + toString$1(typeOf(needle)) + ' instead.');
     }
     if (!isValidNativeType(haystack, [
             'string',
             'array'
         ])) {
-        throw new RuntimeError$1('Expected second argument to be of type array or string, but found ' + toString$1(typeOf(haystack)) + ' instead.');
+        throw new RuntimeError('Expected second argument to be of type array or string, but found ' + toString$1(typeOf(haystack)) + ' instead.');
     }
     if (this.fromIndex) {
         var fromIndex = this.fromIndex.evaluate(ctx);
@@ -7581,7 +7563,6 @@ IndexOf.prototype.serialize = function serialize() {
         this.haystack.serialize()
     ];
 };
-var IndexOf$1 = IndexOf;
 
 var Match = function Match(inputType, outputType, input, cases, outputs, otherwise) {
     this.inputType = inputType;
@@ -7678,16 +7659,16 @@ Match.prototype.serialize = function serialize() {
     var groupedByOutput = [];
     var outputLookup = {};
     for (var i = 0, list = sortedLabels; i < list.length; i += 1) {
-        var label1 = list[i];
-        var outputIndex = outputLookup[this.cases[label1]];
+        var label = list[i];
+        var outputIndex = outputLookup[this.cases[label]];
         if (outputIndex === undefined) {
-            outputLookup[this.cases[label1]] = groupedByOutput.length;
+            outputLookup[this.cases[label]] = groupedByOutput.length;
             groupedByOutput.push([
-                this.cases[label1],
-                [label1]
+                this.cases[label],
+                [label]
             ]);
         } else {
-            groupedByOutput[outputIndex][1].push(label1);
+            groupedByOutput[outputIndex][1].push(label);
         }
     }
     var coerceLabel = function (label) {
@@ -7707,7 +7688,6 @@ Match.prototype.serialize = function serialize() {
     serialized.push(this.otherwise.serialize());
     return serialized;
 };
-var Match$1 = Match;
 
 var Case = function Case(type, branches, otherwise) {
     this.type = type;
@@ -7782,7 +7762,6 @@ Case.prototype.serialize = function serialize() {
     });
     return serialized;
 };
-var Case$1 = Case;
 
 var Slice = function Slice(type, input, beginIndex, endIndex) {
     this.type = type;
@@ -7823,7 +7802,7 @@ Slice.prototype.evaluate = function evaluate(ctx) {
             'string',
             'array'
         ])) {
-        throw new RuntimeError$1('Expected first argument to be of type array or string, but found ' + toString$1(typeOf(input)) + ' instead.');
+        throw new RuntimeError('Expected first argument to be of type array or string, but found ' + toString$1(typeOf(input)) + ' instead.');
     }
     if (this.endIndex) {
         var endIndex = this.endIndex.evaluate(ctx);
@@ -7857,7 +7836,6 @@ Slice.prototype.serialize = function serialize() {
         this.beginIndex.serialize()
     ];
 };
-var Slice$1 = Slice;
 
 function isComparableType(op, type) {
     if (op === '==' || op === '!=') {
@@ -7902,8 +7880,8 @@ function lteqCollate(ctx, a, b, c) {
 function gteqCollate(ctx, a, b, c) {
     return c.compare(a, b) >= 0;
 }
-function makeComparison(op1, compareBasic, compareWithCollator) {
-    var isOrderComparison = op1 !== '==' && op1 !== '!=';
+function makeComparison(op, compareBasic, compareWithCollator) {
+    var isOrderComparison = op !== '==' && op !== '!=';
     return function () {
         function Comparison(lhs, rhs, collator) {
             this.type = BooleanType;
@@ -7936,9 +7914,9 @@ function makeComparison(op1, compareBasic, compareWithCollator) {
             }
             if (isOrderComparison) {
                 if (lhs.type.kind === 'value' && rhs.type.kind !== 'value') {
-                    lhs = new Assertion$1(rhs.type, [lhs]);
+                    lhs = new Assertion(rhs.type, [lhs]);
                 } else if (lhs.type.kind !== 'value' && rhs.type.kind === 'value') {
-                    rhs = new Assertion$1(lhs.type, [rhs]);
+                    rhs = new Assertion(lhs.type, [rhs]);
                 }
             }
             var collator = null;
@@ -7957,16 +7935,16 @@ function makeComparison(op1, compareBasic, compareWithCollator) {
             var lhs = this.lhs.evaluate(ctx);
             var rhs = this.rhs.evaluate(ctx);
             if (isOrderComparison && this.hasUntypedArgument) {
-                var lt1 = typeOf(lhs);
+                var lt = typeOf(lhs);
                 var rt = typeOf(rhs);
-                if (lt1.kind !== rt.kind || !(lt1.kind === 'string' || lt1.kind === 'number')) {
-                    throw new RuntimeError$1('Expected arguments for "' + op1 + '" to be (string, string) or (number, number), but found (' + lt1.kind + ', ' + rt.kind + ') instead.');
+                if (lt.kind !== rt.kind || !(lt.kind === 'string' || lt.kind === 'number')) {
+                    throw new RuntimeError('Expected arguments for "' + op + '" to be (string, string) or (number, number), but found (' + lt.kind + ', ' + rt.kind + ') instead.');
                 }
             }
             if (this.collator && !isOrderComparison && this.hasUntypedArgument) {
-                var lt2 = typeOf(lhs);
+                var lt$1 = typeOf(lhs);
                 var rt$1 = typeOf(rhs);
-                if (lt2.kind !== 'string' || rt$1.kind !== 'string') {
+                if (lt$1.kind !== 'string' || rt$1.kind !== 'string') {
                     return compareBasic(ctx, lhs, rhs);
                 }
             }
@@ -7983,7 +7961,7 @@ function makeComparison(op1, compareBasic, compareWithCollator) {
             return true;
         };
         Comparison.prototype.serialize = function serialize() {
-            var serialized = [op1];
+            var serialized = [op];
             this.eachChild(function (child) {
                 serialized.push(child.serialize());
             });
@@ -8120,7 +8098,7 @@ Length.prototype.evaluate = function evaluate(ctx) {
     } else if (Array.isArray(input)) {
         return input.length;
     } else {
-        throw new RuntimeError$1('Expected value to be of type string or array, but found ' + toString$1(typeOf(input)) + ' instead.');
+        throw new RuntimeError('Expected value to be of type string or array, but found ' + toString$1(typeOf(input)) + ' instead.');
     }
 };
 Length.prototype.eachChild = function eachChild(fn) {
@@ -8136,7 +8114,6 @@ Length.prototype.serialize = function serialize() {
     });
     return serialized;
 };
-var Length$1 = Length;
 
 var expressions = {
     '==': Equals,
@@ -8145,35 +8122,35 @@ var expressions = {
     '<': LessThan,
     '>=': GreaterThanOrEqual,
     '<=': LessThanOrEqual,
-    'array': Assertion$1,
-    'at': At$1,
-    'boolean': Assertion$1,
-    'case': Case$1,
-    'coalesce': Coalesce$1,
+    'array': Assertion,
+    'at': At,
+    'boolean': Assertion,
+    'case': Case,
+    'coalesce': Coalesce,
     'collator': CollatorExpression,
     'format': FormatExpression,
     'image': ImageExpression,
-    'in': In$1,
-    'index-of': IndexOf$1,
-    'interpolate': Interpolate$1,
-    'interpolate-hcl': Interpolate$1,
-    'interpolate-lab': Interpolate$1,
-    'length': Length$1,
-    'let': Let$1,
-    'literal': Literal$1,
-    'match': Match$1,
-    'number': Assertion$1,
+    'in': In,
+    'index-of': IndexOf,
+    'interpolate': Interpolate,
+    'interpolate-hcl': Interpolate,
+    'interpolate-lab': Interpolate,
+    'length': Length,
+    'let': Let,
+    'literal': Literal,
+    'match': Match,
+    'number': Assertion,
     'number-format': NumberFormat,
-    'object': Assertion$1,
-    'slice': Slice$1,
-    'step': Step$1,
-    'string': Assertion$1,
-    'to-boolean': Coercion$1,
-    'to-color': Coercion$1,
-    'to-number': Coercion$1,
-    'to-string': Coercion$1,
-    'var': Var$1,
-    'within': Within$1
+    'object': Assertion,
+    'slice': Slice,
+    'step': Step,
+    'string': Assertion,
+    'to-boolean': Coercion,
+    'to-color': Coercion,
+    'to-number': Coercion,
+    'to-string': Coercion,
+    'var': Var,
+    'within': Within
 };
 function rgba(ctx, ref) {
     var r = ref[0];
@@ -8186,9 +8163,9 @@ function rgba(ctx, ref) {
     var alpha = a ? a.evaluate(ctx) : 1;
     var error = validateRGBA(r, g, b, alpha);
     if (error) {
-        throw new RuntimeError$1(error);
+        throw new RuntimeError(error);
     }
-    return new Color$1(r / 255 * alpha, g / 255 * alpha, b / 255 * alpha, alpha);
+    return new Color(r / 255 * alpha, g / 255 * alpha, b / 255 * alpha, alpha);
 }
 function has(key, obj) {
     return key in obj;
@@ -8214,13 +8191,13 @@ function binarySearch(v, a, i, j) {
 function varargs(type) {
     return { type: type };
 }
-CompoundExpression$1.register(expressions, {
+CompoundExpression.register(expressions, {
     'error': [
         ErrorType,
         [StringType],
         function (ctx, ref) {
             var v = ref[0];
-            throw new RuntimeError$1(v.evaluate(ctx));
+            throw new RuntimeError(v.evaluate(ctx));
         }
     ],
     'typeof': [
@@ -8885,7 +8862,6 @@ CompoundExpression$1.register(expressions, {
         }
     ]
 });
-var expressions$1 = expressions;
 
 function success(value) {
     return {
@@ -8944,14 +8920,14 @@ function createFunction(parameters, propertySpec) {
             parameters.stops = parameters.stops.map(function (stop) {
                 return [
                     stop[0],
-                    Color$1.parse(stop[1])
+                    Color.parse(stop[1])
                 ];
             });
         }
         if (parameters.default) {
-            parameters.default = Color$1.parse(parameters.default);
+            parameters.default = Color.parse(parameters.default);
         } else {
-            parameters.default = Color$1.parse(propertySpec.default);
+            parameters.default = Color.parse(propertySpec.default);
         }
     }
     if (parameters.colorSpace && parameters.colorSpace !== 'rgb' && !colorSpaces[parameters.colorSpace]) {
@@ -8980,8 +8956,8 @@ function createFunction(parameters, propertySpec) {
     if (zoomAndFeatureDependent) {
         var featureFunctions = {};
         var zoomStops = [];
-        for (var s1 = 0; s1 < parameters.stops.length; s1++) {
-            var stop$1 = parameters.stops[s1];
+        for (var s = 0; s < parameters.stops.length; s++) {
+            var stop$1 = parameters.stops[s];
             var zoom = stop$1[0].zoom;
             if (featureFunctions[zoom] === undefined) {
                 featureFunctions[zoom] = {
@@ -9010,7 +8986,7 @@ function createFunction(parameters, propertySpec) {
         return {
             kind: 'composite',
             interpolationType: interpolationType,
-            interpolationFactor: Interpolate$1.interpolationFactor.bind(undefined, interpolationType),
+            interpolationFactor: Interpolate.interpolationFactor.bind(undefined, interpolationType),
             zoomStops: featureFunctionStops.map(function (s) {
                 return s[0];
             }),
@@ -9030,7 +9006,7 @@ function createFunction(parameters, propertySpec) {
         return {
             kind: 'camera',
             interpolationType: interpolationType$1,
-            interpolationFactor: Interpolate$1.interpolationFactor.bind(undefined, interpolationType$1),
+            interpolationFactor: Interpolate.interpolationFactor.bind(undefined, interpolationType$1),
             zoomStops: parameters.stops.map(function (s) {
                 return s[0];
             }),
@@ -9133,7 +9109,7 @@ function evaluateExponentialFunction(parameters, propertySpec, input) {
 }
 function evaluateIdentityFunction(parameters, propertySpec, input) {
     if (propertySpec.type === 'color') {
-        input = Color$1.parse(input);
+        input = Color.parse(input);
     } else if (propertySpec.type === 'formatted') {
         input = Formatted.fromString(input.toString());
     } else if (propertySpec.type === 'resolvedImage') {
@@ -9158,7 +9134,7 @@ function interpolationFactor(input, base, lowerValue, upperValue) {
 var StyleExpression = function StyleExpression(expression, propertySpec) {
     this.expression = expression;
     this._warningHistory = {};
-    this._evaluator = new EvaluationContext$1();
+    this._evaluator = new EvaluationContext();
     this._defaultValue = propertySpec ? getDefaultValue(propertySpec) : null;
     this._enumValues = propertySpec && propertySpec.type === 'enum' ? propertySpec.values : null;
 };
@@ -9184,7 +9160,7 @@ StyleExpression.prototype.evaluate = function evaluate(globals, feature, feature
             return this._defaultValue;
         }
         if (this._enumValues && !(val in this._enumValues)) {
-            throw new RuntimeError$1('Expected value to be one of ' + Object.keys(this._enumValues).map(function (v) {
+            throw new RuntimeError('Expected value to be one of ' + Object.keys(this._enumValues).map(function (v) {
                 return JSON.stringify(v);
             }).join(', ') + ', but found ' + JSON.stringify(val) + ' instead.');
         }
@@ -9200,10 +9176,10 @@ StyleExpression.prototype.evaluate = function evaluate(globals, feature, feature
     }
 };
 function isExpression(expression) {
-    return Array.isArray(expression) && expression.length > 0 && typeof expression[0] === 'string' && expression[0] in expressions$1;
+    return Array.isArray(expression) && expression.length > 0 && typeof expression[0] === 'string' && expression[0] in expressions;
 }
 function createExpression(expression, propertySpec) {
-    var parser = new ParsingContext$1(expressions$1, [], propertySpec ? getExpectedType(propertySpec) : undefined);
+    var parser = new ParsingContext(expressions, [], propertySpec ? getExpectedType(propertySpec) : undefined);
     var parsed = parser.parse(expression, undefined, undefined, undefined, propertySpec && propertySpec.type === 'string' ? { typeAnnotation: 'coerce' } : undefined);
     if (!parsed) {
         return error(parser.errors);
@@ -9236,7 +9212,7 @@ ZoomDependentExpression.prototype.evaluate = function evaluate(globals, feature,
 };
 ZoomDependentExpression.prototype.interpolationFactor = function interpolationFactor(input, lower, upper) {
     if (this.interpolationType) {
-        return Interpolate$1.interpolationFactor(this.interpolationType, input, lower, upper);
+        return Interpolate.interpolationFactor(this.interpolationType, input, lower, upper);
     } else {
         return 0;
     }
@@ -9249,24 +9225,24 @@ function createPropertyExpression(expressionInput, propertySpec) {
     var parsed = expression.value.expression;
     var isFeatureConstant$1 = isFeatureConstant(parsed);
     if (!isFeatureConstant$1 && !supportsPropertyExpression(propertySpec)) {
-        return error([new ParsingError$1('', 'data expressions not supported')]);
+        return error([new ParsingError('', 'data expressions not supported')]);
     }
     var isZoomConstant = isGlobalPropertyConstant(parsed, ['zoom']);
     if (!isZoomConstant && !supportsZoomExpression(propertySpec)) {
-        return error([new ParsingError$1('', 'zoom expressions not supported')]);
+        return error([new ParsingError('', 'zoom expressions not supported')]);
     }
     var zoomCurve = findZoomCurve(parsed);
     if (!zoomCurve && !isZoomConstant) {
-        return error([new ParsingError$1('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.')]);
-    } else if (zoomCurve instanceof ParsingError$1) {
+        return error([new ParsingError('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.')]);
+    } else if (zoomCurve instanceof ParsingError) {
         return error([zoomCurve]);
-    } else if (zoomCurve instanceof Interpolate$1 && !supportsInterpolation(propertySpec)) {
-        return error([new ParsingError$1('', '"interpolate" expressions cannot be used with this property')]);
+    } else if (zoomCurve instanceof Interpolate && !supportsInterpolation(propertySpec)) {
+        return error([new ParsingError('', '"interpolate" expressions cannot be used with this property')]);
     }
     if (!zoomCurve) {
         return success(isFeatureConstant$1 ? new ZoomConstantExpression('constant', expression.value) : new ZoomConstantExpression('source', expression.value));
     }
-    var interpolationType = zoomCurve instanceof Interpolate$1 ? zoomCurve.interpolation : undefined;
+    var interpolationType = zoomCurve instanceof Interpolate ? zoomCurve.interpolation : undefined;
     return success(isFeatureConstant$1 ? new ZoomDependentExpression('camera', expression.value, zoomCurve.labels, interpolationType) : new ZoomDependentExpression('composite', expression.value, zoomCurve.labels, interpolationType));
 }
 var StylePropertyFunction = function StylePropertyFunction(parameters, specification) {
@@ -9297,7 +9273,7 @@ function normalizePropertyExpression(value, specification) {
     } else {
         var constant = value;
         if (typeof value === 'string' && specification.type === 'color') {
-            constant = Color$1.parse(value);
+            constant = Color.parse(value);
         }
         return {
             kind: 'constant',
@@ -9309,9 +9285,9 @@ function normalizePropertyExpression(value, specification) {
 }
 function findZoomCurve(expression) {
     var result = null;
-    if (expression instanceof Let$1) {
+    if (expression instanceof Let) {
         result = findZoomCurve(expression.result);
-    } else if (expression instanceof Coalesce$1) {
+    } else if (expression instanceof Coalesce) {
         for (var i = 0, list = expression.args; i < list.length; i += 1) {
             var arg = list[i];
             result = findZoomCurve(arg);
@@ -9319,20 +9295,20 @@ function findZoomCurve(expression) {
                 break;
             }
         }
-    } else if ((expression instanceof Step$1 || expression instanceof Interpolate$1) && expression.input instanceof CompoundExpression$1 && expression.input.name === 'zoom') {
+    } else if ((expression instanceof Step || expression instanceof Interpolate) && expression.input instanceof CompoundExpression && expression.input.name === 'zoom') {
         result = expression;
     }
-    if (result instanceof ParsingError$1) {
+    if (result instanceof ParsingError) {
         return result;
     }
     expression.eachChild(function (child) {
         var childResult = findZoomCurve(child);
-        if (childResult instanceof ParsingError$1) {
+        if (childResult instanceof ParsingError) {
             result = childResult;
         } else if (!result && childResult) {
-            result = new ParsingError$1('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.');
+            result = new ParsingError('', '"zoom" expression may only be used as input to a top-level "step" or "interpolate" expression.');
         } else if (result && childResult && result !== childResult) {
-            result = new ParsingError$1('', 'Only one zoom-based "step" or "interpolate" subexpression may be used in an expression.');
+            result = new ParsingError('', 'Only one zoom-based "step" or "interpolate" subexpression may be used in an expression.');
         }
     });
     return result;
@@ -9354,9 +9330,9 @@ function getExpectedType(spec) {
 }
 function getDefaultValue(spec) {
     if (spec.type === 'color' && isFunction(spec.default)) {
-        return new Color$1(0, 0, 0, 0);
+        return new Color(0, 0, 0, 0);
     } else if (spec.type === 'color') {
-        return Color$1.parse(spec.default) || null;
+        return Color.parse(spec.default) || null;
     } else if (spec.default === undefined) {
         return null;
     } else {
@@ -9474,47 +9450,47 @@ function validateNumber(options) {
     return [];
 }
 
-function validateFunction(options1) {
-    var functionValueSpec = options1.valueSpec;
-    var functionType = unbundle(options1.value.type);
+function validateFunction(options) {
+    var functionValueSpec = options.valueSpec;
+    var functionType = unbundle(options.value.type);
     var stopKeyType;
     var stopDomainValues = {};
     var previousStopDomainValue;
     var previousStopDomainZoom;
-    var isZoomFunction = functionType !== 'categorical' && options1.value.property === undefined;
+    var isZoomFunction = functionType !== 'categorical' && options.value.property === undefined;
     var isPropertyFunction = !isZoomFunction;
-    var isZoomAndPropertyFunction = getType(options1.value.stops) === 'array' && getType(options1.value.stops[0]) === 'array' && getType(options1.value.stops[0][0]) === 'object';
-    var errors1 = validateObject({
-        key: options1.key,
-        value: options1.value,
-        valueSpec: options1.styleSpec.function,
-        style: options1.style,
-        styleSpec: options1.styleSpec,
+    var isZoomAndPropertyFunction = getType(options.value.stops) === 'array' && getType(options.value.stops[0]) === 'array' && getType(options.value.stops[0][0]) === 'object';
+    var errors = validateObject({
+        key: options.key,
+        value: options.value,
+        valueSpec: options.styleSpec.function,
+        style: options.style,
+        styleSpec: options.styleSpec,
         objectElementValidators: {
             stops: validateFunctionStops,
             default: validateFunctionDefault
         }
     });
     if (functionType === 'identity' && isZoomFunction) {
-        errors1.push(new ValidationError(options1.key, options1.value, 'missing required property "property"'));
+        errors.push(new ValidationError(options.key, options.value, 'missing required property "property"'));
     }
-    if (functionType !== 'identity' && !options1.value.stops) {
-        errors1.push(new ValidationError(options1.key, options1.value, 'missing required property "stops"'));
+    if (functionType !== 'identity' && !options.value.stops) {
+        errors.push(new ValidationError(options.key, options.value, 'missing required property "stops"'));
     }
-    if (functionType === 'exponential' && options1.valueSpec.expression && !supportsInterpolation(options1.valueSpec)) {
-        errors1.push(new ValidationError(options1.key, options1.value, 'exponential functions not supported'));
+    if (functionType === 'exponential' && options.valueSpec.expression && !supportsInterpolation(options.valueSpec)) {
+        errors.push(new ValidationError(options.key, options.value, 'exponential functions not supported'));
     }
-    if (options1.styleSpec.$version >= 8) {
-        if (isPropertyFunction && !supportsPropertyExpression(options1.valueSpec)) {
-            errors1.push(new ValidationError(options1.key, options1.value, 'property functions not supported'));
-        } else if (isZoomFunction && !supportsZoomExpression(options1.valueSpec)) {
-            errors1.push(new ValidationError(options1.key, options1.value, 'zoom functions not supported'));
+    if (options.styleSpec.$version >= 8) {
+        if (isPropertyFunction && !supportsPropertyExpression(options.valueSpec)) {
+            errors.push(new ValidationError(options.key, options.value, 'property functions not supported'));
+        } else if (isZoomFunction && !supportsZoomExpression(options.valueSpec)) {
+            errors.push(new ValidationError(options.key, options.value, 'zoom functions not supported'));
         }
     }
-    if ((functionType === 'categorical' || isZoomAndPropertyFunction) && options1.value.property === undefined) {
-        errors1.push(new ValidationError(options1.key, options1.value, '"property" property is required'));
+    if ((functionType === 'categorical' || isZoomAndPropertyFunction) && options.value.property === undefined) {
+        errors.push(new ValidationError(options.key, options.value, '"property" property is required'));
     }
-    return errors1;
+    return errors;
     function validateFunctionStops(options) {
         if (functionType === 'identity') {
             return [new ValidationError(options.key, options.value, 'identity function may not have a "stops" property')];
@@ -9731,7 +9707,7 @@ function isExpressionFilter(filter) {
     case '>=':
     case '<':
     case '<=':
-        return filter.length !== 3 || Array.isArray(filter[1]) || Array.isArray(filter[2]);
+        return filter.length !== 3 || (Array.isArray(filter[1]) || Array.isArray(filter[2]));
     case 'any':
     case 'all':
         for (var i = 0, list = filter.slice(1); i < list.length; i += 1) {
@@ -9969,10 +9945,10 @@ function validateNonExpressionFilter(options) {
     case 'any':
     case 'all':
     case 'none':
-        for (var i1 = 1; i1 < value.length; i1++) {
+        for (var i$1 = 1; i$1 < value.length; i$1++) {
             errors = errors.concat(validateNonExpressionFilter({
-                key: key + '[' + i1 + ']',
-                value: value[i1],
+                key: key + '[' + i$1 + ']',
+                value: value[i$1],
                 style: options.style,
                 styleSpec: options.styleSpec
             }));
@@ -10056,27 +10032,27 @@ function validateLayoutProperty$1(options) {
     return validateProperty(options, 'layout');
 }
 
-function validateLayer(options1) {
+function validateLayer(options) {
     var errors = [];
-    var layer1 = options1.value;
-    var key = options1.key;
-    var style = options1.style;
-    var styleSpec = options1.styleSpec;
-    if (!layer1.type && !layer1.ref) {
-        errors.push(new ValidationError(key, layer1, 'either "type" or "ref" is required'));
+    var layer = options.value;
+    var key = options.key;
+    var style = options.style;
+    var styleSpec = options.styleSpec;
+    if (!layer.type && !layer.ref) {
+        errors.push(new ValidationError(key, layer, 'either "type" or "ref" is required'));
     }
-    var type = unbundle(layer1.type);
-    var ref = unbundle(layer1.ref);
-    if (layer1.id) {
-        var layerId = unbundle(layer1.id);
-        for (var i = 0; i < options1.arrayIndex; i++) {
+    var type = unbundle(layer.type);
+    var ref = unbundle(layer.ref);
+    if (layer.id) {
+        var layerId = unbundle(layer.id);
+        for (var i = 0; i < options.arrayIndex; i++) {
             var otherLayer = style.layers[i];
             if (unbundle(otherLayer.id) === layerId) {
-                errors.push(new ValidationError(key, layer1.id, 'duplicate layer id "' + layer1.id + '", previously used at line ' + otherLayer.id.__line__));
+                errors.push(new ValidationError(key, layer.id, 'duplicate layer id "' + layer.id + '", previously used at line ' + otherLayer.id.__line__));
             }
         }
     }
-    if ('ref' in layer1) {
+    if ('ref' in layer) {
         [
             'type',
             'source',
@@ -10084,8 +10060,8 @@ function validateLayer(options1) {
             'filter',
             'layout'
         ].forEach(function (p) {
-            if (p in layer1) {
-                errors.push(new ValidationError(key, layer1[p], '"' + p + '" is prohibited for ref layers'));
+            if (p in layer) {
+                errors.push(new ValidationError(key, layer[p], '"' + p + '" is prohibited for ref layers'));
             }
         });
         var parent;
@@ -10095,39 +10071,39 @@ function validateLayer(options1) {
             }
         });
         if (!parent) {
-            errors.push(new ValidationError(key, layer1.ref, 'ref layer "' + ref + '" not found'));
+            errors.push(new ValidationError(key, layer.ref, 'ref layer "' + ref + '" not found'));
         } else if (parent.ref) {
-            errors.push(new ValidationError(key, layer1.ref, 'ref cannot reference another ref layer'));
+            errors.push(new ValidationError(key, layer.ref, 'ref cannot reference another ref layer'));
         } else {
             type = unbundle(parent.type);
         }
     } else if (type !== 'background') {
-        if (!layer1.source) {
-            errors.push(new ValidationError(key, layer1, 'missing required property "source"'));
+        if (!layer.source) {
+            errors.push(new ValidationError(key, layer, 'missing required property "source"'));
         } else {
-            var source = style.sources && style.sources[layer1.source];
+            var source = style.sources && style.sources[layer.source];
             var sourceType = source && unbundle(source.type);
             if (!source) {
-                errors.push(new ValidationError(key, layer1.source, 'source "' + layer1.source + '" not found'));
+                errors.push(new ValidationError(key, layer.source, 'source "' + layer.source + '" not found'));
             } else if (sourceType === 'vector' && type === 'raster') {
-                errors.push(new ValidationError(key, layer1.source, 'layer "' + layer1.id + '" requires a raster source'));
+                errors.push(new ValidationError(key, layer.source, 'layer "' + layer.id + '" requires a raster source'));
             } else if (sourceType === 'raster' && type !== 'raster') {
-                errors.push(new ValidationError(key, layer1.source, 'layer "' + layer1.id + '" requires a vector source'));
-            } else if (sourceType === 'vector' && !layer1['source-layer']) {
-                errors.push(new ValidationError(key, layer1, 'layer "' + layer1.id + '" must specify a "source-layer"'));
+                errors.push(new ValidationError(key, layer.source, 'layer "' + layer.id + '" requires a vector source'));
+            } else if (sourceType === 'vector' && !layer['source-layer']) {
+                errors.push(new ValidationError(key, layer, 'layer "' + layer.id + '" must specify a "source-layer"'));
             } else if (sourceType === 'raster-dem' && type !== 'hillshade') {
-                errors.push(new ValidationError(key, layer1.source, 'raster-dem source can only be used with layer type \'hillshade\'.'));
-            } else if (type === 'line' && layer1.paint && layer1.paint['line-gradient'] && (sourceType !== 'geojson' || !source.lineMetrics)) {
-                errors.push(new ValidationError(key, layer1, 'layer "' + layer1.id + '" specifies a line-gradient, which requires a GeoJSON source with `lineMetrics` enabled.'));
+                errors.push(new ValidationError(key, layer.source, 'raster-dem source can only be used with layer type \'hillshade\'.'));
+            } else if (type === 'line' && layer.paint && layer.paint['line-gradient'] && (sourceType !== 'geojson' || !source.lineMetrics)) {
+                errors.push(new ValidationError(key, layer, 'layer "' + layer.id + '" specifies a line-gradient, which requires a GeoJSON source with `lineMetrics` enabled.'));
             }
         }
     }
     errors = errors.concat(validateObject({
         key: key,
-        value: layer1,
+        value: layer,
         valueSpec: styleSpec.layer,
-        style: options1.style,
-        styleSpec: options1.styleSpec,
+        style: options.style,
+        styleSpec: options.styleSpec,
         objectElementValidators: {
             '*': function _() {
                 return [];
@@ -10135,22 +10111,22 @@ function validateLayer(options1) {
             type: function type() {
                 return validate({
                     key: key + '.type',
-                    value: layer1.type,
+                    value: layer.type,
                     valueSpec: styleSpec.layer.type,
-                    style: options1.style,
-                    styleSpec: options1.styleSpec,
-                    object: layer1,
+                    style: options.style,
+                    styleSpec: options.styleSpec,
+                    object: layer,
                     objectKey: 'type'
                 });
             },
             filter: validateFilter,
-            layout: function layout(options2) {
+            layout: function layout(options) {
                 return validateObject({
-                    layer: layer1,
-                    key: options2.key,
-                    value: options2.value,
-                    style: options2.style,
-                    styleSpec: options2.styleSpec,
+                    layer: layer,
+                    key: options.key,
+                    value: options.value,
+                    style: options.style,
+                    styleSpec: options.styleSpec,
                     objectElementValidators: {
                         '*': function _(options) {
                             return validateLayoutProperty$1(extend({ layerType: type }, options));
@@ -10158,13 +10134,13 @@ function validateLayer(options1) {
                     }
                 });
             },
-            paint: function paint(options3) {
+            paint: function paint(options) {
                 return validateObject({
-                    layer: layer1,
-                    key: options3.key,
-                    value: options3.value,
-                    style: options3.style,
-                    styleSpec: options3.styleSpec,
+                    layer: layer,
+                    key: options.key,
+                    value: options.value,
+                    style: options.style,
+                    styleSpec: options.styleSpec,
                     objectElementValidators: {
                         '*': function _(options) {
                             return validatePaintProperty$1(extend({ layerType: type }, options));
@@ -10616,14 +10592,14 @@ TransferableGridIndex.deserialize = function deserialize(serialized) {
 };
 
 var registry = {};
-function register(name1, klass, options) {
+function register(name, klass, options) {
     if (options === void 0)
         options = {};
     Object.defineProperty(klass, '_classRegistryKey', {
-        value: name1,
+        value: name,
         writeable: false
     });
-    registry[name1] = {
+    registry[name] = {
         klass: klass,
         omit: options.omit || [],
         shallow: options.shallow || []
@@ -10631,7 +10607,7 @@ function register(name1, klass, options) {
 }
 register('Object', Object);
 register('TransferableGridIndex', TransferableGridIndex);
-register('Color', Color$1);
+register('Color', Color);
 register('Error', Error);
 register('AJAXError', AJAXError);
 register('ResolvedImage', ResolvedImage);
@@ -10639,12 +10615,12 @@ register('StylePropertyFunction', StylePropertyFunction);
 register('StyleExpression', StyleExpression, { omit: ['_evaluator'] });
 register('ZoomDependentExpression', ZoomDependentExpression);
 register('ZoomConstantExpression', ZoomConstantExpression);
-register('CompoundExpression', CompoundExpression$1, { omit: ['_evaluate'] });
-for (var name in expressions$1) {
-    if (expressions$1[name]._classRegistryKey) {
+register('CompoundExpression', CompoundExpression, { omit: ['_evaluate'] });
+for (var name in expressions) {
+    if (expressions[name]._classRegistryKey) {
         continue;
     }
-    register('Expression_' + name, expressions$1[name]);
+    register('Expression_' + name, expressions[name]);
 }
 function isArrayBuffer(value) {
     return value && typeof ArrayBuffer !== 'undefined' && (value instanceof ArrayBuffer || value.constructor && value.constructor.name === 'ArrayBuffer');
@@ -10688,8 +10664,8 @@ function serialize(input, transferables) {
     }
     if (typeof input === 'object') {
         var klass = input.constructor;
-        var name2 = klass._classRegistryKey;
-        if (!name2) {
+        var name = klass._classRegistryKey;
+        if (!name) {
             throw new Error('can\'t serialize object of unregistered class');
         }
         var properties = klass.serialize ? klass.serialize(input, transferables) : {};
@@ -10698,11 +10674,11 @@ function serialize(input, transferables) {
                 if (!input.hasOwnProperty(key)) {
                     continue;
                 }
-                if (registry[name2].omit.indexOf(key) >= 0) {
+                if (registry[name].omit.indexOf(key) >= 0) {
                     continue;
                 }
                 var property = input[key];
-                properties[key] = registry[name2].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
+                properties[key] = registry[name].shallow.indexOf(key) >= 0 ? property : serialize(property, transferables);
             }
             if (input instanceof Error) {
                 properties.message = input.message;
@@ -10711,8 +10687,8 @@ function serialize(input, transferables) {
         if (properties.$name) {
             throw new Error('$name property is reserved for worker serialization logic.');
         }
-        if (name2 !== 'Object') {
-            properties.$name = name2;
+        if (name !== 'Object') {
+            properties.$name = name;
         }
         return properties;
     }
@@ -10726,14 +10702,14 @@ function deserialize(input) {
         return input.map(deserialize);
     }
     if (typeof input === 'object') {
-        var name3 = input.$name || 'Object';
-        if (!registry[name3]) {
-            throw new Error('can\'t deserialize unregistered class ' + name3);
+        var name = input.$name || 'Object';
+        if (!registry[name]) {
+            throw new Error('can\'t deserialize unregistered class ' + name);
         }
-        var ref = registry[name3];
+        var ref = registry[name];
         var klass = ref.klass;
         if (!klass) {
-            throw new Error('can\'t deserialize unregistered class ' + name3);
+            throw new Error('can\'t deserialize unregistered class ' + name);
         }
         if (klass.deserialize) {
             return klass.deserialize(input);
@@ -10745,7 +10721,7 @@ function deserialize(input) {
                 continue;
             }
             var value = input[key];
-            result[key] = registry[name3].shallow.indexOf(key) >= 0 ? value : deserialize(value);
+            result[key] = registry[name].shallow.indexOf(key) >= 0 ? value : deserialize(value);
         }
         return result;
     }
@@ -11756,8 +11732,8 @@ var StyleLayer = function (Evented) {
             for (var property in layer.paint) {
                 this.setPaintProperty(property, layer.paint[property], { validate: false });
             }
-            for (var property1 in layer.layout) {
-                this.setLayoutProperty(property1, layer.layout[property1], { validate: false });
+            for (var property$1 in layer.layout) {
+                this.setLayoutProperty(property$1, layer.layout[property$1], { validate: false });
             }
             this._transitioningPaint = this._transitionablePaint.untransitioned();
             this.paint = new PossiblyEvaluated(properties.paint);
@@ -13676,7 +13652,7 @@ var Uniform4f = function (Uniform) {
 var UniformColor = function (Uniform) {
     function UniformColor(context, location) {
         Uniform.call(this, context, location);
-        this.current = Color$1.transparent;
+        this.current = Color.transparent;
     }
     if (Uniform)
         UniformColor.__proto__ = Uniform;
@@ -14390,8 +14366,8 @@ function polygonIntersectsPolygon(polygonA, polygonB) {
             return true;
         }
     }
-    for (var i1 = 0; i1 < polygonB.length; i1++) {
-        if (polygonContainsPoint(polygonA, polygonB[i1])) {
+    for (var i$1 = 0; i$1 < polygonB.length; i$1++) {
+        if (polygonContainsPoint(polygonA, polygonB[i$1])) {
             return true;
         }
     }
@@ -14587,14 +14563,14 @@ function getMaximumPaintValue(property, layer, bucket) {
         return bucket.programConfigurations.get(layer.id).getMaxValue(property);
     }
 }
-function translateDistance(translate1) {
-    return Math.sqrt(translate1[0] * translate1[0] + translate1[1] * translate1[1]);
+function translateDistance(translate) {
+    return Math.sqrt(translate[0] * translate[0] + translate[1] * translate[1]);
 }
-function translate$1(queryGeometry, translate2, translateAnchor, bearing, pixelsToTileUnits) {
-    if (!translate2[0] && !translate2[1]) {
+function translate$1(queryGeometry, translate, translateAnchor, bearing, pixelsToTileUnits) {
+    if (!translate[0] && !translate[1]) {
         return queryGeometry;
     }
-    var pt = pointGeometry.convert(translate2)._mult(pixelsToTileUnits);
+    var pt = pointGeometry.convert(translate)._mult(pixelsToTileUnits);
     if (translateAnchor === 'viewport') {
         pt._rotate(-bearing);
     }
@@ -15963,21 +15939,21 @@ function compareAreas(a, b) {
 
 function hasPattern(type, layers, options) {
     var patterns = options.patternDependencies;
-    var hasPattern1 = false;
+    var hasPattern = false;
     for (var i = 0, list = layers; i < list.length; i += 1) {
         var layer = list[i];
         var patternProperty = layer.paint.get(type + '-pattern');
         if (!patternProperty.isConstant()) {
-            hasPattern1 = true;
+            hasPattern = true;
         }
         var constantPattern = patternProperty.constantOr(null);
         if (constantPattern) {
-            hasPattern1 = true;
+            hasPattern = true;
             patterns[constantPattern.to] = true;
             patterns[constantPattern.from] = true;
         }
     }
-    return hasPattern1;
+    return hasPattern;
 }
 function addPatternDependencies(type, layers, patternFeature, zoom, options) {
     var patterns = options.patternDependencies;
@@ -16129,27 +16105,27 @@ FillBucket.prototype.addFeature = function addFeature(feature, geometry, index, 
         var flattened = [];
         var holeIndices = [];
         for (var i$3 = 0, list$1 = polygon; i$3 < list$1.length; i$3 += 1) {
-            var ring1 = list$1[i$3];
-            if (ring1.length === 0) {
+            var ring$1 = list$1[i$3];
+            if (ring$1.length === 0) {
                 continue;
             }
-            if (ring1 !== polygon[0]) {
+            if (ring$1 !== polygon[0]) {
                 holeIndices.push(flattened.length / 2);
             }
-            var lineSegment = this.segments2.prepareSegment(ring1.length, this.layoutVertexArray, this.indexArray2);
+            var lineSegment = this.segments2.prepareSegment(ring$1.length, this.layoutVertexArray, this.indexArray2);
             var lineIndex = lineSegment.vertexLength;
-            this.layoutVertexArray.emplaceBack(ring1[0].x, ring1[0].y);
-            this.indexArray2.emplaceBack(lineIndex + ring1.length - 1, lineIndex);
-            flattened.push(ring1[0].x);
-            flattened.push(ring1[0].y);
-            for (var i = 1; i < ring1.length; i++) {
-                this.layoutVertexArray.emplaceBack(ring1[i].x, ring1[i].y);
+            this.layoutVertexArray.emplaceBack(ring$1[0].x, ring$1[0].y);
+            this.indexArray2.emplaceBack(lineIndex + ring$1.length - 1, lineIndex);
+            flattened.push(ring$1[0].x);
+            flattened.push(ring$1[0].y);
+            for (var i = 1; i < ring$1.length; i++) {
+                this.layoutVertexArray.emplaceBack(ring$1[i].x, ring$1[i].y);
                 this.indexArray2.emplaceBack(lineIndex + i - 1, lineIndex + i);
-                flattened.push(ring1[i].x);
-                flattened.push(ring1[i].y);
+                flattened.push(ring$1[i].x);
+                flattened.push(ring$1[i].y);
             }
-            lineSegment.vertexLength += ring1.length;
-            lineSegment.primitiveLength += ring1.length;
+            lineSegment.vertexLength += ring$1.length;
+            lineSegment.primitiveLength += ring$1.length;
         }
         var indices = earcut$1(flattened, holeIndices);
         for (var i$1 = 0; i$1 < indices.length; i$1 += 3) {
@@ -16605,18 +16581,18 @@ FillExtrusionBucket.prototype.addFeature = function addFeature(feature, geometry
         }
         var segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
         for (var i$3 = 0, list$1 = polygon; i$3 < list$1.length; i$3 += 1) {
-            var ring1 = list$1[i$3];
-            if (ring1.length === 0) {
+            var ring$1 = list$1[i$3];
+            if (ring$1.length === 0) {
                 continue;
             }
-            if (isEntirelyOutside(ring1)) {
+            if (isEntirelyOutside(ring$1)) {
                 continue;
             }
             var edgeDistance = 0;
-            for (var p = 0; p < ring1.length; p++) {
-                var p1 = ring1[p];
+            for (var p = 0; p < ring$1.length; p++) {
+                var p1 = ring$1[p];
                 if (p >= 1) {
-                    var p2 = ring1[p - 1];
+                    var p2 = ring$1[p - 1];
                     if (!isBoundaryEdge(p1, p2)) {
                         if (segment.vertexLength + 4 > SegmentVector.MAX_VERTEX_ARRAY_LENGTH) {
                             segment = this.segments.prepareSegment(4, this.layoutVertexArray, this.indexArray);
@@ -16656,15 +16632,15 @@ FillExtrusionBucket.prototype.addFeature = function addFeature(feature, geometry
         var holeIndices = [];
         var triangleIndex = segment.vertexLength;
         for (var i$4 = 0, list$2 = polygon; i$4 < list$2.length; i$4 += 1) {
-            var ring2 = list$2[i$4];
-            if (ring2.length === 0) {
+            var ring$2 = list$2[i$4];
+            if (ring$2.length === 0) {
                 continue;
             }
-            if (ring2 !== polygon[0]) {
+            if (ring$2 !== polygon[0]) {
                 holeIndices.push(flattened.length / 2);
             }
-            for (var i = 0; i < ring2.length; i++) {
-                var p$1 = ring2[i];
+            for (var i = 0; i < ring$2.length; i++) {
+                var p$1 = ring$2[i];
                 addVertex$1(this.layoutVertexArray, p$1.x, p$1.y, 0, 0, 1, 1, 0);
                 centroid.x += p$1.x;
                 centroid.y += p$1.y;
@@ -17330,7 +17306,7 @@ var LineStyleLayer = function (StyleLayer) {
     LineStyleLayer.prototype._handleSpecialPaintPropertyUpdate = function _handleSpecialPaintPropertyUpdate(name) {
         if (name === 'line-gradient') {
             var expression = this._transitionablePaint._values['line-gradient'].value.expression;
-            this.stepInterpolant = expression._styleExpression.expression instanceof Step$1;
+            this.stepInterpolant = expression._styleExpression.expression instanceof Step;
             this.gradientVersion = (this.gradientVersion + 1) % Number.MAX_SAFE_INTEGER;
         }
     };
@@ -17757,12 +17733,12 @@ function mergeLines (features) {
         var point = onRight ? geom[0][geom[0].length - 1] : geom[0][0];
         return text + ':' + point.x + ':' + point.y;
     }
-    for (var k1 = 0; k1 < features.length; k1++) {
-        var feature = features[k1];
+    for (var k = 0; k < features.length; k++) {
+        var feature = features[k];
         var geom = feature.geometry;
         var text = feature.text ? feature.text.toString() : null;
         if (!text) {
-            add(k1);
+            add(k);
             continue;
         }
         var leftKey = getKey(text, geom), rightKey = getKey(text, geom, true);
@@ -17778,7 +17754,7 @@ function mergeLines (features) {
         } else if (rightKey in leftIndex) {
             mergeFromLeft(leftKey, rightKey, geom);
         } else {
-            add(k1);
+            add(k);
             leftIndex[leftKey] = mergedIndex - 1;
             rightIndex[rightKey] = mergedIndex - 1;
         }
@@ -18860,9 +18836,9 @@ var ImageAtlas = function ImageAtlas(icons, patterns) {
             y: bin.y + IMAGE_PADDING
         }, src.data);
     }
-    for (var id1 in patterns) {
-        var src$1 = patterns[id1];
-        var bin$1 = patternPositions[id1].paddedRect;
+    for (var id$1 in patterns) {
+        var src$1 = patterns[id$1];
+        var bin$1 = patternPositions[id$1].paddedRect;
         var x = bin$1.x + IMAGE_PADDING, y = bin$1.y + IMAGE_PADDING, w$1 = src$1.data.width, h$1 = src$1.data.height;
         RGBAImage.copy(src$1.data, image, {
             x: 0,
@@ -19032,7 +19008,7 @@ TaggedString.prototype.trim = function trim() {
         beginningWhitespace++;
     }
     var trailingWhitespace = this.text.length;
-    for (var i1 = this.text.length - 1; i1 >= 0 && i1 >= beginningWhitespace && whitespace[this.text.charCodeAt(i1)]; i1--) {
+    for (var i$1 = this.text.length - 1; i$1 >= 0 && i$1 >= beginningWhitespace && whitespace[this.text.charCodeAt(i$1)]; i$1--) {
         trailingWhitespace--;
     }
     this.text = this.text.substring(beginningWhitespace, trailingWhitespace);
@@ -19593,7 +19569,7 @@ function evaluateSizeForZoom(sizeData, zoom) {
         var interpolationType = sizeData.interpolationType;
         var minZoom = sizeData.minZoom;
         var maxZoom = sizeData.maxZoom;
-        var t = !interpolationType ? 0 : clamp(Interpolate$1.interpolationFactor(interpolationType, zoom, minZoom, maxZoom), 0, 1);
+        var t = !interpolationType ? 0 : clamp(Interpolate.interpolationFactor(interpolationType, zoom, minZoom, maxZoom), 0, 1);
         if (sizeData.kind === 'camera') {
             uSize = number(sizeData.minSize, sizeData.maxSize, t);
         } else {
@@ -20305,7 +20281,7 @@ function getCentroidCell(polygon) {
 
 var baselineOffset = 7;
 var INVALID_TEXT_OFFSET = Number.POSITIVE_INFINITY;
-function evaluateVariableOffset(anchor1, offset) {
+function evaluateVariableOffset(anchor, offset) {
     function fromRadialOffset(anchor, radialOffset) {
         var x = 0, y = 0;
         if (radialOffset < 0) {
@@ -20382,7 +20358,7 @@ function evaluateVariableOffset(anchor1, offset) {
             y
         ];
     }
-    return offset[1] !== INVALID_TEXT_OFFSET ? fromTextOffset(anchor1, offset[0], offset[1]) : fromRadialOffset(anchor1, offset[0]);
+    return offset[1] !== INVALID_TEXT_OFFSET ? fromTextOffset(anchor, offset[0], offset[1]) : fromRadialOffset(anchor, offset[0]);
 }
 function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePositions, showCollisionBoxes, canonical) {
     bucket.createArrays();
@@ -20641,7 +20617,7 @@ function getDefaultHorizontalShaping(horizontalShaping) {
     }
     return null;
 }
-function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textBoxScale, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature1, sizes, isSDFIcon, canonical, layoutTextSize) {
+function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, imageMap, verticallyShapedIcon, layer, collisionBoxArray, featureIndex, sourceLayerIndex, bucketIndex, textBoxScale, textPadding, textAlongLine, textOffset, iconBoxScale, iconPadding, iconAlongLine, iconOffset, feature, sizes, isSDFIcon, canonical, layoutTextSize) {
     var assign;
     var lineArray = bucket.addToLineVertexArray(anchor, line);
     var textCollisionFeature, iconCollisionFeature, verticalTextCollisionFeature, verticalIconCollisionFeature;
@@ -20656,15 +20632,15 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
     var textOffset0 = 0;
     var textOffset1 = 0;
     if (layer._unevaluatedLayout.getValue('text-radial-offset') === undefined) {
-        assign = layer.layout.get('text-offset').evaluate(feature1, {}, canonical).map(function (t) {
+        assign = layer.layout.get('text-offset').evaluate(feature, {}, canonical).map(function (t) {
             return t * ONE_EM;
         }), textOffset0 = assign[0], textOffset1 = assign[1];
     } else {
-        textOffset0 = layer.layout.get('text-radial-offset').evaluate(feature1, {}, canonical) * ONE_EM;
+        textOffset0 = layer.layout.get('text-radial-offset').evaluate(feature, {}, canonical) * ONE_EM;
         textOffset1 = INVALID_TEXT_OFFSET;
     }
     if (bucket.allowVerticalPlacement && shapedTextOrientations.vertical) {
-        var textRotation = layer.layout.get('text-rotate').evaluate(feature1, {}, canonical);
+        var textRotation = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
         var verticalTextRotation = textRotation + 90;
         var verticalShaping = shapedTextOrientations.vertical;
         verticalTextCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, verticalShaping, textBoxScale, textPadding, textAlongLine, verticalTextRotation);
@@ -20673,7 +20649,7 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         }
     }
     if (shapedIcon) {
-        var iconRotate = layer.layout.get('icon-rotate').evaluate(feature1, {});
+        var iconRotate = layer.layout.get('icon-rotate').evaluate(feature, {});
         var hasIconTextFit = layer.layout.get('icon-text-fit') !== 'none';
         var iconQuads = getIconQuads(shapedIcon, iconRotate, isSDFIcon, hasIconTextFit);
         var verticalIconQuads = verticallyShapedIcon ? getIconQuads(verticallyShapedIcon, iconRotate, isSDFIcon, hasIconTextFit) : undefined;
@@ -20682,24 +20658,24 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         var sizeData = bucket.iconSizeData;
         var iconSizeData = null;
         if (sizeData.kind === 'source') {
-            iconSizeData = [SIZE_PACK_FACTOR * layer.layout.get('icon-size').evaluate(feature1, {})];
+            iconSizeData = [SIZE_PACK_FACTOR * layer.layout.get('icon-size').evaluate(feature, {})];
             if (iconSizeData[0] > MAX_PACKED_SIZE) {
                 warnOnce(bucket.layerIds[0] + ': Value for "icon-size" is >= ' + MAX_GLYPH_ICON_SIZE + '. Reduce your "icon-size".');
             }
         } else if (sizeData.kind === 'composite') {
             iconSizeData = [
-                SIZE_PACK_FACTOR * sizes.compositeIconSizes[0].evaluate(feature1, {}, canonical),
-                SIZE_PACK_FACTOR * sizes.compositeIconSizes[1].evaluate(feature1, {}, canonical)
+                SIZE_PACK_FACTOR * sizes.compositeIconSizes[0].evaluate(feature, {}, canonical),
+                SIZE_PACK_FACTOR * sizes.compositeIconSizes[1].evaluate(feature, {}, canonical)
             ];
             if (iconSizeData[0] > MAX_PACKED_SIZE || iconSizeData[1] > MAX_PACKED_SIZE) {
                 warnOnce(bucket.layerIds[0] + ': Value for "icon-size" is >= ' + MAX_GLYPH_ICON_SIZE + '. Reduce your "icon-size".');
             }
         }
-        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature1, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
+        bucket.addSymbols(bucket.icon, iconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.none, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
         placedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
         if (verticalIconQuads) {
             numVerticalIconVertices = verticalIconQuads.length * 4;
-            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature1, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
+            bucket.addSymbols(bucket.icon, verticalIconQuads, iconSizeData, iconOffset, iconAlongLine, feature, exports.WritingMode.vertical, anchor, lineArray.lineStartIndex, lineArray.lineLength, -1, canonical);
             verticalPlacedIconSymbolIndex = bucket.icon.placedSymbolArray.length - 1;
         }
     }
@@ -20709,17 +20685,17 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
         var shaping = shapedTextOrientations.horizontal[justification];
         if (!textCollisionFeature) {
             key = murmur3$1(shaping.text);
-            var textRotate = layer.layout.get('text-rotate').evaluate(feature1, {}, canonical);
+            var textRotate = layer.layout.get('text-rotate').evaluate(feature, {}, canonical);
             textCollisionFeature = new CollisionFeature(collisionBoxArray, anchor, featureIndex, sourceLayerIndex, bucketIndex, shaping, textBoxScale, textPadding, textAlongLine, textRotate);
         }
         var singleLine = shaping.positionedLines.length === 1;
-        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature1, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
+        numHorizontalGlyphVertices += addTextVertices(bucket, anchor, shaping, imageMap, layer, textAlongLine, feature, textOffset, lineArray, shapedTextOrientations.vertical ? exports.WritingMode.horizontal : exports.WritingMode.horizontalOnly, singleLine ? justifications : [justification], placedTextSymbolIndices, placedIconSymbolIndex, sizes, canonical);
         if (singleLine) {
             break;
         }
     }
     if (shapedTextOrientations.vertical) {
-        numVerticalGlyphVertices += addTextVertices(bucket, anchor, shapedTextOrientations.vertical, imageMap, layer, textAlongLine, feature1, textOffset, lineArray, exports.WritingMode.vertical, ['vertical'], placedTextSymbolIndices, verticalPlacedIconSymbolIndex, sizes, canonical);
+        numVerticalGlyphVertices += addTextVertices(bucket, anchor, shapedTextOrientations.vertical, imageMap, layer, textAlongLine, feature, textOffset, lineArray, exports.WritingMode.vertical, ['vertical'], placedTextSymbolIndices, verticalPlacedIconSymbolIndex, sizes, canonical);
     }
     var textBoxStartIndex = textCollisionFeature ? textCollisionFeature.boxStartIndex : bucket.collisionBoxArray.length;
     var textBoxEndIndex = textCollisionFeature ? textCollisionFeature.boxEndIndex : bucket.collisionBoxArray.length;
@@ -20747,8 +20723,8 @@ function addSymbol(bucket, anchor, line, shapedTextOrientations, shapedIcon, ima
     if (bucket.glyphOffsetArray.length >= SymbolBucket.MAX_GLYPHS) {
         warnOnce('Too many glyphs being rendered in a tile. See https://github.com/mapbox/mapbox-gl-js/issues/2907');
     }
-    if (feature1.sortKey !== undefined) {
-        bucket.addToSortKeyRanges(bucket.symbolInstances.length, feature1.sortKey);
+    if (feature.sortKey !== undefined) {
+        bucket.addToSortKeyRanges(bucket.symbolInstances.length, feature.sortKey);
     }
     bucket.symbolInstances.emplaceBack(anchor.x, anchor.y, placedTextSymbolIndices.right >= 0 ? placedTextSymbolIndices.right : -1, placedTextSymbolIndices.center >= 0 ? placedTextSymbolIndices.center : -1, placedTextSymbolIndices.left >= 0 ? placedTextSymbolIndices.left : -1, placedTextSymbolIndices.vertical || -1, placedIconSymbolIndex, verticalPlacedIconSymbolIndex, key, textBoxStartIndex, textBoxEndIndex, verticalTextBoxStartIndex, verticalTextBoxEndIndex, iconBoxStartIndex, iconBoxEndIndex, verticalIconBoxStartIndex, verticalIconBoxEndIndex, featureIndex, numHorizontalGlyphVertices, numVerticalGlyphVertices, numIconVertices, numVerticalIconVertices, useRuntimeCollisionCircles, 0, textBoxScale, textOffset0, textOffset1, collisionCircleDiameter);
 }
@@ -20873,8 +20849,8 @@ var SymbolBucket = function SymbolBucket(options) {
     this.collisionCircleArray = [];
     this.placementInvProjMatrix = identity([]);
     this.placementViewportMatrix = identity([]);
-    var layer1 = this.layers[0];
-    var unevaluatedLayoutValues = layer1._unevaluatedLayout._values;
+    var layer = this.layers[0];
+    var unevaluatedLayoutValues = layer._unevaluatedLayout._values;
     this.textSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['text-size']);
     this.iconSizeData = getSizeData(this.zoom, unevaluatedLayoutValues['icon-size']);
     var layout = this.layers[0].layout;
@@ -21063,18 +21039,18 @@ SymbolBucket.prototype.addToLineVertexArray = function addToLineVertexArray(anch
                 sumForwardLength += line[i + 1].dist(line[i]);
             }
         }
-        for (var i1 = anchor.segment || 0; i1 >= 0; i1--) {
-            vertices[i1] = {
-                x: line[i1].x,
-                y: line[i1].y,
+        for (var i$1 = anchor.segment || 0; i$1 >= 0; i$1--) {
+            vertices[i$1] = {
+                x: line[i$1].x,
+                y: line[i$1].y,
                 tileUnitDistanceFromAnchor: sumBackwardLength
             };
-            if (i1 > 0) {
-                sumBackwardLength += line[i1 - 1].dist(line[i1]);
+            if (i$1 > 0) {
+                sumBackwardLength += line[i$1 - 1].dist(line[i$1]);
             }
         }
-        for (var i2 = 0; i2 < line.length; i2++) {
-            var vertex = vertices[i2];
+        for (var i$2 = 0; i$2 < line.length; i$2++) {
+            var vertex = vertices[i$2];
             this.lineVertexArray.emplaceBack(vertex.x, vertex.y, vertex.tileUnitDistanceFromAnchor);
         }
     }
@@ -21185,8 +21161,8 @@ SymbolBucket.prototype._deserializeCollisionBoxesForSymbol = function _deseriali
         collisionArrays.textFeatureIndex = box.featureIndex;
         break;
     }
-    for (var k1 = verticalTextStartIndex; k1 < verticalTextEndIndex; k1++) {
-        var box$1 = collisionBoxArray.get(k1);
+    for (var k$1 = verticalTextStartIndex; k$1 < verticalTextEndIndex; k$1++) {
+        var box$1 = collisionBoxArray.get(k$1);
         collisionArrays.verticalTextBox = {
             x1: box$1.x1,
             y1: box$1.y1,
@@ -21198,8 +21174,8 @@ SymbolBucket.prototype._deserializeCollisionBoxesForSymbol = function _deseriali
         collisionArrays.verticalTextFeatureIndex = box$1.featureIndex;
         break;
     }
-    for (var k2 = iconStartIndex; k2 < iconEndIndex; k2++) {
-        var box$2 = collisionBoxArray.get(k2);
+    for (var k$2 = iconStartIndex; k$2 < iconEndIndex; k$2++) {
+        var box$2 = collisionBoxArray.get(k$2);
         collisionArrays.iconBox = {
             x1: box$2.x1,
             y1: box$2.y1,
@@ -21211,8 +21187,8 @@ SymbolBucket.prototype._deserializeCollisionBoxesForSymbol = function _deseriali
         collisionArrays.iconFeatureIndex = box$2.featureIndex;
         break;
     }
-    for (var k3 = verticalIconStartIndex; k3 < verticalIconEndIndex; k3++) {
-        var box$3 = collisionBoxArray.get(k3);
+    for (var k$3 = verticalIconStartIndex; k$3 < verticalIconEndIndex; k$3++) {
+        var box$3 = collisionBoxArray.get(k$3);
         collisionArrays.verticalIconBox = {
             x1: box$3.x1,
             y1: box$3.y1,
@@ -21304,9 +21280,9 @@ SymbolBucket.prototype.sortFeatures = function sortFeatures(angle) {
     this.text.indexArray.clear();
     this.icon.indexArray.clear();
     this.featureSortOrder = [];
-    for (var i = 0, list = this.symbolInstanceIndexes; i < list.length; i += 1) {
-        var i3 = list[i];
-        var symbolInstance = this.symbolInstances.get(i3);
+    for (var i$1 = 0, list = this.symbolInstanceIndexes; i$1 < list.length; i$1 += 1) {
+        var i = list[i$1];
+        var symbolInstance = this.symbolInstances.get(i);
         this.featureSortOrder.push(symbolInstance.featureIndex);
         [
             symbolInstance.rightJustifiedTextSymbolIndex,
@@ -21563,7 +21539,7 @@ var SymbolStyleLayer = function (StyleLayer) {
                 if (hasOverrides) {
                     return;
                 }
-                if (expression instanceof Literal$1 && typeOf(expression.value) === FormattedType) {
+                if (expression instanceof Literal && typeOf(expression.value) === FormattedType) {
                     var formatted = expression.value;
                     checkSections(formatted.sections);
                 } else if (expression instanceof FormatExpression) {
@@ -22269,9 +22245,9 @@ var DEMData = function DEMData(uid, data, encoding) {
     this.data[this._idx(dim, dim)] = this.data[this._idx(dim - 1, dim - 1)];
     this.min = Number.MAX_SAFE_INTEGER;
     this.max = Number.MIN_SAFE_INTEGER;
-    for (var x1 = 0; x1 < dim; x1++) {
+    for (var x$1 = 0; x$1 < dim; x$1++) {
         for (var y = 0; y < dim; y++) {
-            var ele = this.get(x1, y);
+            var ele = this.get(x$1, y);
             if (ele > this.max) {
                 this.max = ele;
             }
@@ -22401,43 +22377,23 @@ DictionaryCoder.prototype.decode = function decode(n) {
     return this._numberToString[n];
 };
 
-function _objectWithoutProperties(source, excluded) {
-    if (source == null) {
-        return {};
-    }
-    var target = _objectWithoutPropertiesLoose(source, excluded);
-    var key, i;
-    if (Object.getOwnPropertySymbols) {
-        var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
-        for (i = 0; i < sourceSymbolKeys.length; i++) {
-            key = sourceSymbolKeys[i];
-            if (excluded.indexOf(key) >= 0) {
-                continue;
-            }
-            if (!Object.prototype.propertyIsEnumerable.call(source, key)) {
-                continue;
-            }
-            target[key] = source[key];
+function __rest(s, e) {
+    var t = {};
+    for (var p in s) {
+        if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) {
+            t[p] = s[p];
         }
     }
-    return target;
-}
-function _objectWithoutPropertiesLoose(source, excluded) {
-    if (source == null) {
-        return {};
-    }
-    var target = {};
-    var sourceKeys = Object.keys(source);
-    var key, i;
-    for (i = 0; i < sourceKeys.length; i++) {
-        key = sourceKeys[i];
-        if (excluded.indexOf(key) >= 0) {
-            continue;
+    if (s != null && typeof Object.getOwnPropertySymbols === 'function') {
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) {
+                t[p[i]] = s[p[i]];
+            }
         }
-        target[key] = source[key];
     }
-    return target;
+    return t;
 }
+
 var GeoJSONFeature = function GeoJSONFeature(vectorTileFeature, z, x, y, id) {
     this.type = 'Feature';
     this._vectorTileFeature = vectorTileFeature;
@@ -22458,10 +22414,10 @@ prototypeAccessors.geometry.set = function (g) {
     this._geometry = g;
 };
 GeoJSONFeature.prototype.toJSON = function toJSON() {
-    var _ref = this;
-    _ref._geometry;
-    _ref._vectorTileFeature;
-    var json = _objectWithoutProperties(_ref, [
+    var _a = this;
+    _a._geometry;
+    _a._vectorTileFeature;
+    var json = __rest(_a, [
         '_geometry',
         '_vectorTileFeature'
     ]);
@@ -22677,12 +22633,61 @@ var refProperties = [
     'layout'
 ];
 
-var PerformanceMarkers;
+exports.PerformanceMarkers = void 0;
 (function (PerformanceMarkers) {
     PerformanceMarkers['create'] = 'create';
     PerformanceMarkers['load'] = 'load';
     PerformanceMarkers['fullLoad'] = 'fullLoad';
-}(PerformanceMarkers || (PerformanceMarkers = {})));
+}(exports.PerformanceMarkers || (exports.PerformanceMarkers = {})));
+var lastFrameTime = null;
+var frameTimes = [];
+var minFramerateTarget = 30;
+var frameTimeTarget = 1000 / minFramerateTarget;
+var PerformanceUtils = {
+    mark: function mark(marker) {
+        performance.mark(marker);
+    },
+    frame: function frame(timestamp) {
+        var currTimestamp = timestamp;
+        if (lastFrameTime != null) {
+            var frameTime = currTimestamp - lastFrameTime;
+            frameTimes.push(frameTime);
+        }
+        lastFrameTime = currTimestamp;
+    },
+    clearMetrics: function clearMetrics() {
+        lastFrameTime = null;
+        frameTimes = [];
+        performance.clearMeasures('loadTime');
+        performance.clearMeasures('fullLoadTime');
+        for (var marker in exports.PerformanceMarkers) {
+            performance.clearMarks(exports.PerformanceMarkers[marker]);
+        }
+    },
+    getPerformanceMetrics: function getPerformanceMetrics() {
+        performance.measure('loadTime', exports.PerformanceMarkers.create, exports.PerformanceMarkers.load);
+        performance.measure('fullLoadTime', exports.PerformanceMarkers.create, exports.PerformanceMarkers.fullLoad);
+        var loadTime = performance.getEntriesByName('loadTime')[0].duration;
+        var fullLoadTime = performance.getEntriesByName('fullLoadTime')[0].duration;
+        var totalFrames = frameTimes.length;
+        var avgFrameTime = frameTimes.reduce(function (prev, curr) {
+            return prev + curr;
+        }, 0) / totalFrames / 1000;
+        var fps = 1 / avgFrameTime;
+        var droppedFrames = frameTimes.filter(function (frameTime) {
+            return frameTime > frameTimeTarget;
+        }).reduce(function (acc, curr) {
+            return acc + (curr - frameTimeTarget) / frameTimeTarget;
+        }, 0);
+        var percentDroppedFrames = droppedFrames / (totalFrames + droppedFrames) * 100;
+        return {
+            loadTime: loadTime,
+            fullLoadTime: fullLoadTime,
+            fps: fps,
+            percentDroppedFrames: percentDroppedFrames
+        };
+    }
+};
 var RequestPerformance = function RequestPerformance(request) {
     this._marks = {
         start: [
@@ -22717,7 +22722,7 @@ exports.AlphaImage = AlphaImage;
 exports.CanonicalTileID = CanonicalTileID;
 exports.CollisionBoxArray = CollisionBoxArray;
 exports.CollisionCircleLayoutArray = CollisionCircleLayoutArray;
-exports.Color = Color$1;
+exports.Color = Color;
 exports.DEMData = DEMData;
 exports.DataConstantProperty = DataConstantProperty;
 exports.DictionaryCoder = DictionaryCoder;
@@ -22739,6 +22744,7 @@ exports.LngLatBounds = LngLatBounds;
 exports.MercatorCoordinate = MercatorCoordinate;
 exports.ONE_EM = ONE_EM;
 exports.OverscaledTileID = OverscaledTileID;
+exports.PerformanceUtils = PerformanceUtils;
 exports.PosArray = PosArray;
 exports.Properties = Properties;
 exports.QuadTriangleArray = QuadTriangleArray;
@@ -22806,6 +22812,7 @@ exports.getVideo = getVideo;
 exports.identity = identity;
 exports.invert = invert;
 exports.isImageBitmap = isImageBitmap;
+exports.isSafari = isSafari;
 exports.keysDifference = keysDifference;
 exports.lazyLoadRTLTextPlugin = lazyLoadRTLTextPlugin;
 exports.makeRequest = makeRequest;
@@ -22921,12 +22928,12 @@ StyleLayerIndex.prototype.replace = function replace(layerConfigs) {
 StyleLayerIndex.prototype.update = function update(layerConfigs, removedIds) {
     var this$1$1 = this;
     for (var i = 0, list = layerConfigs; i < list.length; i += 1) {
-        var layerConfig1 = list[i];
-        this._layerConfigs[layerConfig1.id] = layerConfig1;
-        var layer = this._layers[layerConfig1.id] = performance.createStyleLayer(layerConfig1);
+        var layerConfig = list[i];
+        this._layerConfigs[layerConfig.id] = layerConfig;
+        var layer = this._layers[layerConfig.id] = performance.createStyleLayer(layerConfig);
         layer._featureFilter = performance.createFilter(layer.filter);
-        if (this.keyCache[layerConfig1.id]) {
-            delete this.keyCache[layerConfig1.id];
+        if (this.keyCache[layerConfig.id]) {
+            delete this.keyCache[layerConfig.id];
         }
     }
     for (var i$1 = 0, list$1 = removedIds; i$1 < list$1.length; i$1 += 1) {
@@ -22938,8 +22945,8 @@ StyleLayerIndex.prototype.update = function update(layerConfigs, removedIds) {
     this.familiesBySource = {};
     var groups = groupByLayout(performance.values(this._layerConfigs), this.keyCache);
     for (var i$2 = 0, list$2 = groups; i$2 < list$2.length; i$2 += 1) {
-        var layerConfigs1 = list$2[i$2];
-        var layers = layerConfigs1.map(function (layerConfig) {
+        var layerConfigs$1 = list$2[i$2];
+        var layers = layerConfigs$1.map(function (layerConfig) {
             return this$1$1._layers[layerConfig.id];
         });
         var layer$1 = layers[0];
@@ -22992,14 +22999,14 @@ var GlyphAtlas = function GlyphAtlas(stacks) {
         width: w || 1,
         height: h || 1
     });
-    for (var stack1 in stacks) {
-        var glyphs$1 = stacks[stack1];
+    for (var stack$1 in stacks) {
+        var glyphs$1 = stacks[stack$1];
         for (var id$1 in glyphs$1) {
             var src$1 = glyphs$1[+id$1];
             if (!src$1 || src$1.bitmap.width === 0 || src$1.bitmap.height === 0) {
                 continue;
             }
-            var bin$1 = positions[stack1][id$1].rect;
+            var bin$1 = positions[stack$1][id$1].rect;
             performance.AlphaImage.copy(src$1.bitmap, image, {
                 x: 0,
                 y: 0
@@ -23223,12 +23230,12 @@ VectorTileWorkerSource.prototype.loadTile = function loadTile(params, callback) 
     }
     var perf = params && params.request && params.request.collectResourceTiming ? new performance.RequestPerformance(params.request) : false;
     var workerTile = this.loading[uid] = new WorkerTile(params);
-    workerTile.abort = this.loadVectorData(params, function (err1, response) {
+    workerTile.abort = this.loadVectorData(params, function (err, response) {
         delete this$1$1.loading[uid];
-        if (err1 || !response) {
+        if (err || !response) {
             workerTile.status = 'done';
             this$1$1.loaded[uid] = workerTile;
-            return callback(err1);
+            return callback(err);
         }
         var rawTileData = response.rawData;
         var cacheControl = {};
@@ -25008,9 +25015,9 @@ var GeoJSONWorkerSource = function (VectorTileWorkerSource) {
         delete this._pendingCallback;
         delete this._pendingLoadDataParams;
         var perf = params && params.request && params.request.collectResourceTiming ? new performance.RequestPerformance(params.request) : false;
-        this.loadGeoJSON(params, function (err1, data) {
-            if (err1 || !data) {
-                return callback(err1);
+        this.loadGeoJSON(params, function (err, data) {
+            if (err || !data) {
+                return callback(err);
             } else if (typeof data !== 'object') {
                 return callback(new Error('Input data given to \'' + params.source + '\' is not a valid GeoJSON object.'));
             } else {
@@ -25037,8 +25044,8 @@ var GeoJSONWorkerSource = function (VectorTileWorkerSource) {
                         };
                     }
                     this$1$1._geoJSONIndex = params.cluster ? new Supercluster(getSuperclusterOptions(params)).load(data.features) : geojsonvt(data, params.geojsonVtOptions);
-                } catch (err) {
-                    return callback(err);
+                } catch (err$1) {
+                    return callback(err$1);
                 }
                 this$1$1.loaded = {};
                 var result = {};
@@ -25113,8 +25120,8 @@ var GeoJSONWorkerSource = function (VectorTileWorkerSource) {
 }(VectorTileWorkerSource);
 function getSuperclusterOptions(ref) {
     var superclusterOptions = ref.superclusterOptions;
-    var clusterProperties1 = ref.clusterProperties;
-    if (!clusterProperties1 || !superclusterOptions) {
+    var clusterProperties = ref.clusterProperties;
+    if (!clusterProperties || !superclusterOptions) {
         return superclusterOptions;
     }
     var mapExpressions = {};
@@ -25124,10 +25131,10 @@ function getSuperclusterOptions(ref) {
         zoom: 0
     };
     var feature = { properties: null };
-    var propertyNames = Object.keys(clusterProperties1);
+    var propertyNames = Object.keys(clusterProperties);
     for (var i = 0, list = propertyNames; i < list.length; i += 1) {
-        var key1 = list[i];
-        var ref$1 = clusterProperties1[key1];
+        var key = list[i];
+        var ref$1 = clusterProperties[key];
         var operator = ref$1[0];
         var mapExpression = ref$1[1];
         var mapExpressionParsed = performance.createExpression(mapExpression);
@@ -25136,11 +25143,11 @@ function getSuperclusterOptions(ref) {
             ['accumulated'],
             [
                 'get',
-                key1
+                key
             ]
         ] : operator);
-        mapExpressions[key1] = mapExpressionParsed.value;
-        reduceExpressions[key1] = reduceExpressionParsed.value;
+        mapExpressions[key] = mapExpressionParsed.value;
+        reduceExpressions[key] = reduceExpressionParsed.value;
     }
     superclusterOptions.map = function (pointProperties) {
         feature.properties = pointProperties;
@@ -25276,23 +25283,23 @@ Worker.prototype.getLayerIndex = function getLayerIndex(mapId) {
     }
     return layerIndexes;
 };
-Worker.prototype.getWorkerSource = function getWorkerSource(mapId, type1, source) {
+Worker.prototype.getWorkerSource = function getWorkerSource(mapId, type, source) {
     var this$1$1 = this;
     if (!this.workerSources[mapId]) {
         this.workerSources[mapId] = {};
     }
-    if (!this.workerSources[mapId][type1]) {
-        this.workerSources[mapId][type1] = {};
+    if (!this.workerSources[mapId][type]) {
+        this.workerSources[mapId][type] = {};
     }
-    if (!this.workerSources[mapId][type1][source]) {
+    if (!this.workerSources[mapId][type][source]) {
         var actor = {
             send: function (type, data, callback) {
                 this$1$1.actor.send(type, data, callback, mapId);
             }
         };
-        this.workerSources[mapId][type1][source] = new this.workerSourceTypes[type1](actor, this.getLayerIndex(mapId), this.getAvailableImages(mapId));
+        this.workerSources[mapId][type][source] = new this.workerSourceTypes[type](actor, this.getLayerIndex(mapId), this.getAvailableImages(mapId));
     }
-    return this.workerSources[mapId][type1][source];
+    return this.workerSources[mapId][type][source];
 };
 Worker.prototype.getDEMWorkerSource = function getDEMWorkerSource(mapId, source) {
     if (!this.demWorkerSources[mapId]) {
@@ -25811,9 +25818,9 @@ var sqrLen = squaredLength;
     };
 })();
 
-function loadSprite (baseURL, requestManager, pixelRatio1, callback) {
+function loadSprite (baseURL, requestManager, pixelRatio, callback) {
     var json, image, error;
-    var format = pixelRatio1 > 1 ? '@2x' : '';
+    var format = pixelRatio > 1 ? '@2x' : '';
     var jsonRequest = performance.getJSON(requestManager.transformRequest(requestManager.normalizeSpriteURL(baseURL, format, '.json'), performance.ResourceType.SpriteJSON), function (err, data) {
         jsonRequest = null;
         if (!error) {
@@ -26198,12 +26205,12 @@ var ImageManager = function (Evented) {
             width: w || 1,
             height: h || 1
         });
-        for (var id1 in this.patterns) {
-            var ref$1 = this.patterns[id1];
+        for (var id$1 in this.patterns) {
+            var ref$1 = this.patterns[id$1];
             var bin = ref$1.bin;
             var x = bin.x + padding;
             var y = bin.y + padding;
-            var src = this.images[id1].data;
+            var src = this.images[id$1].data;
             var w$1 = src.width;
             var h$1 = src.height;
             performance.RGBAImage.copy(src, dst, {
@@ -26447,21 +26454,21 @@ var GlyphManager = function GlyphManager(requestManager, localIdeographFontFamil
 GlyphManager.prototype.setURL = function setURL(url) {
     this.url = url;
 };
-GlyphManager.prototype.getGlyphs = function getGlyphs(glyphs1, callback1) {
+GlyphManager.prototype.getGlyphs = function getGlyphs(glyphs, callback) {
     var this$1$1 = this;
     var all = [];
-    for (var stack1 in glyphs1) {
-        for (var i = 0, list = glyphs1[stack1]; i < list.length; i += 1) {
+    for (var stack in glyphs) {
+        for (var i = 0, list = glyphs[stack]; i < list.length; i += 1) {
             var id = list[i];
             all.push({
-                stack: stack1,
+                stack: stack,
                 id: id
             });
         }
     }
     performance.asyncAll(all, function (ref, callback) {
         var stack = ref.stack;
-        var id1 = ref.id;
+        var id = ref.id;
         var entry = this$1$1.entries[stack];
         if (!entry) {
             entry = this$1$1.entries[stack] = {
@@ -26470,26 +26477,26 @@ GlyphManager.prototype.getGlyphs = function getGlyphs(glyphs1, callback1) {
                 ranges: {}
             };
         }
-        var glyph = entry.glyphs[id1];
+        var glyph = entry.glyphs[id];
         if (glyph !== undefined) {
             callback(null, {
                 stack: stack,
-                id: id1,
+                id: id,
                 glyph: glyph
             });
             return;
         }
-        glyph = this$1$1._tinySDF(entry, stack, id1);
+        glyph = this$1$1._tinySDF(entry, stack, id);
         if (glyph) {
-            entry.glyphs[id1] = glyph;
+            entry.glyphs[id] = glyph;
             callback(null, {
                 stack: stack,
-                id: id1,
+                id: id,
                 glyph: glyph
             });
             return;
         }
-        var range = Math.floor(id1 / 256);
+        var range = Math.floor(id / 256);
         if (range * 256 > 65535) {
             callback(new Error('glyphs > 65535 not supported'));
             return;
@@ -26497,7 +26504,7 @@ GlyphManager.prototype.getGlyphs = function getGlyphs(glyphs1, callback1) {
         if (entry.ranges[range]) {
             callback(null, {
                 stack: stack,
-                id: id1,
+                id: id,
                 glyph: glyph
             });
             return;
@@ -26527,14 +26534,14 @@ GlyphManager.prototype.getGlyphs = function getGlyphs(glyphs1, callback1) {
             } else if (result) {
                 callback(null, {
                     stack: stack,
-                    id: id1,
-                    glyph: result[id1] || null
+                    id: id,
+                    glyph: result[id] || null
                 });
             }
         });
     }, function (err, glyphs) {
         if (err) {
-            callback1(err);
+            callback(err);
         } else if (glyphs) {
             var result = {};
             for (var i = 0, list = glyphs; i < list.length; i += 1) {
@@ -26548,7 +26555,7 @@ GlyphManager.prototype.getGlyphs = function getGlyphs(glyphs1, callback1) {
                     metrics: glyph.metrics
                 };
             }
-            callback1(null, result);
+            callback(null, result);
         }
     });
 };
@@ -27430,12 +27437,12 @@ var GeoJSONSource = function (Evented) {
     GeoJSONSource.prototype._updateWorkerData = function _updateWorkerData(sourceDataType) {
         var this$1$1 = this;
         var options = performance.extend({}, this.workerOptions);
-        var data1 = this._data;
-        if (typeof data1 === 'string') {
-            options.request = this.map._requestManager.transformRequest(performance.exported.resolveURL(data1), performance.ResourceType.Source);
+        var data = this._data;
+        if (typeof data === 'string') {
+            options.request = this.map._requestManager.transformRequest(performance.exported.resolveURL(data), performance.ResourceType.Source);
             options.request.collectResourceTiming = this._collectResourceTiming;
         } else {
-            options.data = JSON.stringify(data1);
+            options.data = JSON.stringify(data);
         }
         this._pendingLoads++;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
@@ -28239,9 +28246,9 @@ Tile.prototype.loadVectorData = function loadVectorData(data, painter, justReloa
         }
     }
     this.queryPadding = 0;
-    for (var id1 in this.buckets) {
-        var bucket$2 = this.buckets[id1];
-        this.queryPadding = Math.max(this.queryPadding, painter.style.getLayer(id1).queryRadius(bucket$2));
+    for (var id$2 in this.buckets) {
+        var bucket$2 = this.buckets[id$2];
+        this.queryPadding = Math.max(this.queryPadding, painter.style.getLayer(id$2).queryRadius(bucket$2));
     }
     if (data.imageAtlas) {
         this.imageAtlas = data.imageAtlas;
@@ -28669,30 +28676,30 @@ SourceFeatureState.prototype.coalesceChanges = function coalesceChanges(tiles, p
         }
         featuresChanged[sourceLayer] = layerStates;
     }
-    for (var sourceLayer1 in this.deletedStates) {
-        this.state[sourceLayer1] = this.state[sourceLayer1] || {};
+    for (var sourceLayer$1 in this.deletedStates) {
+        this.state[sourceLayer$1] = this.state[sourceLayer$1] || {};
         var layerStates$1 = {};
-        if (this.deletedStates[sourceLayer1] === null) {
-            for (var ft in this.state[sourceLayer1]) {
+        if (this.deletedStates[sourceLayer$1] === null) {
+            for (var ft in this.state[sourceLayer$1]) {
                 layerStates$1[ft] = {};
-                this.state[sourceLayer1][ft] = {};
+                this.state[sourceLayer$1][ft] = {};
             }
         } else {
-            for (var feature$1 in this.deletedStates[sourceLayer1]) {
-                var deleteWholeFeatureState = this.deletedStates[sourceLayer1][feature$1] === null;
+            for (var feature$1 in this.deletedStates[sourceLayer$1]) {
+                var deleteWholeFeatureState = this.deletedStates[sourceLayer$1][feature$1] === null;
                 if (deleteWholeFeatureState) {
-                    this.state[sourceLayer1][feature$1] = {};
+                    this.state[sourceLayer$1][feature$1] = {};
                 } else {
-                    for (var i = 0, list = Object.keys(this.deletedStates[sourceLayer1][feature$1]); i < list.length; i += 1) {
+                    for (var i = 0, list = Object.keys(this.deletedStates[sourceLayer$1][feature$1]); i < list.length; i += 1) {
                         var key = list[i];
-                        delete this.state[sourceLayer1][feature$1][key];
+                        delete this.state[sourceLayer$1][feature$1][key];
                     }
                 }
-                layerStates$1[feature$1] = this.state[sourceLayer1][feature$1];
+                layerStates$1[feature$1] = this.state[sourceLayer$1][feature$1];
             }
         }
-        featuresChanged[sourceLayer1] = featuresChanged[sourceLayer1] || {};
-        performance.extend(featuresChanged[sourceLayer1], layerStates$1);
+        featuresChanged[sourceLayer$1] = featuresChanged[sourceLayer$1] || {};
+        performance.extend(featuresChanged[sourceLayer$1], layerStates$1);
     }
     this.stateChanges = {};
     this.deletedStates = {};
@@ -28833,9 +28840,9 @@ var SourceCache = function (Evented) {
     SourceCache.prototype.getRenderableIds = function getRenderableIds(symbolLayer) {
         var this$1$1 = this;
         var renderables = [];
-        for (var id1 in this._tiles) {
-            if (this._isIdRenderable(id1, symbolLayer)) {
-                renderables.push(this._tiles[id1]);
+        for (var id in this._tiles) {
+            if (this._isIdRenderable(id, symbolLayer)) {
+                renderables.push(this._tiles[id]);
             }
         }
         if (symbolLayer) {
@@ -28912,14 +28919,14 @@ var SourceCache = function (Evented) {
             coord: tile.tileID
         }));
     };
-    SourceCache.prototype._backfillDEM = function _backfillDEM(tile1) {
+    SourceCache.prototype._backfillDEM = function _backfillDEM(tile) {
         var renderables = this.getRenderableIds();
         for (var i = 0; i < renderables.length; i++) {
             var borderId = renderables[i];
-            if (tile1.neighboringTiles && tile1.neighboringTiles[borderId]) {
+            if (tile.neighboringTiles && tile.neighboringTiles[borderId]) {
                 var borderTile = this.getTileByID(borderId);
-                fillBorder(tile1, borderTile);
-                fillBorder(borderTile, tile1);
+                fillBorder(tile, borderTile);
+                fillBorder(borderTile, tile);
             }
         }
         function fillBorder(tile, borderTile) {
@@ -29033,9 +29040,9 @@ var SourceCache = function (Evented) {
                 clearTimeout(this._timers[id]);
                 delete this._timers[id];
             }
-            for (var id2 in this._tiles) {
-                var tile$1 = this._tiles[id2];
-                this._setTileReloadTimer(id2, tile$1);
+            for (var id$1 in this._tiles) {
+                var tile$1 = this._tiles[id$1];
+                this._setTileReloadTimer(id$1, tile$1);
             }
         }
     };
@@ -29103,10 +29110,10 @@ var SourceCache = function (Evented) {
                 fadingTiles[id] = tileID$1;
             }
             this._retainLoadedChildren(fadingTiles, zoom, maxCoveringZoom, retain);
-            for (var id3 in parentsForFading) {
-                if (!retain[id3]) {
-                    this._coveredTiles[id3] = true;
-                    retain[id3] = parentsForFading[id3];
+            for (var id$1 in parentsForFading) {
+                if (!retain[id$1]) {
+                    this._coveredTiles[id$1] = true;
+                    retain[id$1] = parentsForFading[id$1];
                 }
             }
             if (this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
@@ -29130,20 +29137,20 @@ var SourceCache = function (Evented) {
                         missingTileIDs[key] = null;
                     }
                 }
-                for (var key1 in missingTileIDs) {
-                    var parent$1 = this.findLoadedParent(missingTileIDs[key1], this._source.minzoom);
+                for (var key$1 in missingTileIDs) {
+                    var parent$1 = this.findLoadedParent(missingTileIDs[key$1], this._source.minzoom);
                     if (parent$1) {
                         idealRasterTileIDs[parent$1.tileID.key] = retain[parent$1.tileID.key] = parent$1.tileID;
-                        for (var key$1 in idealRasterTileIDs) {
-                            if (idealRasterTileIDs[key$1].isChildOf(parent$1.tileID)) {
-                                idealRasterTileIDs[key$1] = null;
+                        for (var key$2 in idealRasterTileIDs) {
+                            if (idealRasterTileIDs[key$2].isChildOf(parent$1.tileID)) {
+                                idealRasterTileIDs[key$2] = null;
                             }
                         }
                     }
                 }
-                for (var key2 in this._tiles) {
-                    if (!idealRasterTileIDs[key2]) {
-                        this._coveredTiles[key2] = true;
+                for (var key$3 in this._tiles) {
+                    if (!idealRasterTileIDs[key$3]) {
+                        this._coveredTiles[key$3] = true;
                     }
                 }
             }
@@ -29189,27 +29196,27 @@ var SourceCache = function (Evented) {
         }
         this._retainLoadedChildren(missingTiles, zoom, maxCoveringZoom, retain);
         for (var i$1 = 0, list$1 = idealTileIDs; i$1 < list$1.length; i$1 += 1) {
-            var tileID1 = list$1[i$1];
-            var tile$1 = this._tiles[tileID1.key];
+            var tileID$1 = list$1[i$1];
+            var tile$1 = this._tiles[tileID$1.key];
             if (tile$1.hasData()) {
                 continue;
             }
             if (zoom + 1 > this._source.maxzoom) {
-                var childCoord = tileID1.children(this._source.maxzoom)[0];
+                var childCoord = tileID$1.children(this._source.maxzoom)[0];
                 var childTile = this.getTile(childCoord);
                 if (!!childTile && childTile.hasData()) {
                     retain[childCoord.key] = childCoord;
                     continue;
                 }
             } else {
-                var children = tileID1.children(this._source.maxzoom);
+                var children = tileID$1.children(this._source.maxzoom);
                 if (retain[children[0].key] && retain[children[1].key] && retain[children[2].key] && retain[children[3].key]) {
                     continue;
                 }
             }
             var parentWasRequested = tile$1.wasRequested();
-            for (var overscaledZ = tileID1.overscaledZ - 1; overscaledZ >= minCoveringZoom; --overscaledZ) {
-                var parentId = tileID1.scaledTo(overscaledZ);
+            for (var overscaledZ = tileID$1.overscaledZ - 1; overscaledZ >= minCoveringZoom; --overscaledZ) {
+                var parentId = tileID$1.scaledTo(overscaledZ);
                 if (checked[parentId.key]) {
                     break;
                 }
@@ -29350,11 +29357,11 @@ var SourceCache = function (Evented) {
         var maxX = -Infinity;
         var maxY = -Infinity;
         for (var i$1 = 0, list = cameraQueryGeometry; i$1 < list.length; i$1 += 1) {
-            var p1 = list[i$1];
-            minX = Math.min(minX, p1.x);
-            minY = Math.min(minY, p1.y);
-            maxX = Math.max(maxX, p1.x);
-            maxY = Math.max(maxY, p1.y);
+            var p = list[i$1];
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, p.x);
+            maxY = Math.max(maxY, p.y);
         }
         var loop = function (i) {
             var tile = this$1$1._tiles[ids[i]];
@@ -29822,10 +29829,10 @@ var TerrainSourceCache = function (Evented) {
                 vertexArray.emplaceBack(x * delta, y * delta);
             }
         }
-        for (var y1 = 0; y1 < meshSize2; y1 += meshSize + 1) {
-            for (var x1 = 0; x1 < meshSize; x1++) {
-                indexArray.emplaceBack(x1 + y1, meshSize + x1 + y1 + 1, meshSize + x1 + y1 + 2);
-                indexArray.emplaceBack(x1 + y1, meshSize + x1 + y1 + 2, x1 + y1 + 1);
+        for (var y$1 = 0; y$1 < meshSize2; y$1 += meshSize + 1) {
+            for (var x$1 = 0; x$1 < meshSize; x$1++) {
+                indexArray.emplaceBack(x$1 + y$1, meshSize + x$1 + y$1 + 1, meshSize + x$1 + y$1 + 2);
+                indexArray.emplaceBack(x$1 + y$1, meshSize + x$1 + y$1 + 2, x$1 + y$1 + 1);
             }
         }
         this._mesh = {
@@ -29860,7 +29867,7 @@ var TerrainSourceCache = function (Evented) {
     return TerrainSourceCache;
 }(performance.Evented);
 
-function webWorkerFactory () {
+function workerFactory() {
     return new Worker(exported.workerUrl);
 }
 
@@ -29872,7 +29879,7 @@ WorkerPool.prototype.acquire = function acquire(mapId) {
     if (!this.workers) {
         this.workers = [];
         while (this.workers.length < WorkerPool.workerCount) {
-            this.workers.push(webWorkerFactory());
+            this.workers.push(workerFactory());
         }
     }
     this.active[mapId] = true;
@@ -29921,9 +29928,9 @@ function clearPrewarmedResources() {
 
 function deref(layer, parent) {
     var result = {};
-    for (var k1 in layer) {
-        if (k1 !== 'ref') {
-            result[k1] = layer[k1];
+    for (var k in layer) {
+        if (k !== 'ref') {
+            result[k] = layer[k];
         }
     }
     performance.refProperties.forEach(function (k) {
@@ -29939,9 +29946,9 @@ function derefLayers(layers) {
     for (var i = 0; i < layers.length; i++) {
         map[layers[i].id] = layers[i];
     }
-    for (var i1 = 0; i1 < layers.length; i1++) {
-        if ('ref' in layers[i1]) {
-            layers[i1] = deref(layers[i1], map[layers[i1].ref]);
+    for (var i$1 = 0; i$1 < layers.length; i$1++) {
+        if ('ref' in layers[i$1]) {
+            layers[i$1] = deref(layers[i$1], map[layers[i$1].ref]);
         }
     }
     return layers;
@@ -30957,8 +30964,8 @@ CollisionIndex.prototype.placeCollisionCircles = function placeCollisionCircles(
         for (var i = first.path.length - 1; i >= 1; i--) {
             projectedPath.push(first.path[i]);
         }
-        for (var i1 = 1; i1 < last.path.length; i1++) {
-            projectedPath.push(last.path[i1]);
+        for (var i$1 = 1; i$1 < last.path.length; i$1++) {
+            projectedPath.push(last.path[i$1]);
         }
         var circleDist = radius * 2.5;
         if (labelToScreenMatrix) {
@@ -30979,11 +30986,11 @@ CollisionIndex.prototype.placeCollisionCircles = function placeCollisionCircles(
         if (projectedPath.length > 0) {
             var minPoint = projectedPath[0].clone();
             var maxPoint = projectedPath[0].clone();
-            for (var i$1 = 1; i$1 < projectedPath.length; i$1++) {
-                minPoint.x = Math.min(minPoint.x, projectedPath[i$1].x);
-                minPoint.y = Math.min(minPoint.y, projectedPath[i$1].y);
-                maxPoint.x = Math.max(maxPoint.x, projectedPath[i$1].x);
-                maxPoint.y = Math.max(maxPoint.y, projectedPath[i$1].y);
+            for (var i$2 = 1; i$2 < projectedPath.length; i$2++) {
+                minPoint.x = Math.min(minPoint.x, projectedPath[i$2].x);
+                minPoint.y = Math.min(minPoint.y, projectedPath[i$2].y);
+                maxPoint.x = Math.max(maxPoint.x, projectedPath[i$2].x);
+                maxPoint.y = Math.max(maxPoint.y, projectedPath[i$2].y);
             }
             if (minPoint.x >= screenPlaneMin.x && maxPoint.x <= screenPlaneMax.x && minPoint.y >= screenPlaneMin.y && maxPoint.y <= screenPlaneMax.y) {
                 segments = [projectedPath];
@@ -30993,8 +31000,8 @@ CollisionIndex.prototype.placeCollisionCircles = function placeCollisionCircles(
                 segments = performance.clipLine([projectedPath], screenPlaneMin.x, screenPlaneMin.y, screenPlaneMax.x, screenPlaneMax.y);
             }
         }
-        for (var i$3 = 0, list = segments; i$3 < list.length; i$3 += 1) {
-            var seg = list[i$3];
+        for (var i$4 = 0, list = segments; i$4 < list.length; i$4 += 1) {
+            var seg = list[i$4];
             interpolator.reset(seg, radius * 0.25);
             var numCircles = 0;
             if (interpolator.length <= 0.5 * radius) {
@@ -31002,8 +31009,8 @@ CollisionIndex.prototype.placeCollisionCircles = function placeCollisionCircles(
             } else {
                 numCircles = Math.ceil(interpolator.paddedLength / circleDist) + 1;
             }
-            for (var i$2 = 0; i$2 < numCircles; i$2++) {
-                var t = i$2 / Math.max(numCircles - 1, 1);
+            for (var i$3 = 0; i$3 < numCircles; i$3++) {
+                var t = i$3 / Math.max(numCircles - 1, 1);
                 var circlePosition = interpolator.lerp(t);
                 var centerX = circlePosition.x + viewportPadding;
                 var centerY = circlePosition.y + viewportPadding;
@@ -31681,24 +31688,24 @@ Placement.prototype.commit = function commit(now) {
             placementChanged = placementChanged || jointPlacement.text || jointPlacement.icon;
         }
     }
-    for (var crossTileID1 in prevOpacities) {
-        var prevOpacity$1 = prevOpacities[crossTileID1];
-        if (!this.opacities[crossTileID1]) {
+    for (var crossTileID$1 in prevOpacities) {
+        var prevOpacity$1 = prevOpacities[crossTileID$1];
+        if (!this.opacities[crossTileID$1]) {
             var jointOpacity = new JointOpacityState(prevOpacity$1, increment, false, false);
             if (!jointOpacity.isHidden()) {
-                this.opacities[crossTileID1] = jointOpacity;
+                this.opacities[crossTileID$1] = jointOpacity;
                 placementChanged = placementChanged || prevOpacity$1.text.placed || prevOpacity$1.icon.placed;
             }
         }
     }
-    for (var crossTileID2 in prevOffsets) {
-        if (!this.variableOffsets[crossTileID2] && this.opacities[crossTileID2] && !this.opacities[crossTileID2].isHidden()) {
-            this.variableOffsets[crossTileID2] = prevOffsets[crossTileID2];
+    for (var crossTileID$2 in prevOffsets) {
+        if (!this.variableOffsets[crossTileID$2] && this.opacities[crossTileID$2] && !this.opacities[crossTileID$2].isHidden()) {
+            this.variableOffsets[crossTileID$2] = prevOffsets[crossTileID$2];
         }
     }
-    for (var crossTileID3 in prevOrientations) {
-        if (!this.placedOrientations[crossTileID3] && this.opacities[crossTileID3] && !this.opacities[crossTileID3].isHidden()) {
-            this.placedOrientations[crossTileID3] = prevOrientations[crossTileID3];
+    for (var crossTileID$3 in prevOrientations) {
+        if (!this.placedOrientations[crossTileID$3] && this.opacities[crossTileID$3] && !this.opacities[crossTileID$3].isHidden()) {
+            this.placedOrientations[crossTileID$3] = prevOrientations[crossTileID$3];
         }
     }
     if (placementChanged) {
@@ -32092,8 +32099,8 @@ CrossTileSymbolLayerIndex.prototype.addBucket = function addBucket(tileID, bucke
             }
         }
     }
-    for (var i1 = 0; i1 < bucket.symbolInstances.length; i1++) {
-        var symbolInstance$1 = bucket.symbolInstances.get(i1);
+    for (var i$1 = 0; i$1 < bucket.symbolInstances.length; i$1++) {
+        var symbolInstance$1 = bucket.symbolInstances.get(i$1);
         if (!symbolInstance$1.crossTileID) {
             symbolInstance$1.crossTileID = crossTileIDs.generate();
             zoomCrossTileIDs[symbolInstance$1.crossTileID] = true;
@@ -32317,11 +32324,11 @@ var Style = function (Evented) {
         this._layers = {};
         this._serializedLayers = {};
         for (var i = 0, list = layers; i < list.length; i += 1) {
-            var layer1 = list[i];
-            layer1 = performance.createStyleLayer(layer1);
-            layer1.setEventedParent(this, { layer: { id: layer1.id } });
-            this._layers[layer1.id] = layer1;
-            this._serializedLayers[layer1.id] = layer1.serialize();
+            var layer = list[i];
+            layer = performance.createStyleLayer(layer);
+            layer.setEventedParent(this, { layer: { id: layer.id } });
+            this._layers[layer.id] = layer;
+            this._serializedLayers[layer.id] = layer.serialize();
         }
         this.dispatcher.broadcast('setLayers', this._serializeLayers(this._order));
         this.light = new Light(this.stylesheet.light);
@@ -32396,8 +32403,8 @@ var Style = function (Evented) {
                 return true;
             }
         }
-        for (var id1 in this._layers) {
-            if (this._layers[id1].hasTransition()) {
+        for (var id$1 in this._layers) {
+            if (this._layers[id$1].hasTransition()) {
                 return true;
             }
         }
@@ -32428,8 +32435,8 @@ var Style = function (Evented) {
                 }
             }
             this._updateTilesForChangedImages();
-            for (var id2 in this._updatedPaintProps) {
-                this._layers[id2].updateTransitions(parameters);
+            for (var id$1 in this._updatedPaintProps) {
+                this._layers[id$1].updateTransitions(parameters);
             }
             this.light.updateTransitions(parameters);
             this._resetUpdates();
@@ -32448,13 +32455,13 @@ var Style = function (Evented) {
                 this.sourceCaches[layer.source].used = true;
             }
         }
-        for (var sourceId1 in sourcesUsedBefore) {
-            var sourceCache$1 = this.sourceCaches[sourceId1];
-            if (sourcesUsedBefore[sourceId1] !== sourceCache$1.used) {
+        for (var sourceId$1 in sourcesUsedBefore) {
+            var sourceCache$1 = this.sourceCaches[sourceId$1];
+            if (sourcesUsedBefore[sourceId$1] !== sourceCache$1.used) {
                 sourceCache$1.fire(new performance.Event('data', {
                     sourceDataType: 'visibility',
                     dataType: 'source',
-                    sourceId: sourceId1
+                    sourceId: sourceId$1
                 }));
             }
         }
@@ -32849,7 +32856,7 @@ var Style = function (Evented) {
             this.fire(new performance.ErrorEvent(new Error('The sourceLayer parameter must be provided for vector source types.')));
             return;
         }
-        if (key && typeof target.id !== 'string' && typeof target.id !== 'number') {
+        if (key && (typeof target.id !== 'string' && typeof target.id !== 'number')) {
             this.fire(new performance.ErrorEvent(new Error('A feature id is required to remove its specific state property.')));
             return;
         }
@@ -32936,12 +32943,12 @@ var Style = function (Evented) {
             return b.intersectionZ - a.intersectionZ;
         });
         var features = [];
-        for (var l1 = this._order.length - 1; l1 >= 0; l1--) {
-            var layerId$1 = this._order[l1];
+        for (var l$1 = this._order.length - 1; l$1 >= 0; l$1--) {
+            var layerId$1 = this._order[l$1];
             if (isLayer3D(layerId$1)) {
                 for (var i = features3D.length - 1; i >= 0; i--) {
                     var topmost3D = features3D[i].feature;
-                    if (layerIndex[topmost3D.layer.id] < l1) {
+                    if (layerIndex[topmost3D.layer.id] < l$1) {
                         break;
                     }
                     features.push(topmost3D);
@@ -33445,9 +33452,9 @@ VertexArrayObject.prototype.freshBind = function freshBind(program, layoutVertex
     layoutVertexBuffer.bind();
     layoutVertexBuffer.setVertexAttribPointers(gl, program, vertexOffset);
     for (var i$2 = 0, list$1 = paintVertexBuffers; i$2 < list$1.length; i$2 += 1) {
-        var vertexBuffer1 = list$1[i$2];
-        vertexBuffer1.bind();
-        vertexBuffer1.setVertexAttribPointers(gl, program, vertexOffset);
+        var vertexBuffer$1 = list$1[i$2];
+        vertexBuffer$1.bind();
+        vertexBuffer$1.setVertexAttribPointers(gl, program, vertexOffset);
     }
     if (dynamicVertexBuffer) {
         dynamicVertexBuffer.bind();
@@ -35598,9 +35605,9 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
     var indexBuffer = context.createIndexBuffer(quadTriangles, true);
     var vertexBuffer = context.createVertexBuffer(vertexData, performance.collisionCircleLayout.members, true);
     for (var i$3 = 0, list$1 = tileBatches; i$3 < list$1.length; i$3 += 1) {
-        var batch1 = list$1[i$3];
-        var uniforms = collisionCircleUniformValues(batch1.transform, batch1.invTransform, painter.transform);
-        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch1.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch1.circleOffset * 2, batch1.circleArray.length, batch1.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
+        var batch$1 = list$1[i$3];
+        var uniforms = collisionCircleUniformValues(batch$1.transform, batch$1.invTransform, painter.transform);
+        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch$1.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch$1.circleOffset * 2, batch$1.circleArray.length, batch$1.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
     }
     vertexBuffer.destroy();
     indexBuffer.destroy();
@@ -35680,7 +35687,7 @@ function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlig
     for (var i = 0, list = coords; i < list.length; i += 1)
         loop();
 }
-function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize1, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
+function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
     var placedSymbols = bucket.text.placedSymbolArray;
     var dynamicTextLayoutVertexArray = bucket.text.dynamicLayoutVertexArray;
     var dynamicIconLayoutVertexArray = bucket.icon.dynamicLayoutVertexArray;
@@ -35696,7 +35703,7 @@ function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, var
             var tileAnchor = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
             var projectedAnchor = project(tileAnchor, pitchWithMap ? posMatrix : labelPlaneMatrix, getElevation);
             var perspectiveRatio = getPerspectiveRatio(transform.cameraToCenterDistance, projectedAnchor.signedDistanceFromCamera);
-            var renderTextSize = symbolSize1.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
+            var renderTextSize = symbolSize.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
             if (pitchWithMap) {
                 renderTextSize *= bucket.tilePixelRatio / tileScale;
             }
@@ -36163,7 +36170,7 @@ function drawFill(painter, sourceCache, layer, coords) {
     }
     var colorMode = painter.colorModeForRenderPass();
     var pattern = layer.paint.get('fill-pattern');
-    var pass = painter.opaquePassEnabledForLayer() && !pattern.constantOr(1) && color.constantOr(performance.Color.transparent).a === 1 && opacity.constantOr(0) === 1 ? 'opaque' : 'translucent';
+    var pass = painter.opaquePassEnabledForLayer() && (!pattern.constantOr(1) && color.constantOr(performance.Color.transparent).a === 1 && opacity.constantOr(0) === 1) ? 'opaque' : 'translucent';
     if (painter.renderPass === pass) {
         var depthMode = painter.depthModeForSublayer(1, painter.renderPass === 'opaque' ? DepthMode.ReadWrite : DepthMode.ReadOnly);
         drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode, false);
@@ -36663,9 +36670,9 @@ function updateTerrainFacilitators(painter, sourceCache) {
         depth: 1
     });
     for (var i$1 = 0, list$1 = tiles; i$1 < list$1.length; i$1 += 1) {
-        var tile1 = list$1[i$1];
-        var terrain$1 = sourceCache.getTerrain(tile1.tileID);
-        var posMatrix$1 = painter.transform.calculatePosMatrix(tile1.tileID.toUnwrapped());
+        var tile$1 = list$1[i$1];
+        var terrain$1 = sourceCache.getTerrain(tile$1.tileID);
+        var posMatrix$1 = painter.transform.calculatePosMatrix(tile$1.tileID.toUnwrapped());
         var uniformValues$1 = terrainDepthUniformValues(posMatrix$1);
         program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues$1, terrain$1, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
     }
@@ -36974,27 +36981,27 @@ Painter.prototype.render = function render(style, options) {
     var coordsDescendingSymbol = {};
     var coordsDescendingInv = {};
     var coordsDescendingInvStr = {};
-    for (var id1 in sourceCaches) {
-        var sourceCache$1 = sourceCaches[id1];
-        coordsAscending[id1] = sourceCache$1.getVisibleCoordinates();
-        coordsDescending[id1] = coordsAscending[id1].slice().reverse();
-        coordsDescendingSymbol[id1] = sourceCache$1.getVisibleCoordinates(true).reverse();
+    for (var id$1 in sourceCaches) {
+        var sourceCache$1 = sourceCaches[id$1];
+        coordsAscending[id$1] = sourceCache$1.getVisibleCoordinates();
+        coordsDescending[id$1] = coordsAscending[id$1].slice().reverse();
+        coordsDescendingSymbol[id$1] = sourceCache$1.getVisibleCoordinates(true).reverse();
         if (isTerrainEnabled) {
-            coordsDescendingInv[id1] = {};
-            for (var c = 0; c < coordsDescending[id1].length; c++) {
-                var coords = tsc.getTerrainCoords(coordsDescending[id1][c]);
+            coordsDescendingInv[id$1] = {};
+            for (var c = 0; c < coordsDescending[id$1].length; c++) {
+                var coords = tsc.getTerrainCoords(coordsDescending[id$1][c]);
                 for (var key in coords) {
-                    if (!coordsDescendingInv[id1][key]) {
-                        coordsDescendingInv[id1][key] = [];
+                    if (!coordsDescendingInv[id$1][key]) {
+                        coordsDescendingInv[id$1][key] = [];
                     }
-                    coordsDescendingInv[id1][key].push(coords[key]);
+                    coordsDescendingInv[id$1][key].push(coords[key]);
                 }
             }
         }
     }
     for (var i$1 = 0, list = layerIds; i$1 < list.length; i$1 += 1) {
-        var id2 = list[i$1];
-        var layer = this.style._layers[id2], source = layer.source;
+        var id$2 = list[i$1];
+        var layer = this.style._layers[id$2], source = layer.source;
         if (renderToTexture[layer.type]) {
             if (!coordsDescendingInvStr[source]) {
                 coordsDescendingInvStr[source] = {};
@@ -37834,21 +37841,21 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
         minZoom = z;
     }
     var radiusOfMaxLvlLodInTiles = 3;
-    var newRootTile = function (wrap1) {
+    var newRootTile = function (wrap) {
         return {
             aabb: new Aabb([
-                wrap1 * numTiles,
+                wrap * numTiles,
                 0,
                 0
             ], [
-                (wrap1 + 1) * numTiles,
+                (wrap + 1) * numTiles,
                 numTiles,
                 0
             ]),
             zoom: 0,
             x: 0,
             y: 0,
-            wrap: wrap1,
+            wrap: wrap,
             fullyVisible: false
         };
     };
@@ -39612,8 +39619,8 @@ var ScrollZoomHandler = function ScrollZoomHandler(map, handler) {
 ScrollZoomHandler.prototype.setZoomRate = function setZoomRate(zoomRate) {
     this._defaultZoomRate = zoomRate;
 };
-ScrollZoomHandler.prototype.setWheelZoomRate = function setWheelZoomRate(wheelZoomRate1) {
-    this._wheelZoomRate = wheelZoomRate1;
+ScrollZoomHandler.prototype.setWheelZoomRate = function setWheelZoomRate(wheelZoomRate) {
+    this._wheelZoomRate = wheelZoomRate;
 };
 ScrollZoomHandler.prototype.isEnabled = function isEnabled() {
     return !!this._enabled;
@@ -40452,25 +40459,25 @@ HandlerManager.prototype._fireEvents = function _fireEvents(newEventsInProgress,
     if (nowMoving) {
         this._fireEvent('move', nowMoving.originalEvent);
     }
-    for (var eventName1 in newEventsInProgress) {
-        var ref$1 = newEventsInProgress[eventName1];
+    for (var eventName$1 in newEventsInProgress) {
+        var ref$1 = newEventsInProgress[eventName$1];
         var originalEvent$1 = ref$1.originalEvent;
-        this._fireEvent(eventName1, originalEvent$1);
+        this._fireEvent(eventName$1, originalEvent$1);
     }
     var endEvents = {};
     var originalEndEvent;
-    for (var eventName2 in this._eventsInProgress) {
-        var ref$2 = this._eventsInProgress[eventName2];
+    for (var eventName$2 in this._eventsInProgress) {
+        var ref$2 = this._eventsInProgress[eventName$2];
         var handlerName = ref$2.handlerName;
         var originalEvent$2 = ref$2.originalEvent;
         if (!this._handlersById[handlerName].isActive()) {
-            delete this._eventsInProgress[eventName2];
+            delete this._eventsInProgress[eventName$2];
             originalEndEvent = deactivatedHandlers[handlerName] || originalEvent$2;
-            endEvents[eventName2 + 'end'] = originalEndEvent;
+            endEvents[eventName$2 + 'end'] = originalEndEvent;
         }
     }
-    for (var name1 in endEvents) {
-        this._fireEvent(name1, endEvents[name1]);
+    for (var name$1 in endEvents) {
+        this._fireEvent(name$1, endEvents[name$1]);
     }
     var stillMoving = isMoving(this._eventsInProgress);
     if (allowEndAnimation && (wasMoving || nowMoving) && !stillMoving) {
@@ -40508,6 +40515,31 @@ HandlerManager.prototype._requestFrame = function _requestFrame() {
 HandlerManager.prototype._triggerRenderFrame = function _triggerRenderFrame() {
     if (this._frameId === undefined) {
         this._frameId = this._requestFrame();
+    }
+};
+
+var Debug = {
+    extend: function extend$1(dest) {
+        var sources = [], len = arguments.length - 1;
+        while (len-- > 0)
+            sources[len] = arguments[len + 1];
+        return performance.extend.apply(void 0, [dest].concat(sources));
+    },
+    run: function run(fn) {
+        fn();
+    },
+    logToElement: function logToElement(message, overwrite, id) {
+        if (overwrite === void 0)
+            overwrite = false;
+        if (id === void 0)
+            id = 'log';
+        var el = window.document.getElementById(id);
+        if (el) {
+            if (overwrite) {
+                el.innerHTML = '';
+            }
+            el.innerHTML += '<br>' + message;
+        }
     }
 };
 
@@ -40857,7 +40889,7 @@ var Camera = function (Evented) {
         var bearing = 'bearing' in options ? this._normalizeBearing(options.bearing, startBearing) : startBearing;
         var pitch = 'pitch' in options ? +options.pitch : startPitch;
         var padding = 'padding' in options ? options.padding : tr.padding;
-        var scale1 = tr.zoomScale(zoom - startZoom);
+        var scale = tr.zoomScale(zoom - startZoom);
         var offsetAsPoint = performance.pointGeometry.convert(options.offset);
         var pointAtOffset = tr.centerPoint.add(offsetAsPoint);
         var locationAtOffset = tr.pointLocation(pointAtOffset);
@@ -40866,7 +40898,7 @@ var Camera = function (Evented) {
         var from = tr.project(locationAtOffset);
         var delta = tr.project(center).sub(from);
         var rho = options.curve;
-        var w0 = Math.max(tr.width, tr.height), w1 = w0 / scale1, u1 = delta.mag();
+        var w0 = Math.max(tr.width, tr.height), w1 = w0 / scale, u1 = delta.mag();
         if ('minZoom' in options) {
             var minZoom = performance.clamp(Math.min(options.minZoom, startZoom, zoom), tr.minZoom, tr.maxZoom);
             var wMax = w0 / tr.zoomScale(minZoom - startZoom);
@@ -41321,6 +41353,8 @@ var defaultOptions$4 = {
 var Map = function (Camera) {
     function Map(options) {
         var this$1$1 = this;
+        var _a;
+        performance.PerformanceUtils.mark(performance.PerformanceMarkers.create);
         options = performance.extend({}, defaultOptions$4, options);
         if (options.minZoom != null && options.maxZoom != null && options.minZoom > options.maxZoom) {
             throw new Error('maxZoom must be greater than or equal to minZoom');
@@ -41353,8 +41387,7 @@ var Map = function (Camera) {
         this._mapId = performance.uniqueId();
         this._locale = performance.extend({}, defaultLocale, options.locale);
         this._clickTolerance = options.clickTolerance;
-        var _pixelRatio;
-        this._pixelRatio = (_pixelRatio = options.pixelRatio) !== null && _pixelRatio !== void 0 ? _pixelRatio : devicePixelRatio;
+        this._pixelRatio = (_a = options.pixelRatio) !== null && _a !== void 0 ? _a : devicePixelRatio;
         this._requestManager = new RequestManager(options.transformRequest);
         if (typeof options.container === 'string') {
             this._container = document.getElementById(options.container);
@@ -42231,6 +42264,7 @@ var Map = function (Camera) {
         this.fire(new performance.Event('render'));
         if (this.loaded() && !this._loaded) {
             this._loaded = true;
+            performance.PerformanceUtils.mark(performance.PerformanceMarkers.load);
             this.fire(new performance.Event('load'));
         }
         if (this.style && (this.style.hasTransitions() || crossFading)) {
@@ -42266,6 +42300,7 @@ var Map = function (Camera) {
         }
         if (this._loaded && !this._fullyLoaded && !somethingDirty) {
             this._fullyLoaded = true;
+            performance.PerformanceUtils.mark(performance.PerformanceMarkers.fullLoad);
         }
         return this;
     };
@@ -42311,6 +42346,7 @@ var Map = function (Camera) {
         DOM.remove(this._canvasContainer);
         DOM.remove(this._controlContainer);
         this._container.classList.remove('maplibregl-map', 'mapboxgl-map');
+        performance.PerformanceUtils.clearMetrics();
         this._removed = true;
         this.fire(new performance.Event('remove'));
     };
@@ -42318,6 +42354,7 @@ var Map = function (Camera) {
         var this$1$1 = this;
         if (this.style && !this._frame) {
             this._frame = performance.exported.frame(function (paintStartTimeStamp) {
+                performance.PerformanceUtils.frame(paintStartTimeStamp);
                 this$1$1._frame = null;
                 this$1$1._render(paintStartTimeStamp);
             });
@@ -44037,6 +44074,10 @@ var exported = {
         delete performance.config.REGISTERED_PROTOCOLS[customProtocol];
     }
 };
+Debug.extend(exported, {
+    isSafari: performance.isSafari,
+    getPerformanceMetrics: performance.PerformanceUtils.getPerformanceMetrics
+});
 
 return exported;
 
