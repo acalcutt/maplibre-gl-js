@@ -47,7 +47,6 @@ class Tent3D {
     type: string;
     renderingMode: string;
     program: WebGLProgram & {
-        a_pos?: number;
         aPos?: number;
         uMatrix?:  WebGLUniformLocation;
     };
