@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.1/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.6/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -1118,7 +1118,6 @@ var source_raster_dem = {
         type: 'enum',
         values: {
             terrarium: {},
-            mtk: {},
             mapbox: {}
         },
         'default': 'mapbox'
@@ -19757,8 +19756,8 @@ class DEMData {
         this.uid = uid;
         if (data.height !== data.width)
             throw new RangeError('DEM tiles must be square');
-        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
-            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".`);
+        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium') {
+            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox" and "terrarium".`);
             return;
         }
         this.stride = data.height;
@@ -19789,44 +19788,16 @@ class DEMData {
     get(x, y) {
         const pixels = new Uint8Array(this.data.buffer);
         const index = this._idx(x, y) * 4;
-        let unpack = this._unpackMapbox;
-        if (this.encoding === 'terrarium')
-            unpack = this._unpackTerrarium;
-        if (this.encoding === 'mtk')
-            unpack = this._unpackMTK;
+        const unpack = this.encoding === 'terrarium' ? this._unpackTerrarium : this._unpackMapbox;
         return unpack(pixels[index], pixels[index + 1], pixels[index + 2]);
     }
-    getHillshadingUnpackVector() {
-        if (this.encoding === 'terrarium')
-            return [
-                256,
-                1,
-                1 / 256,
-                32768
-            ];
-        return [
-            6553.6,
-            25.6,
-            0.1,
-            10000
-        ];
-    }
     getUnpackVector() {
-        if (this.encoding === 'terrarium')
-            return [
-                256,
-                1,
-                1 / 256,
-                32768
-            ];
-        if (this.encoding === 'mtk')
-            return [
-                65536 * 0.03,
-                256 * 0.03,
-                0.03,
-                10000
-            ];
-        return [
+        return this.encoding === 'terrarium' ? [
+            256,
+            1,
+            1 / 256,
+            32768
+        ] : [
             6553.6,
             25.6,
             0.1,
@@ -19840,9 +19811,6 @@ class DEMData {
     }
     _unpackMapbox(r, g, b) {
         return (r * 256 * 256 + g * 256 + b) / 10 - 10000;
-    }
-    _unpackMTK(r, g, b) {
-        return (r * 256 * 256 + g * 256 + b) * 0.03 - 10000;
     }
     _unpackTerrarium(r, g, b) {
         return r * 256 + g + b / 256 - 32768;
@@ -26198,7 +26166,7 @@ class SourceCache extends performance.Evented {
                     retain[id] = parentsForFading[id];
                 }
             }
-            if (this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
+            if (this.style && this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
                 const idealRasterTileIDs = {};
                 const missingTileIDs = {};
                 for (const tileID of idealTileIDs) {
@@ -26223,7 +26191,7 @@ class SourceCache extends performance.Evented {
                         idealRasterTileIDs[parent.tileID.key] = retain[parent.tileID.key] = parent.tileID;
                         for (const key in idealRasterTileIDs) {
                             if (idealRasterTileIDs[key].isChildOf(parent.tileID))
-                                idealRasterTileIDs[key] = null;
+                                delete idealRasterTileIDs[key];
                         }
                     }
                 }
@@ -26532,28 +26500,6 @@ class TerrainSourceCache extends performance.Evented {
         this.qualityFactor = 2;
         this.deltaZoom = 1;
         this.rerender = {};
-        const context = style.map.painter.context;
-        this._emptyDemUnpack = [
-            0,
-            0,
-            0,
-            0
-        ];
-        this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
-            width: 1,
-            height: 1
-        }), context.gl.RGBA, { premultiply: false });
-        this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        this._emptyDemMatrix = performance.identity([]);
-        const image = new performance.RGBAImage({
-            width: 1,
-            height: 1
-        }, new Uint8Array(1 * 4));
-        const texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
-        this._emptyDepthTexture = texture;
-        const size = this.tileSize * this.qualityFactor;
-        this.rttFramebuffer = context.createFramebuffer(size, size, true);
-        this.rttFramebuffer.depthAttachment.set(context.createRenderbuffer(context.gl.DEPTH_COMPONENT16, size, size));
         style.on('data', e => {
             if (e.dataType === 'source' && e.coord && this.isEnabled()) {
                 if (e.sourceId === this._sourceCache.id) {
@@ -26702,6 +26648,26 @@ class TerrainSourceCache extends performance.Evented {
     getTerrain(tileID) {
         if (!this.isEnabled() || !tileID)
             return null;
+        if (!this._emptyDemTexture) {
+            const context = this._style.map.painter.context;
+            const image = new performance.RGBAImage({
+                width: 1,
+                height: 1
+            }, new Uint8Array(1 * 4));
+            this._emptyDepthTexture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+            this._emptyDemUnpack = [
+                0,
+                0,
+                0,
+                0
+            ];
+            this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
+                width: 1,
+                height: 1
+            }), context.gl.RGBA, { premultiply: false });
+            this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+            this._emptyDemMatrix = performance.identity([]);
+        }
         const sourceTile = this.getSourceTile(tileID, true);
         if (sourceTile && sourceTile.dem && (!sourceTile.demTexture || sourceTile.needsTerrainPrepare)) {
             const context = this._style.map.painter.context;
@@ -26785,6 +26751,14 @@ class TerrainSourceCache extends performance.Evented {
         if (!this.isEnabled())
             return 0;
         return this.getElevation(tileID, x, y, extent) * this.exaggeration;
+    }
+    getRTTFramebuffer(painter) {
+        if (!this._rttFramebuffer) {
+            const size = this.tileSize * this.qualityFactor;
+            this._rttFramebuffer = painter.context.createFramebuffer(size, size, true);
+            this._rttFramebuffer.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, size, size));
+        }
+        return this._rttFramebuffer;
     }
     getFramebuffer(painter, texture) {
         const width = painter.width / devicePixelRatio;
@@ -27659,8 +27633,14 @@ function getGlCoordMatrix(posMatrix, pitchWithMap, rotateWithMap, transform, pix
     }
 }
 function project(point, matrix, getElevation) {
-    const pos = performance.fromValues(point.x, point.y, getElevation(point.x, point.y), 1);
-    performance.transformMat4(pos, pos, matrix);
+    let pos;
+    if (getElevation) {
+        pos = performance.fromValues(point.x, point.y, getElevation(point.x, point.y), 1);
+        performance.transformMat4(pos, pos, matrix);
+    } else {
+        pos = performance.fromValues(point.x, point.y, 0, 1);
+        xyTransformMat4(pos, pos, matrix);
+    }
     const w = pos[3];
     return {
         point: new performance.pointGeometry(pos[0] / w, pos[1] / w),
@@ -27696,8 +27676,14 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
             continue;
         }
         useVertical = false;
-        const anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, getElevation(symbol.anchorX, symbol.anchorY), 1);
-        performance.transformMat4(anchorPos, anchorPos, posMatrix);
+        let anchorPos;
+        if (getElevation) {
+            anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, getElevation(symbol.anchorX, symbol.anchorY), 1);
+            performance.transformMat4(anchorPos, anchorPos, posMatrix);
+        } else {
+            anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, 0, 1);
+            xyTransformMat4(anchorPos, anchorPos, posMatrix);
+        }
         if (!isVisible(anchorPos, clippingBuffer)) {
             hideGlyphs(symbol.numGlyphs, dynamicLayoutVertexArray);
             continue;
@@ -27874,6 +27860,13 @@ function hideGlyphs(num, dynamicLayoutVertexArray) {
         dynamicLayoutVertexArray.resize(offset + 4);
         dynamicLayoutVertexArray.float32.set(hiddenGlyphAttributes, offset * 3);
     }
+}
+function xyTransformMat4(out, a, m) {
+    const x = a[0], y = a[1];
+    out[0] = m[0] * x + m[4] * y + m[12];
+    out[1] = m[1] * x + m[5] * y + m[13];
+    out[3] = m[3] * x + m[7] * y + m[15];
+    return out;
 }
 
 const viewportPadding = 100;
@@ -28074,8 +28067,14 @@ class CollisionIndex {
         }
     }
     projectAndGetPerspectiveRatio(posMatrix, x, y, getElevation) {
-        const p = performance.fromValues(x, y, getElevation(x, y), 1);
-        performance.transformMat4(p, p, posMatrix);
+        let p;
+        if (getElevation) {
+            p = performance.fromValues(x, y, getElevation(x, y), 1);
+            performance.transformMat4(p, p, posMatrix);
+        } else {
+            p = performance.fromValues(x, y, 0, 1);
+            xyTransformMat4(p, p, posMatrix);
+        }
         const a = new performance.pointGeometry((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
         return {
             point: a,
@@ -28353,7 +28352,7 @@ class Placement {
                 verticalTextFeatureIndex = collisionArrays.verticalTextFeatureIndex;
             }
             const tileID = this.retainedQueryData[bucket.bucketInstanceId].tileID;
-            const getElevation = (x, y) => this.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y);
+            const getElevation = this.transform.terrainSourceCache && this.transform.terrainSourceCache.isEnabled() ? (x, y) => this.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y) : null;
             for (const boxType of [
                     'textBox',
                     'verticalTextBox',
@@ -28362,7 +28361,7 @@ class Placement {
                 ]) {
                 const box = collisionArrays[boxType];
                 if (box)
-                    box.elevation = getElevation(box.anchorPointX, box.anchorPointY);
+                    box.elevation = getElevation ? getElevation(box.anchorPointX, box.anchorPointY) : 0;
             }
             const textBox = collisionArrays.textBox;
             if (textBox) {
@@ -29157,7 +29156,8 @@ class Style extends performance.Evented {
         this.zoomHistory = new performance.ZoomHistory();
         this._loaded = false;
         this._availableImages = [];
-        map.transform.terrainSourceCache = this.terrainSourceCache;
+        if (map.transform)
+            map.transform.terrainSourceCache = this.terrainSourceCache;
         this._resetUpdates();
         this.dispatcher.broadcast('setReferrer', performance.getReferrer());
         const self = this;
@@ -30842,7 +30842,7 @@ const hillshadeUniformPrepareValues = (tileID, dem) => {
             stride
         ],
         'u_zoom': tileID.overscaledZ,
-        'u_unpack': dem.getHillshadingUnpackVector()
+        'u_unpack': dem.getUnpackVector()
     };
 };
 function getTileLatRange(painter, tileID) {
@@ -32197,7 +32197,7 @@ function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlig
         const updateTextFitIcon = layer.layout.get('icon-text-fit') !== 'none' && bucket.hasIconData();
         if (size) {
             const tileScale = Math.pow(2, tr.zoom - tile.tileID.overscaledZ);
-            const getElevation = (x, y) => painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y);
+            const getElevation = painter.style.terrainSourceCache && painter.style.terrainSourceCache.isEnabled() ? (x, y) => painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y) : null;
             updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, performance.symbolSize, tr, labelPlaneMatrix, coord.posMatrix, tileScale, size, updateTextFitIcon, getElevation);
         }
     }
@@ -32327,7 +32327,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
         const hasVariableAnchors = variablePlacement && bucket.hasTextData();
         const updateTextFitIcon = layer.layout.get('icon-text-fit') !== 'none' && hasVariableAnchors && bucket.hasIconData();
         if (alongLine) {
-            const getElevation = (x, y) => painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y);
+            const getElevation = painter.style.terrainSourceCache && painter.style.terrainSourceCache.isEnabled() ? (x, y) => painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y) : 0;
             updateLineLabels(bucket, coord.posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, getElevation);
         }
         const matrix = painter.translatePosMatrix(coord.posMatrix, tile, translate, translateAnchor), uLabelPlaneMatrix = alongLine || isText && variablePlacement || updateTextFitIcon ? identityMat4 : labelPlaneMatrix, uglCoordMatrix = painter.translatePosMatrix(glCoordMatrix, tile, translate, translateAnchor, true);
@@ -32496,8 +32496,7 @@ function drawHeatmap(painter, sourceCache, layer, coords) {
             const programConfiguration = bucket.programConfigurations.get(layer.id);
             const program = painter.useProgram('heatmap', programConfiguration);
             const {zoom} = painter.transform;
-            const terrain = painter.style.terrainSourceCache.getTerrain(coord);
-            program.draw(context, gl.TRIANGLES, DepthMode.disabled, stencilMode, colorMode, CullFaceMode.disabled, heatmapUniformValues(coord.posMatrix, tile, zoom, layer.paint.get('heatmap-intensity')), terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration);
+            program.draw(context, gl.TRIANGLES, DepthMode.disabled, stencilMode, colorMode, CullFaceMode.disabled, heatmapUniformValues(coord.posMatrix, tile, zoom, layer.paint.get('heatmap-intensity')), null, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration);
         }
         context.viewport.set([
             0,
@@ -32554,7 +32553,7 @@ function renderTextureToMap(painter, layer) {
         colorRampTexture = layer.colorRampTexture = new Texture(context, layer.colorRamp, gl.RGBA);
     }
     colorRampTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-    painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, heatmapTextureUniformValues(painter, layer, 0, 1), false, layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer, painter.viewportSegments, layer.paint, painter.transform.zoom);
+    painter.useProgram('heatmapTexture').draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, heatmapTextureUniformValues(painter, layer, 0, 1), null, layer.id, painter.viewportBuffer, painter.quadTriangleIndexBuffer, painter.viewportSegments, layer.paint, painter.transform.zoom);
 }
 
 function drawLine(painter, sourceCache, layer, coords) {
@@ -33153,7 +33152,7 @@ function drawTerrain(painter, sourceCache, tile) {
         painter.height
     ]);
     context.activeTexture.set(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceCache.rttFramebuffer.colorAttachment.get());
+    gl.bindTexture(gl.TEXTURE_2D, sourceCache.getRTTFramebuffer(painter).colorAttachment.get());
     const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
     const uniformValues = terrainUniformValues(posMatrix);
     program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
@@ -33171,8 +33170,9 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
         if (stack === 0)
             sourceCache._renderHistory.push(tile.tileID.key);
     }
-    sourceCache.rttFramebuffer.colorAttachment.set(tile.textures[stack].texture);
-    context.bindFramebuffer.set(sourceCache.rttFramebuffer.framebuffer);
+    const fb = sourceCache.getRTTFramebuffer(painter);
+    fb.colorAttachment.set(tile.textures[stack].texture);
+    context.bindFramebuffer.set(fb.framebuffer);
     context.viewport.set([
         0,
         0,
@@ -34202,7 +34202,7 @@ class Transform {
             return [];
         if (options.maxzoom !== undefined && z > options.maxzoom)
             z = options.maxzoom;
-        const cameraCoord = tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+        const cameraCoord = tsc && tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
         const centerCoord = performance.MercatorCoordinate.fromLngLat(this.center);
         const numTiles = Math.pow(2, z);
         const cameraPoint = [
@@ -34217,7 +34217,7 @@ class Transform {
         ];
         const cameraFrustum = Frustum.fromInvProjectionMatrix(this.invProjMatrix, this.worldSize, z);
         let minZoom = options.minzoom || 0;
-        if (!tsc.isEnabled() && this.pitch <= 60 && this._edgeInsets.top < 0.1)
+        if (!(tsc && tsc.isEnabled()) && this.pitch <= 60 && this._edgeInsets.top < 0.1)
             minZoom = z;
         const radiusOfMaxLvlLodInTiles = 3;
         const newRootTile = wrap => {
@@ -34279,7 +34279,7 @@ class Transform {
                 const childY = (y << 1) + (i >> 1);
                 const childZ = it.zoom + 1;
                 let quadrant = it.aabb.quadrant(i);
-                if (tsc.isEnabled()) {
+                if (tsc && tsc.isEnabled()) {
                     const tile = tsc.getSourceTile(new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
                     quadrant = new Aabb(fromValues(quadrant.min[0], quadrant.min[1], tile && tile.dem ? tile.dem.min - this.elevation : -this.elevation), fromValues(quadrant.max[0], quadrant.max[1], tile && tile.dem ? Math.max(0, tile.dem.max - this.elevation) : 0));
                 }
@@ -34335,7 +34335,7 @@ class Transform {
         const mercX = merc.x * worldSize, mercY = merc.y * worldSize;
         const tileX = Math.floor(mercX / tileSize), tileY = Math.floor(mercY / tileSize);
         const tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
-        return this.terrainSourceCache.getElevation(tileID, mercX % tileSize, mercY % tileSize, tileSize);
+        return this.terrainSourceCache.getElevationWithExaggeration(tileID, mercX % tileSize, mercY % tileSize, tileSize);
     }
     getCameraPosition() {
         const lngLat = this.pointLocation(this.getCameraPoint());
@@ -34346,6 +34346,8 @@ class Transform {
         };
     }
     recalculateZoom() {
+        if (!this.terrainSourceCache || !this.terrainSourceCache.isEnabled())
+            return;
         const center = this.pointLocation3D(this.centerPoint);
         const elevation = this.getElevation(center);
         const deltaElevation = this.elevation - elevation;
@@ -34417,6 +34419,8 @@ class Transform {
         return new performance.MercatorCoordinate(performance.number(x0, x1, t) / this.worldSize, performance.number(y0, y1, t) / this.worldSize);
     }
     pointCoordinate3D(p) {
+        if (!this.terrainSourceCache)
+            return this.pointCoordinate(p);
         const rgba = new Uint8Array(4);
         const painter = this.terrainSourceCache._style.map.painter, context = painter.context, gl = context.gl;
         context.bindFramebuffer.set(this.terrainSourceCache.getFramebuffer(painter, 'coords').framebuffer);
@@ -34433,7 +34437,12 @@ class Transform {
         return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.terrainSourceCache.getElevationWithExaggeration(tile.tileID, x, y, coordsSize));
     }
     coordinatePoint(coord, elevation = 0) {
-        const p = performance.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, elevation, 1);
+        const p = [
+            coord.x * this.worldSize,
+            coord.y * this.worldSize,
+            elevation,
+            1
+        ];
         performance.transformMat4(p, p, this.pixelMatrix2);
         return new performance.pointGeometry(p[0] / p[3], p[1] / p[3]);
     }
@@ -34551,8 +34560,6 @@ class Transform {
     _calcMatrices() {
         if (!this.height)
             return;
-        const exaggeration = this.terrainSourceCache ? this.terrainSourceCache.exaggeration : 1;
-        const elevation = this._elevation * exaggeration;
         const halfFov = this._fov / 2;
         const offset = this.centerOffset;
         this.cameraToCenterDistance = 0.5 / Math.tan(halfFov) * this.height;
@@ -34589,7 +34596,7 @@ class Transform {
         const groundAngle = Math.PI / 2 + this._pitch;
         const fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
         const cameraAltitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
-        const cameraToCenterDistance = (cameraAltitude + elevation) * this._pixelPerMeter / Math.cos(this._pitch);
+        const cameraToCenterDistance = this.terrainSourceCache && this.terrainSourceCache.isEnabled() ? (cameraAltitude + this._elevation) * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
         const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
         const point = this.point;
         const x = point.x, y = point.y;
@@ -34617,14 +34624,14 @@ class Transform {
             -y,
             0
         ]);
-        this.mercatorMatrix = performance.scale(new Float64Array(16), m, fromValues(this.worldSize, this.worldSize, this.worldSize));
+        this.mercatorMatrix = performance.scale([], m, fromValues(this.worldSize, this.worldSize, this.worldSize));
         performance.scale(m, m, fromValues(1, 1, this._pixelPerMeter));
         this.pixelMatrix = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
-        this.invProjMatrix = performance.invert(new Float64Array(16), m);
+        this.invProjMatrix = performance.invert([], m);
         performance.translate(m, m, [
             0,
             0,
-            -elevation
+            -this.elevation
         ]);
         this.projMatrix = m;
         this.pixelMatrix2 = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
@@ -36582,7 +36589,8 @@ class HandlerManager {
     _updateMapTransform(combinedResult, combinedEventsInProgress, deactivatedHandlers) {
         const map = this._map;
         const tr = map.transform;
-        if (!hasChange(combinedResult) && !this._drag) {
+        const hasTerrain = map.style && map.style.terrainSourceCache && map.style.terrainSourceCache.isEnabled();
+        if (!hasChange(combinedResult) && !(hasTerrain && this._drag)) {
             return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
         }
         let {panDelta, zoomDelta, bearingDelta, pitchDelta, around, pinchAround} = combinedResult;
@@ -36608,11 +36616,12 @@ class HandlerManager {
             tr.freezeElevation = true;
         } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
             tr.freezeElevation = false;
-            tr.recalculateZoom();
+            if (hasTerrain)
+                tr.recalculateZoom();
             this._drag = null;
         } else if (combinedEventsInProgress.drag && this._drag) {
             this._drag.delta = this._drag.delta.add(panDelta);
-            if (map.style.terrainSourceCache.isEnabled()) {
+            if (hasTerrain) {
                 tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
             } else {
                 tr.setLocationAtPoint(this._drag.lngLat, this._drag.point.add(this._drag.delta));
@@ -37004,7 +37013,8 @@ class Camera extends performance.Evented {
         }
         delete this._easeId;
         this.transform.freezeElevation = false;
-        this.transform.recalculateZoom();
+        if (this.transform.terrainSourceCache && this.transform.terrainSourceCache.isEnabled())
+            this.transform.recalculateZoom();
         const wasZooming = this._zooming;
         const wasRotating = this._rotating;
         const wasPitching = this._pitching;
@@ -37452,7 +37462,7 @@ const defaultLocale = {
 const defaultMinZoom = -2;
 const defaultMaxZoom = 22;
 const defaultMinPitch = 0;
-const defaultMaxPitch = 65;
+const defaultMaxPitch = 60;
 const maxPitchThreshold = 85;
 const defaultOptions$4 = {
     center: [
@@ -39041,7 +39051,7 @@ class Marker extends performance.Evented {
             this._pos = this._pos.round();
         }
         DOM.setTransform(this._element, `${ anchorTranslate[this._anchor] } translate(${ this._pos.x }px, ${ this._pos.y }px) ${ pitch } ${ rotation }`);
-        const tsc = this._map.style.terrainSourceCache;
+        const tsc = this._map.style && this._map.style.terrainSourceCache;
         if (tsc && tsc.isEnabled() && !this._opacityTimeout)
             this._opacityTimeout = setTimeout(() => {
                 const lnglat = this._map.unproject(this._pos);
