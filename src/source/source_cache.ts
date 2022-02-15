@@ -568,7 +568,7 @@ class SourceCache extends Evented {
 
             // disable fading logic in renderToTexture (e.g. 3D) mode
             // e.g. avoid rendering two tiles on the same place
-            if (this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
+            if (this.style && this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
                 const idealRasterTileIDs: {[_: string]: OverscaledTileID} = {};
                 const missingTileIDs: {[_: string]: OverscaledTileID} = {};
                 for (const tileID of idealTileIDs) {
@@ -595,7 +595,7 @@ class SourceCache extends Evented {
                         idealRasterTileIDs[parent.tileID.key] = retain[parent.tileID.key] = parent.tileID;
                         // remove idealTiles which would be rendered twice
                         for (const key in idealRasterTileIDs) {
-                            if (idealRasterTileIDs[key].isChildOf(parent.tileID)) idealRasterTileIDs[key] = null;
+                            if (idealRasterTileIDs[key].isChildOf(parent.tileID)) delete idealRasterTileIDs[key];
                         }
                     }
                 }
