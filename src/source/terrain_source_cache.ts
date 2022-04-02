@@ -5,6 +5,7 @@ import {mat4} from 'gl-matrix';
 import {Evented} from '../util/evented';
 import type Transform from '../geo/transform';
 import type SourceCache from '../source/source_cache';
+import {values} from '../util/util';
 import Painter from '../render/painter';
 
 /**
