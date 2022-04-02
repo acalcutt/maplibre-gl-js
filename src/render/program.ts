@@ -13,7 +13,9 @@ import type ColorMode from '../gl/color_mode';
 import type CullFaceMode from '../gl/cull_face_mode';
 import type {UniformBindings, UniformValues, UniformLocations} from './uniform_binding';
 import type {BinderUniform} from '../data/program_configuration';
-import {terrainPreludeUniforms} from './program/terrain_program';
+import {terrainPreludeUniforms, TerrainPreludeUniformsType} from './program/terrain_program';
+import type {TerrainData} from '../render/terrain';
+import Terrain from '../render/terrain';
 
 export type DrawMode = WebGLRenderingContext['LINES'] | WebGLRenderingContext['TRIANGLES'] | WebGLRenderingContext['LINE_STRIP'];
 
@@ -32,7 +34,7 @@ class Program<Us extends UniformBindings> {
     attributes: {[_: string]: number};
     numAttributes: number;
     fixedUniforms: Us;
-    terrainUniforms: any;
+    terrainUniforms: TerrainPreludeUniformsType;
     binderUniforms: Array<BinderUniform>;
     failedToCreate: boolean;
 
@@ -47,7 +49,8 @@ class Program<Us extends UniformBindings> {
         configuration: ProgramConfiguration,
         fixedUniforms: (b: Context, a: UniformLocations) => Us,
         showOverdrawInspector: boolean,
-        useTerrain: boolean) {
+        terrain: Terrain) {
+
         const gl = context.gl;
         this.program = gl.createProgram();
 
@@ -69,7 +72,7 @@ class Program<Us extends UniformBindings> {
         if (showOverdrawInspector) {
             defines.push('#define OVERDRAW_INSPECTOR;');
         }
-        if (useTerrain) {
+        if (terrain) {
             defines.push('#define TERRAIN3D;');
         }
         const fragmentSource = defines.concat(shaders.prelude.fragmentSource, source.fragmentSource).join('\n');
@@ -134,7 +137,7 @@ class Program<Us extends UniformBindings> {
         colorMode: Readonly<ColorMode>,
         cullFaceMode: Readonly<CullFaceMode>,
         uniformValues: UniformValues<Us>,
-        terrain: any,
+        terrain: TerrainData,
         layerID: string,
         layoutVertexBuffer: VertexBuffer,
         indexBuffer: IndexBuffer,

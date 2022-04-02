@@ -20,7 +20,7 @@ import type Dispatcher from '../util/dispatcher';
 import type Transform from '../geo/transform';
 import type {TileState} from './tile';
 import type {Callback} from '../types/callback';
-import type {SourceSpecification} from '../style-spec/types';
+import type {SourceSpecification} from '../style-spec/types.g';
 
 /**
  * `SourceCache` is responsible for
@@ -86,8 +86,13 @@ class SourceCache extends Evented {
             }
         });
 
+        this.on('dataloading', () => {
+            this._sourceErrored = false;
+        });
+
         this.on('error', () => {
-            this._sourceErrored = true;
+            // Only set _sourceErrored if the source does not have pending loads.
+            this._sourceErrored = this._source.loaded();
         });
 
         this._source = createSource(id, options, dispatcher, this);
@@ -112,6 +117,7 @@ class SourceCache extends Evented {
     }
 
     onRemove(map: Map) {
+        this.clearTiles();
         if (this._source && this._source.onRemove) {
             this._source.onRemove(map);
         }
@@ -269,7 +275,9 @@ class SourceCache extends Evented {
         if (this.getSource().type === 'raster-dem' && tile.dem) this._backfillDEM(tile);
         this._state.initializeTileState(tile, this.map ? this.map.painter : null);
 
-        this._source.fire(new Event('data', {dataType: 'source', tile, coord: tile.tileID}));
+        if (!tile.aborted) {
+            this._source.fire(new Event('data', {dataType: 'source', tile, coord: tile.tileID}));
+        }
     }
 
     /**
@@ -524,6 +532,9 @@ class SourceCache extends Evented {
                 if (tileID.canonical.z > this._source.minzoom) {
                     const parent = tileID.scaledTo(tileID.canonical.z - 1);
                     parents[parent.key] = parent;
+                    // load very low zoom to calculate tile visability in transform.coveringTiles and high zoomlevels correct
+                    const parent2 = tileID.scaledTo(Math.max(this._source.minzoom, Math.min(tileID.canonical.z, 5)));
+                    parents[parent2.key] = parent2;
                 }
             }
             idealTileIDs = idealTileIDs.concat(values(parents));
@@ -566,9 +577,8 @@ class SourceCache extends Evented {
                 }
             }
 
-            // disable fading logic in renderToTexture (e.g. 3D) mode
-            // e.g. avoid rendering two tiles on the same place
-            if (this.style && this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
+            // disable fading logic in terrain3D mode to avoid rendering two tiles on the same place
+            if (this.style && this.style.terrain) {
                 const idealRasterTileIDs: {[_: string]: OverscaledTileID} = {};
                 const missingTileIDs: {[_: string]: OverscaledTileID} = {};
                 for (const tileID of idealTileIDs) {
@@ -865,8 +875,8 @@ class SourceCache extends Evented {
             transform.getCameraQueryGeometry(pointQueryGeometry) :
             pointQueryGeometry;
 
-        const queryGeometry = pointQueryGeometry.map((p) => transform.pointCoordinate(p));
-        const cameraQueryGeometry = cameraPointQueryGeometry.map((p) => transform.pointCoordinate(p));
+        const queryGeometry = pointQueryGeometry.map((p) => transform.pointCoordinate3D(p));
+        const cameraQueryGeometry = cameraPointQueryGeometry.map((p) => transform.pointCoordinate3D(p));
 
         const ids = this.getIds();
 

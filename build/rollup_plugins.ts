@@ -17,7 +17,7 @@ export const nodeResolve = resolve({
     preferBuiltins: false
 });
 
-export const plugins = (minified: boolean, production: boolean): Plugin[] => [
+export const plugins = (production: boolean): Plugin[] => [
     minifyStyleSpec(),
     json(),
     // https://github.com/zaach/jison/issues/351
@@ -29,21 +29,21 @@ export const plugins = (minified: boolean, production: boolean): Plugin[] => [
             '_token_stack:': ''
         }
     }),
-    production ? strip({
+    production && strip({
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }) : false,
     buble({transforms: {dangerousForOf: true}, objectAssign: 'Object.assign'}),
-    minified ? terser({
+    production && terser({
         compress: {
             // eslint-disable-next-line camelcase
             pure_getters: true,
             passes: 3
         }
-    }) : false,
-    production ? unassert({
+    }),
+    production && unassert({
         include: ['**/*'], // by default, unassert only includes .js files
-    }) : false,
+    }),
     nodeResolve,
     typescript(),
     commonjs({

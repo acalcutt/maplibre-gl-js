@@ -44,14 +44,14 @@ function renderHillshade(painter, coord, tile, layer, depthMode, stencilMode, co
     if (!fbo) return;
 
     const program = painter.useProgram('hillshade');
-    const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
 
     context.activeTexture.set(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo.colorAttachment.get());
 
-    const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+    const terrainCoord = terrainData ? coord : null;
     program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled,
-        hillshadeUniformValues(painter, tile, layer, terrainCoord), terrain, layer.id, painter.rasterBoundsBuffer,
+        hillshadeUniformValues(painter, tile, layer, terrainCoord), terrainData, layer.id, painter.rasterBoundsBuffer,
         painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
 
 }
@@ -62,7 +62,6 @@ function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMod
     const context = painter.context;
     const gl = context.gl;
     const dem = tile.dem;
-    const terrain = painter.style.terrainSourceCache.getTerrain();
     if (dem && dem.data) {
         const tileSize = dem.dim;
         const textureStride = dem.stride;
@@ -99,7 +98,7 @@ function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMod
         painter.useProgram('hillshadePrepare').draw(context, gl.TRIANGLES,
             depthMode, stencilMode, colorMode, CullFaceMode.disabled,
             hillshadeUniformPrepareValues(tile.tileID, dem),
-            terrain, layer.id, painter.rasterBoundsBuffer,
+            null, layer.id, painter.rasterBoundsBuffer,
             painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
 
         tile.needsHillshadePrepare = false;

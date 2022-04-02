@@ -43,7 +43,7 @@ function drawRaster(painter: Painter, sourceCache: SourceCache, layer: RasterSty
         tile.registerFadeDuration(layer.paint.get('raster-fade-duration'));
 
         const parentTile = sourceCache.findLoadedParent(coord, 0),
-            fade = getFadeValues(tile, parentTile, sourceCache, layer, painter);
+            fade = getFadeValues(tile, parentTile, sourceCache, layer, painter.transform, painter.style.terrain);
 
         let parentScaleBy, parentTL;
 
@@ -63,33 +63,33 @@ function drawRaster(painter: Painter, sourceCache: SourceCache, layer: RasterSty
             tile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
         }
 
-        const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
+        const terrainCoord = terrainData ? coord : null;
         const posMatrix = terrainCoord ? terrainCoord.posMatrix : painter.transform.calculatePosMatrix(coord.toUnwrapped(), align);
         const uniformValues = rasterUniformValues(posMatrix, parentTL || [0, 0], parentScaleBy || 1, fade, layer);
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
 
         if (source instanceof ImageSource) {
             program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled,
-                uniformValues, terrain, layer.id, source.boundsBuffer,
+                uniformValues, terrainData, layer.id, source.boundsBuffer,
                 painter.quadTriangleIndexBuffer, source.boundsSegments);
         } else {
             program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled,
-                uniformValues, terrain, layer.id, painter.rasterBoundsBuffer,
+                uniformValues, terrainData, layer.id, painter.rasterBoundsBuffer,
                 painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
         }
     }
 }
 
-function getFadeValues(tile, parentTile, sourceCache, layer, painter) {
+function getFadeValues(tile, parentTile, sourceCache, layer, transform, terrain) {
     const fadeDuration = layer.paint.get('raster-fade-duration');
 
-    if (!painter.style.terrainSourceCache.isEnabled() && fadeDuration > 0) {
+    if (!terrain && fadeDuration > 0) {
         const now = browser.now();
         const sinceTile = (now - tile.timeAdded) / fadeDuration;
         const sinceParent = parentTile ? (now - parentTile.timeAdded) / fadeDuration : -1;
 
         const source = sourceCache.getSource();
-        const idealZ = painter.transform.coveringZoomLevel({
+        const idealZ = transform.coveringZoomLevel({
             tileSize: source.tileSize,
             roundZoom: source.roundZoom
         });

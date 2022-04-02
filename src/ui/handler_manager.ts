@@ -101,7 +101,7 @@ class HandlerManager {
     _handlersById: {[x: string]: Handler};
     _updatingCamera: boolean;
     _changes: Array<[HandlerResult, any, any]>;
-    _drag: {center: Point; lngLat: LngLat; point: Point; delta: Point; handlerName: string};
+    _drag: {center: Point; lngLat: LngLat; point: Point; handlerName: string};
     _previousActiveHandlers: {[x: string]: Handler};
     _listeners: Array<[Window | Document | HTMLElement, string, {
         passive?: boolean;
@@ -415,7 +415,7 @@ class HandlerManager {
     _updateMapTransform(combinedResult: any, combinedEventsInProgress: any, deactivatedHandlers: any) {
         const map = this._map;
         const tr = map.transform;
-        const hasTerrain = map.style && map.style.terrainSourceCache && map.style.terrainSourceCache.isEnabled();
+        const hasTerrain = map.style && map.style.terrain;
 
         if (!hasChange(combinedResult) && !(hasTerrain && this._drag)) {
             return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
@@ -431,37 +431,38 @@ class HandlerManager {
         map._stop(true);
 
         around = around || map.transform.centerPoint;
+        const loc = tr.pointLocation(panDelta ? around.sub(panDelta) : around);
         if (bearingDelta) tr.bearing += bearingDelta;
         if (pitchDelta) tr.pitch += pitchDelta;
         if (zoomDelta) tr.zoom += zoomDelta;
 
-        // when dragging starts, remember mousedown-location and panDelta from this point
-        if (combinedEventsInProgress.drag && !this._drag) {
-            this._drag = {
-                center: tr.centerPoint,
-                lngLat: tr.pointLocation(around),
-                point: around,
-                delta: panDelta,
-                handlerName: combinedEventsInProgress.drag.handlerName
-            };
-            tr.freezeElevation = true;
-        // when dragging ends, recalcuate the zoomlevel for the new center coordinate
-        } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
-            tr.freezeElevation = false;
-            if (hasTerrain) tr.recalculateZoom();
-            this._drag = null;
-        // drag map
-        } else if (combinedEventsInProgress.drag && this._drag) {
-            this._drag.delta = this._drag.delta.add(panDelta);
-            // in terrain-mode do not drag the picked point itself, instead only drag the pixel delta
-            // of the picked point. With this approach it is no longer possible to pick a point from
-            // from somewhere near the horizon to the center in one move.
-            // So this logic avoids the problem, that in such cases you easily loose orientation.
-            if (hasTerrain) {
+        if (!hasTerrain) {
+            tr.setLocationAtPoint(loc, around);
+        } else {
+            // when 3d-terrain is enabled act a litte different:
+            //    - draging do not drag the picked point itself, instead it drags the map by pixel-delta.
+            //      With this approach it is no longer possible to pick a point from somewhere near
+            //      the horizon to the center in one move.
+            //      So this logic avoids the problem, that in such cases you easily loose orientation.
+            //    - scrollzoom does not zoom into the mouse-point, instead it zooms into map-center
+            //      this should be fixed in future-version
+            // when dragging starts, remember mousedown-location and panDelta from this point
+            if (combinedEventsInProgress.drag && !this._drag) {
+                this._drag = {
+                    center: tr.centerPoint,
+                    lngLat: tr.pointLocation(around),
+                    point: around,
+                    handlerName: combinedEventsInProgress.drag.handlerName
+                };
+                tr.freezeElevation = true;
+            // when dragging ends, recalcuate the zoomlevel for the new center coordinate
+            } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
+                tr.freezeElevation = false;
+                tr.recalculateZoom();
+                this._drag = null;
+            // drag map
+            } else if (combinedEventsInProgress.drag && this._drag) {
                 tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
-            // in flat mode leave all es it is. e.g. drag the picked point directly to the new posistion.
-            } else {
-                tr.setLocationAtPoint(this._drag.lngLat, this._drag.point.add(this._drag.delta));
             }
         }
 
