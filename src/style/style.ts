@@ -17,7 +17,6 @@ import {getSourceType, setSourceType, Source} from '../source/source';
 import type {SourceClass} from '../source/source';
 import {queryRenderedFeatures, queryRenderedSymbols, querySourceFeatures} from '../source/query_features';
 import SourceCache from '../source/source_cache';
-import TerrainSourceCache from '../source/terrain_source_cache';
 import GeoJSONSource from '../source/geojson_source';
 import styleSpec from '../style-spec/reference/latest';
 import getWorkerPool from '../util/global_worker_pool';
@@ -33,6 +32,7 @@ import PauseablePlacement from './pauseable_placement';
 import ZoomHistory from './zoom_history';
 import CrossTileSymbolIndex from '../symbol/cross_tile_symbol_index';
 import {validateCustomStyleLayer} from './style_layer/custom_style_layer';
+import type {MapGeoJSONFeature} from '../util/vectortile_to_geojson';
 
 // We're skipping validation errors with the `source.canvas` identifier in order
 // to continue to allow canvas sources to be added at runtime/updated in
@@ -58,10 +58,11 @@ import type {
     StyleSpecification,
     LightSpecification,
     SourceSpecification
-} from '../style-spec/types';
+} from '../style-spec/types.g';
 import type {CustomLayerInterface} from './style_layer/custom_style_layer';
 import type {Validator} from './validate_style';
 import type {OverscaledTileID} from '../source/tile_id';
+import Terrain from '../render/terrain';
 
 const supportedDiffOperations = pick(diffOperations, [
     'addLayer',
@@ -88,6 +89,12 @@ const ignoredDiffOperations = pick(diffOperations, [
 
 const empty = emptyStyle() as StyleSpecification;
 
+export type FeatureIdentifier = {
+    id?: string | number | undefined;
+    source: string;
+    sourceLayer?: string | undefined;
+};
+
 export type StyleOptions = {
     validate?: boolean;
     localIdeographFontFamily?: string;
@@ -96,6 +103,13 @@ export type StyleOptions = {
 export type StyleSetterOptions = {
     validate?: boolean;
 };
+
+export type TerrainOptions = {
+    source: string;
+    exaggeration?: number;
+    elevationOffset?: number;
+};
+
 /**
  * @private
  */
@@ -107,6 +121,7 @@ class Style extends Evented {
     glyphManager: GlyphManager;
     lineAtlas: LineAtlas;
     light: Light;
+    terrain: Terrain;
 
     _request: Cancelable;
     _spriteRequest: Cancelable;
@@ -114,10 +129,10 @@ class Style extends Evented {
     _serializedLayers: {[_: string]: any};
     _order: Array<string>;
     sourceCaches: {[_: string]: SourceCache};
-    terrainSourceCache: TerrainSourceCache;
     zoomHistory: ZoomHistory;
     _loaded: boolean;
     _rtlTextPluginCallback: (a: any) => any;
+    _terrainDataCallback: (e: any) => any;
     _changed: boolean;
     _updatedSources: {[_: string]: 'clear' | 'reload'};
     _updatedLayers: {[_: string]: true};
@@ -152,13 +167,9 @@ class Style extends Evented {
         this._serializedLayers = {};
         this._order  = [];
         this.sourceCaches = {};
-        this.terrainSourceCache = new TerrainSourceCache(this);
         this.zoomHistory = new ZoomHistory();
         this._loaded = false;
         this._availableImages = [];
-
-        // make elevation accessible from map.transform
-        if (map.transform) map.transform.terrainSourceCache = this.terrainSourceCache;
 
         this._resetUpdates();
 
@@ -478,6 +489,35 @@ class Style extends Evented {
     }
 
     /**
+     * Loads a 3D terrain mesh, based on a "raster-dem" source.
+     * @param {TerrainOptions} [options] Options object.
+     */
+    setTerrain(options?: TerrainOptions) {
+        // clear event handlers
+        if (this._terrainDataCallback) this.off('data', this._terrainDataCallback);
+        if (!options) {
+            // remove terrain
+            this.terrain = this.map.transform.terrain = null;
+            this.map.transform.updateElevation();
+        } else {
+            // add terrain
+            const sourceCache = this.sourceCaches[options.source];
+            this.map.transform.terrain = this.terrain = new Terrain(this, sourceCache, options);
+            this.map.transform.updateElevation();
+            this._terrainDataCallback = e => {
+                if (!e.tile) return;
+                if (e.sourceId === options.source) {
+                    this.map.transform.updateElevation();
+                    this.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
+                } else if (e.source.type === 'geojson') {
+                    this.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
+                }
+            };
+            this.on('data', this._terrainDataCallback);
+        }
+    }
+
+    /**
      * Update this style's state to match the given style JSON, performing only
      * the necessary mutations.
      *
@@ -610,9 +650,7 @@ class Style extends Evented {
         delete this._updatedSources[id];
         sourceCache.fire(new Event('data', {sourceDataType: 'metadata', dataType:'source', sourceId: id}));
         sourceCache.setEventedParent(null);
-        sourceCache.clearTiles();
-
-        if (sourceCache.onRemove) sourceCache.onRemove(this.map);
+        sourceCache.onRemove(this.map);
         this._changed = true;
     }
 
@@ -918,11 +956,7 @@ class Style extends Evented {
         return this.getLayer(layer).getPaintProperty(name);
     }
 
-    setFeatureState(target: {
-        source: string;
-        sourceLayer?: string;
-        id: string | number;
-    }, state: any) {
+    setFeatureState(target: FeatureIdentifier, state: any) {
         this._checkLoaded();
         const sourceId = target.source;
         const sourceLayer = target.sourceLayer;
@@ -948,11 +982,7 @@ class Style extends Evented {
         sourceCache.setFeatureState(sourceLayer, target.id, state);
     }
 
-    removeFeatureState(target: {
-        source: string;
-        sourceLayer?: string;
-        id?: string | number;
-    }, key?: string) {
+    removeFeatureState(target: FeatureIdentifier, key?: string) {
         this._checkLoaded();
         const sourceId = target.source;
         const sourceCache = this.sourceCaches[sourceId];
@@ -978,11 +1008,7 @@ class Style extends Evented {
         sourceCache.removeFeatureState(sourceLayer, target.id, key);
     }
 
-    getFeatureState(target: {
-        source: string;
-        sourceLayer?: string;
-        id: string | number;
-    }) {
+    getFeatureState(target: FeatureIdentifier) {
         this._checkLoaded();
         const sourceId = target.source;
         const sourceLayer = target.sourceLayer;
@@ -1037,7 +1063,7 @@ class Style extends Evented {
         this._changed = true;
     }
 
-    _flattenAndSortRenderedFeatures(sourceResults: Array<any>) {
+    _flattenAndSortRenderedFeatures(sourceResults: Array<{ [key: string]: Array<{featureIndex: number; feature: MapGeoJSONFeature}> }>) {
         // Feature order is complicated.
         // The order between features in two 2D layers is always determined by layer order.
         // The order between features in two 3D layers is always determined by depth.
@@ -1252,8 +1278,9 @@ class Style extends Evented {
             layer.setEventedParent(null);
         }
         for (const id in this.sourceCaches) {
-            this.sourceCaches[id].clearTiles();
-            this.sourceCaches[id].setEventedParent(null);
+            const sourceCache = this.sourceCaches[id];
+            sourceCache.setEventedParent(null);
+            sourceCache.onRemove(this.map);
         }
         this.imageManager.setEventedParent(null);
         this.setEventedParent(null);
@@ -1270,7 +1297,6 @@ class Style extends Evented {
     }
 
     _updateSources(transform: Transform) {
-        this.terrainSourceCache.update(transform);
         for (const id in this.sourceCaches) {
             this.sourceCaches[id].update(transform);
         }

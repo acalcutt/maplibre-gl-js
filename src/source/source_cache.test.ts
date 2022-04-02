@@ -368,6 +368,23 @@ describe('SourceCache#removeTile', () => {
         expect(onAbort).toHaveBeenCalledTimes(0);
     });
 
+    test('does not fire data event when the tile has already been aborted', () => {
+        const onData = jest.fn();
+        const sourceCache = createSourceCache({
+            loadTile(tile, callback) {
+                sourceCache.once('dataabort', () => {
+                    tile.state = 'loaded';
+                    callback();
+                    expect(onData).toHaveBeenCalledTimes(0);
+                });
+            }
+        });
+        sourceCache.once('data', onData);
+        const tileID = new OverscaledTileID(0, 0, 0, 0, 0);
+        sourceCache._addTile(tileID);
+        sourceCache._removeTile(tileID.key);
+    });
+
 });
 
 describe('SourceCache / Source lifecycle', () => {
@@ -430,6 +447,33 @@ describe('SourceCache / Source lifecycle', () => {
             }
         }).on('error', () => {
             expect(sourceCache.loaded()).toBeTruthy();
+            done();
+        });
+
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loaded() false after source begins loading following error', done => {
+        const sourceCache = createSourceCache({error: 'Error loading source'}).on('error', () => {
+            sourceCache.on('dataloading', () => {
+                expect(sourceCache.loaded()).toBeFalsy();
+                done();
+            });
+            sourceCache.getSource().fire(new Event('dataloading'));
+        });
+
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loaded() false when error occurs while source is not loaded', done => {
+        const sourceCache = createSourceCache({
+            error: 'Error loading source',
+
+            loaded() {
+                return false;
+            }
+        }).on('error', () => {
+            expect(sourceCache.loaded()).toBeFalsy();
             done();
         });
 
@@ -1623,4 +1667,109 @@ describe('SourceCache sets max cache size correctly', () => {
         expect(sourceCache._cache.max).toBe(20);
     });
 
+});
+
+describe('SourceCache#onRemove', () => {
+    test('clears tiles', () => {
+        const sourceCache = createSourceCache();
+        jest.spyOn(sourceCache, 'clearTiles');
+
+        sourceCache.onRemove(undefined);
+
+        expect(sourceCache.clearTiles).toHaveBeenCalled();
+    });
+
+    test('calls onRemove on source', () => {
+        const sourceOnRemove = jest.fn();
+        const sourceCache = createSourceCache({
+            onRemove: sourceOnRemove
+        });
+
+        sourceCache.onRemove(undefined);
+
+        expect(sourceOnRemove).toHaveBeenCalled();
+    });
+});
+
+describe('SourceCache#usedForTerrain', () => {
+    test('loads covering tiles with usedForTerrain with source zoom 0-14', done => {
+        const transform = new Transform();
+        transform.resize(511, 511);
+        transform.zoom = 10;
+
+        const sourceCache = createSourceCache({});
+        sourceCache.usedForTerrain = true;
+        sourceCache.tileSize = 1024;
+        expect(sourceCache.usedForTerrain).toBeTruthy();
+        sourceCache.on('data', (e) => {
+            if (e.sourceDataType === 'metadata') {
+                sourceCache.update(transform);
+                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                    ['2tc099', '2tbz99', '2sxs99', '2sxr99', 'pds88', 'eo55', 'pdr88', 'en55', 'p6o88', 'ds55', 'p6n88', 'dr55']
+                );
+                done();
+            }
+        });
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loads covering tiles with usedForTerrain with source zoom 8-14', done => {
+        const transform = new Transform();
+        transform.resize(511, 511);
+        transform.zoom = 10;
+
+        const sourceCache = createSourceCache({minzoom: 8, maxzoom: 14});
+        sourceCache.usedForTerrain = true;
+        sourceCache.tileSize = 1024;
+        sourceCache.on('data', (e) => {
+            if (e.sourceDataType === 'metadata') {
+                sourceCache.update(transform);
+                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                    ['2tc099', '2tbz99', '2sxs99', '2sxr99', 'pds88', 'pdr88', 'p6o88', 'p6n88']
+                );
+                done();
+            }
+        });
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loads covering tiles with usedForTerrain with source zoom 0-4', done => {
+        const transform = new Transform();
+        transform.resize(511, 511);
+        transform.zoom = 10;
+
+        const sourceCache = createSourceCache({minzoom: 0, maxzoom: 4});
+        sourceCache.usedForTerrain = true;
+        sourceCache.tileSize = 1024;
+        sourceCache.on('data', (e) => {
+            if (e.sourceDataType === 'metadata') {
+                sourceCache.update(transform);
+                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                    ['1033', '3s44', '3r44', '3c44', '3b44', 'z33', 's33', 'r33']
+                );
+                done();
+            }
+        });
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loads covering tiles with usedForTerrain with source zoom 4-4', done => {
+        const transform = new Transform();
+        transform.resize(511, 511);
+        transform.zoom = 10;
+
+        const sourceCache = createSourceCache({minzoom: 4, maxzoom: 4});
+        sourceCache.usedForTerrain = true;
+        sourceCache.tileSize = 1024;
+        sourceCache.on('data', (e) => {
+            if (e.sourceDataType === 'metadata') {
+                sourceCache.update(transform);
+                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                    ['3s44', '3r44', '3c44', '3b44']
+                );
+                done();
+            }
+        });
+        sourceCache.onAdd(undefined);
+    });
 });
