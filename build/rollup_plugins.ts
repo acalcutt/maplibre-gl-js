@@ -17,7 +17,7 @@ export const nodeResolve = resolve({
     preferBuiltins: false
 });
 
-export const plugins = (production: boolean): Plugin[] => [
+export const plugins = (minified: boolean, production: boolean): Plugin[] => [
     minifyStyleSpec(),
     json(),
     // https://github.com/zaach/jison/issues/351
@@ -29,11 +29,11 @@ export const plugins = (production: boolean): Plugin[] => [
             '_token_stack:': ''
         }
     }),
-    production && strip({
+    production ? strip({
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }),
-    production && terser({
+    minified && terser({
         compress: {
             // eslint-disable-next-line camelcase
             pure_getters: true,
