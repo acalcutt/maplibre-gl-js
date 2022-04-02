@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.6/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.8-pre.3/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -1537,7 +1537,7 @@ function sameOrigin(url) {
     return a.protocol === window.document.location.protocol && a.host === window.document.location.host;
 }
 var transparentPngUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=';
-function arrayBufferToImage(data, callback, cacheControl, expires) {
+function arrayBufferToImage(data, callback) {
     var img = new Image();
     img.onload = function () {
         callback(null, img);
@@ -1551,8 +1551,6 @@ function arrayBufferToImage(data, callback, cacheControl, expires) {
         return callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
     };
     var blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
-    img.cacheControl = cacheControl;
-    img.expires = expires;
     img.src = data.byteLength ? URL.createObjectURL(blob) : transparentPngUrl;
 }
 function arrayBufferToImageBitmap(data, callback) {
@@ -1563,12 +1561,12 @@ function arrayBufferToImageBitmap(data, callback) {
         callback(new Error('Could not load image because of ' + e.message + '. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
     });
 }
-function arrayBufferToCanvasImageSource(data, callback, cacheControl, expires) {
+function arrayBufferToCanvasImageSource(data, callback) {
     var imageBitmapSupported = typeof createImageBitmap === 'function';
     if (imageBitmapSupported) {
         arrayBufferToImageBitmap(data, callback);
     } else {
-        arrayBufferToImage(data, callback, cacheControl, expires);
+        arrayBufferToImage(data, callback);
     }
 }
 var imageQueue, numImageRequests;
@@ -1619,7 +1617,17 @@ var getImage = function (requestParameters, callback) {
         if (err) {
             callback(err);
         } else if (data) {
-            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
+            var decoratedCallback = function (imgErr, imgResult) {
+                if (imgErr != null) {
+                    callback(imgErr);
+                } else if (imgResult != null) {
+                    callback(null, imgResult, {
+                        cacheControl: cacheControl,
+                        expires: expires
+                    });
+                }
+            };
+            arrayBufferToCanvasImageSource(data, decoratedCallback);
         }
     });
     return {
@@ -1920,6 +1928,7 @@ var source_raster_dem = {
         type: 'enum',
         values: {
             terrarium: {},
+            mtk: {},
             mapbox: {}
         },
         'default': 'mapbox'
@@ -2528,6 +2537,7 @@ var layout_symbol = {
         values: {
             map: {},
             viewport: {},
+            'viewport-glyph': {},
             auto: {}
         },
         'default': 'auto',
@@ -14580,6 +14590,28 @@ function translate$1(queryGeometry, translate, translateAnchor, bearing, pixelsT
     }
     return translated;
 }
+function offsetLine(rings, offset) {
+    var newRings = [];
+    for (var ringIndex = 0; ringIndex < rings.length; ringIndex++) {
+        var ring = rings[ringIndex];
+        var newRing = [];
+        for (var index = 0; index < ring.length; index++) {
+            var a = ring[index - 1];
+            var b = ring[index];
+            var c = ring[index + 1];
+            var aToB = index === 0 ? new pointGeometry(0, 0) : b.sub(a)._unit()._perp();
+            var bToC = index === ring.length - 1 ? new pointGeometry(0, 0) : c.sub(b)._unit()._perp();
+            var extrude = aToB._add(bToC)._unit();
+            var cosHalfAngle = extrude.x * bToC.x + extrude.y * bToC.y;
+            if (cosHalfAngle !== 0) {
+                extrude._mult(1 / cosHalfAngle);
+            }
+            newRing.push(extrude._mult(offset)._add(b));
+        }
+        newRings.push(newRing);
+    }
+    return newRings;
+}
 
 var layout$5 = new Properties({ 'circle-sort-key': new DataDrivenProperty(spec['layout_circle']['circle-sort-key']) });
 var paint$8 = new Properties({
@@ -14985,14 +15017,6 @@ function create() {
     }
     return out;
 }
-function fromValues(x, y, z, w) {
-    var out = new ARRAY_TYPE(4);
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    out[3] = w;
-    return out;
-}
 function multiply(out, a, b) {
     out[0] = a[0] * b[0];
     out[1] = a[1] * b[1];
@@ -15071,7 +15095,12 @@ var CircleStyleLayer = function (StyleLayer) {
                 var point = list[i];
                 var transformedPoint = alignWithMap ? point : projectPoint(point, pixelPosMatrix);
                 var adjustedSize = transformedSize;
-                var projectedCenter = transformMat4(create(), fromValues(point.x, point.y, 0, 1), pixelPosMatrix);
+                var projectedCenter = transformMat4([], [
+                    point.x,
+                    point.y,
+                    0,
+                    1
+                ], pixelPosMatrix);
                 if (this.paint.get('circle-pitch-scale') === 'viewport' && this.paint.get('circle-pitch-alignment') === 'map') {
                     adjustedSize *= projectedCenter[3] / transform.cameraToCenterDistance;
                 } else if (this.paint.get('circle-pitch-scale') === 'map' && this.paint.get('circle-pitch-alignment') === 'viewport') {
@@ -15087,7 +15116,12 @@ var CircleStyleLayer = function (StyleLayer) {
     return CircleStyleLayer;
 }(StyleLayer);
 function projectPoint(p, pixelPosMatrix) {
-    var point = transformMat4(create(), fromValues(p.x, p.y, 0, 1), pixelPosMatrix);
+    var point = transformMat4([], [
+        p.x,
+        p.y,
+        0,
+        1
+    ], pixelPosMatrix);
     return new pointGeometry(point[0] / point[3], point[1] / point[3]);
 }
 function projectQueryGeometry$1(queryGeometry, pixelPosMatrix) {
@@ -16853,7 +16887,12 @@ function projectQueryGeometry(queryGeometry, pixelPosMatrix, transform, z) {
     var projectedQueryGeometry = [];
     for (var i = 0, list = queryGeometry; i < list.length; i += 1) {
         var p = list[i];
-        var v = fromValues(p.x, p.y, z, 1);
+        var v = [
+            p.x,
+            p.y,
+            z,
+            1
+        ];
         transformMat4(v, v, pixelPosMatrix);
         projectedQueryGeometry.push(new pointGeometry(v[0] / v[3], v[1] / v[3]));
     }
@@ -17345,27 +17384,6 @@ function getLineWidth(lineWidth, lineGapWidth) {
     } else {
         return lineWidth;
     }
-}
-function offsetLine(rings, offset) {
-    var newRings = [];
-    var zero = new pointGeometry(0, 0);
-    for (var k = 0; k < rings.length; k++) {
-        var ring = rings[k];
-        var newRing = [];
-        for (var i = 0; i < ring.length; i++) {
-            var a = ring[i - 1];
-            var b = ring[i];
-            var c = ring[i + 1];
-            var aToB = i === 0 ? zero : b.sub(a)._unit()._perp();
-            var bToC = i === ring.length - 1 ? zero : c.sub(b)._unit()._perp();
-            var extrude = aToB._add(bToC)._unit();
-            var cosHalfAngle = extrude.x * bToC.x + extrude.y * bToC.y;
-            extrude._mult(1 / cosHalfAngle);
-            newRing.push(extrude._mult(offset)._add(b));
-        }
-        newRings.push(newRing);
-    }
-    return newRings;
 }
 
 var symbolLayoutAttributes = createLayout([
@@ -19581,14 +19599,6 @@ function evaluateSizeForZoom(sizeData, zoom) {
     };
 }
 
-var symbolSize = /*#__PURE__*/Object.freeze({
-__proto__: null,
-getSizeData: getSizeData,
-evaluateSizeForFeature: evaluateSizeForFeature,
-evaluateSizeForZoom: evaluateSizeForZoom,
-SIZE_PACK_FACTOR: SIZE_PACK_FACTOR
-});
-
 var Anchor = function (Point) {
     function Anchor(x, y, angle, segment) {
         Point.call(this, x, y);
@@ -20391,7 +20401,7 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
         ];
     }
     var lineHeight = layout.get('text-line-height') * ONE_EM;
-    var textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point';
+    var textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point';
     var keepUpright = layout.get('text-keep-upright');
     var textSize = layout.get('text-size');
     var loop = function () {
@@ -20523,7 +20533,7 @@ function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, imageMa
     var layout = bucket.layers[0].layout;
     var iconOffset = layout.get('icon-offset').evaluate(feature, {}, canonical);
     var defaultHorizontalShaping = getDefaultHorizontalShaping(shapedTextOrientations.horizontal);
-    var glyphSize = 24, fontScale = layoutTextSize / glyphSize, textBoxScale = bucket.tilePixelRatio * fontScale, textMaxBoxScale = bucket.tilePixelRatio * textMaxSize / glyphSize, iconBoxScale = bucket.tilePixelRatio * layoutIconSize, symbolMinDistance = bucket.tilePixelRatio * layout.get('symbol-spacing'), textPadding = layout.get('text-padding') * bucket.tilePixelRatio, iconPadding = layout.get('icon-padding') * bucket.tilePixelRatio, textMaxAngle = layout.get('text-max-angle') / 180 * Math.PI, textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point', iconAlongLine = layout.get('icon-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point', symbolPlacement = layout.get('symbol-placement'), textRepeatDistance = symbolMinDistance / 2;
+    var glyphSize = 24, fontScale = layoutTextSize / glyphSize, textBoxScale = bucket.tilePixelRatio * fontScale, textMaxBoxScale = bucket.tilePixelRatio * textMaxSize / glyphSize, iconBoxScale = bucket.tilePixelRatio * layoutIconSize, symbolMinDistance = bucket.tilePixelRatio * layout.get('symbol-spacing'), textPadding = layout.get('text-padding') * bucket.tilePixelRatio, iconPadding = layout.get('icon-padding') * bucket.tilePixelRatio, textMaxAngle = layout.get('text-max-angle') / 180 * Math.PI, textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point', iconAlongLine = layout.get('icon-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point', symbolPlacement = layout.get('symbol-placement'), textRepeatDistance = symbolMinDistance / 2;
     var iconTextFit = layout.get('icon-text-fit');
     var verticallyShapedIcon;
     if (shapedIcon && iconTextFit !== 'none') {
@@ -20965,7 +20975,7 @@ SymbolBucket.prototype.populate = function populate(features, options, canonical
         }
         if (text) {
             var fontStack = textFont.evaluate(evaluationFeature, {}, canonical).join(',');
-            var textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point';
+            var textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point';
             this.allowVerticalPlacement = this.writingModes && this.writingModes.indexOf(exports.WritingMode.vertical) >= 0;
             for (var i = 0, list = text.sections; i < list.length; i += 1) {
                 var section = list[i];
@@ -21455,7 +21465,7 @@ var SymbolStyleLayer = function (StyleLayer) {
             }
         }
         if (this.layout.get('text-pitch-alignment') === 'auto') {
-            this.layout._values['text-pitch-alignment'] = this.layout.get('text-rotation-alignment');
+            this.layout._values['text-pitch-alignment'] = this.layout.get('text-rotation-alignment') === 'map' ? 'map' : 'viewport';
         }
         if (this.layout.get('icon-pitch-alignment') === 'auto') {
             this.layout._values['icon-pitch-alignment'] = this.layout.get('icon-rotation-alignment');
@@ -22224,8 +22234,8 @@ var DEMData = function DEMData(uid, data, encoding) {
     if (data.height !== data.width) {
         throw new RangeError('DEM tiles must be square');
     }
-    if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium') {
-        warnOnce('"' + encoding + '" is not a valid encoding type. Valid types include "mapbox" and "terrarium".');
+    if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
+        warnOnce('"' + encoding + '" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".');
         return;
     }
     this.stride = data.height;
@@ -22259,16 +22269,57 @@ var DEMData = function DEMData(uid, data, encoding) {
 DEMData.prototype.get = function get(x, y) {
     var pixels = new Uint8Array(this.data.buffer);
     var index = this._idx(x, y) * 4;
-    var unpack = this.encoding === 'terrarium' ? this._unpackTerrarium : this._unpackMapbox;
+    var unpack = this._unpackMapbox;
+    if (this.encoding === 'terrarium') {
+        unpack = this._unpackTerrarium;
+    }
+    if (this.encoding === 'mtk') {
+        unpack = this._unpackMTK;
+    }
     return unpack(pixels[index], pixels[index + 1], pixels[index + 2]);
 };
+DEMData.prototype.getHillshadingUnpackVector = function getHillshadingUnpackVector() {
+    if (this.encoding === 'terrarium') {
+        return [
+            256,
+            1,
+            1 / 256,
+            32768
+        ];
+    }
+    if (this.encoding === 'mtk') {
+        return [
+            6553.6,
+            25.6,
+            0.1,
+            10000
+        ];
+    }
+    return [
+        6553.6,
+        25.6,
+        0.1,
+        10000
+    ];
+};
 DEMData.prototype.getUnpackVector = function getUnpackVector() {
-    return this.encoding === 'terrarium' ? [
-        256,
-        1,
-        1 / 256,
-        32768
-    ] : [
+    if (this.encoding === 'terrarium') {
+        return [
+            256,
+            1,
+            1 / 256,
+            32768
+        ];
+    }
+    if (this.encoding === 'mtk') {
+        return [
+            65536 * 0.03,
+            256 * 0.03,
+            0.03,
+            10000
+        ];
+    }
+    return [
         6553.6,
         25.6,
         0.1,
@@ -22283,6 +22334,9 @@ DEMData.prototype._idx = function _idx(x, y) {
 };
 DEMData.prototype._unpackMapbox = function _unpackMapbox(r, g, b) {
     return (r * 256 * 256 + g * 256 + b) / 10 - 10000;
+};
+DEMData.prototype._unpackMTK = function _unpackMTK(r, g, b) {
+    return (r * 256 * 256 + g * 256 + b) * 0.03 - 10000;
 };
 DEMData.prototype._unpackTerrarium = function _unpackTerrarium(r, g, b) {
     return r * 256 + g + b / 256 - 32768;
@@ -22340,23 +22394,6 @@ DictionaryCoder.prototype.decode = function decode(n) {
     return this._numberToString[n];
 };
 
-function __rest(s, e) {
-    var t = {};
-    for (var p in s) {
-        if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) {
-            t[p] = s[p];
-        }
-    }
-    if (s != null && typeof Object.getOwnPropertySymbols === 'function') {
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) {
-                t[p[i]] = s[p[i]];
-            }
-        }
-    }
-    return t;
-}
-
 var GeoJSONFeature = function GeoJSONFeature(vectorTileFeature, z, x, y, id) {
     this.type = 'Feature';
     this._vectorTileFeature = vectorTileFeature;
@@ -22377,14 +22414,13 @@ prototypeAccessors.geometry.set = function (g) {
     this._geometry = g;
 };
 GeoJSONFeature.prototype.toJSON = function toJSON() {
-    var _a = this;
-    _a._geometry;
-    _a._vectorTileFeature;
-    var json = __rest(_a, [
-        '_geometry',
-        '_vectorTileFeature'
-    ]);
-    json.geometry = this.geometry;
+    var json = { geometry: this.geometry };
+    for (var i in this) {
+        if (i === '_geometry' || i === '_vectorTileFeature') {
+            continue;
+        }
+        json[i] = this[i];
+    }
     return json;
 };
 Object.defineProperties(GeoJSONFeature.prototype, prototypeAccessors);
@@ -22762,7 +22798,6 @@ exports.exported$1 = exported;
 exports.extend = extend$1;
 exports.filterObject = filterObject;
 exports.fromScaling = fromScaling;
-exports.fromValues = fromValues;
 exports.getAnchorAlignment = getAnchorAlignment;
 exports.getAnchorJustification = getAnchorJustification;
 exports.getArrayBuffer = getArrayBuffer;
@@ -22810,7 +22845,6 @@ exports.setCacheLimits = setCacheLimits;
 exports.setRTLTextPlugin = setRTLTextPlugin;
 exports.spec = spec;
 exports.sphericalToCartesian = sphericalToCartesian;
-exports.symbolSize = symbolSize;
 exports.toEvaluationFeature = toEvaluationFeature;
 exports.transformMat4 = transformMat4;
 exports.translate = translate;
@@ -25650,13 +25684,6 @@ function clone(a) {
     out[2] = a[2];
     return out;
 }
-function fromValues(x, y, z) {
-    var out = new performance.ARRAY_TYPE(3);
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    return out;
-}
 function add(out, a, b) {
     out[0] = a[0] + b[0];
     out[1] = a[1] + b[1];
@@ -26269,6 +26296,8 @@ function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback)
 
 var INF = 100000000000000000000;
 var TinySDF = function TinySDF(ref) {
+    if (ref === void 0)
+        ref = {};
     var fontSize = ref.fontSize;
     if (fontSize === void 0)
         fontSize = 24;
@@ -26318,13 +26347,13 @@ TinySDF.prototype.draw = function draw(char) {
     var actualBoundingBoxDescent = ref.actualBoundingBoxDescent;
     var actualBoundingBoxLeft = ref.actualBoundingBoxLeft;
     var actualBoundingBoxRight = ref.actualBoundingBoxRight;
-    var glyphTop = Math.floor(actualBoundingBoxAscent);
+    var glyphTop = Math.ceil(actualBoundingBoxAscent);
     var glyphLeft = 0;
     var glyphWidth = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxRight - actualBoundingBoxLeft));
-    var glyphHeight = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxAscent) + Math.ceil(actualBoundingBoxDescent));
+    var glyphHeight = Math.min(this.size - this.buffer, glyphTop + Math.ceil(actualBoundingBoxDescent));
     var width = glyphWidth + 2 * this.buffer;
     var height = glyphHeight + 2 * this.buffer;
-    var len = width * height;
+    var len = Math.max(width * height, 0);
     var data = new Uint8ClampedArray(len);
     var glyph = {
         data: data,
@@ -26345,7 +26374,7 @@ TinySDF.prototype.draw = function draw(char) {
     var gridInner = ref$1.gridInner;
     var gridOuter = ref$1.gridOuter;
     ctx.clearRect(buffer, buffer, glyphWidth, glyphHeight);
-    ctx.fillText(char, buffer, buffer + glyphTop + 1);
+    ctx.fillText(char, buffer, buffer + glyphTop);
     var imgData = ctx.getImageData(buffer, buffer, glyphWidth, glyphHeight);
     gridOuter.fill(INF, 0, len);
     gridInner.fill(0, 0, len);
@@ -26553,6 +26582,7 @@ GlyphManager.prototype._tinySDF = function _tinySDF(entry, stack, id) {
         });
     }
     var char = tinySDF.draw(String.fromCharCode(id));
+    var topAdjustment = 27;
     return {
         id: id,
         bitmap: new performance.AlphaImage({
@@ -26563,7 +26593,7 @@ GlyphManager.prototype._tinySDF = function _tinySDF(entry, stack, id) {
             width: char.glyphWidth || 24,
             height: char.glyphHeight || 24,
             left: char.glyphLeft || 0,
-            top: char.glyphTop || -8,
+            top: char.glyphTop - topAdjustment || -8,
             advance: char.glyphAdvance || 24
         }
     };
@@ -27134,7 +27164,7 @@ var RasterTileSource = function (Evented) {
     RasterTileSource.prototype.loadTile = function loadTile(tile, callback) {
         var this$1$1 = this;
         var url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
-        tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), function (err, img) {
+        tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), function (err, img, expiry) {
             delete tile.request;
             if (tile.aborted) {
                 tile.state = 'unloaded';
@@ -27144,10 +27174,8 @@ var RasterTileSource = function (Evented) {
                 callback(err);
             } else if (img) {
                 if (this$1$1.map._refreshExpiredTiles) {
-                    tile.setExpiryData(img);
+                    tile.setExpiryData(expiry);
                 }
-                delete img.cacheControl;
-                delete img.expires;
                 var context = this$1$1.map.painter.context;
                 var gl = context.gl;
                 tile.texture = this$1$1.map.painter.getTileTexture(img.width);
@@ -28692,8 +28720,11 @@ var SourceCache = function (Evented) {
                 }
             }
         });
+        this.on('dataloading', function () {
+            this$1$1._sourceErrored = false;
+        });
         this.on('error', function () {
-            this$1$1._sourceErrored = true;
+            this$1$1._sourceErrored = this$1$1._source.loaded();
         });
         this._source = create(id, options, dispatcher, this);
         this._tiles = {};
@@ -28717,6 +28748,7 @@ var SourceCache = function (Evented) {
         }
     };
     SourceCache.prototype.onRemove = function onRemove(map) {
+        this.clearTiles();
         if (this._source && this._source.onRemove) {
             this._source.onRemove(map);
         }
@@ -28876,11 +28908,13 @@ var SourceCache = function (Evented) {
             this._backfillDEM(tile);
         }
         this._state.initializeTileState(tile, this.map ? this.map.painter : null);
-        this._source.fire(new performance.Event('data', {
-            dataType: 'source',
-            tile: tile,
-            coord: tile.tileID
-        }));
+        if (!tile.aborted) {
+            this._source.fire(new performance.Event('data', {
+                dataType: 'source',
+                tile: tile,
+                coord: tile.tileID
+            }));
+        }
     };
     SourceCache.prototype._backfillDEM = function _backfillDEM(tile) {
         var renderables = this.getRenderableIds();
@@ -29049,6 +29083,8 @@ var SourceCache = function (Evented) {
                 if (tileID.canonical.z > this._source.minzoom) {
                     var parent = tileID.scaledTo(tileID.canonical.z - 1);
                     parents[parent.key] = parent;
+                    var parent2 = tileID.scaledTo(Math.max(this._source.minzoom, Math.min(tileID.canonical.z, 5)));
+                    parents[parent2.key] = parent2;
                 }
             }
             idealTileIDs = idealTileIDs.concat(performance.values(parents));
@@ -29079,7 +29115,7 @@ var SourceCache = function (Evented) {
                     retain[id$1] = parentsForFading[id$1];
                 }
             }
-            if (this.style && this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
+            if (this.style && this.style.terrain) {
                 var idealRasterTileIDs = {};
                 var missingTileIDs = {};
                 for (var i$2 = 0, list$2 = idealTileIDs; i$2 < list$2.length; i$2 += 1) {
@@ -29309,10 +29345,10 @@ var SourceCache = function (Evented) {
         }
         var cameraPointQueryGeometry = has3DLayer ? transform.getCameraQueryGeometry(pointQueryGeometry) : pointQueryGeometry;
         var queryGeometry = pointQueryGeometry.map(function (p) {
-            return transform.pointCoordinate(p);
+            return transform.pointCoordinate3D(p);
         });
         var cameraQueryGeometry = cameraPointQueryGeometry.map(function (p) {
-            return transform.pointCoordinate(p);
+            return transform.pointCoordinate3D(p);
         });
         var ids = this.getIds();
         var minX = Infinity;
@@ -29424,417 +29460,6 @@ function compareTileId(a, b) {
 function isRasterType(type) {
     return type === 'raster' || type === 'image' || type === 'video';
 }
-
-var posAttributes = performance.createLayout([{
-        name: 'a_pos',
-        type: 'Int16',
-        components: 2
-    }]);
-
-var TerrainSourceCache = function (Evented) {
-    function TerrainSourceCache(style) {
-        var this$1$1 = this;
-        Evented.call(this);
-        this._style = style;
-        this._tiles = {};
-        this._renderableTiles = [];
-        this._renderHistory = [];
-        this._demMatrixCache = {};
-        this._sourceTileCache = {};
-        this._coordsIndex = [];
-        this._coordsTextureSize = 1024;
-        this.minzoom = 0;
-        this.maxzoom = 22;
-        this.tileSize = 512;
-        this.meshSize = 128;
-        this.exaggeration = 1;
-        this.elevationOffset = 450;
-        this.qualityFactor = 2;
-        this.deltaZoom = 1;
-        this.rerender = {};
-        style.on('data', function (e) {
-            if (e.dataType === 'source' && e.coord && this$1$1.isEnabled()) {
-                if (e.sourceId === this$1$1._sourceCache.id) {
-                    for (var key in this$1$1._tiles) {
-                        var tile = this$1$1._tiles[key];
-                        if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
-                            tile.timeLoaded = Date.now();
-                            tile.clearTextures(this$1$1._style.map.painter);
-                        }
-                    }
-                    style.map.transform.updateElevation();
-                }
-                if (e.source.type === 'geojson') {
-                    this$1$1.rerender[e.sourceId] = this$1$1.rerender[e.sourceId] || {};
-                    this$1$1.rerender[e.sourceId][e.tile.tileID.key] = true;
-                }
-            }
-        });
-    }
-    if (Evented)
-        TerrainSourceCache.__proto__ = Evented;
-    TerrainSourceCache.prototype = Object.create(Evented && Evented.prototype);
-    TerrainSourceCache.prototype.constructor = TerrainSourceCache;
-    TerrainSourceCache.prototype.enable = function enable(sourceCache, options) {
-        var this$1$1 = this;
-        sourceCache.usedForTerrain = true;
-        sourceCache.tileSize = this.tileSize * Math.pow(2, this.deltaZoom);
-        this._sourceCache = sourceCache;
-        [
-            'exaggeration',
-            'elevationOffset'
-        ].forEach(function (key) {
-            if (options && options[key] !== undefined) {
-                this$1$1[key] = options[key];
-            }
-        });
-    };
-    TerrainSourceCache.prototype.disable = function disable() {
-        if (!this._sourceCache) {
-            return;
-        }
-        this._sourceCache.usedForTerrain = false;
-        this._sourceCache = null;
-        for (var key in this._tiles) {
-            var tile = this._tiles[key];
-            tile.textures.forEach(function (t) {
-                return t.destroy();
-            });
-            tile.textures = [];
-        }
-        this._tiles = {};
-    };
-    TerrainSourceCache.prototype.isEnabled = function isEnabled() {
-        return !!this._sourceCache;
-    };
-    TerrainSourceCache.prototype.update = function update(transform) {
-        var this$1$1 = this;
-        if (!this.isEnabled() || !this._sourceCache._sourceLoaded) {
-            return;
-        }
-        transform.updateElevation();
-        this._sourceCache.update(transform);
-        this._renderableTiles = [];
-        var tileIDs = {};
-        for (var i = 0, list = transform.coveringTiles({
-                    tileSize: this.tileSize,
-                    minzoom: this.minzoom,
-                    maxzoom: this.maxzoom,
-                    reparseOverscaled: false
-                }); i < list.length; i += 1) {
-            var tileID = list[i];
-            this._renderableTiles.push(tileID.key);
-            tileIDs[tileID.key] = true;
-            if (!this._tiles[tileID.key]) {
-                tileID.posMatrix = new Float64Array(16);
-                performance.ortho(tileID.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
-            }
-        }
-        this._renderHistory = this._renderHistory.filter(function (i, p) {
-            return this$1$1._renderHistory.indexOf(i) === p;
-        });
-        while (this._renderHistory.length > 150) {
-            var tile = this._tiles[this._renderHistory.shift()];
-            if (tile && !tileIDs[tile.tileID.key]) {
-                tile.clearTextures(this._style.map.painter);
-                this._tiles[tile.tileID.key] = null;
-            }
-        }
-    };
-    TerrainSourceCache.prototype.getRenderableTiles = function getRenderableTiles() {
-        var this$1$1 = this;
-        return this._renderableTiles.map(function (key) {
-            return this$1$1.getTileByID(key);
-        });
-    };
-    TerrainSourceCache.prototype.getTileByID = function getTileByID(id) {
-        return this._tiles[id];
-    };
-    TerrainSourceCache.prototype.getTerrainCoords = function getTerrainCoords(tileID) {
-        var coords = {};
-        for (var i = 0, list = this._renderableTiles; i < list.length; i += 1) {
-            var key = list[i];
-            var _tileID = this._tiles[key].tileID;
-            if (_tileID.equals(tileID)) {
-                var coord = tileID.clone();
-                coord.posMatrix = new Float64Array(16);
-                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                coords[key] = coord;
-            } else if (_tileID.canonical.isChildOf(tileID.canonical)) {
-                var coord$1 = tileID.clone();
-                coord$1.posMatrix = new Float64Array(16);
-                var dz = _tileID.canonical.z - tileID.canonical.z;
-                var dx = _tileID.canonical.x - (_tileID.canonical.x >> dz << dz);
-                var dy = _tileID.canonical.y - (_tileID.canonical.y >> dz << dz);
-                var size = performance.EXTENT >> dz;
-                performance.ortho(coord$1.posMatrix, 0, size, 0, size, 0, 1);
-                performance.translate(coord$1.posMatrix, coord$1.posMatrix, [
-                    -dx * size,
-                    -dy * size,
-                    0
-                ]);
-                coords[key] = coord$1;
-            } else if (tileID.canonical.isChildOf(_tileID.canonical)) {
-                var coord$2 = tileID.clone();
-                coord$2.posMatrix = new Float64Array(16);
-                var dz$1 = tileID.canonical.z - _tileID.canonical.z;
-                var dx$1 = tileID.canonical.x - (tileID.canonical.x >> dz$1 << dz$1);
-                var dy$1 = tileID.canonical.y - (tileID.canonical.y >> dz$1 << dz$1);
-                var size$1 = performance.EXTENT >> dz$1;
-                performance.ortho(coord$2.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                performance.translate(coord$2.posMatrix, coord$2.posMatrix, [
-                    dx$1 * size$1,
-                    dy$1 * size$1,
-                    0
-                ]);
-                performance.scale(coord$2.posMatrix, coord$2.posMatrix, [
-                    1 / Math.pow(2, dz$1),
-                    1 / Math.pow(2, dz$1),
-                    0
-                ]);
-                coords[key] = coord$2;
-            }
-        }
-        return coords;
-    };
-    TerrainSourceCache.prototype.getSourceTile = function getSourceTile(tileID, searchForDEM) {
-        if (!this.isEnabled()) {
-            return null;
-        }
-        var source = this._sourceCache._source;
-        var z = tileID.overscaledZ - this.deltaZoom;
-        if (z > source.maxzoom) {
-            z = source.maxzoom;
-        }
-        if (z < source.minzoom) {
-            return null;
-        }
-        if (!this._sourceTileCache[tileID.key]) {
-            this._sourceTileCache[tileID.key] = tileID.scaledTo(z).key;
-        }
-        var tile = this._sourceCache.getTileByID(this._sourceTileCache[tileID.key]);
-        if (!(tile && tile.dem) && searchForDEM) {
-            while (z > source.minzoom && !(tile && tile.dem)) {
-                tile = this._sourceCache.getTileByID(tileID.scaledTo(z--).key);
-            }
-        }
-        return tile;
-    };
-    TerrainSourceCache.prototype.getTerrain = function getTerrain(tileID) {
-        if (!this.isEnabled() || !tileID) {
-            return null;
-        }
-        if (!this._emptyDemTexture) {
-            var context = this._style.map.painter.context;
-            var image = new performance.RGBAImage({
-                width: 1,
-                height: 1
-            }, new Uint8Array(1 * 4));
-            this._emptyDepthTexture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
-            this._emptyDemUnpack = [
-                0,
-                0,
-                0,
-                0
-            ];
-            this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
-                width: 1,
-                height: 1
-            }), context.gl.RGBA, { premultiply: false });
-            this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-            this._emptyDemMatrix = performance.identity([]);
-        }
-        var sourceTile = this.getSourceTile(tileID, true);
-        if (sourceTile && sourceTile.dem && (!sourceTile.demTexture || sourceTile.needsTerrainPrepare)) {
-            var context$1 = this._style.map.painter.context;
-            sourceTile.demTexture = this._style.map.painter.getTileTexture(sourceTile.dem.stride);
-            if (sourceTile.demTexture) {
-                sourceTile.demTexture.update(sourceTile.dem.getPixels(), { premultiply: false });
-            } else {
-                sourceTile.demTexture = new Texture(context$1, sourceTile.dem.getPixels(), context$1.gl.RGBA, { premultiply: false });
-            }
-            sourceTile.demTexture.bind(context$1.gl.NEAREST, context$1.gl.CLAMP_TO_EDGE);
-            sourceTile.needsTerrainPrepare = false;
-        }
-        var matrixKey = sourceTile && sourceTile + sourceTile.tileID.key + tileID.key;
-        if (matrixKey && !this._demMatrixCache[matrixKey]) {
-            var maxzoom = this._sourceCache._source.maxzoom;
-            var dz = tileID.canonical.z - sourceTile.tileID.canonical.z;
-            if (tileID.overscaledZ > tileID.canonical.z) {
-                if (tileID.canonical.z >= maxzoom) {
-                    dz = tileID.canonical.z - maxzoom;
-                } else {
-                    performance.warnOnce('cannot calculate elevation if elevation maxzoom > source.maxzoom');
-                }
-            }
-            var dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
-            var dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
-            var demMatrix = performance.fromScaling(new Float64Array(16), [
-                1 / (performance.EXTENT << dz),
-                1 / (performance.EXTENT << dz),
-                0
-            ]);
-            performance.translate(demMatrix, demMatrix, [
-                dx * performance.EXTENT,
-                dy * performance.EXTENT,
-                0
-            ]);
-            this._demMatrixCache[tileID.key] = {
-                matrix: demMatrix,
-                coord: tileID
-            };
-        }
-        return {
-            'u_depth': 2,
-            'u_terrain': 3,
-            'u_terrain_dim': sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
-            'u_terrain_matrix': matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
-            'u_terrain_unpack': sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
-            'u_terrain_offset': this.elevationOffset,
-            'u_terrain_exaggeration': this.exaggeration,
-            texture: (sourceTile && sourceTile.demTexture || this._emptyDemTexture).texture,
-            depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
-            tile: sourceTile
-        };
-    };
-    TerrainSourceCache.prototype.getElevation = function getElevation(tileID, x, y, extent) {
-        if (extent === void 0)
-            extent = performance.EXTENT;
-        if (!this.isEnabled()) {
-            return 0;
-        }
-        if (!(x >= 0 && x < extent && y >= 0 && y < extent)) {
-            return this.elevationOffset;
-        }
-        var elevation = 0;
-        var terrain = this.getTerrain(tileID);
-        if (terrain.tile && terrain.tile.dem) {
-            var pos = transformMat4([], [
-                x / extent * performance.EXTENT,
-                y / extent * performance.EXTENT
-            ], terrain.u_terrain_matrix);
-            var coord = [
-                pos[0] * terrain.tile.dem.dim,
-                pos[1] * terrain.tile.dem.dim
-            ];
-            var c = [
-                Math.floor(coord[0]),
-                Math.floor(coord[1])
-            ];
-            var tl = terrain.tile.dem.get(c[0], c[1]);
-            var tr = terrain.tile.dem.get(c[0], c[1] + 1);
-            var bl = terrain.tile.dem.get(c[0] + 1, c[1]);
-            var br = terrain.tile.dem.get(c[0] + 1, c[1] + 1);
-            elevation = performance.number(performance.number(tl, tr, coord[0] - c[0]), performance.number(bl, br, coord[0] - c[0]), coord[1] - c[1]);
-        }
-        return elevation + this.elevationOffset;
-    };
-    TerrainSourceCache.prototype.getElevationWithExaggeration = function getElevationWithExaggeration(tileID, x, y, extent) {
-        if (extent === void 0)
-            extent = performance.EXTENT;
-        if (!this.isEnabled()) {
-            return 0;
-        }
-        return this.getElevation(tileID, x, y, extent) * this.exaggeration;
-    };
-    TerrainSourceCache.prototype.getRTTFramebuffer = function getRTTFramebuffer(painter) {
-        if (!this._rttFramebuffer) {
-            var size = this.tileSize * this.qualityFactor;
-            this._rttFramebuffer = painter.context.createFramebuffer(size, size, true);
-            this._rttFramebuffer.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, size, size));
-        }
-        return this._rttFramebuffer;
-    };
-    TerrainSourceCache.prototype.getFramebuffer = function getFramebuffer(painter, texture) {
-        var width = painter.width / devicePixelRatio;
-        var height = painter.height / devicePixelRatio;
-        if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
-            this._fbo.destroy();
-            this._fboCoordsTexture.destroy();
-            this._fboDepthTexture.destroy();
-            delete this._fbo;
-            delete this._fboDepthTexture;
-            delete this._fboCoordsTexture;
-        }
-        if (!this._fboCoordsTexture) {
-            this._fboCoordsTexture = new Texture(painter.context, {
-                width: width,
-                height: height,
-                data: null
-            }, painter.context.gl.RGBA, { premultiply: false });
-            this._fboCoordsTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
-        }
-        if (!this._fboDepthTexture) {
-            this._fboDepthTexture = new Texture(painter.context, {
-                width: width,
-                height: height,
-                data: null
-            }, painter.context.gl.RGBA, { premultiply: false });
-            this._fboDepthTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
-        }
-        if (!this._fbo) {
-            this._fbo = painter.context.createFramebuffer(width, height, true);
-            this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
-        }
-        this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
-        return this._fbo;
-    };
-    TerrainSourceCache.prototype.tilesAfterTime = function tilesAfterTime(time) {
-        if (time === void 0)
-            time = Date.now();
-        return performance.values(this._tiles).filter(function (t) {
-            return t.timeLoaded >= time;
-        });
-    };
-    TerrainSourceCache.prototype.getTerrainMesh = function getTerrainMesh(context) {
-        if (this._mesh) {
-            return this._mesh;
-        }
-        var vertexArray = new performance.PosArray(), indexArray = new performance.TriangleIndexArray();
-        var meshSize = this.meshSize, delta = performance.EXTENT / meshSize, meshSize2 = meshSize * meshSize;
-        for (var y = 0; y <= meshSize; y++) {
-            for (var x = 0; x <= meshSize; x++) {
-                vertexArray.emplaceBack(x * delta, y * delta);
-            }
-        }
-        for (var y$1 = 0; y$1 < meshSize2; y$1 += meshSize + 1) {
-            for (var x$1 = 0; x$1 < meshSize; x$1++) {
-                indexArray.emplaceBack(x$1 + y$1, meshSize + x$1 + y$1 + 1, meshSize + x$1 + y$1 + 2);
-                indexArray.emplaceBack(x$1 + y$1, meshSize + x$1 + y$1 + 2, x$1 + y$1 + 1);
-            }
-        }
-        this._mesh = {
-            indexBuffer: context.createIndexBuffer(indexArray),
-            vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
-            segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
-        };
-        return this._mesh;
-    };
-    TerrainSourceCache.prototype.getCoordsTexture = function getCoordsTexture(context) {
-        if (this._coordsTexture) {
-            return this._coordsTexture;
-        }
-        var data = new Uint8Array(this._coordsTextureSize * this._coordsTextureSize * 4);
-        for (var y = 0, i = 0; y < this._coordsTextureSize; y++) {
-            for (var x = 0; x < this._coordsTextureSize; x++, i += 4) {
-                data[i + 0] = x & 255;
-                data[i + 1] = y & 255;
-                data[i + 2] = x >> 8 << 4 | y >> 8;
-                data[i + 3] = 0;
-            }
-        }
-        var image = new performance.RGBAImage({
-            width: this._coordsTextureSize,
-            height: this._coordsTextureSize
-        }, new Uint8Array(data.buffer));
-        var texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
-        texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        this._coordsTexture = texture;
-        return texture;
-    };
-    return TerrainSourceCache;
-}(performance.Evented);
 
 function workerFactory() {
     return new Worker(exported.workerUrl);
@@ -30648,10 +30273,20 @@ function getGlCoordMatrix(posMatrix, pitchWithMap, rotateWithMap, transform, pix
 function project(point, matrix, getElevation) {
     var pos;
     if (getElevation) {
-        pos = performance.fromValues(point.x, point.y, getElevation(point.x, point.y), 1);
+        pos = [
+            point.x,
+            point.y,
+            getElevation(point.x, point.y),
+            1
+        ];
         performance.transformMat4(pos, pos, matrix);
     } else {
-        pos = performance.fromValues(point.x, point.y, 0, 1);
+        pos = [
+            point.x,
+            point.y,
+            0,
+            1
+        ];
         xyTransformMat4(pos, pos, matrix);
     }
     var w = pos[3];
@@ -30669,7 +30304,7 @@ function isVisible(anchorPos, clippingBuffer) {
     var inPaddedViewport = x >= -clippingBuffer[0] && x <= clippingBuffer[0] && y >= -clippingBuffer[1] && y <= clippingBuffer[1];
     return inPaddedViewport;
 }
-function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, getElevation) {
+function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, rotateToLine, getElevation) {
     var sizeData = isText ? bucket.textSizeData : bucket.iconSizeData;
     var partiallyEvaluatedSize = performance.evaluateSizeForZoom(sizeData, painter.transform.zoom);
     var clippingBuffer = [
@@ -30691,10 +30326,20 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         useVertical = false;
         var anchorPos = void 0;
         if (getElevation) {
-            anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, getElevation(symbol.anchorX, symbol.anchorY), 1);
+            anchorPos = [
+                symbol.anchorX,
+                symbol.anchorY,
+                getElevation(symbol.anchorX, symbol.anchorY),
+                1
+            ];
             performance.transformMat4(anchorPos, anchorPos, posMatrix);
         } else {
-            anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, 0, 1);
+            anchorPos = [
+                symbol.anchorX,
+                symbol.anchorY,
+                0,
+                1
+            ];
             xyTransformMat4(anchorPos, anchorPos, posMatrix);
         }
         if (!isVisible(anchorPos, clippingBuffer)) {
@@ -30708,9 +30353,9 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         var tileAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         var anchorPoint = project(tileAnchorPoint, labelPlaneMatrix, getElevation).point;
         var projectionCache = {};
-        var placeUnflipped = placeGlyphsAlongLine(symbol, pitchScaledFontSize, false, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation);
+        var placeUnflipped = placeGlyphsAlongLine(symbol, pitchScaledFontSize, false, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, rotateToLine, getElevation);
         useVertical = placeUnflipped.useVertical;
-        if (placeUnflipped.notEnoughRoom || useVertical || placeUnflipped.needsFlipping && placeGlyphsAlongLine(symbol, pitchScaledFontSize, true, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation).notEnoughRoom) {
+        if (placeUnflipped.notEnoughRoom || useVertical || placeUnflipped.needsFlipping && placeGlyphsAlongLine(symbol, pitchScaledFontSize, true, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, rotateToLine, getElevation).notEnoughRoom) {
             hideGlyphs(symbol.numGlyphs, dynamicLayoutVertexArray);
         }
     }
@@ -30720,17 +30365,17 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         bucket.icon.dynamicLayoutVertexBuffer.updateData(dynamicLayoutVertexArray);
     }
 }
-function placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation) {
+function placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation) {
     var glyphEndIndex = symbol.glyphStartIndex + symbol.numGlyphs;
     var lineStartIndex = symbol.lineStartIndex;
     var lineEndIndex = symbol.lineStartIndex + symbol.lineLength;
     var firstGlyphOffset = glyphOffsetArray.getoffsetX(symbol.glyphStartIndex);
     var lastGlyphOffset = glyphOffsetArray.getoffsetX(glyphEndIndex - 1);
-    var firstPlacedGlyph = placeGlyphAlongLine(fontScale * firstGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+    var firstPlacedGlyph = placeGlyphAlongLine(fontScale * firstGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
     if (!firstPlacedGlyph) {
         return null;
     }
-    var lastPlacedGlyph = placeGlyphAlongLine(fontScale * lastGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+    var lastPlacedGlyph = placeGlyphAlongLine(fontScale * lastGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
     if (!lastPlacedGlyph) {
         return null;
     }
@@ -30752,7 +30397,7 @@ function requiresOrientationChange(writingMode, firstPoint, lastPoint, aspectRat
     }
     return null;
 }
-function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation) {
+function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, rotateToLine, getElevation) {
     var fontScale = fontSize / 24;
     var lineOffsetX = symbol.lineOffsetX * fontScale;
     var lineOffsetY = symbol.lineOffsetY * fontScale;
@@ -30761,7 +30406,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         var glyphEndIndex = symbol.glyphStartIndex + symbol.numGlyphs;
         var lineStartIndex = symbol.lineStartIndex;
         var lineEndIndex = symbol.lineStartIndex + symbol.lineLength;
-        var firstAndLastGlyph = placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+        var firstAndLastGlyph = placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
         if (!firstAndLastGlyph) {
             return { notEnoughRoom: true };
         }
@@ -30775,7 +30420,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         }
         placedGlyphs = [firstAndLastGlyph.first];
         for (var glyphIndex = symbol.glyphStartIndex + 1; glyphIndex < glyphEndIndex - 1; glyphIndex++) {
-            placedGlyphs.push(placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(glyphIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation));
+            placedGlyphs.push(placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(glyphIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation));
         }
         placedGlyphs.push(firstAndLastGlyph.last);
     } else {
@@ -30790,7 +30435,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
                 return orientationChange$1;
             }
         }
-        var singleGlyph = placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(symbol.glyphStartIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, symbol.lineStartIndex, symbol.lineStartIndex + symbol.lineLength, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+        var singleGlyph = placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(symbol.glyphStartIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, symbol.lineStartIndex, symbol.lineStartIndex + symbol.lineLength, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
         if (!singleGlyph) {
             return { notEnoughRoom: true };
         }
@@ -30807,7 +30452,7 @@ function projectTruncatedLineSegment(previousTilePoint, currentTilePoint, previo
     var projectedUnitSegment = previousProjectedPoint.sub(projectedUnitVertex);
     return previousProjectedPoint.add(projectedUnitSegment._mult(minimumLength / projectedUnitSegment.mag()));
 }
-function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, anchorSegment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation) {
+function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, anchorSegment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation) {
     var combinedOffsetX = flip ? offsetX - lineOffsetX : offsetX + lineOffsetX;
     var dir = combinedOffsetX > 0 ? 1 : -1;
     var angle = 0;
@@ -30855,7 +30500,7 @@ function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoin
     pathVertices.push(p);
     return {
         point: p,
-        angle: segmentAngle,
+        angle: rotateToLine ? segmentAngle : 0,
         path: pathVertices
     };
 }
@@ -30937,7 +30582,7 @@ CollisionIndex.prototype.placeCollisionCircles = function placeCollisionCircles(
     var projectionCache = {};
     var lineOffsetX = symbol.lineOffsetX * labelPlaneFontScale;
     var lineOffsetY = symbol.lineOffsetY * labelPlaneFontScale;
-    var firstAndLastGlyph = placeFirstAndLastGlyph(labelPlaneFontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, false, labelPlaneAnchorPoint, tileUnitAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+    var firstAndLastGlyph = placeFirstAndLastGlyph(labelPlaneFontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, false, labelPlaneAnchorPoint, tileUnitAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, false, getElevation);
     var collisionDetected = false;
     var inGrid = false;
     var entirelyOffscreen = true;
@@ -31100,10 +30745,20 @@ CollisionIndex.prototype.insertCollisionCircles = function insertCollisionCircle
 CollisionIndex.prototype.projectAndGetPerspectiveRatio = function projectAndGetPerspectiveRatio(posMatrix, x, y, getElevation) {
     var p;
     if (getElevation) {
-        p = performance.fromValues(x, y, getElevation(x, y), 1);
+        p = [
+            x,
+            y,
+            getElevation(x, y),
+            1
+        ];
         performance.transformMat4(p, p, posMatrix);
     } else {
-        p = performance.fromValues(x, y, 0, 1);
+        p = [
+            x,
+            y,
+            0,
+            1
+        ];
         xyTransformMat4(p, p, posMatrix);
     }
     var a = new performance.pointGeometry((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
@@ -31393,8 +31048,8 @@ Placement.prototype.placeLayerBucketPart = function placeLayerBucketPart(bucketP
             verticalTextFeatureIndex = collisionArrays.verticalTextFeatureIndex;
         }
         var tileID = this$1$1.retainedQueryData[bucket.bucketInstanceId].tileID;
-        var getElevation = this$1$1.transform.terrainSourceCache && this$1$1.transform.terrainSourceCache.isEnabled() ? function (x, y) {
-            return this$1$1.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y);
+        var getElevation = this$1$1.transform.terrain ? function (x, y) {
+            return this$1$1.transform.terrain.getElevation(tileID, x, y);
         } : null;
         for (var i$1 = 0, list = [
                     'textBox',
@@ -32173,6 +31828,414 @@ CrossTileSymbolIndex.prototype.pruneUnusedLayers = function pruneUnusedLayers(us
     }
 };
 
+var posAttributes = performance.createLayout([{
+        name: 'a_pos',
+        type: 'Int16',
+        components: 2
+    }]);
+
+var TerrainSourceCache = function (Evented) {
+    function TerrainSourceCache(sourceCache) {
+        Evented.call(this);
+        this.sourceCache = sourceCache;
+        this._tiles = {};
+        this._renderableTilesKeys = [];
+        this._sourceTileCache = {};
+        this.renderHistory = [];
+        this.minzoom = 0;
+        this.maxzoom = 22;
+        this.tileSize = 512;
+        this.deltaZoom = 1;
+        this.renderHistorySize = 150;
+        sourceCache.usedForTerrain = true;
+        sourceCache.tileSize = this.tileSize * Math.pow(2, this.deltaZoom);
+    }
+    if (Evented)
+        TerrainSourceCache.__proto__ = Evented;
+    TerrainSourceCache.prototype = Object.create(Evented && Evented.prototype);
+    TerrainSourceCache.prototype.constructor = TerrainSourceCache;
+    TerrainSourceCache.prototype.destruct = function destruct() {
+        this.sourceCache.usedForTerrain = false;
+        this.sourceCache.tileSize = null;
+        for (var key in this._tiles) {
+            var tile = this._tiles[key];
+            tile.textures.forEach(function (t) {
+                return t.destroy();
+            });
+            tile.textures = [];
+        }
+    };
+    TerrainSourceCache.prototype.update = function update(transform) {
+        this.sourceCache.update(transform);
+        this._renderableTilesKeys = [];
+        for (var i = 0, list = transform.coveringTiles({
+                    tileSize: this.tileSize,
+                    minzoom: this.minzoom,
+                    maxzoom: this.maxzoom,
+                    reparseOverscaled: false
+                }); i < list.length; i += 1) {
+            var tileID = list[i];
+            this._renderableTilesKeys.push(tileID.key);
+            if (!this._tiles[tileID.key]) {
+                tileID.posMatrix = new Float64Array(16);
+                performance.ortho(tileID.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
+            }
+        }
+    };
+    TerrainSourceCache.prototype.removeOutdated = function removeOutdated(painter) {
+        var this$1$1 = this;
+        var tileIDs = {};
+        for (var i = 0, list = this._renderableTilesKeys; i < list.length; i += 1) {
+            var key = list[i];
+            tileIDs[key] = true;
+        }
+        this.renderHistory = this.renderHistory.filter(function (i, p) {
+            return this$1$1.renderHistory.indexOf(i) === p;
+        });
+        while (this.renderHistory.length > this.renderHistorySize) {
+            var tile = this.sourceCache._tiles[this.renderHistory.shift()];
+            if (tile && !tileIDs[tile.tileID.key]) {
+                tile.clearTextures(painter);
+                delete this.sourceCache._tiles[tile.tileID.key];
+            }
+        }
+    };
+    TerrainSourceCache.prototype.getRenderableTiles = function getRenderableTiles() {
+        var this$1$1 = this;
+        return this._renderableTilesKeys.map(function (key) {
+            return this$1$1.getTileByID(key);
+        });
+    };
+    TerrainSourceCache.prototype.getTileByID = function getTileByID(id) {
+        return this._tiles[id];
+    };
+    TerrainSourceCache.prototype.getTerrainCoords = function getTerrainCoords(tileID) {
+        var coords = {};
+        for (var i = 0, list = this._renderableTilesKeys; i < list.length; i += 1) {
+            var key = list[i];
+            var _tileID = this._tiles[key].tileID;
+            if (_tileID.canonical.equals(tileID.canonical)) {
+                var coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                coords[key] = coord;
+            } else if (_tileID.canonical.isChildOf(tileID.canonical)) {
+                var coord$1 = tileID.clone();
+                coord$1.posMatrix = new Float64Array(16);
+                var dz = _tileID.canonical.z - tileID.canonical.z;
+                var dx = _tileID.canonical.x - (_tileID.canonical.x >> dz << dz);
+                var dy = _tileID.canonical.y - (_tileID.canonical.y >> dz << dz);
+                var size = performance.EXTENT >> dz;
+                performance.ortho(coord$1.posMatrix, 0, size, 0, size, 0, 1);
+                performance.translate(coord$1.posMatrix, coord$1.posMatrix, [
+                    -dx * size,
+                    -dy * size,
+                    0
+                ]);
+                coords[key] = coord$1;
+            } else if (tileID.canonical.isChildOf(_tileID.canonical)) {
+                var coord$2 = tileID.clone();
+                coord$2.posMatrix = new Float64Array(16);
+                var dz$1 = tileID.canonical.z - _tileID.canonical.z;
+                var dx$1 = tileID.canonical.x - (tileID.canonical.x >> dz$1 << dz$1);
+                var dy$1 = tileID.canonical.y - (tileID.canonical.y >> dz$1 << dz$1);
+                var size$1 = performance.EXTENT >> dz$1;
+                performance.ortho(coord$2.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                performance.translate(coord$2.posMatrix, coord$2.posMatrix, [
+                    dx$1 * size$1,
+                    dy$1 * size$1,
+                    0
+                ]);
+                performance.scale(coord$2.posMatrix, coord$2.posMatrix, [
+                    1 / Math.pow(2, dz$1),
+                    1 / Math.pow(2, dz$1),
+                    0
+                ]);
+                coords[key] = coord$2;
+            }
+        }
+        return coords;
+    };
+    TerrainSourceCache.prototype.getSourceTile = function getSourceTile(tileID, searchForDEM) {
+        var source = this.sourceCache._source;
+        var z = tileID.overscaledZ - this.deltaZoom;
+        if (z > source.maxzoom) {
+            z = source.maxzoom;
+        }
+        if (z < source.minzoom) {
+            return null;
+        }
+        if (!this._sourceTileCache[tileID.key]) {
+            this._sourceTileCache[tileID.key] = tileID.scaledTo(z).key;
+        }
+        var tile = this.sourceCache.getTileByID(this._sourceTileCache[tileID.key]);
+        if (!(tile && tile.dem) && searchForDEM) {
+            while (z > source.minzoom && !(tile && tile.dem)) {
+                tile = this.sourceCache.getTileByID(tileID.scaledTo(z--).key);
+            }
+        }
+        return tile;
+    };
+    TerrainSourceCache.prototype.tilesAfterTime = function tilesAfterTime(time) {
+        if (time === void 0)
+            time = Date.now();
+        return performance.values(this._tiles).filter(function (t) {
+            return t.timeLoaded >= time;
+        });
+    };
+    return TerrainSourceCache;
+}(performance.Evented);
+
+var Terrain = function Terrain(style, sourceCache, options) {
+    this.style = style;
+    this.sourceCache = new TerrainSourceCache(sourceCache);
+    this.options = options;
+    this.exaggeration = typeof options.exaggeration === 'number' ? options.exaggeration : 1;
+    this.elevationOffset = typeof options.elevationOffset === 'number' ? options.elevationOffset : 450;
+    this.qualityFactor = 2;
+    this.meshSize = 128;
+    this._demMatrixCache = {};
+    this._coordsIndex = [];
+    this._coordsTextureSize = 1024;
+    this.clearRerenderCache();
+};
+Terrain.prototype.getDEMElevation = function getDEMElevation(tileID, x, y, extent) {
+    if (extent === void 0)
+        extent = performance.EXTENT;
+    if (!(x >= 0 && x < extent && y >= 0 && y < extent)) {
+        return this.elevationOffset;
+    }
+    var elevation = 0;
+    var terrain = this.getTerrainData(tileID);
+    if (terrain.tile && terrain.tile.dem) {
+        var pos = transformMat4([], [
+            x / extent * performance.EXTENT,
+            y / extent * performance.EXTENT
+        ], terrain.u_terrain_matrix);
+        var coord = [
+            pos[0] * terrain.tile.dem.dim,
+            pos[1] * terrain.tile.dem.dim
+        ];
+        var c = [
+            Math.floor(coord[0]),
+            Math.floor(coord[1])
+        ];
+        var tl = terrain.tile.dem.get(c[0], c[1]);
+        var tr = terrain.tile.dem.get(c[0], c[1] + 1);
+        var bl = terrain.tile.dem.get(c[0] + 1, c[1]);
+        var br = terrain.tile.dem.get(c[0] + 1, c[1] + 1);
+        elevation = performance.number(performance.number(tl, tr, coord[0] - c[0]), performance.number(bl, br, coord[0] - c[0]), coord[1] - c[1]);
+    }
+    return elevation;
+};
+Terrain.prototype.rememberForRerender = function rememberForRerender(source, tileID) {
+    for (var key in this.sourceCache._tiles) {
+        var tile = this.sourceCache._tiles[key];
+        if (tile.tileID.equals(tileID) || tile.tileID.isChildOf(tileID)) {
+            if (source === this.sourceCache.sourceCache.id) {
+                tile.timeLoaded = Date.now();
+            }
+            this._rerender[source] = this._rerender[source] || {};
+            this._rerender[source][tile.tileID.key] = true;
+        }
+    }
+};
+Terrain.prototype.needsRerender = function needsRerender(source, tileID) {
+    return this._rerender[source] && this._rerender[source][tileID.key];
+};
+Terrain.prototype.clearRerenderCache = function clearRerenderCache() {
+    this._rerender = {};
+};
+Terrain.prototype.getElevation = function getElevation(tileID, x, y, extent) {
+    if (extent === void 0)
+        extent = performance.EXTENT;
+    return (this.getDEMElevation(tileID, x, y, extent) + this.elevationOffset) * this.exaggeration;
+};
+Terrain.prototype.getTerrainData = function getTerrainData(tileID) {
+    if (!this._emptyDemTexture) {
+        var context = this.style.map.painter.context;
+        var image = new performance.RGBAImage({
+            width: 1,
+            height: 1
+        }, new Uint8Array(1 * 4));
+        this._emptyDepthTexture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+        this._emptyDemUnpack = [
+            0,
+            0,
+            0,
+            0
+        ];
+        this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
+            width: 1,
+            height: 1
+        }), context.gl.RGBA, { premultiply: false });
+        this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+        this._emptyDemMatrix = performance.identity([]);
+    }
+    var sourceTile = this.sourceCache.getSourceTile(tileID, true);
+    if (sourceTile && sourceTile.dem && (!sourceTile.demTexture || sourceTile.needsTerrainPrepare)) {
+        var context$1 = this.style.map.painter.context;
+        sourceTile.demTexture = this.style.map.painter.getTileTexture(sourceTile.dem.stride);
+        if (sourceTile.demTexture) {
+            sourceTile.demTexture.update(sourceTile.dem.getPixels(), { premultiply: false });
+        } else {
+            sourceTile.demTexture = new Texture(context$1, sourceTile.dem.getPixels(), context$1.gl.RGBA, { premultiply: false });
+        }
+        sourceTile.demTexture.bind(context$1.gl.NEAREST, context$1.gl.CLAMP_TO_EDGE);
+        sourceTile.needsTerrainPrepare = false;
+    }
+    var matrixKey = sourceTile && sourceTile + sourceTile.tileID.key + tileID.key;
+    if (matrixKey && !this._demMatrixCache[matrixKey]) {
+        var maxzoom = this.sourceCache.sourceCache._source.maxzoom;
+        var dz = tileID.canonical.z - sourceTile.tileID.canonical.z;
+        if (tileID.overscaledZ > tileID.canonical.z) {
+            if (tileID.canonical.z >= maxzoom) {
+                dz = tileID.canonical.z - maxzoom;
+            } else {
+                performance.warnOnce('cannot calculate elevation if elevation maxzoom > source.maxzoom');
+            }
+        }
+        var dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
+        var dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
+        var demMatrix = performance.fromScaling(new Float64Array(16), [
+            1 / (performance.EXTENT << dz),
+            1 / (performance.EXTENT << dz),
+            0
+        ]);
+        performance.translate(demMatrix, demMatrix, [
+            dx * performance.EXTENT,
+            dy * performance.EXTENT,
+            0
+        ]);
+        this._demMatrixCache[tileID.key] = {
+            matrix: demMatrix,
+            coord: tileID
+        };
+    }
+    return {
+        'u_depth': 2,
+        'u_terrain': 3,
+        'u_terrain_dim': sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
+        'u_terrain_matrix': matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
+        'u_terrain_unpack': sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
+        'u_terrain_offset': this.elevationOffset,
+        'u_terrain_exaggeration': this.exaggeration,
+        texture: (sourceTile && sourceTile.demTexture || this._emptyDemTexture).texture,
+        depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
+        tile: sourceTile
+    };
+};
+Terrain.prototype.getRTTFramebuffer = function getRTTFramebuffer() {
+    var painter = this.style.map.painter;
+    if (!this._rttFramebuffer) {
+        var size = this.sourceCache.tileSize * this.qualityFactor;
+        this._rttFramebuffer = painter.context.createFramebuffer(size, size, true);
+        this._rttFramebuffer.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, size, size));
+    }
+    return this._rttFramebuffer;
+};
+Terrain.prototype.getFramebuffer = function getFramebuffer(texture) {
+    var painter = this.style.map.painter;
+    var width = painter.width / devicePixelRatio;
+    var height = painter.height / devicePixelRatio;
+    if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
+        this._fbo.destroy();
+        this._fboCoordsTexture.destroy();
+        this._fboDepthTexture.destroy();
+        delete this._fbo;
+        delete this._fboDepthTexture;
+        delete this._fboCoordsTexture;
+    }
+    if (!this._fboCoordsTexture) {
+        this._fboCoordsTexture = new Texture(painter.context, {
+            width: width,
+            height: height,
+            data: null
+        }, painter.context.gl.RGBA, { premultiply: false });
+        this._fboCoordsTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
+    }
+    if (!this._fboDepthTexture) {
+        this._fboDepthTexture = new Texture(painter.context, {
+            width: width,
+            height: height,
+            data: null
+        }, painter.context.gl.RGBA, { premultiply: false });
+        this._fboDepthTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
+    }
+    if (!this._fbo) {
+        this._fbo = painter.context.createFramebuffer(width, height, true);
+        this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
+    }
+    this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
+    return this._fbo;
+};
+Terrain.prototype.getCoordsTexture = function getCoordsTexture() {
+    var context = this.style.map.painter.context;
+    if (this._coordsTexture) {
+        return this._coordsTexture;
+    }
+    var data = new Uint8Array(this._coordsTextureSize * this._coordsTextureSize * 4);
+    for (var y = 0, i = 0; y < this._coordsTextureSize; y++) {
+        for (var x = 0; x < this._coordsTextureSize; x++, i += 4) {
+            data[i + 0] = x & 255;
+            data[i + 1] = y & 255;
+            data[i + 2] = x >> 8 << 4 | y >> 8;
+            data[i + 3] = 0;
+        }
+    }
+    var image = new performance.RGBAImage({
+        width: this._coordsTextureSize,
+        height: this._coordsTextureSize
+    }, new Uint8Array(data.buffer));
+    var texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+    texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+    this._coordsTexture = texture;
+    return texture;
+};
+Terrain.prototype.pointCoordinate = function pointCoordinate(p) {
+    var rgba = new Uint8Array(4);
+    var painter = this.style.map.painter, context = painter.context, gl = context.gl;
+    context.bindFramebuffer.set(this.getFramebuffer('coords').framebuffer);
+    gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+    context.bindFramebuffer.set(null);
+    var x = rgba[0] + (rgba[2] >> 4 << 8);
+    var y = rgba[1] + ((rgba[2] & 15) << 8);
+    var tileID = this._coordsIndex[255 - rgba[3]];
+    var tile = tileID && this.sourceCache.getTileByID(tileID);
+    if (!tile) {
+        return null;
+    }
+    var coordsSize = this._coordsTextureSize;
+    var worldSize = (1 << tile.tileID.canonical.z) * coordsSize;
+    return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.getElevation(tile.tileID, x, y, coordsSize));
+};
+Terrain.prototype.getTerrainMesh = function getTerrainMesh() {
+    if (this._mesh) {
+        return this._mesh;
+    }
+    var context = this.style.map.painter.context;
+    var vertexArray = new performance.PosArray(), indexArray = new performance.TriangleIndexArray();
+    var meshSize = this.meshSize, delta = performance.EXTENT / meshSize, meshSize2 = meshSize * meshSize;
+    for (var y = 0; y <= meshSize; y++) {
+        for (var x = 0; x <= meshSize; x++) {
+            vertexArray.emplaceBack(x * delta, y * delta);
+        }
+    }
+    for (var y$1 = 0; y$1 < meshSize2; y$1 += meshSize + 1) {
+        for (var x$1 = 0; x$1 < meshSize; x$1++) {
+            indexArray.emplaceBack(x$1 + y$1, meshSize + x$1 + y$1 + 1, meshSize + x$1 + y$1 + 2);
+            indexArray.emplaceBack(x$1 + y$1, meshSize + x$1 + y$1 + 2, x$1 + y$1 + 1);
+        }
+    }
+    this._mesh = {
+        indexBuffer: context.createIndexBuffer(indexArray),
+        vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
+        segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
+    };
+    return this._mesh;
+};
+
 var emitValidationErrors = function (evented, errors) {
     return performance.emitValidationErrors(evented, errors && errors.filter(function (error) {
         return error.identifier !== 'source.canvas';
@@ -32215,13 +32278,9 @@ var Style = function (Evented) {
         this._serializedLayers = {};
         this._order = [];
         this.sourceCaches = {};
-        this.terrainSourceCache = new TerrainSourceCache(this);
         this.zoomHistory = new performance.ZoomHistory();
         this._loaded = false;
         this._availableImages = [];
-        if (map.transform) {
-            map.transform.terrainSourceCache = this.terrainSourceCache;
-        }
         this._resetUpdates();
         this.dispatcher.broadcast('setReferrer', performance.getReferrer());
         var self = this;
@@ -32493,6 +32552,32 @@ var Style = function (Evented) {
         this._updatedPaintProps = {};
         this._changedImages = {};
     };
+    Style.prototype.setTerrain = function setTerrain(options) {
+        var this$1$1 = this;
+        if (this._terrainDataCallback) {
+            this.off('data', this._terrainDataCallback);
+        }
+        if (!options) {
+            this.terrain = this.map.transform.terrain = null;
+            this.map.transform.updateElevation();
+        } else {
+            var sourceCache = this.sourceCaches[options.source];
+            this.map.transform.terrain = this.terrain = new Terrain(this, sourceCache, options);
+            this.map.transform.updateElevation();
+            this._terrainDataCallback = function (e) {
+                if (!e.tile) {
+                    return;
+                }
+                if (e.sourceId === options.source) {
+                    this$1$1.map.transform.updateElevation();
+                    this$1$1.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
+                } else if (e.source.type === 'geojson') {
+                    this$1$1.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
+                }
+            };
+            this.on('data', this._terrainDataCallback);
+        }
+    };
     Style.prototype.setState = function setState(nextState) {
         var this$1$1 = this;
         this._checkLoaded();
@@ -32611,10 +32696,7 @@ var Style = function (Evented) {
             sourceId: id
         }));
         sourceCache.setEventedParent(null);
-        sourceCache.clearTiles();
-        if (sourceCache.onRemove) {
-            sourceCache.onRemove(this.map);
-        }
+        sourceCache.onRemove(this.map);
         this._changed = true;
     };
     Style.prototype.setGeoJSONSourceData = function setGeoJSONSourceData(id, data) {
@@ -33074,8 +33156,9 @@ var Style = function (Evented) {
             layer.setEventedParent(null);
         }
         for (var id in this.sourceCaches) {
-            this.sourceCaches[id].clearTiles();
-            this.sourceCaches[id].setEventedParent(null);
+            var sourceCache = this.sourceCaches[id];
+            sourceCache.setEventedParent(null);
+            sourceCache.onRemove(this.map);
         }
         this.imageManager.setEventedParent(null);
         this.setEventedParent(null);
@@ -33089,7 +33172,6 @@ var Style = function (Evented) {
         this.sourceCaches[id].reload();
     };
     Style.prototype._updateSources = function _updateSources(transform) {
-        this.terrainSourceCache.update(transform);
         for (var id in this.sourceCaches) {
             this.sourceCaches[id].update(transform);
         }
@@ -33208,7 +33290,7 @@ var heatmapTextureVert = 'uniform mat4 u_matrix;uniform vec2 u_world;attribute v
 
 var collisionBoxFrag = 'varying float v_placed;varying float v_notUsed;void main() {float alpha=0.5;gl_FragColor=vec4(1.0,0.0,0.0,1.0)*alpha;if (v_placed > 0.5) {gl_FragColor=vec4(0.0,0.0,1.0,0.5)*alpha;}if (v_notUsed > 0.5) {gl_FragColor*=.1;}}';
 
-var collisionBoxVert = '\nattribute vec2 a_pos;attribute vec2 a_anchor_pos;attribute vec2 a_extrude;attribute vec2 a_placed;attribute vec2 a_shift;uniform mat4 u_matrix;uniform vec2 u_extrude_scale;uniform float u_camera_to_center_distance;varying float v_placed;varying float v_notUsed;void main() {vec4 projectedPoint=u_matrix*vec4(a_anchor_pos,0,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float collision_perspective_ratio=clamp(0.5+0.5*(u_camera_to_center_distance/camera_to_anchor_distance),0.0,4.0);gl_Position=u_matrix*vec4(a_pos,0.0,1.0);gl_Position.xy+=(a_extrude+a_shift)*u_extrude_scale*gl_Position.w*collision_perspective_ratio;v_placed=a_placed.x;v_notUsed=a_placed.y;}';
+var collisionBoxVert = 'attribute vec2 a_pos;attribute vec2 a_anchor_pos;attribute vec2 a_extrude;attribute vec2 a_placed;attribute vec2 a_shift;uniform mat4 u_matrix;uniform vec2 u_extrude_scale;uniform float u_camera_to_center_distance;varying float v_placed;varying float v_notUsed;void main() {vec4 projectedPoint=u_matrix*vec4(a_anchor_pos,0,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float collision_perspective_ratio=clamp(0.5+0.5*(u_camera_to_center_distance/camera_to_anchor_distance),0.0,4.0);gl_Position=u_matrix*vec4(a_pos,get_elevation(a_pos),1.0);gl_Position.xy+=(a_extrude+a_shift)*u_extrude_scale*gl_Position.w*collision_perspective_ratio;v_placed=a_placed.x;v_notUsed=a_placed.y;}';
 
 var collisionCircleFrag = 'varying float v_radius;varying vec2 v_extrude;varying float v_perspective_ratio;varying float v_collision;void main() {float alpha=0.5*min(v_perspective_ratio,1.0);float stroke_radius=0.9*max(v_perspective_ratio,1.0);float distance_to_center=length(v_extrude);float distance_to_edge=abs(distance_to_center-v_radius);float opacity_t=smoothstep(-stroke_radius,0.0,-distance_to_edge);vec4 color=mix(vec4(0.0,0.0,1.0,0.5),vec4(1.0,0.0,0.0,1.0),v_collision);gl_FragColor=color*alpha*opacity_t;}';
 
@@ -33216,7 +33298,7 @@ var collisionCircleVert = 'attribute vec2 a_pos;attribute float a_radius;attribu
 
 var debugFrag = 'uniform highp vec4 u_color;uniform sampler2D u_overlay;varying vec2 v_uv;void main() {vec4 overlay_color=texture2D(u_overlay,v_uv);gl_FragColor=mix(u_color,overlay_color,overlay_color.a);}';
 
-var debugVert = 'attribute vec2 a_pos;varying vec2 v_uv;uniform mat4 u_matrix;uniform float u_overlay_scale;void main() {v_uv=a_pos/8192.0;gl_Position=u_matrix*vec4(a_pos*u_overlay_scale,0,1);}';
+var debugVert = 'attribute vec2 a_pos;varying vec2 v_uv;uniform mat4 u_matrix;uniform float u_overlay_scale;void main() {v_uv=a_pos/8192.0;gl_Position=u_matrix*vec4(a_pos*u_overlay_scale,get_elevation(a_pos),1);}';
 
 var fillFrag = '#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float opacity\ngl_FragColor=color*opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
@@ -33236,11 +33318,11 @@ var fillPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;un
 
 var fillExtrusionFrag = 'varying vec4 v_color;void main() {gl_FragColor=v_color;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillExtrusionVert = 'uniform mat4 u_matrix;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;uniform float u_vertical_gradient;uniform lowp float u_opacity;attribute vec2 a_pos;attribute vec4 a_normal_ed;attribute vec2 a_centroid;varying vec4 v_color;\n#pragma mapbox: define highp float base\n#pragma mapbox: define highp float height\n#pragma mapbox: define highp vec4 color\nvoid main() {\n#pragma mapbox: initialize highp float base\n#pragma mapbox: initialize highp float height\n#pragma mapbox: initialize highp vec4 color\nvec3 normal=a_normal_ed.xyz;float ele=get_elevation(a_centroid);\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;\n#else\nfloat baseDelta=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);gl_Position=u_matrix*vec4(a_pos,t > 0.0 ? height : base,1);float colorvalue=color.r*0.2126+color.g*0.7152+color.b*0.0722;v_color=vec4(0.0,0.0,0.0,1.0);vec4 ambientlight=vec4(0.03,0.03,0.03,1.0);color+=ambientlight;float directional=clamp(dot(normal/16384.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((1.0-colorvalue+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_color.r+=clamp(color.r*directional*u_lightcolor.r,mix(0.0,0.3,1.0-u_lightcolor.r),1.0);v_color.g+=clamp(color.g*directional*u_lightcolor.g,mix(0.0,0.3,1.0-u_lightcolor.g),1.0);v_color.b+=clamp(color.b*directional*u_lightcolor.b,mix(0.0,0.3,1.0-u_lightcolor.b),1.0);v_color*=u_opacity;}';
+var fillExtrusionVert = 'uniform mat4 u_matrix;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;uniform float u_vertical_gradient;uniform lowp float u_opacity;attribute vec2 a_pos;attribute vec4 a_normal_ed;\n#ifdef TERRAIN3D\nattribute vec2 a_centroid;\n#endif\nvarying vec4 v_color;\n#pragma mapbox: define highp float base\n#pragma mapbox: define highp float height\n#pragma mapbox: define highp vec4 color\nvoid main() {\n#pragma mapbox: initialize highp float base\n#pragma mapbox: initialize highp float height\n#pragma mapbox: initialize highp vec4 color\nvec3 normal=a_normal_ed.xyz;\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;float ele=get_elevation(a_centroid);\n#else\nfloat baseDelta=0.0;float ele=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);gl_Position=u_matrix*vec4(a_pos,t > 0.0 ? height : base,1);float colorvalue=color.r*0.2126+color.g*0.7152+color.b*0.0722;v_color=vec4(0.0,0.0,0.0,1.0);vec4 ambientlight=vec4(0.03,0.03,0.03,1.0);color+=ambientlight;float directional=clamp(dot(normal/16384.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((1.0-colorvalue+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_color.r+=clamp(color.r*directional*u_lightcolor.r,mix(0.0,0.3,1.0-u_lightcolor.r),1.0);v_color.g+=clamp(color.g*directional*u_lightcolor.g,mix(0.0,0.3,1.0-u_lightcolor.g),1.0);v_color.b+=clamp(color.b*directional*u_lightcolor.b,mix(0.0,0.3,1.0-u_lightcolor.b),1.0);v_color*=u_opacity;}';
 
 var fillExtrusionPatternFrag = 'uniform vec2 u_texsize;uniform float u_fade;uniform sampler2D u_image;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;vec2 imagecoord=mod(v_pos_a,1.0);vec2 pos=mix(pattern_tl_a/u_texsize,pattern_br_a/u_texsize,imagecoord);vec4 color1=texture2D(u_image,pos);vec2 imagecoord_b=mod(v_pos_b,1.0);vec2 pos2=mix(pattern_tl_b/u_texsize,pattern_br_b/u_texsize,imagecoord_b);vec4 color2=texture2D(u_image,pos2);vec4 mixedColor=mix(color1,color2,u_fade);gl_FragColor=mixedColor*v_lighting;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillExtrusionPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform float u_height_factor;uniform vec3 u_scale;uniform float u_vertical_gradient;uniform lowp float u_opacity;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;attribute vec2 a_pos;attribute vec4 a_normal_ed;attribute vec2 a_centroid;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec3 normal=a_normal_ed.xyz;float edgedistance=a_normal_ed.w;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;float ele=get_elevation(a_centroid);base=max(0.0,ele+base-10.0);height=max(0.0,ele+height);float t=mod(normal.x,2.0);float z=t > 0.0 ? height : base;gl_Position=u_matrix*vec4(a_pos,z,1);vec2 pos=normal.x==1.0 && normal.y==0.0 && normal.z==16384.0\n? a_pos\n: vec2(edgedistance,z*u_height_factor);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileRatio,pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileRatio,pos);v_lighting=vec4(0.0,0.0,0.0,1.0);float directional=clamp(dot(normal/16383.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((0.5+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_lighting.rgb+=clamp(directional*u_lightcolor,mix(vec3(0.0),vec3(0.3),1.0-u_lightcolor),vec3(1.0));v_lighting*=u_opacity;}';
+var fillExtrusionPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform float u_height_factor;uniform vec3 u_scale;uniform float u_vertical_gradient;uniform lowp float u_opacity;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;attribute vec2 a_pos;attribute vec4 a_normal_ed;\n#ifdef TERRAIN3D\nattribute vec2 a_centroid;\n#endif\nvarying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec3 normal=a_normal_ed.xyz;float edgedistance=a_normal_ed.w;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;float ele=get_elevation(a_centroid);\n#else\nfloat baseDelta=0.0;float ele=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);float z=t > 0.0 ? height : base;gl_Position=u_matrix*vec4(a_pos,z,1);vec2 pos=normal.x==1.0 && normal.y==0.0 && normal.z==16384.0\n? a_pos\n: vec2(edgedistance,z*u_height_factor);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileRatio,pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileRatio,pos);v_lighting=vec4(0.0,0.0,0.0,1.0);float directional=clamp(dot(normal/16383.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((0.5+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_lighting.rgb+=clamp(directional*u_lightcolor,mix(vec3(0.0),vec3(0.3),1.0-u_lightcolor),vec3(1.0));v_lighting*=u_opacity;}';
 
 var hillshadePrepareFrag = '#ifdef GL_ES\nprecision highp float;\n#endif\nuniform sampler2D u_image;varying vec2 v_pos;uniform vec2 u_dimension;uniform float u_zoom;uniform vec4 u_unpack;float getElevation(vec2 coord,float bias) {vec4 data=texture2D(u_image,coord)*255.0;data.a=-1.0;return dot(data,u_unpack)/4.0;}void main() {vec2 epsilon=1.0/u_dimension;float a=getElevation(v_pos+vec2(-epsilon.x,-epsilon.y),0.0);float b=getElevation(v_pos+vec2(0,-epsilon.y),0.0);float c=getElevation(v_pos+vec2(epsilon.x,-epsilon.y),0.0);float d=getElevation(v_pos+vec2(-epsilon.x,0),0.0);float e=getElevation(v_pos,0.0);float f=getElevation(v_pos+vec2(epsilon.x,0),0.0);float g=getElevation(v_pos+vec2(-epsilon.x,epsilon.y),0.0);float h=getElevation(v_pos+vec2(0,epsilon.y),0.0);float i=getElevation(v_pos+vec2(epsilon.x,epsilon.y),0.0);float exaggerationFactor=u_zoom < 2.0 ? 0.4 : u_zoom < 4.5 ? 0.35 : 0.3;float exaggeration=u_zoom < 15.0 ? (u_zoom-15.0)*exaggerationFactor : 0.0;vec2 deriv=vec2((c+f+f+i)-(a+d+d+g),(g+h+h+i)-(a+b+b+c))/pow(2.0,exaggeration+(19.2562-u_zoom));gl_FragColor=clamp(vec4(deriv.x/2.0+0.5,deriv.y/2.0+0.5,1.0,1.0),0.0,1.0);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
@@ -33270,15 +33352,15 @@ var rasterFrag = 'uniform float u_fade_t;uniform float u_opacity;uniform sampler
 
 var rasterVert = 'uniform mat4 u_matrix;uniform vec2 u_tl_parent;uniform float u_scale_parent;uniform float u_buffer_scale;attribute vec2 a_pos;attribute vec2 a_texture_pos;varying vec2 v_pos0;varying vec2 v_pos1;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);v_pos0=(((a_texture_pos/8192.0)-0.5)/u_buffer_scale )+0.5;v_pos1=(v_pos0*u_scale_parent)+u_tl_parent;}';
 
-var symbolIconFrag = 'uniform sampler2D u_texture;varying vec2 v_tex;varying float v_fade_opacity;varying float v_visibility;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nlowp float alpha=opacity*v_fade_opacity;gl_FragColor=texture2D(u_texture,v_tex)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
+var symbolIconFrag = 'uniform sampler2D u_texture;varying vec2 v_tex;varying float v_fade_opacity;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nlowp float alpha=opacity*v_fade_opacity;gl_FragColor=texture2D(u_texture,v_tex)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
 var symbolIconVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec4 a_pixeloffset;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform highp float u_camera_to_center_distance;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform float u_fade_change;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform vec2 u_texsize;varying vec2 v_tex;varying float v_fade_opacity;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);vec2 a_pxoffset=a_pixeloffset.xy;vec2 a_minFontScale=a_pixeloffset.zw/256.0;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=u_is_text ? size/24.0 : size;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*max(a_minFontScale,fontScale)+a_pxoffset/16.0),z,1.0);v_tex=a_tex/u_texsize;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float visibility=calculate_visibility(projectedPoint);v_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));}';
 
-var symbolSDFFrag = '#define SDF_PX 8.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;uniform bool u_is_text;varying vec2 v_data0;varying vec3 v_data1;varying float v_visibility;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat EDGE_GAMMA=0.105/u_device_pixel_ratio;vec2 tex=v_data0.xy;float gamma_scale=v_data1.x;float size=v_data1.y;float fade_opacity=v_data1[2];float fontScale=u_is_text ? size/24.0 : size;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
+var symbolSDFFrag = '#define SDF_PX 8.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;uniform bool u_is_text;varying vec2 v_data0;varying vec3 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat EDGE_GAMMA=0.105/u_device_pixel_ratio;vec2 tex=v_data0.xy;float gamma_scale=v_data1.x;float size=v_data1.y;float fade_opacity=v_data1[2];float fontScale=u_is_text ? size/24.0 : size;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
 var symbolSDFVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec4 a_pixeloffset;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform highp float u_camera_to_center_distance;uniform float u_fade_change;uniform vec2 u_texsize;varying vec2 v_data0;varying vec3 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);vec2 a_pxoffset=a_pixeloffset.xy;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=u_is_text ? size/24.0 : size;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*fontScale+a_pxoffset),z,1.0);float gamma_scale=gl_Position.w;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float visibility=calculate_visibility(projectedPoint);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float interpolated_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));v_data0=a_tex/u_texsize;v_data1=vec3(gamma_scale,size,interpolated_fade_opacity);}';
 
-var symbolTextAndIconFrag = '#define SDF_PX 8.0\n#define SDF 1.0\n#define ICON 0.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform sampler2D u_texture_icon;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;varying vec4 v_data0;varying vec4 v_data1;varying float v_visibility;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat fade_opacity=v_data1[2];if (v_data1.w==ICON) {vec2 tex_icon=v_data0.zw;lowp float alpha=opacity*fade_opacity;gl_FragColor=texture2D(u_texture_icon,tex_icon)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\nreturn;}vec2 tex=v_data0.xy;float EDGE_GAMMA=0.105/u_device_pixel_ratio;float gamma_scale=v_data1.x;float size=v_data1.y;float fontScale=size/24.0;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
+var symbolTextAndIconFrag = '#define SDF_PX 8.0\n#define SDF 1.0\n#define ICON 0.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform sampler2D u_texture_icon;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;varying vec4 v_data0;varying vec4 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat fade_opacity=v_data1[2];if (v_data1.w==ICON) {vec2 tex_icon=v_data0.zw;lowp float alpha=opacity*fade_opacity;gl_FragColor=texture2D(u_texture_icon,tex_icon)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\nreturn;}vec2 tex=v_data0.xy;float EDGE_GAMMA=0.105/u_device_pixel_ratio;float gamma_scale=v_data1.x;float size=v_data1.y;float fontScale=size/24.0;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
 var symbolTextAndIconVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform highp float u_camera_to_center_distance;uniform float u_fade_change;uniform vec2 u_texsize;uniform vec2 u_texsize_icon;varying vec4 v_data0;varying vec4 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);float is_sdf=a_size[0]-2.0*a_size_min;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=size/24.0;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*fontScale),z,1.0);float gamma_scale=gl_Position.w;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float visibility=calculate_visibility(projectedPoint);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float interpolated_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));v_data0.xy=a_tex/u_texsize;v_data0.zw=a_tex/u_texsize_icon;v_data1=vec4(gamma_scale,size,interpolated_fade_opacity,is_sdf);}';
 
@@ -33531,7 +33613,7 @@ function getTokenizedAttributesAndUniforms(array) {
     }
     return result;
 }
-var Program = function Program(context, name, source, configuration, fixedUniforms, showOverdrawInspector, useTerrain) {
+var Program = function Program(context, name, source, configuration, fixedUniforms, showOverdrawInspector, terrain) {
     var gl = context.gl;
     this.program = gl.createProgram();
     var staticAttrInfo = getTokenizedAttributesAndUniforms(source.staticAttributes);
@@ -33552,7 +33634,7 @@ var Program = function Program(context, name, source, configuration, fixedUnifor
     if (showOverdrawInspector) {
         defines.push('#define OVERDRAW_INSPECTOR;');
     }
-    if (useTerrain) {
+    if (terrain) {
         defines.push('#define TERRAIN3D;');
     }
     var fragmentSource = defines.concat(shaders.prelude.fragmentSource, source.fragmentSource).join('\n');
@@ -33726,7 +33808,11 @@ var fillExtrusionPatternUniforms = function (context, locations) {
 var fillExtrusionUniformValues = function (matrix, painter, shouldUseVerticalGradient, opacity) {
     var light = painter.style.light;
     var _lp = light.properties.get('position');
-    var lightPos = fromValues(_lp.x, _lp.y, _lp.z);
+    var lightPos = [
+        _lp.x,
+        _lp.y,
+        _lp.z
+    ];
     var lightMat = create$3();
     if (light.properties.get('anchor') === 'viewport') {
         fromRotation(lightMat, -painter.transform.angle);
@@ -34000,7 +34086,7 @@ var hillshadeUniformPrepareValues = function (tileID, dem) {
             stride
         ],
         'u_zoom': tileID.overscaledZ,
-        'u_unpack': dem.getUnpackVector()
+        'u_unpack': dem.getHillshadingUnpackVector()
     };
 };
 function getTileLatRange(painter, tileID) {
@@ -35571,7 +35657,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
         if (!buffers) {
             continue;
         }
-        program.draw(context, gl.LINES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, collisionUniformValues(posMatrix, painter.transform, tile), painter.style.terrainSourceCache.getTerrain(coord), layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, buffers.segments, null, painter.transform.zoom, null, null, buffers.collisionVertexBuffer);
+        program.draw(context, gl.LINES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, collisionUniformValues(posMatrix, painter.transform, tile), painter.style.terrain && painter.style.terrain.getTerrainData(coord), layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, buffers.segments, null, painter.transform.zoom, null, null, buffers.collisionVertexBuffer);
     }
     if (!isText || !tileBatches.length) {
         return;
@@ -35603,7 +35689,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
     for (var i$3 = 0, list$1 = tileBatches; i$3 < list$1.length; i$3 += 1) {
         var batch$1 = list$1[i$3];
         var uniforms = collisionCircleUniformValues(batch$1.transform, batch$1.invTransform, painter.transform);
-        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch$1.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch$1.circleOffset * 2, batch$1.circleArray.length, batch$1.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
+        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrain && painter.style.terrain.getTerrainData(batch$1.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch$1.circleOffset * 2, batch$1.circleArray.length, batch$1.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
     }
     vertexBuffer.destroy();
     indexBuffer.destroy();
@@ -35674,16 +35760,16 @@ function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlig
         var updateTextFitIcon = layer.layout.get('icon-text-fit') !== 'none' && bucket.hasIconData();
         if (size) {
             var tileScale = Math.pow(2, tr.zoom - tile.tileID.overscaledZ);
-            var getElevation = painter.style.terrainSourceCache && painter.style.terrainSourceCache.isEnabled() ? function (x, y) {
-                return painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y);
+            var getElevation = painter.style.terrain ? function (x, y) {
+                return painter.style.terrain.getElevation(coord, x, y);
             } : null;
-            updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, performance.symbolSize, tr, labelPlaneMatrix, coord.posMatrix, tileScale, size, updateTextFitIcon, getElevation);
+            updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, tr, labelPlaneMatrix, coord.posMatrix, tileScale, size, updateTextFitIcon, getElevation);
         }
     };
     for (var i = 0, list = coords; i < list.length; i += 1)
         loop();
 }
-function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
+function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
     var placedSymbols = bucket.text.placedSymbolArray;
     var dynamicTextLayoutVertexArray = bucket.text.dynamicLayoutVertexArray;
     var dynamicIconLayoutVertexArray = bucket.icon.dynamicLayoutVertexArray;
@@ -35699,7 +35785,7 @@ function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, var
             var tileAnchor = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
             var projectedAnchor = project(tileAnchor, pitchWithMap ? posMatrix : labelPlaneMatrix, getElevation);
             var perspectiveRatio = getPerspectiveRatio(transform.cameraToCenterDistance, projectedAnchor.signedDistanceFromCamera);
-            var renderTextSize = symbolSize.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
+            var renderTextSize = performance.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
             if (pitchWithMap) {
                 renderTextSize *= bucket.tilePixelRatio / tileScale;
             }
@@ -35759,7 +35845,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
     var tr = painter.transform;
     var rotateWithMap = rotationAlignment === 'map';
     var pitchWithMap = pitchAlignment === 'map';
-    var alongLine = rotateWithMap && layer.layout.get('symbol-placement') !== 'point';
+    var alongLine = rotationAlignment !== 'viewport' && layer.layout.get('symbol-placement') !== 'point';
     var rotateInShader = rotateWithMap && !pitchWithMap && !alongLine;
     var hasSortKey = !layer.layout.get('symbol-sort-key').isConstant();
     var sortFeaturesByKey = false;
@@ -35783,7 +35869,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
         var transformed = pitchWithMap || tr.pitch !== 0;
         var program = painter.useProgram(getSymbolProgramName(isSDF, isText, bucket), programConfiguration);
         var size = performance.evaluateSizeForZoom(sizeData, tr.zoom);
-        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         var texSize = void 0;
         var texSizeIcon = [
             0,
@@ -35815,10 +35901,11 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
         var hasVariableAnchors = variablePlacement && bucket.hasTextData();
         var updateTextFitIcon = layer.layout.get('icon-text-fit') !== 'none' && hasVariableAnchors && bucket.hasIconData();
         if (alongLine) {
-            var getElevation = painter.style.terrainSourceCache && painter.style.terrainSourceCache.isEnabled() ? function (x, y) {
-                return painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y);
-            } : 0;
-            updateLineLabels(bucket, coord.posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, getElevation);
+            var getElevation = painter.style.terrain ? function (x, y) {
+                return painter.style.terrain.getElevation(coord, x, y);
+            } : null;
+            var rotateToLine = layer.layout.get('text-rotation-alignment') === 'map';
+            updateLineLabels(bucket, coord.posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, rotateToLine, getElevation);
         }
         var matrix = painter.translatePosMatrix(coord.posMatrix, tile, translate, translateAnchor), uLabelPlaneMatrix = alongLine || isText && variablePlacement || updateTextFitIcon ? identityMat4 : labelPlaneMatrix, uglCoordMatrix = painter.translatePosMatrix(glCoordMatrix, tile, translate, translateAnchor, true);
         var hasHalo = isSDF && layer.paint.get(isText ? 'text-halo-width' : 'icon-halo-width').constantOr(1) !== 0;
@@ -35852,7 +35939,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
                     segments: new performance.SegmentVector([segment]),
                     sortKey: segment.sortKey,
                     state: state,
-                    terrain: terrain
+                    terrainData: terrainData
                 });
             }
         } else {
@@ -35860,7 +35947,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
                 segments: buffers.segments,
                 sortKey: 0,
                 state: state,
-                terrain: terrain
+                terrainData: terrainData
             });
         }
     };
@@ -35886,17 +35973,17 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
             var uniformValues$1 = state$1.uniformValues;
             if (state$1.hasHalo) {
                 uniformValues$1['u_is_halo'] = 1;
-                drawSymbolElements(state$1.buffers, segmentState.segments, layer, painter, state$1.program, depthMode, stencilMode, colorMode, uniformValues$1, segmentState.terrain);
+                drawSymbolElements(state$1.buffers, segmentState.segments, layer, painter, state$1.program, depthMode, stencilMode, colorMode, uniformValues$1, segmentState.terrainData);
             }
             uniformValues$1['u_is_halo'] = 0;
         }
-        drawSymbolElements(state$1.buffers, segmentState.segments, layer, painter, state$1.program, depthMode, stencilMode, colorMode, state$1.uniformValues, segmentState.terrain);
+        drawSymbolElements(state$1.buffers, segmentState.segments, layer, painter, state$1.program, depthMode, stencilMode, colorMode, state$1.uniformValues, segmentState.terrainData);
     }
 }
-function drawSymbolElements(buffers, segments, layer, painter, program, depthMode, stencilMode, colorMode, uniformValues, terrain) {
+function drawSymbolElements(buffers, segments, layer, painter, program, depthMode, stencilMode, colorMode, uniformValues, terrainData) {
     var context = painter.context;
     var gl = context.gl;
-    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, segments, layer.paint, painter.transform.zoom, buffers.programConfigurations.get(layer.id), buffers.dynamicLayoutVertexBuffer, buffers.opacityVertexBuffer);
+    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, segments, layer.paint, painter.transform.zoom, buffers.programConfigurations.get(layer.id), buffers.dynamicLayoutVertexBuffer, buffers.opacityVertexBuffer);
 }
 
 function drawCircles(painter, sourceCache, layer, coords) {
@@ -35927,7 +36014,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
         var program = painter.useProgram('circle', programConfiguration);
         var layoutVertexBuffer = bucket.layoutVertexBuffer;
         var indexBuffer = bucket.indexBuffer;
-        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         var uniformValues = circleUniformValues(painter, coord, tile, layer);
         var state = {
             programConfiguration: programConfiguration,
@@ -35935,7 +36022,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
             layoutVertexBuffer: layoutVertexBuffer,
             indexBuffer: indexBuffer,
             uniformValues: uniformValues,
-            terrain: terrain
+            terrainData: terrainData
         };
         if (sortFeaturesByKey) {
             var oldSegments = bucket.segments.get();
@@ -35968,9 +36055,9 @@ function drawCircles(painter, sourceCache, layer, coords) {
         var layoutVertexBuffer$1 = ref.layoutVertexBuffer;
         var indexBuffer$1 = ref.indexBuffer;
         var uniformValues$1 = ref.uniformValues;
-        var terrain$1 = ref.terrain;
+        var terrainData$1 = ref.terrainData;
         var segments = segmentsState.segments;
-        program$1.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues$1, terrain$1, layer.id, layoutVertexBuffer$1, indexBuffer$1, segments, layer.paint, painter.transform.zoom, programConfiguration$1);
+        program$1.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues$1, terrainData$1, layer.id, layoutVertexBuffer$1, indexBuffer$1, segments, layer.paint, painter.transform.zoom, programConfiguration$1);
     }
 }
 
@@ -36102,7 +36189,7 @@ function drawLine(painter, sourceCache, layer, coords) {
         var prevProgram = painter.context.program.get();
         var program = painter.useProgram(programId, programConfiguration);
         var programChanged = firstTile || program.program !== prevProgram;
-        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         var constantPattern = patternProperty.constantOr(null);
         if (constantPattern && tile.imageAtlas) {
             var atlas = tile.imageAtlas;
@@ -36112,7 +36199,7 @@ function drawLine(painter, sourceCache, layer, coords) {
                 programConfiguration.setConstantPatternPositions(posTo, posFrom);
             }
         }
-        var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        var terrainCoord = terrainData ? coord : null;
         var uniformValues = image ? linePatternUniformValues(painter, tile, layer, crossfade, terrainCoord) : dasharray ? lineSDFUniformValues(painter, tile, layer, dasharray, crossfade, terrainCoord) : gradient ? lineGradientUniformValues(painter, tile, layer, bucket.lineClipsArray.length, terrainCoord) : lineUniformValues(painter, tile, layer, terrainCoord);
         if (image) {
             context.activeTexture.set(gl.TEXTURE0);
@@ -36152,7 +36239,7 @@ function drawLine(painter, sourceCache, layer, coords) {
             context.activeTexture.set(gl.TEXTURE0);
             gradientTexture.bind(layer.stepInterpolant ? gl.NEAREST : gl.LINEAR, gl.CLAMP_TO_EDGE);
         }
-        program.draw(context, gl.TRIANGLES, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.layoutVertexBuffer2);
+        program.draw(context, gl.TRIANGLES, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.layoutVertexBuffer2);
         firstTile = false;
     }
 }
@@ -36200,7 +36287,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
         }
         var programConfiguration = bucket.programConfigurations.get(layer.id);
         var program = painter.useProgram(programName, programConfiguration);
-        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         if (image) {
             painter.context.activeTexture.set(gl.TEXTURE0);
             tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
@@ -36215,7 +36302,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
                 programConfiguration.setConstantPatternPositions(posTo, posFrom);
             }
         }
-        var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        var terrainCoord = terrainData ? coord : null;
         var posMatrix = terrainCoord ? terrainCoord.posMatrix : coord.posMatrix;
         var tileMatrix = painter.translatePosMatrix(posMatrix, tile, layer.paint.get('fill-translate'), layer.paint.get('fill-translate-anchor'));
         if (!isOutline) {
@@ -36231,7 +36318,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
             ];
             uniformValues = programName === 'fillOutlinePattern' && image ? fillOutlinePatternUniformValues(tileMatrix, painter, crossfade, tile, drawingBufferSize) : fillOutlineUniformValues(tileMatrix, drawingBufferSize);
         }
-        program.draw(painter.context, drawMode, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
+        program.draw(painter.context, drawMode, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
     }
 }
 
@@ -36265,7 +36352,7 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
         if (!bucket) {
             continue;
         }
-        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         var programConfiguration = bucket.programConfigurations.get(layer.id);
         var program = painter.useProgram(image ? 'fillExtrusionPattern' : 'fillExtrusion', programConfiguration);
         if (image) {
@@ -36285,7 +36372,7 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
         var matrix = painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('fill-extrusion-translate'), layer.paint.get('fill-extrusion-translate-anchor'));
         var shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
         var uniformValues = image ? fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, opacity, coord, crossfade, tile) : fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient, opacity);
-        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
+        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
     }
 }
 
@@ -36326,17 +36413,16 @@ function renderHillshade(painter, coord, tile, layer, depthMode, stencilMode, co
         return;
     }
     var program = painter.useProgram('hillshade');
-    var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
     context.activeTexture.set(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo.colorAttachment.get());
-    var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
-    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformValues(painter, tile, layer, terrainCoord), terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
+    var terrainCoord = terrainData ? coord : null;
+    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformValues(painter, tile, layer, terrainCoord), terrainData, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
 }
 function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMode) {
     var context = painter.context;
     var gl = context.gl;
     var dem = tile.dem;
-    var terrain = painter.style.terrainSourceCache.getTerrain();
     if (dem && dem.data) {
         var tileSize = dem.dim;
         var textureStride = dem.stride;
@@ -36371,7 +36457,7 @@ function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMod
             tileSize,
             tileSize
         ]);
-        painter.useProgram('hillshadePrepare').draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformPrepareValues(tile.tileID, dem), terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
+        painter.useProgram('hillshadePrepare').draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformPrepareValues(tile.tileID, dem), null, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
         tile.needsHillshadePrepare = false;
     }
 }
@@ -36404,7 +36490,7 @@ function drawRaster(painter, sourceCache, layer, tileIDs) {
         var depthMode = painter.depthModeForSublayer(coord.overscaledZ - minTileZ, layer.paint.get('raster-opacity') === 1 ? DepthMode.ReadWrite : DepthMode.ReadOnly, gl.LESS);
         var tile = sourceCache.getTile(coord);
         tile.registerFadeDuration(layer.paint.get('raster-fade-duration'));
-        var parentTile = sourceCache.findLoadedParent(coord, 0), fade = getFadeValues(tile, parentTile, sourceCache, layer, painter);
+        var parentTile = sourceCache.findLoadedParent(coord, 0), fade = getFadeValues(tile, parentTile, sourceCache, layer, painter.transform, painter.style.terrain);
         var parentScaleBy = void 0, parentTL = void 0;
         var textureFilter = layer.paint.get('raster-resampling') === 'nearest' ? gl.NEAREST : gl.LINEAR;
         context.activeTexture.set(gl.TEXTURE0);
@@ -36420,28 +36506,28 @@ function drawRaster(painter, sourceCache, layer, tileIDs) {
         } else {
             tile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
         }
-        var terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
+        var terrainCoord = terrainData ? coord : null;
         var posMatrix = terrainCoord ? terrainCoord.posMatrix : painter.transform.calculatePosMatrix(coord.toUnwrapped(), align);
         var uniformValues = rasterUniformValues(posMatrix, parentTL || [
             0,
             0
         ], parentScaleBy || 1, fade, layer);
-        var terrain = painter.style.terrainSourceCache.getTerrain(coord);
         if (source instanceof ImageSource) {
-            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, source.boundsBuffer, painter.quadTriangleIndexBuffer, source.boundsSegments);
+            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, source.boundsBuffer, painter.quadTriangleIndexBuffer, source.boundsSegments);
         } else {
-            program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
+            program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
         }
     }
 }
-function getFadeValues(tile, parentTile, sourceCache, layer, painter) {
+function getFadeValues(tile, parentTile, sourceCache, layer, transform, terrain) {
     var fadeDuration = layer.paint.get('raster-fade-duration');
-    if (!painter.style.terrainSourceCache.isEnabled() && fadeDuration > 0) {
+    if (!terrain && fadeDuration > 0) {
         var now = performance.exported.now();
         var sinceTile = (now - tile.timeAdded) / fadeDuration;
         var sinceParent = parentTile ? (now - parentTile.timeAdded) / fadeDuration : -1;
         var source = sourceCache.getSource();
-        var idealZ = painter.transform.coveringZoomLevel({
+        var idealZ = transform.coveringZoomLevel({
             tileSize: source.tileSize,
             roundZoom: source.roundZoom
         });
@@ -36504,8 +36590,8 @@ function drawBackground(painter, sourceCache, layer, coords) {
             tileID: tileID,
             tileSize: tileSize
         }, crossfade) : backgroundUniformValues(matrix, opacity, color);
-        var terrain = painter.style.terrainSourceCache.getTerrain(tileID);
-        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.tileExtentBuffer, painter.quadTriangleIndexBuffer, painter.tileExtentSegments);
+        var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(tileID);
+        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, painter.tileExtentBuffer, painter.quadTriangleIndexBuffer, painter.tileExtentSegments);
     }
 }
 
@@ -36558,10 +36644,9 @@ function drawDebugTile(painter, sourceCache, coord) {
     var stencilMode = StencilMode.disabled;
     var colorMode = painter.colorModeForRenderPass();
     var id = '$debug';
-    var terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    var terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
     context.activeTexture.set(gl.TEXTURE0);
     painter.emptyTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-    program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.red), terrain, id, painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
     var tileRawData = sourceCache.getTileByID(coord.key).latestRawTileData;
     var tileByteLength = tileRawData && tileRawData.byteLength || 0;
     var tileSizeKb = Math.floor(tileByteLength / 1024);
@@ -36573,7 +36658,8 @@ function drawDebugTile(painter, sourceCache, coord) {
     }
     var tileLabel = tileIdText + ' ' + tileSizeKb + 'kb';
     drawTextToOverlay(painter, tileLabel);
-    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, ColorMode.alphaBlended, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.transparent, scaleRatio), terrain, id, painter.debugBuffer, painter.quadTriangleIndexBuffer, painter.debugSegments);
+    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, ColorMode.alphaBlended, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.transparent, scaleRatio), null, id, painter.debugBuffer, painter.quadTriangleIndexBuffer, painter.debugSegments);
+    program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.red), terrainData, id, painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
 }
 function drawTextToOverlay(painter, text) {
     painter.initDebugOverlayCanvas();
@@ -36618,7 +36704,7 @@ function drawCustom(painter, sourceCache, layer) {
     }
 }
 
-function updateTerrainFacilitators(painter, sourceCache) {
+function drawDepth(painter, terrain) {
     var context = painter.context;
     var gl = context.gl;
     var colorMode = ColorMode.unblended;
@@ -36626,11 +36712,10 @@ function updateTerrainFacilitators(painter, sourceCache) {
         0,
         1
     ]);
-    var mesh = sourceCache.getTerrainMesh(context);
-    var coords = sourceCache.getCoordsTexture(context);
-    var tiles = sourceCache.getRenderableTiles();
-    var program = painter.useProgram('terrainCoords');
-    context.bindFramebuffer.set(sourceCache.getFramebuffer(painter, 'coords').framebuffer);
+    var mesh = terrain.getTerrainMesh();
+    var tiles = terrain.sourceCache.getRenderableTiles();
+    var program = painter.useProgram('terrainDepth');
+    context.bindFramebuffer.set(terrain.getFramebuffer('depth').framebuffer);
     context.viewport.set([
         0,
         0,
@@ -36641,35 +36726,12 @@ function updateTerrainFacilitators(painter, sourceCache) {
         color: performance.Color.transparent,
         depth: 1
     });
-    sourceCache._coordsIndex = [];
     for (var i = 0, list = tiles; i < list.length; i += 1) {
         var tile = list[i];
-        var terrain = sourceCache.getTerrain(tile.tileID);
-        context.activeTexture.set(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, coords.texture);
+        var terrainData = terrain.getTerrainData(tile.tileID);
         var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
-        var uniformValues = terrainCoordsUniformValues(posMatrix, 255 - sourceCache._coordsIndex.length);
-        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
-        sourceCache._coordsIndex.push(tile.tileID.key);
-    }
-    program = painter.useProgram('terrainDepth');
-    context.bindFramebuffer.set(sourceCache.getFramebuffer(painter, 'depth').framebuffer);
-    context.viewport.set([
-        0,
-        0,
-        painter.width / devicePixelRatio,
-        painter.height / devicePixelRatio
-    ]);
-    context.clear({
-        color: performance.Color.transparent,
-        depth: 1
-    });
-    for (var i$1 = 0, list$1 = tiles; i$1 < list$1.length; i$1 += 1) {
-        var tile$1 = list$1[i$1];
-        var terrain$1 = sourceCache.getTerrain(tile$1.tileID);
-        var posMatrix$1 = painter.transform.calculatePosMatrix(tile$1.tileID.toUnwrapped());
-        var uniformValues$1 = terrainDepthUniformValues(posMatrix$1);
-        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues$1, terrain$1, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+        var uniformValues = terrainDepthUniformValues(posMatrix);
+        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
     }
     context.bindFramebuffer.set(null);
     context.viewport.set([
@@ -36679,14 +36741,56 @@ function updateTerrainFacilitators(painter, sourceCache) {
         painter.height
     ]);
 }
-function drawTerrain(painter, sourceCache, tile) {
+function drawCoords(painter, terrain) {
+    var context = painter.context;
+    var gl = context.gl;
+    var colorMode = ColorMode.unblended;
+    var depthMode = new DepthMode(gl.LEQUAL, DepthMode.ReadWrite, [
+        0,
+        1
+    ]);
+    var mesh = terrain.getTerrainMesh();
+    var coords = terrain.getCoordsTexture();
+    var tiles = terrain.sourceCache.getRenderableTiles();
+    var program = painter.useProgram('terrainCoords');
+    context.bindFramebuffer.set(terrain.getFramebuffer('coords').framebuffer);
+    context.viewport.set([
+        0,
+        0,
+        painter.width / devicePixelRatio,
+        painter.height / devicePixelRatio
+    ]);
+    context.clear({
+        color: performance.Color.transparent,
+        depth: 1
+    });
+    terrain._coordsIndex = [];
+    for (var i = 0, list = tiles; i < list.length; i += 1) {
+        var tile = list[i];
+        var terrainData = terrain.getTerrainData(tile.tileID);
+        context.activeTexture.set(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, coords.texture);
+        var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
+        var uniformValues = terrainCoordsUniformValues(posMatrix, 255 - terrain._coordsIndex.length);
+        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+        terrain._coordsIndex.push(tile.tileID.key);
+    }
+    context.bindFramebuffer.set(null);
+    context.viewport.set([
+        0,
+        0,
+        painter.width,
+        painter.height
+    ]);
+}
+function drawTerrain(painter, terrain, tile) {
     var context = painter.context;
     var gl = context.gl;
     var colorMode = painter.colorModeForRenderPass();
     var depthMode = new DepthMode(gl.LEQUAL, DepthMode.ReadWrite, painter.depthRangeFor3D);
     var program = painter.useProgram('terrain');
-    var mesh = sourceCache.getTerrainMesh(context);
-    var terrain = sourceCache.getTerrain(tile.tileID);
+    var mesh = terrain.getTerrainMesh();
+    var terrainData = terrain.getTerrainData(tile.tileID);
     context.bindFramebuffer.set(null);
     context.viewport.set([
         0,
@@ -36695,14 +36799,14 @@ function drawTerrain(painter, sourceCache, tile) {
         painter.height
     ]);
     context.activeTexture.set(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceCache.getRTTFramebuffer(painter).colorAttachment.get());
+    gl.bindTexture(gl.TEXTURE_2D, terrain.getRTTFramebuffer().colorAttachment.get());
     var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
     var uniformValues = terrainUniformValues(posMatrix);
-    program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+    program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
 }
-function prepareTerrain(painter, sourceCache, tile, stack) {
+function prepareTerrain(painter, terrain, tile, stack) {
     var context = painter.context;
-    var size = tile.tileSize * sourceCache.qualityFactor;
+    var size = tile.tileSize * terrain.qualityFactor;
     if (!tile.textures[stack]) {
         tile.textures[stack] = painter.getTileTexture(size) || new Texture(context, {
             width: size,
@@ -36711,10 +36815,10 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
         }, context.gl.RGBA);
         tile.textures[stack].bind(context.gl.LINEAR, context.gl.CLAMP_TO_EDGE);
         if (stack === 0) {
-            sourceCache._renderHistory.push(tile.tileID.key);
+            terrain.sourceCache.renderHistory.push(tile.tileID.key);
         }
     }
-    var fb = sourceCache.getRTTFramebuffer(painter);
+    var fb = terrain.getRTTFramebuffer();
     fb.colorAttachment.set(tile.textures[stack].texture);
     context.bindFramebuffer.set(fb.framebuffer);
     context.viewport.set([
@@ -36724,6 +36828,128 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
         size
     ]);
 }
+
+var RenderToTexture = function RenderToTexture(painter) {
+    this._coordsDescendingInv = {};
+    this._coordsDescendingInvStr = {};
+    this.painter = painter;
+    this._renderToTexture = {
+        background: true,
+        fill: true,
+        line: true,
+        raster: true
+    };
+    this._coordsDescendingInv = {};
+    this._coordsDescendingInvStr = {};
+    this._stacks = [];
+    this._prevType = null;
+    this._rerender = {};
+    this._renderableTiles = painter.style.terrain.sourceCache.getRenderableTiles();
+    this._init();
+};
+RenderToTexture.prototype._init = function _init() {
+    var this$1$1 = this;
+    var style = this.painter.style;
+    var terrain = style.terrain;
+    for (var id in style.sourceCaches) {
+        this._coordsDescendingInv[id] = {};
+        var tileIDs = style.sourceCaches[id].getVisibleCoordinates();
+        for (var i = 0, list = tileIDs; i < list.length; i += 1) {
+            var tileID = list[i];
+            var keys = terrain.sourceCache.getTerrainCoords(tileID);
+            for (var key in keys) {
+                if (!this._coordsDescendingInv[id][key]) {
+                    this._coordsDescendingInv[id][key] = [];
+                }
+                this._coordsDescendingInv[id][key].push(keys[key]);
+            }
+        }
+    }
+    for (var i$1 = 0, list$1 = style._order; i$1 < list$1.length; i$1 += 1) {
+        var id$1 = list$1[i$1];
+        var layer = style._layers[id$1], source = layer.source;
+        if (this._renderToTexture[layer.type]) {
+            if (!this._coordsDescendingInvStr[source]) {
+                this._coordsDescendingInvStr[source] = {};
+                for (var key$1 in this._coordsDescendingInv[source]) {
+                    this._coordsDescendingInvStr[source][key$1] = this._coordsDescendingInv[source][key$1].map(function (c) {
+                        return c.key;
+                    }).sort().join();
+                }
+            }
+        }
+    }
+    this._renderableTiles.forEach(function (tile) {
+        for (var source in this$1$1._coordsDescendingInvStr) {
+            var coords = this$1$1._coordsDescendingInvStr[source][tile.tileID.key];
+            if (coords && coords !== tile.textureCoords[source]) {
+                tile.clearTextures(this$1$1.painter);
+            }
+            if (terrain.needsRerender(source, tile.tileID)) {
+                tile.clearTextures(this$1$1.painter);
+            }
+        }
+        this$1$1._rerender[tile.tileID.key] = !tile.textures.length;
+    });
+    terrain.clearRerenderCache();
+    terrain.sourceCache.removeOutdated(this.painter);
+    return this;
+};
+RenderToTexture.prototype.renderLayer = function renderLayer(layer) {
+    var type = layer.type;
+    var painter = this.painter;
+    var layerIds = painter.style._order;
+    var currentLayer = painter.currentLayer;
+    var isLastLayer = currentLayer + 1 === layerIds.length;
+    if (this._renderToTexture[type]) {
+        if (!this._prevType || !this._renderToTexture[this._prevType]) {
+            this._stacks.push([]);
+        }
+        this._prevType = type;
+        this._stacks[this._stacks.length - 1].push(layerIds[currentLayer]);
+        if (!isLastLayer) {
+            return true;
+        }
+    }
+    if (this._renderToTexture[this._prevType] || type === 'hillshade' || this._renderToTexture[type] && isLastLayer) {
+        this._prevType = type;
+        var stack = this._stacks.length - 1, layers = this._stacks[stack] || [];
+        for (var i = 0, list = this._renderableTiles; i < list.length; i += 1) {
+            var tile = list[i];
+            prepareTerrain(painter, painter.style.terrain, tile, stack);
+            if (this._rerender[tile.tileID.key]) {
+                painter.context.clear({ color: performance.Color.transparent });
+                for (var l = 0; l < layers.length; l++) {
+                    var layer$1 = painter.style._layers[layers[l]];
+                    var coords = layer$1.source ? this._coordsDescendingInv[layer$1.source][tile.tileID.key] : [tile.tileID];
+                    painter._renderTileClippingMasks(layer$1, coords);
+                    painter.renderLayer(painter, painter.style.sourceCaches[layer$1.source], layer$1, coords);
+                    if (layer$1.source) {
+                        tile.textureCoords[layer$1.source] = this._coordsDescendingInvStr[layer$1.source][tile.tileID.key];
+                    }
+                }
+            }
+            drawTerrain(painter, painter.style.terrain, tile);
+        }
+        if (type === 'hillshade') {
+            this._stacks.push([layerIds[currentLayer]]);
+            for (var i$1 = 0, list$1 = this._renderableTiles; i$1 < list$1.length; i$1 += 1) {
+                var tile$1 = list$1[i$1];
+                var coords$1 = this._coordsDescendingInv[layer.source][tile$1.tileID.key];
+                prepareTerrain(painter, painter.style.terrain, tile$1, this._stacks.length - 1);
+                painter.context.clear({ color: performance.Color.transparent });
+                painter._renderTileClippingMasks(layer, coords$1);
+                painter.renderLayer(painter, painter.style.sourceCaches[layer.source], layer, coords$1);
+                drawTerrain(painter, painter.style.terrain, tile$1);
+            }
+            return true;
+        }
+        if (isLastLayer) {
+            return true;
+        }
+    }
+    return false;
+};
 
 var draw = {
     symbol: drawSymbols,
@@ -36838,7 +37064,7 @@ Painter.prototype.clearStencil = function clearStencil() {
         gl.drawingBufferHeight,
         0
     ]);
-    this.useProgram('clippingMask').draw(context, gl.TRIANGLES, DepthMode.disabled, this.stencilClearMode, ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(matrix), this.style.terrainSourceCache.getTerrain(), '$clipping', this.viewportBuffer, this.quadTriangleIndexBuffer, this.viewportSegments);
+    this.useProgram('clippingMask').draw(context, gl.TRIANGLES, DepthMode.disabled, this.stencilClearMode, ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(matrix), null, '$clipping', this.viewportBuffer, this.quadTriangleIndexBuffer, this.viewportSegments);
 };
 Painter.prototype._renderTileClippingMasks = function _renderTileClippingMasks(layer, tileIDs) {
     if (this.currentStencilSource === layer.source || !layer.isTileClipped() || !tileIDs || !tileIDs.length) {
@@ -36857,11 +37083,11 @@ Painter.prototype._renderTileClippingMasks = function _renderTileClippingMasks(l
     for (var i = 0, list = tileIDs; i < list.length; i += 1) {
         var tileID = list[i];
         var id = this._tileClippingMaskIDs[tileID.key] = this.nextStencilID++;
-        var terrain = this.style.terrainSourceCache.getTerrain(tileID);
+        var terrainData = this.style.terrain && this.style.terrain.getTerrainData(tileID);
         program.draw(context, gl.TRIANGLES, DepthMode.disabled, new StencilMode({
             func: gl.ALWAYS,
             mask: 0
-        }, id, 255, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(tileID.posMatrix), terrain, '$clipping', this.tileExtentBuffer, this.quadTriangleIndexBuffer, this.tileExtentSegments);
+        }, id, 255, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(tileID.posMatrix), terrainData, '$clipping', this.tileExtentBuffer, this.quadTriangleIndexBuffer, this.tileExtentSegments);
     }
 };
 Painter.prototype.stencilModeFor3D = function stencilModeFor3D() {
@@ -36958,14 +37184,7 @@ Painter.prototype.render = function render(style, options) {
     this.imageManager.beginFrame();
     var layerIds = this.style._order;
     var sourceCaches = this.style.sourceCaches;
-    var renderToTexture = {
-        background: true,
-        fill: true,
-        line: true,
-        raster: true
-    };
-    var tsc = this.style.terrainSourceCache;
-    var isTerrainEnabled = tsc.isEnabled();
+    var renderToTexture = this.style.terrain && new RenderToTexture(this);
     for (var id in sourceCaches) {
         var sourceCache = sourceCaches[id];
         if (sourceCache.used) {
@@ -36975,39 +37194,11 @@ Painter.prototype.render = function render(style, options) {
     var coordsAscending = {};
     var coordsDescending = {};
     var coordsDescendingSymbol = {};
-    var coordsDescendingInv = {};
-    var coordsDescendingInvStr = {};
     for (var id$1 in sourceCaches) {
         var sourceCache$1 = sourceCaches[id$1];
         coordsAscending[id$1] = sourceCache$1.getVisibleCoordinates();
         coordsDescending[id$1] = coordsAscending[id$1].slice().reverse();
         coordsDescendingSymbol[id$1] = sourceCache$1.getVisibleCoordinates(true).reverse();
-        if (isTerrainEnabled) {
-            coordsDescendingInv[id$1] = {};
-            for (var c = 0; c < coordsDescending[id$1].length; c++) {
-                var coords = tsc.getTerrainCoords(coordsDescending[id$1][c]);
-                for (var key in coords) {
-                    if (!coordsDescendingInv[id$1][key]) {
-                        coordsDescendingInv[id$1][key] = [];
-                    }
-                    coordsDescendingInv[id$1][key].push(coords[key]);
-                }
-            }
-        }
-    }
-    for (var i$1 = 0, list = layerIds; i$1 < list.length; i$1 += 1) {
-        var id$2 = list[i$1];
-        var layer = this.style._layers[id$2], source = layer.source;
-        if (renderToTexture[layer.type]) {
-            if (!coordsDescendingInvStr[source]) {
-                coordsDescendingInvStr[source] = {};
-                for (var key$1 in coordsDescendingInv[source]) {
-                    coordsDescendingInvStr[source][key$1] = coordsDescendingInv[source][key$1].map(function (c) {
-                        return c.key;
-                    }).sort().join();
-                }
-            }
-        }
     }
     this.opaquePassCutoff = Infinity;
     for (var i = 0; i < layerIds.length; i++) {
@@ -37017,27 +37208,28 @@ Painter.prototype.render = function render(style, options) {
             break;
         }
     }
-    if (isTerrainEnabled) {
+    if (renderToTexture) {
         this.opaquePassCutoff = 0;
-        var newTiles = tsc.tilesAfterTime(this.terrainFacilitator.renderTime);
+        var newTiles = this.style.terrain.sourceCache.tilesAfterTime(this.terrainFacilitator.renderTime);
         if (!performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
             performance.copy(this.terrainFacilitator.matrix, this.transform.projMatrix);
             this.terrainFacilitator.renderTime = Date.now();
-            updateTerrainFacilitators(this, tsc);
+            drawDepth(this, this.style.terrain);
+            drawCoords(this, this.style.terrain);
         }
     }
     this.renderPass = 'offscreen';
-    for (var i$2 = 0, list$1 = layerIds; i$2 < list$1.length; i$2 += 1) {
-        var layerId$1 = list$1[i$2];
-        var layer$1 = this.style._layers[layerId$1];
-        if (!layer$1.hasOffscreenPass() || layer$1.isHidden(this.transform.zoom)) {
+    for (var i$1 = 0, list = layerIds; i$1 < list.length; i$1 += 1) {
+        var layerId$1 = list[i$1];
+        var layer = this.style._layers[layerId$1];
+        if (!layer.hasOffscreenPass() || layer.isHidden(this.transform.zoom)) {
             continue;
         }
-        var coords$1 = coordsDescending[layer$1.source];
-        if (layer$1.type !== 'custom' && !coords$1.length) {
+        var coords = coordsDescending[layer.source];
+        if (layer.type !== 'custom' && !coords.length) {
             continue;
         }
-        this.renderLayer(this, sourceCaches[layer$1.source], layer$1, coords$1);
+        this.renderLayer(this, sourceCaches[layer.source], layer, coords);
     }
     this.context.bindFramebuffer.set(null);
     this.context.clear({
@@ -37050,97 +37242,32 @@ Painter.prototype.render = function render(style, options) {
         0,
         1 - (style._order.length + 2) * this.numSublayers * this.depthEpsilon
     ];
-    if (!isTerrainEnabled) {
+    if (!renderToTexture) {
         this.renderPass = 'opaque';
         for (this.currentLayer = layerIds.length - 1; this.currentLayer >= 0; this.currentLayer--) {
-            var layer$2 = this.style._layers[layerIds[this.currentLayer]];
-            var sourceCache$2 = sourceCaches[layer$2.source];
-            var coords$2 = coordsAscending[layer$2.source];
-            this._renderTileClippingMasks(layer$2, coords$2);
-            this.renderLayer(this, sourceCache$2, layer$2, coords$2);
+            var layer$1 = this.style._layers[layerIds[this.currentLayer]];
+            var sourceCache$2 = sourceCaches[layer$1.source];
+            var coords$1 = coordsAscending[layer$1.source];
+            this._renderTileClippingMasks(layer$1, coords$1);
+            this.renderLayer(this, sourceCache$2, layer$1, coords$1);
         }
     }
     this.renderPass = 'translucent';
-    var stacks = [];
-    var prevType = null;
-    var rerender = {};
-    var renderableTiles = [];
-    if (isTerrainEnabled) {
-        renderableTiles = tsc.getRenderableTiles();
-        renderableTiles.forEach(function (tile) {
-            for (var source in coordsDescendingInvStr) {
-                var coords = coordsDescendingInvStr[source][tile.tileID.key];
-                if (coords && coords !== tile.textureCoords[source]) {
-                    tile.clearTextures(this$1$1);
-                }
-                if (tsc.rerender[source] && tsc.rerender[source][tile.tileID.key]) {
-                    tile.clearTextures(this$1$1);
-                }
-            }
-            rerender[tile.tileID.key] = !tile.textures.length;
-        });
-        tsc.rerender = {};
-    }
     for (this.currentLayer = 0; this.currentLayer < layerIds.length; this.currentLayer++) {
-        var layer$3 = this.style._layers[layerIds[this.currentLayer]];
-        var sourceCache$3 = sourceCaches[layer$3.source];
-        var type = layer$3.type;
-        if (isTerrainEnabled) {
-            var isLastLayer = this.currentLayer + 1 === layerIds.length;
-            if (renderToTexture[type]) {
-                if (!prevType || !renderToTexture[prevType]) {
-                    stacks.push([]);
-                }
-                prevType = type;
-                stacks[stacks.length - 1].push(layerIds[this.currentLayer]);
-                if (!isLastLayer) {
-                    continue;
-                }
-            }
-            if (renderToTexture[prevType] || type === 'hillshade' || renderToTexture[type] && isLastLayer) {
-                prevType = type;
-                var stack = stacks.length - 1, layers = stacks[stack] || [];
-                for (var i$3 = 0, list$2 = renderableTiles; i$3 < list$2.length; i$3 += 1) {
-                    var tile = list$2[i$3];
-                    prepareTerrain(this, tsc, tile, stack);
-                    if (rerender[tile.tileID.key]) {
-                        this.context.clear({ color: performance.Color.transparent });
-                        for (var l = 0; l < layers.length; l++) {
-                            var layer$4 = this.style._layers[layers[l]];
-                            var coords$3 = layer$4.source ? coordsDescendingInv[layer$4.source][tile.tileID.key] : [tile.tileID];
-                            this._renderTileClippingMasks(layer$4, coords$3);
-                            this.renderLayer(this, this.style.sourceCaches[layer$4.source], layer$4, coords$3);
-                            if (layer$4.source) {
-                                tile.textureCoords[layer$4.source] = coordsDescendingInvStr[layer$4.source][tile.tileID.key];
-                            }
-                        }
-                    }
-                    drawTerrain(this, tsc, tile);
-                }
-                if (type === 'hillshade') {
-                    stacks.push([layerIds[this.currentLayer]]);
-                    for (var i$4 = 0, list$3 = renderableTiles; i$4 < list$3.length; i$4 += 1) {
-                        var tile$1 = list$3[i$4];
-                        var coords$4 = coordsDescendingInv[layer$3.source][tile$1.tileID.key];
-                        prepareTerrain(this, tsc, tile$1, stacks.length - 1);
-                        this.context.clear({ color: performance.Color.transparent });
-                        this._renderTileClippingMasks(layer$3, coords$4);
-                        this.renderLayer(this, sourceCache$3, layer$3, coords$4);
-                        drawTerrain(this, tsc, tile$1);
-                    }
-                    continue;
-                }
-            }
+        var layer$2 = this.style._layers[layerIds[this.currentLayer]];
+        var sourceCache$3 = sourceCaches[layer$2.source];
+        if (renderToTexture && renderToTexture.renderLayer(layer$2)) {
+            continue;
         }
-        var coords$5 = (layer$3.type === 'symbol' ? coordsDescendingSymbol : coordsDescending)[layer$3.source];
-        this._renderTileClippingMasks(layer$3, coordsAscending[layer$3.source]);
-        this.renderLayer(this, sourceCache$3, layer$3, coords$5);
+        var coords$2 = (layer$2.type === 'symbol' ? coordsDescendingSymbol : coordsDescending)[layer$2.source];
+        this._renderTileClippingMasks(layer$2, coordsAscending[layer$2.source]);
+        this.renderLayer(this, sourceCache$3, layer$2, coords$2);
     }
     if (this.options.showTileBoundaries) {
         var selectedSource;
         var sourceCache$4;
-        var layers$1 = performance.values(this.style._layers);
-        layers$1.forEach(function (layer) {
+        var layers = performance.values(this.style._layers);
+        layers.forEach(function (layer) {
             if (layer.source && !layer.isHidden(this$1$1.transform.zoom)) {
                 if (layer.source !== (sourceCache$4 && sourceCache$4.id)) {
                     sourceCache$4 = this$1$1.style.sourceCaches[layer.source];
@@ -37223,7 +37350,11 @@ Painter.prototype.translatePosMatrix = function translatePosMatrix(matrix, tile,
             translate[0] * sinA + translate[1] * cosA
         ];
     }
-    var translation = fromValues(inViewportPixelUnitsUnits ? translate[0] : pixelsToTileUnits(tile, translate[0], this.transform.zoom), inViewportPixelUnitsUnits ? translate[1] : pixelsToTileUnits(tile, translate[1], this.transform.zoom), 0);
+    var translation = [
+        inViewportPixelUnitsUnits ? translate[0] : pixelsToTileUnits(tile, translate[0], this.transform.zoom),
+        inViewportPixelUnitsUnits ? translate[1] : pixelsToTileUnits(tile, translate[1], this.transform.zoom),
+        0
+    ];
     var translatedMatrix = new Float32Array(16);
     performance.translate(translatedMatrix, matrix, translation);
     return translatedMatrix;
@@ -37253,9 +37384,9 @@ Painter.prototype.isPatternMissing = function isPatternMissing(image) {
 };
 Painter.prototype.useProgram = function useProgram(name, programConfiguration) {
     this.cache = this.cache || {};
-    var key = name + (programConfiguration ? programConfiguration.cacheKey : '') + (this._showOverdrawInspector ? '/overdraw' : '') + (this.style.terrainSourceCache.isEnabled() ? '/terrain' : '');
+    var key = name + (programConfiguration ? programConfiguration.cacheKey : '') + (this._showOverdrawInspector ? '/overdraw' : '') + (this.style.terrain ? '/terrain' : '');
     if (!this.cache[key]) {
-        this.cache[key] = new Program(this.context, name, shaders[name], programConfiguration, programUniforms[name], this._showOverdrawInspector, this.style.terrainSourceCache.isEnabled());
+        this.cache[key] = new Program(this.context, name, shaders[name], programConfiguration, programUniforms[name], this._showOverdrawInspector, this.style.terrain);
     }
     return this.cache[key];
 };
@@ -37353,7 +37484,12 @@ Frustum.fromInvProjectionMatrix = function fromInvProjectionMatrix(invProj, worl
     var frustumCoords = clipSpaceCorners.map(function (v) {
         v = performance.transformMat4([], v, invProj);
         var s = 1 / v[3] / worldSize * scale;
-        return performance.mul$1(v, v, performance.fromValues(s, s, 1 / v[3], s));
+        return performance.mul$1(v, v, [
+            s,
+            s,
+            1 / v[3],
+            s
+        ]);
     });
     var frustumPlanePointIndices = [
         [
@@ -37617,7 +37753,7 @@ Transform.prototype.clone = function clone() {
     clone._pitch = this._pitch;
     clone._unmodified = this._unmodified;
     clone._edgeInsets = this._edgeInsets.clone();
-    clone.terrainSourceCache = this.terrainSourceCache;
+    clone.terrain = this.terrain;
     clone._calcMatrices();
     return clone;
 };
@@ -37811,14 +37947,13 @@ Transform.prototype.getVisibleUnwrappedCoordinates = function getVisibleUnwrappe
 Transform.prototype.coveringTiles = function coveringTiles(options) {
     var z = this.coveringZoomLevel(options);
     var actualZ = z;
-    var tsc = this.terrainSourceCache;
     if (options.minzoom !== undefined && z < options.minzoom) {
         return [];
     }
     if (options.maxzoom !== undefined && z > options.maxzoom) {
         z = options.maxzoom;
     }
-    var cameraCoord = tsc && tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+    var cameraCoord = this.pointCoordinate(this.getCameraPoint());
     var centerCoord = performance.MercatorCoordinate.fromLngLat(this.center);
     var numTiles = Math.pow(2, z);
     var cameraPoint = [
@@ -37833,10 +37968,10 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
     ];
     var cameraFrustum = Frustum.fromInvProjectionMatrix(this.invProjMatrix, this.worldSize, z);
     var minZoom = options.minzoom || 0;
-    if (!(tsc && tsc.isEnabled()) && this.pitch <= 60 && this._edgeInsets.top < 0.1) {
+    if (!this.terrain && this.pitch <= 60 && this._edgeInsets.top < 0.1) {
         minZoom = z;
     }
-    var radiusOfMaxLvlLodInTiles = 3;
+    var radiusOfMaxLvlLodInTiles = this.terrain ? 2 / Math.min(this.tileSize, options.tileSize) * this.tileSize : 3;
     var newRootTile = function (wrap) {
         return {
             aabb: new Aabb([
@@ -37878,17 +38013,20 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
             }
             fullyVisible = intersectResult === 2;
         }
-        var distanceX = it.aabb.distanceX(cameraPoint);
-        var distanceY = it.aabb.distanceY(cameraPoint);
+        var refPoint = this.terrain ? cameraPoint : centerPoint;
+        var distanceX = it.aabb.distanceX(refPoint);
+        var distanceY = it.aabb.distanceY(refPoint);
         var longestDim = Math.max(Math.abs(distanceX), Math.abs(distanceY));
         var distToSplit = radiusOfMaxLvlLodInTiles + (1 << maxZoom - it.zoom) - 2;
         if (it.zoom === maxZoom || longestDim > distToSplit && it.zoom >= minZoom) {
+            var dz = maxZoom - it.zoom, dx = cameraPoint[0] - 0.5 - (x << dz), dy = cameraPoint[1] - 0.5 - (y << dz);
             result.push({
                 tileID: new performance.OverscaledTileID(it.zoom === maxZoom ? overscaledZ : it.zoom, it.wrap, it.zoom, x, y),
                 distanceSq: sqrLen([
                     centerPoint[0] - 0.5 - x,
                     centerPoint[1] - 0.5 - y
-                ])
+                ]),
+                tileDistanceToCamera: Math.sqrt(dx * dx + dy * dy)
             });
             continue;
         }
@@ -37897,9 +38035,23 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
             var childY = (y << 1) + (i$1 >> 1);
             var childZ = it.zoom + 1;
             var quadrant = it.aabb.quadrant(i$1);
-            if (tsc && tsc.isEnabled()) {
-                var tile = tsc.getSourceTile(new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
-                quadrant = new Aabb(fromValues(quadrant.min[0], quadrant.min[1], tile && tile.dem ? tile.dem.min - this.elevation : -this.elevation), fromValues(quadrant.max[0], quadrant.max[1], tile && tile.dem ? Math.max(0, tile.dem.max - this.elevation) : 0));
+            if (this.terrain) {
+                var tileID = new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY);
+                var tile = this.terrain.getTerrainData(tileID).tile;
+                var minElevation = this.elevation, maxElevation = this.elevation;
+                if (tile && tile.dem) {
+                    minElevation = tile.dem.min * this.terrain.exaggeration;
+                    maxElevation = tile.dem.max * this.terrain.exaggeration;
+                }
+                quadrant = new Aabb([
+                    quadrant.min[0],
+                    quadrant.min[1],
+                    minElevation
+                ], [
+                    quadrant.max[0],
+                    quadrant.max[1],
+                    maxElevation
+                ]);
             }
             stack.push({
                 aabb: quadrant,
@@ -37950,15 +38102,15 @@ Transform.prototype.updateElevation = function updateElevation() {
     this.elevation = this.getElevation(this._center);
 };
 Transform.prototype.getElevation = function getElevation(lnglat) {
-    var merc = this.locationCoordinate(lnglat), tsc = this.terrainSourceCache;
-    if (!(tsc && tsc.isEnabled())) {
+    if (!this.terrain) {
         return 0;
     }
-    var tileSize = tsc.tileSize, worldSize = (1 << this.tileZoom) * tileSize;
+    var merc = performance.MercatorCoordinate.fromLngLat(lnglat);
+    var worldSize = (1 << this.tileZoom) * performance.EXTENT;
     var mercX = merc.x * worldSize, mercY = merc.y * worldSize;
-    var tileX = Math.floor(mercX / tileSize), tileY = Math.floor(mercY / tileSize);
+    var tileX = Math.floor(mercX / performance.EXTENT), tileY = Math.floor(mercY / performance.EXTENT);
     var tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
-    return this.terrainSourceCache.getElevationWithExaggeration(tileID, mercX % tileSize, mercY % tileSize, tileSize);
+    return this.terrain.getElevation(tileID, mercX % performance.EXTENT, mercY % performance.EXTENT, performance.EXTENT);
 };
 Transform.prototype.getCameraPosition = function getCameraPosition() {
     var lngLat = this.pointLocation(this.getCameraPoint());
@@ -37969,9 +38121,6 @@ Transform.prototype.getCameraPosition = function getCameraPosition() {
     };
 };
 Transform.prototype.recalculateZoom = function recalculateZoom() {
-    if (!this.terrainSourceCache || !this.terrainSourceCache.isEnabled()) {
-        return;
-    }
     var center = this.pointLocation3D(this.centerPoint);
     var elevation = this.getElevation(center);
     var deltaElevation = this.elevation - elevation;
@@ -38002,7 +38151,7 @@ Transform.prototype.locationPoint = function locationPoint(lnglat) {
     return this.coordinatePoint(this.locationCoordinate(lnglat));
 };
 Transform.prototype.locationPoint3D = function locationPoint3D(lnglat) {
-    return this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat));
+    return this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat), this.pixelMatrix3D);
 };
 Transform.prototype.pointLocation = function pointLocation(p) {
     return this.coordinateLocation(this.pointCoordinate(p));
@@ -38044,35 +38193,21 @@ Transform.prototype.pointCoordinate = function pointCoordinate(p) {
     return new performance.MercatorCoordinate(performance.number(x0, x1, t) / this.worldSize, performance.number(y0, y1, t) / this.worldSize);
 };
 Transform.prototype.pointCoordinate3D = function pointCoordinate3D(p) {
-    if (!this.terrainSourceCache) {
-        return this.pointCoordinate(p);
-    }
-    var rgba = new Uint8Array(4);
-    var painter = this.terrainSourceCache._style.map.painter, context = painter.context, gl = context.gl;
-    context.bindFramebuffer.set(this.terrainSourceCache.getFramebuffer(painter, 'coords').framebuffer);
-    gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
-    context.bindFramebuffer.set(null);
-    var x = rgba[0] + (rgba[2] >> 4 << 8);
-    var y = rgba[1] + ((rgba[2] & 15) << 8);
-    var tileID = this.terrainSourceCache._coordsIndex[255 - rgba[3]];
-    var tile = tileID && this.terrainSourceCache.getTileByID(tileID);
-    if (!tile) {
-        return this.pointCoordinate(p);
-    }
-    var coordsSize = this.terrainSourceCache._coordsTextureSize;
-    var worldSize = (1 << tile.tileID.canonical.z) * coordsSize;
-    return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.terrainSourceCache.getElevationWithExaggeration(tile.tileID, x, y, coordsSize));
+    var coordinate = this.terrain && this.terrain.pointCoordinate(p);
+    return coordinate || this.pointCoordinate(p);
 };
-Transform.prototype.coordinatePoint = function coordinatePoint(coord, elevation) {
+Transform.prototype.coordinatePoint = function coordinatePoint(coord, elevation, pixelMatrix) {
     if (elevation === void 0)
         elevation = 0;
+    if (pixelMatrix === void 0)
+        pixelMatrix = this.pixelMatrix;
     var p = [
         coord.x * this.worldSize,
         coord.y * this.worldSize,
         elevation,
         1
     ];
-    performance.transformMat4(p, p, this.pixelMatrix2);
+    performance.transformMat4(p, p, pixelMatrix);
     return new performance.pointGeometry(p[0] / p[3], p[1] / p[3]);
 };
 Transform.prototype.getBounds = function getBounds() {
@@ -38089,6 +38224,9 @@ Transform.prototype.getMaxBounds = function getMaxBounds() {
         this.lngRange[1],
         this.latRange[1]
     ]);
+};
+Transform.prototype.getHorizon = function getHorizon() {
+    return Math.tan(Math.PI / 2 - this._pitch) * this.cameraToCenterDistance * 0.85;
 };
 Transform.prototype.setMaxBounds = function setMaxBounds(bounds) {
     if (bounds) {
@@ -38200,7 +38338,9 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
     }
     var halfFov = this._fov / 2;
     var offset = this.centerOffset;
+    var x = this.point.x, y = this.point.y;
     this.cameraToCenterDistance = 0.5 / Math.tan(halfFov) * this.height;
+    this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
     var m = performance.identity(new Float64Array(16));
     performance.scale(m, m, [
         this.width / 2,
@@ -38230,16 +38370,17 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
         1
     ]);
     this.glCoordMatrix = m;
-    this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
+    this.cameraToSeaLevelDistance = this.terrain ? this.cameraToCenterDistance + this._elevation * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
     var groundAngle = Math.PI / 2 + this._pitch;
     var fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
-    var cameraAltitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
-    var cameraToCenterDistance = this.terrainSourceCache && this.terrainSourceCache.isEnabled() ? (cameraAltitude + this._elevation) * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
-    var topHalfSurfaceDistance = Math.sin(fovAboveCenter) * cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
-    var point = this.point;
-    var x = point.x, y = point.y;
-    var furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + cameraToCenterDistance;
-    var farZ = furthestDistance * 1.01;
+    var topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToSeaLevelDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
+    var horizon = this.getHorizon();
+    var horizonAngle = Math.atan(horizon / this.cameraToCenterDistance);
+    var fovCenterToHorizon = 2 * horizonAngle * (0.5 + offset.y / (horizon * 2));
+    var topHalfSurfaceDistanceHorizon = Math.sin(fovCenterToHorizon) * this.cameraToSeaLevelDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovCenterToHorizon, 0.01, Math.PI - 0.01));
+    var furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + this.cameraToSeaLevelDistance;
+    var furthestDistanceHorizon = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistanceHorizon + this.cameraToSeaLevelDistance;
+    var farZ = Math.min(furthestDistance, furthestDistanceHorizon) * 1.01;
     var nearZ = this.height / 50;
     m = new Float64Array(16);
     performance.perspective(m, this._fov, this.width / this.height, nearZ, farZ);
@@ -38262,17 +38403,25 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
         -y,
         0
     ]);
-    this.mercatorMatrix = performance.scale([], m, fromValues(this.worldSize, this.worldSize, this.worldSize));
-    performance.scale(m, m, fromValues(1, 1, this._pixelPerMeter));
+    this.mercatorMatrix = performance.scale([], m, [
+        this.worldSize,
+        this.worldSize,
+        this.worldSize
+    ]);
+    performance.scale(m, m, [
+        1,
+        1,
+        this._pixelPerMeter
+    ]);
     this.pixelMatrix = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
-    this.invProjMatrix = performance.invert([], m);
     performance.translate(m, m, [
         0,
         0,
         -this.elevation
     ]);
     this.projMatrix = m;
-    this.pixelMatrix2 = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
+    this.invProjMatrix = performance.invert([], m);
+    this.pixelMatrix3D = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
     var xShift = this.width % 2 / 2, yShift = this.height % 2 / 2, angleCos = Math.cos(this.angle), angleSin = Math.sin(this.angle), dx = x - Math.round(x) + angleCos * xShift + angleSin * yShift, dy = y - Math.round(y) + angleCos * yShift + angleSin * xShift;
     var alignedM = new Float64Array(m);
     performance.translate(alignedM, alignedM, [
@@ -38294,7 +38443,12 @@ Transform.prototype.maxPitchScaleFactor = function maxPitchScaleFactor() {
         return 1;
     }
     var coord = this.pointCoordinate(new performance.pointGeometry(0, 0));
-    var p = performance.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, 0, 1);
+    var p = [
+        coord.x * this.worldSize,
+        coord.y * this.worldSize,
+        0,
+        1
+    ];
     var topPoint = performance.transformMat4(p, p, this.pixelMatrix);
     return topPoint[3] / this.cameraToCenterDistance;
 };
@@ -40392,7 +40546,7 @@ HandlerManager.prototype._applyChanges = function _applyChanges() {
 HandlerManager.prototype._updateMapTransform = function _updateMapTransform(combinedResult, combinedEventsInProgress, deactivatedHandlers) {
     var map = this._map;
     var tr = map.transform;
-    var hasTerrain = map.style && map.style.terrainSourceCache && map.style.terrainSourceCache.isEnabled();
+    var hasTerrain = map.style && map.style.terrain;
     if (!hasChange(combinedResult) && !(hasTerrain && this._drag)) {
         return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
     }
@@ -40407,6 +40561,7 @@ HandlerManager.prototype._updateMapTransform = function _updateMapTransform(comb
     }
     map._stop(true);
     around = around || map.transform.centerPoint;
+    var loc = tr.pointLocation(panDelta ? around.sub(panDelta) : around);
     if (bearingDelta) {
         tr.bearing += bearingDelta;
     }
@@ -40416,27 +40571,23 @@ HandlerManager.prototype._updateMapTransform = function _updateMapTransform(comb
     if (zoomDelta) {
         tr.zoom += zoomDelta;
     }
-    if (combinedEventsInProgress.drag && !this._drag) {
-        this._drag = {
-            center: tr.centerPoint,
-            lngLat: tr.pointLocation(around),
-            point: around,
-            delta: panDelta,
-            handlerName: combinedEventsInProgress.drag.handlerName
-        };
-        tr.freezeElevation = true;
-    } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
-        tr.freezeElevation = false;
-        if (hasTerrain) {
+    if (!hasTerrain) {
+        tr.setLocationAtPoint(loc, around);
+    } else {
+        if (combinedEventsInProgress.drag && !this._drag) {
+            this._drag = {
+                center: tr.centerPoint,
+                lngLat: tr.pointLocation(around),
+                point: around,
+                handlerName: combinedEventsInProgress.drag.handlerName
+            };
+            tr.freezeElevation = true;
+        } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
+            tr.freezeElevation = false;
             tr.recalculateZoom();
-        }
-        this._drag = null;
-    } else if (combinedEventsInProgress.drag && this._drag) {
-        this._drag.delta = this._drag.delta.add(panDelta);
-        if (hasTerrain) {
+            this._drag = null;
+        } else if (combinedEventsInProgress.drag && this._drag) {
             tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
-        } else {
-            tr.setLocationAtPoint(this._drag.lngLat, this._drag.point.add(this._drag.delta));
         }
     }
     this._map._update();
@@ -40850,7 +41001,7 @@ var Camera = function (Evented) {
         }
         delete this._easeId;
         this.transform.freezeElevation = false;
-        if (this.transform.terrainSourceCache && this.transform.terrainSourceCache.isEnabled()) {
+        if (this.transform.terrain) {
             this.transform.recalculateZoom();
         }
         var wasZooming = this._zooming;
@@ -41647,10 +41798,10 @@ var Map = function (Camera) {
         return this._update();
     };
     Map.prototype.project = function project(lnglat) {
-        return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
+        return this.style && this.style.terrain ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
     };
     Map.prototype.unproject = function unproject(point) {
-        return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
+        return this.style && this.style.terrain ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
     };
     Map.prototype.isMoving = function isMoving() {
         return this._moving || this.handlers.isMoving();
@@ -41908,26 +42059,18 @@ var Map = function (Camera) {
         }
         return source.loaded();
     };
-    Map.prototype.addTerrain = function addTerrain(id, options) {
-        this.isSourceLoaded(id);
-        this.style.terrainSourceCache.enable(this.style.sourceCaches[id], options);
-        this.transform.updateElevation();
-        this.style.terrainSourceCache.update(this.transform);
+    Map.prototype.setTerrain = function setTerrain(options) {
+        if (options) {
+            this.isSourceLoaded(options.source);
+        }
+        this.style.setTerrain(options);
         this._sourcesDirty = true;
         this._styleDirty = true;
         this.triggerRepaint();
-        this.fire(new performance.Event('terrain'));
         return this;
     };
-    Map.prototype.isTerrainLoaded = function isTerrainLoaded() {
-        return this.style.terrainSourceCache.isEnabled();
-    };
-    Map.prototype.removeTerrain = function removeTerrain() {
-        this.style.terrainSourceCache.disable();
-        this.transform.updateElevation();
-        this.triggerRepaint();
-        this.fire(new performance.Event('terrain'));
-        return this;
+    Map.prototype.getTerrain = function getTerrain() {
+        return this.style.terrain && this.style.terrain.options;
     };
     Map.prototype.areTilesLoaded = function areTilesLoaded() {
         var sources = this.style && this.style.sourceCaches;
@@ -42260,6 +42403,10 @@ var Map = function (Camera) {
             this._sourcesDirty = false;
             this.style._updateSources(this.transform);
         }
+        if (this.style.terrain) {
+            this.style.terrain.sourceCache.update(this.transform);
+        }
+        this.transform.updateElevation();
         this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration, this._crossSourceCollisions);
         this.painter.render(this.style, {
             showTileBoundaries: this.showTileBoundaries,
@@ -43020,8 +43167,7 @@ var Marker = function (Evented) {
             this._pos = this._pos.round();
         }
         DOM.setTransform(this._element, anchorTranslate[this._anchor] + ' translate(' + this._pos.x + 'px, ' + this._pos.y + 'px) ' + pitch + ' ' + rotation);
-        var tsc = this._map.style && this._map.style.terrainSourceCache;
-        if (tsc && tsc.isEnabled() && !this._opacityTimeout) {
+        if (this._map.style && this._map.style.terrain && !this._opacityTimeout) {
             this._opacityTimeout = setTimeout(function () {
                 var lnglat = this$1$1._map.unproject(this$1$1._pos);
                 var metresPerPixel = 40075016.686 * Math.abs(Math.cos(this$1$1._lngLat.lat * Math.PI / 180)) / Math.pow(2, this$1$1._map.transform.tileZoom + 8);
@@ -43645,8 +43791,6 @@ FullscreenControl.prototype._onClickFullscreen = function _onClickFullscreen() {
 };
 
 var TerrainControl = function TerrainControl(options) {
-    if (options === void 0)
-        options = {};
     this.options = options;
     performance.bindAll([
         '_toggleTerrain',
@@ -43670,17 +43814,17 @@ TerrainControl.prototype.onRemove = function onRemove() {
     this._map = undefined;
 };
 TerrainControl.prototype._toggleTerrain = function _toggleTerrain() {
-    if (this._map.style.terrainSourceCache.isEnabled()) {
-        this._map.removeTerrain();
+    if (this._map.getTerrain()) {
+        this._map.setTerrain(null);
     } else {
-        this._map.addTerrain(this.options.id, this.options.options);
+        this._map.setTerrain(this.options);
     }
     this._updateTerrainIcon();
 };
 TerrainControl.prototype._updateTerrainIcon = function _updateTerrainIcon() {
     this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
     this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
-    if (this._map.isTerrainLoaded()) {
+    if (this._map.style.terrain) {
         this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
         this._terrainButton.title = this._map._getUIString('TerrainControl.disableTerrain');
     } else {
