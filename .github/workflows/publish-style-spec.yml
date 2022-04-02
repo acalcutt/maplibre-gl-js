@@ -24,6 +24,7 @@ jobs:
       
       - name: Build GL JS
         run: |
+          npm run build-prod-min
           npm run build-prod
           npm run build-css
       
