@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.6/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.8-pre.3/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -749,7 +749,7 @@ function sameOrigin(url) {
     return a.protocol === window.document.location.protocol && a.host === window.document.location.host;
 }
 const transparentPngUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=';
-function arrayBufferToImage(data, callback, cacheControl, expires) {
+function arrayBufferToImage(data, callback) {
     const img = new Image();
     img.onload = () => {
         callback(null, img);
@@ -761,8 +761,6 @@ function arrayBufferToImage(data, callback, cacheControl, expires) {
     };
     img.onerror = () => callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
     const blob = new Blob([new Uint8Array(data)], { type: 'image/png' });
-    img.cacheControl = cacheControl;
-    img.expires = expires;
     img.src = data.byteLength ? URL.createObjectURL(blob) : transparentPngUrl;
 }
 function arrayBufferToImageBitmap(data, callback) {
@@ -773,12 +771,12 @@ function arrayBufferToImageBitmap(data, callback) {
         callback(new Error(`Could not load image because of ${ e.message }. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.`));
     });
 }
-function arrayBufferToCanvasImageSource(data, callback, cacheControl, expires) {
+function arrayBufferToCanvasImageSource(data, callback) {
     const imageBitmapSupported = typeof createImageBitmap === 'function';
     if (imageBitmapSupported) {
         arrayBufferToImageBitmap(data, callback);
     } else {
-        arrayBufferToImage(data, callback, cacheControl, expires);
+        arrayBufferToImage(data, callback);
     }
 }
 let imageQueue, numImageRequests;
@@ -826,7 +824,17 @@ const getImage = function (requestParameters, callback) {
         if (err) {
             callback(err);
         } else if (data) {
-            arrayBufferToCanvasImageSource(data, callback, cacheControl, expires);
+            const decoratedCallback = (imgErr, imgResult) => {
+                if (imgErr != null) {
+                    callback(imgErr);
+                } else if (imgResult != null) {
+                    callback(null, imgResult, {
+                        cacheControl,
+                        expires
+                    });
+                }
+            };
+            arrayBufferToCanvasImageSource(data, decoratedCallback);
         }
     });
     return {
@@ -1118,6 +1126,7 @@ var source_raster_dem = {
         type: 'enum',
         values: {
             terrarium: {},
+            mtk: {},
             mapbox: {}
         },
         'default': 'mapbox'
@@ -1726,6 +1735,7 @@ var layout_symbol = {
         values: {
             map: {},
             viewport: {},
+            'viewport-glyph': {},
             auto: {}
         },
         'default': 'auto',
@@ -12590,6 +12600,28 @@ function translate$1(queryGeometry, translate, translateAnchor, bearing, pixelsT
     }
     return translated;
 }
+function offsetLine(rings, offset) {
+    const newRings = [];
+    for (let ringIndex = 0; ringIndex < rings.length; ringIndex++) {
+        const ring = rings[ringIndex];
+        const newRing = [];
+        for (let index = 0; index < ring.length; index++) {
+            const a = ring[index - 1];
+            const b = ring[index];
+            const c = ring[index + 1];
+            const aToB = index === 0 ? new pointGeometry(0, 0) : b.sub(a)._unit()._perp();
+            const bToC = index === ring.length - 1 ? new pointGeometry(0, 0) : c.sub(b)._unit()._perp();
+            const extrude = aToB._add(bToC)._unit();
+            const cosHalfAngle = extrude.x * bToC.x + extrude.y * bToC.y;
+            if (cosHalfAngle !== 0) {
+                extrude._mult(1 / cosHalfAngle);
+            }
+            newRing.push(extrude._mult(offset)._add(b));
+        }
+        newRings.push(newRing);
+    }
+    return newRings;
+}
 
 const layout$5 = new Properties({ 'circle-sort-key': new DataDrivenProperty(spec['layout_circle']['circle-sort-key']) });
 const paint$8 = new Properties({
@@ -12993,14 +13025,6 @@ function create() {
     }
     return out;
 }
-function fromValues(x, y, z, w) {
-    var out = new ARRAY_TYPE(4);
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    out[3] = w;
-    return out;
-}
 function multiply(out, a, b) {
     out[0] = a[0] * b[0];
     out[1] = a[1] * b[1];
@@ -13073,7 +13097,12 @@ class CircleStyleLayer extends StyleLayer {
             for (const point of ring) {
                 const transformedPoint = alignWithMap ? point : projectPoint(point, pixelPosMatrix);
                 let adjustedSize = transformedSize;
-                const projectedCenter = transformMat4(create(), fromValues(point.x, point.y, 0, 1), pixelPosMatrix);
+                const projectedCenter = transformMat4([], [
+                    point.x,
+                    point.y,
+                    0,
+                    1
+                ], pixelPosMatrix);
                 if (this.paint.get('circle-pitch-scale') === 'viewport' && this.paint.get('circle-pitch-alignment') === 'map') {
                     adjustedSize *= projectedCenter[3] / transform.cameraToCenterDistance;
                 } else if (this.paint.get('circle-pitch-scale') === 'map' && this.paint.get('circle-pitch-alignment') === 'viewport') {
@@ -13087,7 +13116,12 @@ class CircleStyleLayer extends StyleLayer {
     }
 }
 function projectPoint(p, pixelPosMatrix) {
-    const point = transformMat4(create(), fromValues(p.x, p.y, 0, 1), pixelPosMatrix);
+    const point = transformMat4([], [
+        p.x,
+        p.y,
+        0,
+        1
+    ], pixelPosMatrix);
     return new pointGeometry(point[0] / point[3], point[1] / point[3]);
 }
 function projectQueryGeometry$1(queryGeometry, pixelPosMatrix) {
@@ -14521,8 +14555,9 @@ class FillExtrusionBucket {
             segment.primitiveLength += indices.length / 3;
             segment.vertexLength += numVertices;
         }
-        for (let i = 0; i < centroid.vertexCount; i++)
+        for (let i = 0; i < centroid.vertexCount; i++) {
             this.centroidVertexArray.emplaceBack(Math.floor(centroid.x / centroid.vertexCount), Math.floor(centroid.y / centroid.vertexCount));
+        }
         this.programConfigurations.populatePaintArrays(this.layoutVertexArray.length, feature, index, imagePositions, canonical);
     }
 }
@@ -14690,7 +14725,12 @@ function projectExtrusion(geometry, zBase, zTop, m) {
 function projectQueryGeometry(queryGeometry, pixelPosMatrix, transform, z) {
     const projectedQueryGeometry = [];
     for (const p of queryGeometry) {
-        const v = fromValues(p.x, p.y, z, 1);
+        const v = [
+            p.x,
+            p.y,
+            z,
+            1
+        ];
         transformMat4(v, v, pixelPosMatrix);
         projectedQueryGeometry.push(new pointGeometry(v[0] / v[3], v[1] / v[3]));
     }
@@ -15138,27 +15178,6 @@ function getLineWidth(lineWidth, lineGapWidth) {
     } else {
         return lineWidth;
     }
-}
-function offsetLine(rings, offset) {
-    const newRings = [];
-    const zero = new pointGeometry(0, 0);
-    for (let k = 0; k < rings.length; k++) {
-        const ring = rings[k];
-        const newRing = [];
-        for (let i = 0; i < ring.length; i++) {
-            const a = ring[i - 1];
-            const b = ring[i];
-            const c = ring[i + 1];
-            const aToB = i === 0 ? zero : b.sub(a)._unit()._perp();
-            const bToC = i === ring.length - 1 ? zero : c.sub(b)._unit()._perp();
-            const extrude = aToB._add(bToC)._unit();
-            const cosHalfAngle = extrude.x * bToC.x + extrude.y * bToC.y;
-            extrude._mult(1 / cosHalfAngle);
-            newRing.push(extrude._mult(offset)._add(b));
-        }
-        newRings.push(newRing);
-    }
-    return newRings;
 }
 
 const symbolLayoutAttributes = createLayout([
@@ -17253,14 +17272,6 @@ function evaluateSizeForZoom(sizeData, zoom) {
     };
 }
 
-var symbolSize = /*#__PURE__*/Object.freeze({
-__proto__: null,
-getSizeData: getSizeData,
-evaluateSizeForFeature: evaluateSizeForFeature,
-evaluateSizeForZoom: evaluateSizeForZoom,
-SIZE_PACK_FACTOR: SIZE_PACK_FACTOR
-});
-
 class Anchor extends pointGeometry {
     constructor(x, y, angle, segment) {
         super(x, y);
@@ -18020,7 +18031,7 @@ function performSymbolLayout(bucket, glyphMap, glyphPositions, imageMap, imagePo
         ];
     }
     const lineHeight = layout.get('text-line-height') * ONE_EM;
-    const textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point';
+    const textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point';
     const keepUpright = layout.get('text-keep-upright');
     const textSize = layout.get('text-size');
     for (const feature of bucket.features) {
@@ -18143,7 +18154,7 @@ function addFeature(bucket, feature, shapedTextOrientations, shapedIcon, imageMa
     const layout = bucket.layers[0].layout;
     const iconOffset = layout.get('icon-offset').evaluate(feature, {}, canonical);
     const defaultHorizontalShaping = getDefaultHorizontalShaping(shapedTextOrientations.horizontal);
-    const glyphSize = 24, fontScale = layoutTextSize / glyphSize, textBoxScale = bucket.tilePixelRatio * fontScale, textMaxBoxScale = bucket.tilePixelRatio * textMaxSize / glyphSize, iconBoxScale = bucket.tilePixelRatio * layoutIconSize, symbolMinDistance = bucket.tilePixelRatio * layout.get('symbol-spacing'), textPadding = layout.get('text-padding') * bucket.tilePixelRatio, iconPadding = layout.get('icon-padding') * bucket.tilePixelRatio, textMaxAngle = layout.get('text-max-angle') / 180 * Math.PI, textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point', iconAlongLine = layout.get('icon-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point', symbolPlacement = layout.get('symbol-placement'), textRepeatDistance = symbolMinDistance / 2;
+    const glyphSize = 24, fontScale = layoutTextSize / glyphSize, textBoxScale = bucket.tilePixelRatio * fontScale, textMaxBoxScale = bucket.tilePixelRatio * textMaxSize / glyphSize, iconBoxScale = bucket.tilePixelRatio * layoutIconSize, symbolMinDistance = bucket.tilePixelRatio * layout.get('symbol-spacing'), textPadding = layout.get('text-padding') * bucket.tilePixelRatio, iconPadding = layout.get('icon-padding') * bucket.tilePixelRatio, textMaxAngle = layout.get('text-max-angle') / 180 * Math.PI, textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point', iconAlongLine = layout.get('icon-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point', symbolPlacement = layout.get('symbol-placement'), textRepeatDistance = symbolMinDistance / 2;
     const iconTextFit = layout.get('icon-text-fit');
     let verticallyShapedIcon;
     if (shapedIcon && iconTextFit !== 'none') {
@@ -18554,7 +18565,7 @@ class SymbolBucket {
             }
             if (text) {
                 const fontStack = textFont.evaluate(evaluationFeature, {}, canonical).join(',');
-                const textAlongLine = layout.get('text-rotation-alignment') === 'map' && layout.get('symbol-placement') !== 'point';
+                const textAlongLine = layout.get('text-rotation-alignment') !== 'viewport' && layout.get('symbol-placement') !== 'point';
                 this.allowVerticalPlacement = this.writingModes && this.writingModes.indexOf(exports.WritingMode.vertical) >= 0;
                 for (const section of text.sections) {
                     if (!section.image) {
@@ -19018,7 +19029,7 @@ class SymbolStyleLayer extends StyleLayer {
             }
         }
         if (this.layout.get('text-pitch-alignment') === 'auto') {
-            this.layout._values['text-pitch-alignment'] = this.layout.get('text-rotation-alignment');
+            this.layout._values['text-pitch-alignment'] = this.layout.get('text-rotation-alignment') === 'map' ? 'map' : 'viewport';
         }
         if (this.layout.get('icon-pitch-alignment') === 'auto') {
             this.layout._values['icon-pitch-alignment'] = this.layout.get('icon-rotation-alignment');
@@ -19756,8 +19767,8 @@ class DEMData {
         this.uid = uid;
         if (data.height !== data.width)
             throw new RangeError('DEM tiles must be square');
-        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium') {
-            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox" and "terrarium".`);
+        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
+            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".`);
             return;
         }
         this.stride = data.height;
@@ -19776,7 +19787,7 @@ class DEMData {
         this.data[this._idx(dim, dim)] = this.data[this._idx(dim - 1, dim - 1)];
         this.min = Number.MAX_SAFE_INTEGER;
         this.max = Number.MIN_SAFE_INTEGER;
-        for (let x = 0; x < dim; x++)
+        for (let x = 0; x < dim; x++) {
             for (let y = 0; y < dim; y++) {
                 const ele = this.get(x, y);
                 if (ele > this.max)
@@ -19784,20 +19795,56 @@ class DEMData {
                 if (ele < this.min)
                     this.min = ele;
             }
+        }
     }
     get(x, y) {
         const pixels = new Uint8Array(this.data.buffer);
         const index = this._idx(x, y) * 4;
-        const unpack = this.encoding === 'terrarium' ? this._unpackTerrarium : this._unpackMapbox;
+        let unpack = this._unpackMapbox;
+        if (this.encoding === 'terrarium')
+            unpack = this._unpackTerrarium;
+        if (this.encoding === 'mtk')
+            unpack = this._unpackMTK;
         return unpack(pixels[index], pixels[index + 1], pixels[index + 2]);
     }
+    getHillshadingUnpackVector() {
+        if (this.encoding === 'terrarium')
+            return [
+                256,
+                1,
+                1 / 256,
+                32768
+            ];
+        if (this.encoding === 'mtk')
+            return [
+                6553.6,
+                25.6,
+                0.1,
+                10000
+            ];
+        return [
+            6553.6,
+            25.6,
+            0.1,
+            10000
+        ];
+    }
     getUnpackVector() {
-        return this.encoding === 'terrarium' ? [
-            256,
-            1,
-            1 / 256,
-            32768
-        ] : [
+        if (this.encoding === 'terrarium')
+            return [
+                256,
+                1,
+                1 / 256,
+                32768
+            ];
+        if (this.encoding === 'mtk')
+            return [
+                65536 * 0.03,
+                256 * 0.03,
+                0.03,
+                10000
+            ];
+        return [
             6553.6,
             25.6,
             0.1,
@@ -19811,6 +19858,9 @@ class DEMData {
     }
     _unpackMapbox(r, g, b) {
         return (r * 256 * 256 + g * 256 + b) / 10 - 10000;
+    }
+    _unpackMTK(r, g, b) {
+        return (r * 256 * 256 + g * 256 + b) * 0.03 - 10000;
     }
     _unpackTerrarium(r, g, b) {
         return r * 256 + g + b / 256 - 32768;
@@ -19870,19 +19920,6 @@ class DictionaryCoder {
     }
 }
 
-function __rest(s, e) {
-    var t = {};
-    for (var p in s)
-        if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-            t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === 'function')
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-}
-
 class GeoJSONFeature {
     constructor(vectorTileFeature, z, x, y, id) {
         this.type = 'Feature';
@@ -19903,11 +19940,12 @@ class GeoJSONFeature {
         this._geometry = g;
     }
     toJSON() {
-        const _a = this, json = __rest(_a, [
-                '_geometry',
-                '_vectorTileFeature'
-            ]);
-        json.geometry = this.geometry;
+        const json = { geometry: this.geometry };
+        for (const i in this) {
+            if (i === '_geometry' || i === '_vectorTileFeature')
+                continue;
+            json[i] = this[i];
+        }
         return json;
     }
 }
@@ -20271,7 +20309,6 @@ exports.exported$1 = exported;
 exports.extend = extend$1;
 exports.filterObject = filterObject;
 exports.fromScaling = fromScaling;
-exports.fromValues = fromValues;
 exports.getAnchorAlignment = getAnchorAlignment;
 exports.getAnchorJustification = getAnchorJustification;
 exports.getArrayBuffer = getArrayBuffer;
@@ -20319,7 +20356,6 @@ exports.setCacheLimits = setCacheLimits;
 exports.setRTLTextPlugin = setRTLTextPlugin;
 exports.spec = spec;
 exports.sphericalToCartesian = sphericalToCartesian;
-exports.symbolSize = symbolSize;
 exports.toEvaluationFeature = toEvaluationFeature;
 exports.transformMat4 = transformMat4;
 exports.translate = translate;
@@ -22985,13 +23021,6 @@ function clone(a) {
     out[2] = a[2];
     return out;
 }
-function fromValues(x, y, z) {
-    var out = new performance.ARRAY_TYPE(3);
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    return out;
-}
 function add(out, a, b) {
     out[0] = a[0] + b[0];
     out[1] = a[1] + b[1];
@@ -23562,7 +23591,7 @@ function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback)
 
 const INF = 100000000000000000000;
 class TinySDF {
-    constructor({fontSize = 24, buffer = 3, radius = 8, cutoff = 0.25, fontFamily = 'sans-serif', fontWeight = 'normal', fontStyle = 'normal'}) {
+    constructor({fontSize = 24, buffer = 3, radius = 8, cutoff = 0.25, fontFamily = 'sans-serif', fontWeight = 'normal', fontStyle = 'normal'} = {}) {
         this.buffer = buffer;
         this.cutoff = cutoff;
         this.radius = radius;
@@ -23592,13 +23621,13 @@ class TinySDF {
             actualBoundingBoxLeft,
             actualBoundingBoxRight
         } = this.ctx.measureText(char);
-        const glyphTop = Math.floor(actualBoundingBoxAscent);
+        const glyphTop = Math.ceil(actualBoundingBoxAscent);
         const glyphLeft = 0;
         const glyphWidth = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxRight - actualBoundingBoxLeft));
-        const glyphHeight = Math.min(this.size - this.buffer, Math.ceil(actualBoundingBoxAscent) + Math.ceil(actualBoundingBoxDescent));
+        const glyphHeight = Math.min(this.size - this.buffer, glyphTop + Math.ceil(actualBoundingBoxDescent));
         const width = glyphWidth + 2 * this.buffer;
         const height = glyphHeight + 2 * this.buffer;
-        const len = width * height;
+        const len = Math.max(width * height, 0);
         const data = new Uint8ClampedArray(len);
         const glyph = {
             data,
@@ -23614,7 +23643,7 @@ class TinySDF {
             return glyph;
         const {ctx, buffer, gridInner, gridOuter} = this;
         ctx.clearRect(buffer, buffer, glyphWidth, glyphHeight);
-        ctx.fillText(char, buffer, buffer + glyphTop + 1);
+        ctx.fillText(char, buffer, buffer + glyphTop);
         const imgData = ctx.getImageData(buffer, buffer, glyphWidth, glyphHeight);
         gridOuter.fill(INF, 0, len);
         gridInner.fill(0, 0, len);
@@ -23811,6 +23840,7 @@ class GlyphManager {
             });
         }
         const char = tinySDF.draw(String.fromCharCode(id));
+        const topAdjustment = 27;
         return {
             id,
             bitmap: new performance.AlphaImage({
@@ -23821,7 +23851,7 @@ class GlyphManager {
                 width: char.glyphWidth || 24,
                 height: char.glyphHeight || 24,
                 left: char.glyphLeft || 0,
-                top: char.glyphTop || -8,
+                top: char.glyphTop - topAdjustment || -8,
                 advance: char.glyphAdvance || 24
             }
         };
@@ -24372,7 +24402,7 @@ class RasterTileSource extends performance.Evented {
     }
     loadTile(tile, callback) {
         const url = tile.tileID.canonical.url(this.tiles, this.map.getPixelRatio(), this.scheme);
-        tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), (err, img) => {
+        tile.request = performance.getImage(this.map._requestManager.transformRequest(url, performance.ResourceType.Tile), (err, img, expiry) => {
             delete tile.request;
             if (tile.aborted) {
                 tile.state = 'unloaded';
@@ -24382,9 +24412,7 @@ class RasterTileSource extends performance.Evented {
                 callback(err);
             } else if (img) {
                 if (this.map._refreshExpiredTiles)
-                    tile.setExpiryData(img);
-                delete img.cacheControl;
-                delete img.expires;
+                    tile.setExpiryData(expiry);
                 const context = this.map.painter.context;
                 const gl = context.gl;
                 tile.texture = this.map.painter.getTileTexture(img.width);
@@ -25818,8 +25846,11 @@ class SourceCache extends performance.Evented {
                 }
             }
         });
+        this.on('dataloading', () => {
+            this._sourceErrored = false;
+        });
         this.on('error', () => {
-            this._sourceErrored = true;
+            this._sourceErrored = this._source.loaded();
         });
         this._source = create(id, options, dispatcher, this);
         this._tiles = {};
@@ -25839,6 +25870,7 @@ class SourceCache extends performance.Evented {
         }
     }
     onRemove(map) {
+        this.clearTiles();
         if (this._source && this._source.onRemove) {
             this._source.onRemove(map);
         }
@@ -25975,11 +26007,13 @@ class SourceCache extends performance.Evented {
         if (this.getSource().type === 'raster-dem' && tile.dem)
             this._backfillDEM(tile);
         this._state.initializeTileState(tile, this.map ? this.map.painter : null);
-        this._source.fire(new performance.Event('data', {
-            dataType: 'source',
-            tile,
-            coord: tile.tileID
-        }));
+        if (!tile.aborted) {
+            this._source.fire(new performance.Event('data', {
+                dataType: 'source',
+                tile,
+                coord: tile.tileID
+            }));
+        }
     }
     _backfillDEM(tile) {
         const renderables = this.getRenderableIds();
@@ -26138,6 +26172,8 @@ class SourceCache extends performance.Evented {
                 if (tileID.canonical.z > this._source.minzoom) {
                     const parent = tileID.scaledTo(tileID.canonical.z - 1);
                     parents[parent.key] = parent;
+                    const parent2 = tileID.scaledTo(Math.max(this._source.minzoom, Math.min(tileID.canonical.z, 5)));
+                    parents[parent2.key] = parent2;
                 }
             }
             idealTileIDs = idealTileIDs.concat(Object.values(parents));
@@ -26166,7 +26202,7 @@ class SourceCache extends performance.Evented {
                     retain[id] = parentsForFading[id];
                 }
             }
-            if (this.style && this.style.terrainSourceCache && this.style.terrainSourceCache.isEnabled()) {
+            if (this.style && this.style.terrain) {
                 const idealRasterTileIDs = {};
                 const missingTileIDs = {};
                 for (const tileID of idealTileIDs) {
@@ -26375,8 +26411,8 @@ class SourceCache extends performance.Evented {
         if (!transform)
             return tileResults;
         const cameraPointQueryGeometry = has3DLayer ? transform.getCameraQueryGeometry(pointQueryGeometry) : pointQueryGeometry;
-        const queryGeometry = pointQueryGeometry.map(p => transform.pointCoordinate(p));
-        const cameraQueryGeometry = cameraPointQueryGeometry.map(p => transform.pointCoordinate(p));
+        const queryGeometry = pointQueryGeometry.map(p => transform.pointCoordinate3D(p));
+        const cameraQueryGeometry = cameraPointQueryGeometry.map(p => transform.pointCoordinate3D(p));
         const ids = this.getIds();
         let minX = Infinity;
         let minY = Infinity;
@@ -26472,371 +26508,6 @@ function compareTileId(a, b) {
 }
 function isRasterType(type) {
     return type === 'raster' || type === 'image' || type === 'video';
-}
-
-var posAttributes = performance.createLayout([{
-        name: 'a_pos',
-        type: 'Int16',
-        components: 2
-    }]);
-
-class TerrainSourceCache extends performance.Evented {
-    constructor(style) {
-        super();
-        this._style = style;
-        this._tiles = {};
-        this._renderableTiles = [];
-        this._renderHistory = [];
-        this._demMatrixCache = {};
-        this._sourceTileCache = {};
-        this._coordsIndex = [];
-        this._coordsTextureSize = 1024;
-        this.minzoom = 0;
-        this.maxzoom = 22;
-        this.tileSize = 512;
-        this.meshSize = 128;
-        this.exaggeration = 1;
-        this.elevationOffset = 450;
-        this.qualityFactor = 2;
-        this.deltaZoom = 1;
-        this.rerender = {};
-        style.on('data', e => {
-            if (e.dataType === 'source' && e.coord && this.isEnabled()) {
-                if (e.sourceId === this._sourceCache.id) {
-                    for (const key in this._tiles) {
-                        const tile = this._tiles[key];
-                        if (tile.tileID.equals(e.coord) || tile.tileID.isChildOf(e.coord)) {
-                            tile.timeLoaded = Date.now();
-                            tile.clearTextures(this._style.map.painter);
-                        }
-                    }
-                    style.map.transform.updateElevation();
-                }
-                if (e.source.type === 'geojson') {
-                    this.rerender[e.sourceId] = this.rerender[e.sourceId] || {};
-                    this.rerender[e.sourceId][e.tile.tileID.key] = true;
-                }
-            }
-        });
-    }
-    enable(sourceCache, options) {
-        sourceCache.usedForTerrain = true;
-        sourceCache.tileSize = this.tileSize * 2 ** this.deltaZoom;
-        this._sourceCache = sourceCache;
-        [
-            'exaggeration',
-            'elevationOffset'
-        ].forEach(key => {
-            if (options && options[key] !== undefined)
-                this[key] = options[key];
-        });
-    }
-    disable() {
-        if (!this._sourceCache)
-            return;
-        this._sourceCache.usedForTerrain = false;
-        this._sourceCache = null;
-        for (const key in this._tiles) {
-            const tile = this._tiles[key];
-            tile.textures.forEach(t => t.destroy());
-            tile.textures = [];
-        }
-        this._tiles = {};
-    }
-    isEnabled() {
-        return !!this._sourceCache;
-    }
-    update(transform) {
-        if (!this.isEnabled() || !this._sourceCache._sourceLoaded)
-            return;
-        transform.updateElevation();
-        this._sourceCache.update(transform);
-        this._renderableTiles = [];
-        const tileIDs = {};
-        for (const tileID of transform.coveringTiles({
-                tileSize: this.tileSize,
-                minzoom: this.minzoom,
-                maxzoom: this.maxzoom,
-                reparseOverscaled: false
-            })) {
-            this._renderableTiles.push(tileID.key);
-            tileIDs[tileID.key] = true;
-            if (!this._tiles[tileID.key]) {
-                tileID.posMatrix = new Float64Array(16);
-                performance.ortho(tileID.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
-            }
-        }
-        this._renderHistory = this._renderHistory.filter((i, p) => this._renderHistory.indexOf(i) === p);
-        while (this._renderHistory.length > 150) {
-            const tile = this._tiles[this._renderHistory.shift()];
-            if (tile && !tileIDs[tile.tileID.key]) {
-                tile.clearTextures(this._style.map.painter);
-                this._tiles[tile.tileID.key] = null;
-            }
-        }
-    }
-    getRenderableTiles() {
-        return this._renderableTiles.map(key => this.getTileByID(key));
-    }
-    getTileByID(id) {
-        return this._tiles[id];
-    }
-    getTerrainCoords(tileID) {
-        const coords = {};
-        for (const key of this._renderableTiles) {
-            const _tileID = this._tiles[key].tileID;
-            if (_tileID.equals(tileID)) {
-                const coord = tileID.clone();
-                coord.posMatrix = new Float64Array(16);
-                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                coords[key] = coord;
-            } else if (_tileID.canonical.isChildOf(tileID.canonical)) {
-                const coord = tileID.clone();
-                coord.posMatrix = new Float64Array(16);
-                const dz = _tileID.canonical.z - tileID.canonical.z;
-                const dx = _tileID.canonical.x - (_tileID.canonical.x >> dz << dz);
-                const dy = _tileID.canonical.y - (_tileID.canonical.y >> dz << dz);
-                const size = performance.EXTENT >> dz;
-                performance.ortho(coord.posMatrix, 0, size, 0, size, 0, 1);
-                performance.translate(coord.posMatrix, coord.posMatrix, [
-                    -dx * size,
-                    -dy * size,
-                    0
-                ]);
-                coords[key] = coord;
-            } else if (tileID.canonical.isChildOf(_tileID.canonical)) {
-                const coord = tileID.clone();
-                coord.posMatrix = new Float64Array(16);
-                const dz = tileID.canonical.z - _tileID.canonical.z;
-                const dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
-                const dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
-                const size = performance.EXTENT >> dz;
-                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
-                performance.translate(coord.posMatrix, coord.posMatrix, [
-                    dx * size,
-                    dy * size,
-                    0
-                ]);
-                performance.scale(coord.posMatrix, coord.posMatrix, [
-                    1 / 2 ** dz,
-                    1 / 2 ** dz,
-                    0
-                ]);
-                coords[key] = coord;
-            }
-        }
-        return coords;
-    }
-    getSourceTile(tileID, searchForDEM) {
-        if (!this.isEnabled())
-            return null;
-        const source = this._sourceCache._source;
-        let z = tileID.overscaledZ - this.deltaZoom;
-        if (z > source.maxzoom)
-            z = source.maxzoom;
-        if (z < source.minzoom)
-            return null;
-        if (!this._sourceTileCache[tileID.key])
-            this._sourceTileCache[tileID.key] = tileID.scaledTo(z).key;
-        let tile = this._sourceCache.getTileByID(this._sourceTileCache[tileID.key]);
-        if (!(tile && tile.dem) && searchForDEM)
-            while (z > source.minzoom && !(tile && tile.dem))
-                tile = this._sourceCache.getTileByID(tileID.scaledTo(z--).key);
-        return tile;
-    }
-    getTerrain(tileID) {
-        if (!this.isEnabled() || !tileID)
-            return null;
-        if (!this._emptyDemTexture) {
-            const context = this._style.map.painter.context;
-            const image = new performance.RGBAImage({
-                width: 1,
-                height: 1
-            }, new Uint8Array(1 * 4));
-            this._emptyDepthTexture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
-            this._emptyDemUnpack = [
-                0,
-                0,
-                0,
-                0
-            ];
-            this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
-                width: 1,
-                height: 1
-            }), context.gl.RGBA, { premultiply: false });
-            this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-            this._emptyDemMatrix = performance.identity([]);
-        }
-        const sourceTile = this.getSourceTile(tileID, true);
-        if (sourceTile && sourceTile.dem && (!sourceTile.demTexture || sourceTile.needsTerrainPrepare)) {
-            const context = this._style.map.painter.context;
-            sourceTile.demTexture = this._style.map.painter.getTileTexture(sourceTile.dem.stride);
-            if (sourceTile.demTexture)
-                sourceTile.demTexture.update(sourceTile.dem.getPixels(), { premultiply: false });
-            else
-                sourceTile.demTexture = new Texture(context, sourceTile.dem.getPixels(), context.gl.RGBA, { premultiply: false });
-            sourceTile.demTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-            sourceTile.needsTerrainPrepare = false;
-        }
-        const matrixKey = sourceTile && sourceTile + sourceTile.tileID.key + tileID.key;
-        if (matrixKey && !this._demMatrixCache[matrixKey]) {
-            const maxzoom = this._sourceCache._source.maxzoom;
-            let dz = tileID.canonical.z - sourceTile.tileID.canonical.z;
-            if (tileID.overscaledZ > tileID.canonical.z) {
-                if (tileID.canonical.z >= maxzoom)
-                    dz = tileID.canonical.z - maxzoom;
-                else
-                    performance.warnOnce('cannot calculate elevation if elevation maxzoom > source.maxzoom');
-            }
-            const dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
-            const dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
-            const demMatrix = performance.fromScaling(new Float64Array(16), [
-                1 / (performance.EXTENT << dz),
-                1 / (performance.EXTENT << dz),
-                0
-            ]);
-            performance.translate(demMatrix, demMatrix, [
-                dx * performance.EXTENT,
-                dy * performance.EXTENT,
-                0
-            ]);
-            this._demMatrixCache[tileID.key] = {
-                matrix: demMatrix,
-                coord: tileID
-            };
-        }
-        return {
-            'u_depth': 2,
-            'u_terrain': 3,
-            'u_terrain_dim': sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
-            'u_terrain_matrix': matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
-            'u_terrain_unpack': sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
-            'u_terrain_offset': this.elevationOffset,
-            'u_terrain_exaggeration': this.exaggeration,
-            texture: (sourceTile && sourceTile.demTexture || this._emptyDemTexture).texture,
-            depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
-            tile: sourceTile
-        };
-    }
-    getElevation(tileID, x, y, extent = performance.EXTENT) {
-        if (!this.isEnabled())
-            return 0;
-        if (!(x >= 0 && x < extent && y >= 0 && y < extent))
-            return this.elevationOffset;
-        let elevation = 0;
-        const terrain = this.getTerrain(tileID);
-        if (terrain.tile && terrain.tile.dem) {
-            const pos = transformMat4([], [
-                x / extent * performance.EXTENT,
-                y / extent * performance.EXTENT
-            ], terrain.u_terrain_matrix);
-            const coord = [
-                pos[0] * terrain.tile.dem.dim,
-                pos[1] * terrain.tile.dem.dim
-            ];
-            const c = [
-                Math.floor(coord[0]),
-                Math.floor(coord[1])
-            ];
-            const tl = terrain.tile.dem.get(c[0], c[1]);
-            const tr = terrain.tile.dem.get(c[0], c[1] + 1);
-            const bl = terrain.tile.dem.get(c[0] + 1, c[1]);
-            const br = terrain.tile.dem.get(c[0] + 1, c[1] + 1);
-            elevation = performance.number(performance.number(tl, tr, coord[0] - c[0]), performance.number(bl, br, coord[0] - c[0]), coord[1] - c[1]);
-        }
-        return elevation + this.elevationOffset;
-    }
-    getElevationWithExaggeration(tileID, x, y, extent = performance.EXTENT) {
-        if (!this.isEnabled())
-            return 0;
-        return this.getElevation(tileID, x, y, extent) * this.exaggeration;
-    }
-    getRTTFramebuffer(painter) {
-        if (!this._rttFramebuffer) {
-            const size = this.tileSize * this.qualityFactor;
-            this._rttFramebuffer = painter.context.createFramebuffer(size, size, true);
-            this._rttFramebuffer.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, size, size));
-        }
-        return this._rttFramebuffer;
-    }
-    getFramebuffer(painter, texture) {
-        const width = painter.width / devicePixelRatio;
-        const height = painter.height / devicePixelRatio;
-        if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
-            this._fbo.destroy();
-            this._fboCoordsTexture.destroy();
-            this._fboDepthTexture.destroy();
-            delete this._fbo;
-            delete this._fboDepthTexture;
-            delete this._fboCoordsTexture;
-        }
-        if (!this._fboCoordsTexture) {
-            this._fboCoordsTexture = new Texture(painter.context, {
-                width,
-                height,
-                data: null
-            }, painter.context.gl.RGBA, { premultiply: false });
-            this._fboCoordsTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
-        }
-        if (!this._fboDepthTexture) {
-            this._fboDepthTexture = new Texture(painter.context, {
-                width,
-                height,
-                data: null
-            }, painter.context.gl.RGBA, { premultiply: false });
-            this._fboDepthTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
-        }
-        if (!this._fbo) {
-            this._fbo = painter.context.createFramebuffer(width, height, true);
-            this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
-        }
-        this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
-        return this._fbo;
-    }
-    tilesAfterTime(time = Date.now()) {
-        return Object.values(this._tiles).filter(t => t.timeLoaded >= time);
-    }
-    getTerrainMesh(context) {
-        if (this._mesh)
-            return this._mesh;
-        const vertexArray = new performance.PosArray(), indexArray = new performance.TriangleIndexArray();
-        const meshSize = this.meshSize, delta = performance.EXTENT / meshSize, meshSize2 = meshSize * meshSize;
-        for (let y = 0; y <= meshSize; y++)
-            for (let x = 0; x <= meshSize; x++)
-                vertexArray.emplaceBack(x * delta, y * delta);
-        for (let y = 0; y < meshSize2; y += meshSize + 1)
-            for (let x = 0; x < meshSize; x++) {
-                indexArray.emplaceBack(x + y, meshSize + x + y + 1, meshSize + x + y + 2);
-                indexArray.emplaceBack(x + y, meshSize + x + y + 2, x + y + 1);
-            }
-        this._mesh = {
-            indexBuffer: context.createIndexBuffer(indexArray),
-            vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
-            segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
-        };
-        return this._mesh;
-    }
-    getCoordsTexture(context) {
-        if (this._coordsTexture)
-            return this._coordsTexture;
-        const data = new Uint8Array(this._coordsTextureSize * this._coordsTextureSize * 4);
-        for (let y = 0, i = 0; y < this._coordsTextureSize; y++)
-            for (let x = 0; x < this._coordsTextureSize; x++, i += 4) {
-                data[i + 0] = x & 255;
-                data[i + 1] = y & 255;
-                data[i + 2] = x >> 8 << 4 | y >> 8;
-                data[i + 3] = 0;
-            }
-        const image = new performance.RGBAImage({
-            width: this._coordsTextureSize,
-            height: this._coordsTextureSize
-        }, new Uint8Array(data.buffer));
-        const texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
-        texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
-        this._coordsTexture = texture;
-        return texture;
-    }
 }
 
 function workerFactory() {
@@ -27635,10 +27306,20 @@ function getGlCoordMatrix(posMatrix, pitchWithMap, rotateWithMap, transform, pix
 function project(point, matrix, getElevation) {
     let pos;
     if (getElevation) {
-        pos = performance.fromValues(point.x, point.y, getElevation(point.x, point.y), 1);
+        pos = [
+            point.x,
+            point.y,
+            getElevation(point.x, point.y),
+            1
+        ];
         performance.transformMat4(pos, pos, matrix);
     } else {
-        pos = performance.fromValues(point.x, point.y, 0, 1);
+        pos = [
+            point.x,
+            point.y,
+            0,
+            1
+        ];
         xyTransformMat4(pos, pos, matrix);
     }
     const w = pos[3];
@@ -27656,7 +27337,7 @@ function isVisible(anchorPos, clippingBuffer) {
     const inPaddedViewport = x >= -clippingBuffer[0] && x <= clippingBuffer[0] && y >= -clippingBuffer[1] && y <= clippingBuffer[1];
     return inPaddedViewport;
 }
-function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, getElevation) {
+function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, rotateToLine, getElevation) {
     const sizeData = isText ? bucket.textSizeData : bucket.iconSizeData;
     const partiallyEvaluatedSize = performance.evaluateSizeForZoom(sizeData, painter.transform.zoom);
     const clippingBuffer = [
@@ -27678,10 +27359,20 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         useVertical = false;
         let anchorPos;
         if (getElevation) {
-            anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, getElevation(symbol.anchorX, symbol.anchorY), 1);
+            anchorPos = [
+                symbol.anchorX,
+                symbol.anchorY,
+                getElevation(symbol.anchorX, symbol.anchorY),
+                1
+            ];
             performance.transformMat4(anchorPos, anchorPos, posMatrix);
         } else {
-            anchorPos = performance.fromValues(symbol.anchorX, symbol.anchorY, 0, 1);
+            anchorPos = [
+                symbol.anchorX,
+                symbol.anchorY,
+                0,
+                1
+            ];
             xyTransformMat4(anchorPos, anchorPos, posMatrix);
         }
         if (!isVisible(anchorPos, clippingBuffer)) {
@@ -27695,9 +27386,9 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         const tileAnchorPoint = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
         const anchorPoint = project(tileAnchorPoint, labelPlaneMatrix, getElevation).point;
         const projectionCache = {};
-        const placeUnflipped = placeGlyphsAlongLine(symbol, pitchScaledFontSize, false, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation);
+        const placeUnflipped = placeGlyphsAlongLine(symbol, pitchScaledFontSize, false, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, rotateToLine, getElevation);
         useVertical = placeUnflipped.useVertical;
-        if (placeUnflipped.notEnoughRoom || useVertical || placeUnflipped.needsFlipping && placeGlyphsAlongLine(symbol, pitchScaledFontSize, true, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation).notEnoughRoom) {
+        if (placeUnflipped.notEnoughRoom || useVertical || placeUnflipped.needsFlipping && placeGlyphsAlongLine(symbol, pitchScaledFontSize, true, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, bucket.glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, rotateToLine, getElevation).notEnoughRoom) {
             hideGlyphs(symbol.numGlyphs, dynamicLayoutVertexArray);
         }
     }
@@ -27707,16 +27398,16 @@ function updateLineLabels(bucket, posMatrix, painter, isText, labelPlaneMatrix, 
         bucket.icon.dynamicLayoutVertexBuffer.updateData(dynamicLayoutVertexArray);
     }
 }
-function placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation) {
+function placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation) {
     const glyphEndIndex = symbol.glyphStartIndex + symbol.numGlyphs;
     const lineStartIndex = symbol.lineStartIndex;
     const lineEndIndex = symbol.lineStartIndex + symbol.lineLength;
     const firstGlyphOffset = glyphOffsetArray.getoffsetX(symbol.glyphStartIndex);
     const lastGlyphOffset = glyphOffsetArray.getoffsetX(glyphEndIndex - 1);
-    const firstPlacedGlyph = placeGlyphAlongLine(fontScale * firstGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+    const firstPlacedGlyph = placeGlyphAlongLine(fontScale * firstGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
     if (!firstPlacedGlyph)
         return null;
-    const lastPlacedGlyph = placeGlyphAlongLine(fontScale * lastGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+    const lastPlacedGlyph = placeGlyphAlongLine(fontScale * lastGlyphOffset, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
     if (!lastPlacedGlyph)
         return null;
     return {
@@ -27737,7 +27428,7 @@ function requiresOrientationChange(writingMode, firstPoint, lastPoint, aspectRat
     }
     return null;
 }
-function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, getElevation) {
+function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, labelPlaneMatrix, glCoordMatrix, glyphOffsetArray, lineVertexArray, dynamicLayoutVertexArray, anchorPoint, tileAnchorPoint, projectionCache, aspectRatio, rotateToLine, getElevation) {
     const fontScale = fontSize / 24;
     const lineOffsetX = symbol.lineOffsetX * fontScale;
     const lineOffsetY = symbol.lineOffsetY * fontScale;
@@ -27746,7 +27437,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         const glyphEndIndex = symbol.glyphStartIndex + symbol.numGlyphs;
         const lineStartIndex = symbol.lineStartIndex;
         const lineEndIndex = symbol.lineStartIndex + symbol.lineLength;
-        const firstAndLastGlyph = placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+        const firstAndLastGlyph = placeFirstAndLastGlyph(fontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
         if (!firstAndLastGlyph) {
             return { notEnoughRoom: true };
         }
@@ -27760,7 +27451,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
         }
         placedGlyphs = [firstAndLastGlyph.first];
         for (let glyphIndex = symbol.glyphStartIndex + 1; glyphIndex < glyphEndIndex - 1; glyphIndex++) {
-            placedGlyphs.push(placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(glyphIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation));
+            placedGlyphs.push(placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(glyphIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation));
         }
         placedGlyphs.push(firstAndLastGlyph.last);
     } else {
@@ -27775,7 +27466,7 @@ function placeGlyphsAlongLine(symbol, fontSize, flip, keepUpright, posMatrix, la
                 return orientationChange;
             }
         }
-        const singleGlyph = placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(symbol.glyphStartIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, symbol.lineStartIndex, symbol.lineStartIndex + symbol.lineLength, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+        const singleGlyph = placeGlyphAlongLine(fontScale * glyphOffsetArray.getoffsetX(symbol.glyphStartIndex), lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, symbol.segment, symbol.lineStartIndex, symbol.lineStartIndex + symbol.lineLength, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation);
         if (!singleGlyph)
             return { notEnoughRoom: true };
         placedGlyphs = [singleGlyph];
@@ -27790,7 +27481,7 @@ function projectTruncatedLineSegment(previousTilePoint, currentTilePoint, previo
     const projectedUnitSegment = previousProjectedPoint.sub(projectedUnitVertex);
     return previousProjectedPoint.add(projectedUnitSegment._mult(minimumLength / projectedUnitSegment.mag()));
 }
-function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, anchorSegment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation) {
+function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoint, tileAnchorPoint, anchorSegment, lineStartIndex, lineEndIndex, lineVertexArray, labelPlaneMatrix, projectionCache, rotateToLine, getElevation) {
     const combinedOffsetX = flip ? offsetX - lineOffsetX : offsetX + lineOffsetX;
     let dir = combinedOffsetX > 0 ? 1 : -1;
     let angle = 0;
@@ -27836,7 +27527,7 @@ function placeGlyphAlongLine(offsetX, lineOffsetX, lineOffsetY, flip, anchorPoin
     pathVertices.push(p);
     return {
         point: p,
-        angle: segmentAngle,
+        angle: rotateToLine ? segmentAngle : 0,
         path: pathVertices
     };
 }
@@ -27915,7 +27606,7 @@ class CollisionIndex {
         const projectionCache = {};
         const lineOffsetX = symbol.lineOffsetX * labelPlaneFontScale;
         const lineOffsetY = symbol.lineOffsetY * labelPlaneFontScale;
-        const firstAndLastGlyph = placeFirstAndLastGlyph(labelPlaneFontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, false, labelPlaneAnchorPoint, tileUnitAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, getElevation);
+        const firstAndLastGlyph = placeFirstAndLastGlyph(labelPlaneFontScale, glyphOffsetArray, lineOffsetX, lineOffsetY, false, labelPlaneAnchorPoint, tileUnitAnchorPoint, symbol, lineVertexArray, labelPlaneMatrix, projectionCache, false, getElevation);
         let collisionDetected = false;
         let inGrid = false;
         let entirelyOffscreen = true;
@@ -28069,10 +27760,20 @@ class CollisionIndex {
     projectAndGetPerspectiveRatio(posMatrix, x, y, getElevation) {
         let p;
         if (getElevation) {
-            p = performance.fromValues(x, y, getElevation(x, y), 1);
+            p = [
+                x,
+                y,
+                getElevation(x, y),
+                1
+            ];
             performance.transformMat4(p, p, posMatrix);
         } else {
-            p = performance.fromValues(x, y, 0, 1);
+            p = [
+                x,
+                y,
+                0,
+                1
+            ];
             xyTransformMat4(p, p, posMatrix);
         }
         const a = new performance.pointGeometry((p[0] / p[3] + 1) / 2 * this.transform.width + viewportPadding, (-p[1] / p[3] + 1) / 2 * this.transform.height + viewportPadding);
@@ -28352,7 +28053,7 @@ class Placement {
                 verticalTextFeatureIndex = collisionArrays.verticalTextFeatureIndex;
             }
             const tileID = this.retainedQueryData[bucket.bucketInstanceId].tileID;
-            const getElevation = this.transform.terrainSourceCache && this.transform.terrainSourceCache.isEnabled() ? (x, y) => this.transform.terrainSourceCache.getElevationWithExaggeration(tileID, x, y) : null;
+            const getElevation = this.transform.terrain ? (x, y) => this.transform.terrain.getElevation(tileID, x, y) : null;
             for (const boxType of [
                     'textBox',
                     'verticalTextBox',
@@ -29117,6 +28818,375 @@ class CrossTileSymbolIndex {
     }
 }
 
+var posAttributes = performance.createLayout([{
+        name: 'a_pos',
+        type: 'Int16',
+        components: 2
+    }]);
+
+class TerrainSourceCache extends performance.Evented {
+    constructor(sourceCache) {
+        super();
+        this.sourceCache = sourceCache;
+        this._tiles = {};
+        this._renderableTilesKeys = [];
+        this._sourceTileCache = {};
+        this.renderHistory = [];
+        this.minzoom = 0;
+        this.maxzoom = 22;
+        this.tileSize = 512;
+        this.deltaZoom = 1;
+        this.renderHistorySize = 150;
+        sourceCache.usedForTerrain = true;
+        sourceCache.tileSize = this.tileSize * 2 ** this.deltaZoom;
+    }
+    destruct() {
+        this.sourceCache.usedForTerrain = false;
+        this.sourceCache.tileSize = null;
+        for (const key in this._tiles) {
+            const tile = this._tiles[key];
+            tile.textures.forEach(t => t.destroy());
+            tile.textures = [];
+        }
+    }
+    update(transform) {
+        this.sourceCache.update(transform);
+        this._renderableTilesKeys = [];
+        for (const tileID of transform.coveringTiles({
+                tileSize: this.tileSize,
+                minzoom: this.minzoom,
+                maxzoom: this.maxzoom,
+                reparseOverscaled: false
+            })) {
+            this._renderableTilesKeys.push(tileID.key);
+            if (!this._tiles[tileID.key]) {
+                tileID.posMatrix = new Float64Array(16);
+                performance.ortho(tileID.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                this._tiles[tileID.key] = new Tile(tileID, this.tileSize);
+            }
+        }
+    }
+    removeOutdated(painter) {
+        const tileIDs = {};
+        for (const key of this._renderableTilesKeys)
+            tileIDs[key] = true;
+        this.renderHistory = this.renderHistory.filter((i, p) => this.renderHistory.indexOf(i) === p);
+        while (this.renderHistory.length > this.renderHistorySize) {
+            const tile = this.sourceCache._tiles[this.renderHistory.shift()];
+            if (tile && !tileIDs[tile.tileID.key]) {
+                tile.clearTextures(painter);
+                delete this.sourceCache._tiles[tile.tileID.key];
+            }
+        }
+    }
+    getRenderableTiles() {
+        return this._renderableTilesKeys.map(key => this.getTileByID(key));
+    }
+    getTileByID(id) {
+        return this._tiles[id];
+    }
+    getTerrainCoords(tileID) {
+        const coords = {};
+        for (const key of this._renderableTilesKeys) {
+            const _tileID = this._tiles[key].tileID;
+            if (_tileID.canonical.equals(tileID.canonical)) {
+                const coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                coords[key] = coord;
+            } else if (_tileID.canonical.isChildOf(tileID.canonical)) {
+                const coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                const dz = _tileID.canonical.z - tileID.canonical.z;
+                const dx = _tileID.canonical.x - (_tileID.canonical.x >> dz << dz);
+                const dy = _tileID.canonical.y - (_tileID.canonical.y >> dz << dz);
+                const size = performance.EXTENT >> dz;
+                performance.ortho(coord.posMatrix, 0, size, 0, size, 0, 1);
+                performance.translate(coord.posMatrix, coord.posMatrix, [
+                    -dx * size,
+                    -dy * size,
+                    0
+                ]);
+                coords[key] = coord;
+            } else if (tileID.canonical.isChildOf(_tileID.canonical)) {
+                const coord = tileID.clone();
+                coord.posMatrix = new Float64Array(16);
+                const dz = tileID.canonical.z - _tileID.canonical.z;
+                const dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
+                const dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
+                const size = performance.EXTENT >> dz;
+                performance.ortho(coord.posMatrix, 0, performance.EXTENT, 0, performance.EXTENT, 0, 1);
+                performance.translate(coord.posMatrix, coord.posMatrix, [
+                    dx * size,
+                    dy * size,
+                    0
+                ]);
+                performance.scale(coord.posMatrix, coord.posMatrix, [
+                    1 / 2 ** dz,
+                    1 / 2 ** dz,
+                    0
+                ]);
+                coords[key] = coord;
+            }
+        }
+        return coords;
+    }
+    getSourceTile(tileID, searchForDEM) {
+        const source = this.sourceCache._source;
+        let z = tileID.overscaledZ - this.deltaZoom;
+        if (z > source.maxzoom)
+            z = source.maxzoom;
+        if (z < source.minzoom)
+            return null;
+        if (!this._sourceTileCache[tileID.key])
+            this._sourceTileCache[tileID.key] = tileID.scaledTo(z).key;
+        let tile = this.sourceCache.getTileByID(this._sourceTileCache[tileID.key]);
+        if (!(tile && tile.dem) && searchForDEM)
+            while (z > source.minzoom && !(tile && tile.dem))
+                tile = this.sourceCache.getTileByID(tileID.scaledTo(z--).key);
+        return tile;
+    }
+    tilesAfterTime(time = Date.now()) {
+        return Object.values(this._tiles).filter(t => t.timeLoaded >= time);
+    }
+}
+
+class Terrain {
+    constructor(style, sourceCache, options) {
+        this.style = style;
+        this.sourceCache = new TerrainSourceCache(sourceCache);
+        this.options = options;
+        this.exaggeration = typeof options.exaggeration === 'number' ? options.exaggeration : 1;
+        this.elevationOffset = typeof options.elevationOffset === 'number' ? options.elevationOffset : 450;
+        this.qualityFactor = 2;
+        this.meshSize = 128;
+        this._demMatrixCache = {};
+        this._coordsIndex = [];
+        this._coordsTextureSize = 1024;
+        this.clearRerenderCache();
+    }
+    getDEMElevation(tileID, x, y, extent = performance.EXTENT) {
+        if (!(x >= 0 && x < extent && y >= 0 && y < extent))
+            return this.elevationOffset;
+        let elevation = 0;
+        const terrain = this.getTerrainData(tileID);
+        if (terrain.tile && terrain.tile.dem) {
+            const pos = transformMat4([], [
+                x / extent * performance.EXTENT,
+                y / extent * performance.EXTENT
+            ], terrain.u_terrain_matrix);
+            const coord = [
+                pos[0] * terrain.tile.dem.dim,
+                pos[1] * terrain.tile.dem.dim
+            ];
+            const c = [
+                Math.floor(coord[0]),
+                Math.floor(coord[1])
+            ];
+            const tl = terrain.tile.dem.get(c[0], c[1]);
+            const tr = terrain.tile.dem.get(c[0], c[1] + 1);
+            const bl = terrain.tile.dem.get(c[0] + 1, c[1]);
+            const br = terrain.tile.dem.get(c[0] + 1, c[1] + 1);
+            elevation = performance.number(performance.number(tl, tr, coord[0] - c[0]), performance.number(bl, br, coord[0] - c[0]), coord[1] - c[1]);
+        }
+        return elevation;
+    }
+    rememberForRerender(source, tileID) {
+        for (const key in this.sourceCache._tiles) {
+            const tile = this.sourceCache._tiles[key];
+            if (tile.tileID.equals(tileID) || tile.tileID.isChildOf(tileID)) {
+                if (source === this.sourceCache.sourceCache.id)
+                    tile.timeLoaded = Date.now();
+                this._rerender[source] = this._rerender[source] || {};
+                this._rerender[source][tile.tileID.key] = true;
+            }
+        }
+    }
+    needsRerender(source, tileID) {
+        return this._rerender[source] && this._rerender[source][tileID.key];
+    }
+    clearRerenderCache() {
+        this._rerender = {};
+    }
+    getElevation(tileID, x, y, extent = performance.EXTENT) {
+        return (this.getDEMElevation(tileID, x, y, extent) + this.elevationOffset) * this.exaggeration;
+    }
+    getTerrainData(tileID) {
+        if (!this._emptyDemTexture) {
+            const context = this.style.map.painter.context;
+            const image = new performance.RGBAImage({
+                width: 1,
+                height: 1
+            }, new Uint8Array(1 * 4));
+            this._emptyDepthTexture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+            this._emptyDemUnpack = [
+                0,
+                0,
+                0,
+                0
+            ];
+            this._emptyDemTexture = new Texture(context, new performance.RGBAImage({
+                width: 1,
+                height: 1
+            }), context.gl.RGBA, { premultiply: false });
+            this._emptyDemTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+            this._emptyDemMatrix = performance.identity([]);
+        }
+        const sourceTile = this.sourceCache.getSourceTile(tileID, true);
+        if (sourceTile && sourceTile.dem && (!sourceTile.demTexture || sourceTile.needsTerrainPrepare)) {
+            const context = this.style.map.painter.context;
+            sourceTile.demTexture = this.style.map.painter.getTileTexture(sourceTile.dem.stride);
+            if (sourceTile.demTexture)
+                sourceTile.demTexture.update(sourceTile.dem.getPixels(), { premultiply: false });
+            else
+                sourceTile.demTexture = new Texture(context, sourceTile.dem.getPixels(), context.gl.RGBA, { premultiply: false });
+            sourceTile.demTexture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+            sourceTile.needsTerrainPrepare = false;
+        }
+        const matrixKey = sourceTile && sourceTile + sourceTile.tileID.key + tileID.key;
+        if (matrixKey && !this._demMatrixCache[matrixKey]) {
+            const maxzoom = this.sourceCache.sourceCache._source.maxzoom;
+            let dz = tileID.canonical.z - sourceTile.tileID.canonical.z;
+            if (tileID.overscaledZ > tileID.canonical.z) {
+                if (tileID.canonical.z >= maxzoom)
+                    dz = tileID.canonical.z - maxzoom;
+                else
+                    performance.warnOnce('cannot calculate elevation if elevation maxzoom > source.maxzoom');
+            }
+            const dx = tileID.canonical.x - (tileID.canonical.x >> dz << dz);
+            const dy = tileID.canonical.y - (tileID.canonical.y >> dz << dz);
+            const demMatrix = performance.fromScaling(new Float64Array(16), [
+                1 / (performance.EXTENT << dz),
+                1 / (performance.EXTENT << dz),
+                0
+            ]);
+            performance.translate(demMatrix, demMatrix, [
+                dx * performance.EXTENT,
+                dy * performance.EXTENT,
+                0
+            ]);
+            this._demMatrixCache[tileID.key] = {
+                matrix: demMatrix,
+                coord: tileID
+            };
+        }
+        return {
+            'u_depth': 2,
+            'u_terrain': 3,
+            'u_terrain_dim': sourceTile && sourceTile.dem && sourceTile.dem.dim || 1,
+            'u_terrain_matrix': matrixKey ? this._demMatrixCache[tileID.key].matrix : this._emptyDemMatrix,
+            'u_terrain_unpack': sourceTile && sourceTile.dem && sourceTile.dem.getUnpackVector() || this._emptyDemUnpack,
+            'u_terrain_offset': this.elevationOffset,
+            'u_terrain_exaggeration': this.exaggeration,
+            texture: (sourceTile && sourceTile.demTexture || this._emptyDemTexture).texture,
+            depthTexture: (this._fboDepthTexture || this._emptyDepthTexture).texture,
+            tile: sourceTile
+        };
+    }
+    getRTTFramebuffer() {
+        const painter = this.style.map.painter;
+        if (!this._rttFramebuffer) {
+            const size = this.sourceCache.tileSize * this.qualityFactor;
+            this._rttFramebuffer = painter.context.createFramebuffer(size, size, true);
+            this._rttFramebuffer.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, size, size));
+        }
+        return this._rttFramebuffer;
+    }
+    getFramebuffer(texture) {
+        const painter = this.style.map.painter;
+        const width = painter.width / devicePixelRatio;
+        const height = painter.height / devicePixelRatio;
+        if (this._fbo && (this._fbo.width !== width || this._fbo.height !== height)) {
+            this._fbo.destroy();
+            this._fboCoordsTexture.destroy();
+            this._fboDepthTexture.destroy();
+            delete this._fbo;
+            delete this._fboDepthTexture;
+            delete this._fboCoordsTexture;
+        }
+        if (!this._fboCoordsTexture) {
+            this._fboCoordsTexture = new Texture(painter.context, {
+                width,
+                height,
+                data: null
+            }, painter.context.gl.RGBA, { premultiply: false });
+            this._fboCoordsTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
+        }
+        if (!this._fboDepthTexture) {
+            this._fboDepthTexture = new Texture(painter.context, {
+                width,
+                height,
+                data: null
+            }, painter.context.gl.RGBA, { premultiply: false });
+            this._fboDepthTexture.bind(painter.context.gl.NEAREST, painter.context.gl.CLAMP_TO_EDGE);
+        }
+        if (!this._fbo) {
+            this._fbo = painter.context.createFramebuffer(width, height, true);
+            this._fbo.depthAttachment.set(painter.context.createRenderbuffer(painter.context.gl.DEPTH_COMPONENT16, width, height));
+        }
+        this._fbo.colorAttachment.set(texture === 'coords' ? this._fboCoordsTexture.texture : this._fboDepthTexture.texture);
+        return this._fbo;
+    }
+    getCoordsTexture() {
+        const context = this.style.map.painter.context;
+        if (this._coordsTexture)
+            return this._coordsTexture;
+        const data = new Uint8Array(this._coordsTextureSize * this._coordsTextureSize * 4);
+        for (let y = 0, i = 0; y < this._coordsTextureSize; y++)
+            for (let x = 0; x < this._coordsTextureSize; x++, i += 4) {
+                data[i + 0] = x & 255;
+                data[i + 1] = y & 255;
+                data[i + 2] = x >> 8 << 4 | y >> 8;
+                data[i + 3] = 0;
+            }
+        const image = new performance.RGBAImage({
+            width: this._coordsTextureSize,
+            height: this._coordsTextureSize
+        }, new Uint8Array(data.buffer));
+        const texture = new Texture(context, image, context.gl.RGBA, { premultiply: false });
+        texture.bind(context.gl.NEAREST, context.gl.CLAMP_TO_EDGE);
+        this._coordsTexture = texture;
+        return texture;
+    }
+    pointCoordinate(p) {
+        const rgba = new Uint8Array(4);
+        const painter = this.style.map.painter, context = painter.context, gl = context.gl;
+        context.bindFramebuffer.set(this.getFramebuffer('coords').framebuffer);
+        gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+        context.bindFramebuffer.set(null);
+        const x = rgba[0] + (rgba[2] >> 4 << 8);
+        const y = rgba[1] + ((rgba[2] & 15) << 8);
+        const tileID = this._coordsIndex[255 - rgba[3]];
+        const tile = tileID && this.sourceCache.getTileByID(tileID);
+        if (!tile)
+            return null;
+        const coordsSize = this._coordsTextureSize;
+        const worldSize = (1 << tile.tileID.canonical.z) * coordsSize;
+        return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.getElevation(tile.tileID, x, y, coordsSize));
+    }
+    getTerrainMesh() {
+        if (this._mesh)
+            return this._mesh;
+        const context = this.style.map.painter.context;
+        const vertexArray = new performance.PosArray(), indexArray = new performance.TriangleIndexArray();
+        const meshSize = this.meshSize, delta = performance.EXTENT / meshSize, meshSize2 = meshSize * meshSize;
+        for (let y = 0; y <= meshSize; y++)
+            for (let x = 0; x <= meshSize; x++)
+                vertexArray.emplaceBack(x * delta, y * delta);
+        for (let y = 0; y < meshSize2; y += meshSize + 1)
+            for (let x = 0; x < meshSize; x++) {
+                indexArray.emplaceBack(x + y, meshSize + x + y + 1, meshSize + x + y + 2);
+                indexArray.emplaceBack(x + y, meshSize + x + y + 2, x + y + 1);
+            }
+        this._mesh = {
+            indexBuffer: context.createIndexBuffer(indexArray),
+            vertexBuffer: context.createVertexBuffer(vertexArray, posAttributes.members),
+            segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
+        };
+        return this._mesh;
+    }
+}
+
 const emitValidationErrors = (evented, errors) => performance.emitValidationErrors(evented, errors && errors.filter(error => error.identifier !== 'source.canvas'));
 const supportedDiffOperations = performance.pick(operations, [
     'addLayer',
@@ -29152,12 +29222,9 @@ class Style extends performance.Evented {
         this._serializedLayers = {};
         this._order = [];
         this.sourceCaches = {};
-        this.terrainSourceCache = new TerrainSourceCache(this);
         this.zoomHistory = new performance.ZoomHistory();
         this._loaded = false;
         this._availableImages = [];
-        if (map.transform)
-            map.transform.terrainSourceCache = this.terrainSourceCache;
         this._resetUpdates();
         this.dispatcher.broadcast('setReferrer', performance.getReferrer());
         const self = this;
@@ -29406,6 +29473,29 @@ class Style extends performance.Evented {
         this._updatedPaintProps = {};
         this._changedImages = {};
     }
+    setTerrain(options) {
+        if (this._terrainDataCallback)
+            this.off('data', this._terrainDataCallback);
+        if (!options) {
+            this.terrain = this.map.transform.terrain = null;
+            this.map.transform.updateElevation();
+        } else {
+            const sourceCache = this.sourceCaches[options.source];
+            this.map.transform.terrain = this.terrain = new Terrain(this, sourceCache, options);
+            this.map.transform.updateElevation();
+            this._terrainDataCallback = e => {
+                if (!e.tile)
+                    return;
+                if (e.sourceId === options.source) {
+                    this.map.transform.updateElevation();
+                    this.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
+                } else if (e.source.type === 'geojson') {
+                    this.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
+                }
+            };
+            this.on('data', this._terrainDataCallback);
+        }
+    }
     setState(nextState) {
         this._checkLoaded();
         if (emitValidationErrors(this, performance.validateStyle(nextState)))
@@ -29509,9 +29599,7 @@ class Style extends performance.Evented {
             sourceId: id
         }));
         sourceCache.setEventedParent(null);
-        sourceCache.clearTiles();
-        if (sourceCache.onRemove)
-            sourceCache.onRemove(this.map);
+        sourceCache.onRemove(this.map);
         this._changed = true;
     }
     setGeoJSONSourceData(id, data) {
@@ -29941,8 +30029,9 @@ class Style extends performance.Evented {
             layer.setEventedParent(null);
         }
         for (const id in this.sourceCaches) {
-            this.sourceCaches[id].clearTiles();
-            this.sourceCaches[id].setEventedParent(null);
+            const sourceCache = this.sourceCaches[id];
+            sourceCache.setEventedParent(null);
+            sourceCache.onRemove(this.map);
         }
         this.imageManager.setEventedParent(null);
         this.setEventedParent(null);
@@ -29956,7 +30045,6 @@ class Style extends performance.Evented {
         this.sourceCaches[id].reload();
     }
     _updateSources(transform) {
-        this.terrainSourceCache.update(transform);
         for (const id in this.sourceCaches) {
             this.sourceCaches[id].update(transform);
         }
@@ -30064,7 +30152,7 @@ var heatmapTextureVert = 'uniform mat4 u_matrix;uniform vec2 u_world;attribute v
 
 var collisionBoxFrag = 'varying float v_placed;varying float v_notUsed;void main() {float alpha=0.5;gl_FragColor=vec4(1.0,0.0,0.0,1.0)*alpha;if (v_placed > 0.5) {gl_FragColor=vec4(0.0,0.0,1.0,0.5)*alpha;}if (v_notUsed > 0.5) {gl_FragColor*=.1;}}';
 
-var collisionBoxVert = '\nattribute vec2 a_pos;attribute vec2 a_anchor_pos;attribute vec2 a_extrude;attribute vec2 a_placed;attribute vec2 a_shift;uniform mat4 u_matrix;uniform vec2 u_extrude_scale;uniform float u_camera_to_center_distance;varying float v_placed;varying float v_notUsed;void main() {vec4 projectedPoint=u_matrix*vec4(a_anchor_pos,0,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float collision_perspective_ratio=clamp(0.5+0.5*(u_camera_to_center_distance/camera_to_anchor_distance),0.0,4.0);gl_Position=u_matrix*vec4(a_pos,0.0,1.0);gl_Position.xy+=(a_extrude+a_shift)*u_extrude_scale*gl_Position.w*collision_perspective_ratio;v_placed=a_placed.x;v_notUsed=a_placed.y;}';
+var collisionBoxVert = 'attribute vec2 a_pos;attribute vec2 a_anchor_pos;attribute vec2 a_extrude;attribute vec2 a_placed;attribute vec2 a_shift;uniform mat4 u_matrix;uniform vec2 u_extrude_scale;uniform float u_camera_to_center_distance;varying float v_placed;varying float v_notUsed;void main() {vec4 projectedPoint=u_matrix*vec4(a_anchor_pos,0,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float collision_perspective_ratio=clamp(0.5+0.5*(u_camera_to_center_distance/camera_to_anchor_distance),0.0,4.0);gl_Position=u_matrix*vec4(a_pos,get_elevation(a_pos),1.0);gl_Position.xy+=(a_extrude+a_shift)*u_extrude_scale*gl_Position.w*collision_perspective_ratio;v_placed=a_placed.x;v_notUsed=a_placed.y;}';
 
 var collisionCircleFrag = 'varying float v_radius;varying vec2 v_extrude;varying float v_perspective_ratio;varying float v_collision;void main() {float alpha=0.5*min(v_perspective_ratio,1.0);float stroke_radius=0.9*max(v_perspective_ratio,1.0);float distance_to_center=length(v_extrude);float distance_to_edge=abs(distance_to_center-v_radius);float opacity_t=smoothstep(-stroke_radius,0.0,-distance_to_edge);vec4 color=mix(vec4(0.0,0.0,1.0,0.5),vec4(1.0,0.0,0.0,1.0),v_collision);gl_FragColor=color*alpha*opacity_t;}';
 
@@ -30072,7 +30160,7 @@ var collisionCircleVert = 'attribute vec2 a_pos;attribute float a_radius;attribu
 
 var debugFrag = 'uniform highp vec4 u_color;uniform sampler2D u_overlay;varying vec2 v_uv;void main() {vec4 overlay_color=texture2D(u_overlay,v_uv);gl_FragColor=mix(u_color,overlay_color,overlay_color.a);}';
 
-var debugVert = 'attribute vec2 a_pos;varying vec2 v_uv;uniform mat4 u_matrix;uniform float u_overlay_scale;void main() {v_uv=a_pos/8192.0;gl_Position=u_matrix*vec4(a_pos*u_overlay_scale,0,1);}';
+var debugVert = 'attribute vec2 a_pos;varying vec2 v_uv;uniform mat4 u_matrix;uniform float u_overlay_scale;void main() {v_uv=a_pos/8192.0;gl_Position=u_matrix*vec4(a_pos*u_overlay_scale,get_elevation(a_pos),1);}';
 
 var fillFrag = '#pragma mapbox: define highp vec4 color\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize highp vec4 color\n#pragma mapbox: initialize lowp float opacity\ngl_FragColor=color*opacity;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
@@ -30092,11 +30180,11 @@ var fillPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;un
 
 var fillExtrusionFrag = 'varying vec4 v_color;void main() {gl_FragColor=v_color;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillExtrusionVert = 'uniform mat4 u_matrix;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;uniform float u_vertical_gradient;uniform lowp float u_opacity;attribute vec2 a_pos;attribute vec4 a_normal_ed;attribute vec2 a_centroid;varying vec4 v_color;\n#pragma mapbox: define highp float base\n#pragma mapbox: define highp float height\n#pragma mapbox: define highp vec4 color\nvoid main() {\n#pragma mapbox: initialize highp float base\n#pragma mapbox: initialize highp float height\n#pragma mapbox: initialize highp vec4 color\nvec3 normal=a_normal_ed.xyz;float ele=get_elevation(a_centroid);\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;\n#else\nfloat baseDelta=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);gl_Position=u_matrix*vec4(a_pos,t > 0.0 ? height : base,1);float colorvalue=color.r*0.2126+color.g*0.7152+color.b*0.0722;v_color=vec4(0.0,0.0,0.0,1.0);vec4 ambientlight=vec4(0.03,0.03,0.03,1.0);color+=ambientlight;float directional=clamp(dot(normal/16384.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((1.0-colorvalue+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_color.r+=clamp(color.r*directional*u_lightcolor.r,mix(0.0,0.3,1.0-u_lightcolor.r),1.0);v_color.g+=clamp(color.g*directional*u_lightcolor.g,mix(0.0,0.3,1.0-u_lightcolor.g),1.0);v_color.b+=clamp(color.b*directional*u_lightcolor.b,mix(0.0,0.3,1.0-u_lightcolor.b),1.0);v_color*=u_opacity;}';
+var fillExtrusionVert = 'uniform mat4 u_matrix;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;uniform float u_vertical_gradient;uniform lowp float u_opacity;attribute vec2 a_pos;attribute vec4 a_normal_ed;\n#ifdef TERRAIN3D\nattribute vec2 a_centroid;\n#endif\nvarying vec4 v_color;\n#pragma mapbox: define highp float base\n#pragma mapbox: define highp float height\n#pragma mapbox: define highp vec4 color\nvoid main() {\n#pragma mapbox: initialize highp float base\n#pragma mapbox: initialize highp float height\n#pragma mapbox: initialize highp vec4 color\nvec3 normal=a_normal_ed.xyz;\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;float ele=get_elevation(a_centroid);\n#else\nfloat baseDelta=0.0;float ele=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);gl_Position=u_matrix*vec4(a_pos,t > 0.0 ? height : base,1);float colorvalue=color.r*0.2126+color.g*0.7152+color.b*0.0722;v_color=vec4(0.0,0.0,0.0,1.0);vec4 ambientlight=vec4(0.03,0.03,0.03,1.0);color+=ambientlight;float directional=clamp(dot(normal/16384.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((1.0-colorvalue+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_color.r+=clamp(color.r*directional*u_lightcolor.r,mix(0.0,0.3,1.0-u_lightcolor.r),1.0);v_color.g+=clamp(color.g*directional*u_lightcolor.g,mix(0.0,0.3,1.0-u_lightcolor.g),1.0);v_color.b+=clamp(color.b*directional*u_lightcolor.b,mix(0.0,0.3,1.0-u_lightcolor.b),1.0);v_color*=u_opacity;}';
 
 var fillExtrusionPatternFrag = 'uniform vec2 u_texsize;uniform float u_fade;uniform sampler2D u_image;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;vec2 imagecoord=mod(v_pos_a,1.0);vec2 pos=mix(pattern_tl_a/u_texsize,pattern_br_a/u_texsize,imagecoord);vec4 color1=texture2D(u_image,pos);vec2 imagecoord_b=mod(v_pos_b,1.0);vec2 pos2=mix(pattern_tl_b/u_texsize,pattern_br_b/u_texsize,imagecoord_b);vec4 color2=texture2D(u_image,pos2);vec4 mixedColor=mix(color1,color2,u_fade);gl_FragColor=mixedColor*v_lighting;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
-var fillExtrusionPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform float u_height_factor;uniform vec3 u_scale;uniform float u_vertical_gradient;uniform lowp float u_opacity;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;attribute vec2 a_pos;attribute vec4 a_normal_ed;attribute vec2 a_centroid;varying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec3 normal=a_normal_ed.xyz;float edgedistance=a_normal_ed.w;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;float ele=get_elevation(a_centroid);base=max(0.0,ele+base-10.0);height=max(0.0,ele+height);float t=mod(normal.x,2.0);float z=t > 0.0 ? height : base;gl_Position=u_matrix*vec4(a_pos,z,1);vec2 pos=normal.x==1.0 && normal.y==0.0 && normal.z==16384.0\n? a_pos\n: vec2(edgedistance,z*u_height_factor);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileRatio,pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileRatio,pos);v_lighting=vec4(0.0,0.0,0.0,1.0);float directional=clamp(dot(normal/16383.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((0.5+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_lighting.rgb+=clamp(directional*u_lightcolor,mix(vec3(0.0),vec3(0.3),1.0-u_lightcolor),vec3(1.0));v_lighting*=u_opacity;}';
+var fillExtrusionPatternVert = 'uniform mat4 u_matrix;uniform vec2 u_pixel_coord_upper;uniform vec2 u_pixel_coord_lower;uniform float u_height_factor;uniform vec3 u_scale;uniform float u_vertical_gradient;uniform lowp float u_opacity;uniform vec3 u_lightcolor;uniform lowp vec3 u_lightpos;uniform lowp float u_lightintensity;attribute vec2 a_pos;attribute vec4 a_normal_ed;\n#ifdef TERRAIN3D\nattribute vec2 a_centroid;\n#endif\nvarying vec2 v_pos_a;varying vec2 v_pos_b;varying vec4 v_lighting;\n#pragma mapbox: define lowp float base\n#pragma mapbox: define lowp float height\n#pragma mapbox: define lowp vec4 pattern_from\n#pragma mapbox: define lowp vec4 pattern_to\n#pragma mapbox: define lowp float pixel_ratio_from\n#pragma mapbox: define lowp float pixel_ratio_to\nvoid main() {\n#pragma mapbox: initialize lowp float base\n#pragma mapbox: initialize lowp float height\n#pragma mapbox: initialize mediump vec4 pattern_from\n#pragma mapbox: initialize mediump vec4 pattern_to\n#pragma mapbox: initialize lowp float pixel_ratio_from\n#pragma mapbox: initialize lowp float pixel_ratio_to\nvec2 pattern_tl_a=pattern_from.xy;vec2 pattern_br_a=pattern_from.zw;vec2 pattern_tl_b=pattern_to.xy;vec2 pattern_br_b=pattern_to.zw;float tileRatio=u_scale.x;float fromScale=u_scale.y;float toScale=u_scale.z;vec3 normal=a_normal_ed.xyz;float edgedistance=a_normal_ed.w;vec2 display_size_a=(pattern_br_a-pattern_tl_a)/pixel_ratio_from;vec2 display_size_b=(pattern_br_b-pattern_tl_b)/pixel_ratio_to;\n#ifdef TERRAIN3D\nfloat baseDelta=10.0;float ele=get_elevation(a_centroid);\n#else\nfloat baseDelta=0.0;float ele=0.0;\n#endif\nbase=max(0.0,ele+base-baseDelta);height=max(0.0,ele+height);float t=mod(normal.x,2.0);float z=t > 0.0 ? height : base;gl_Position=u_matrix*vec4(a_pos,z,1);vec2 pos=normal.x==1.0 && normal.y==0.0 && normal.z==16384.0\n? a_pos\n: vec2(edgedistance,z*u_height_factor);v_pos_a=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,fromScale*display_size_a,tileRatio,pos);v_pos_b=get_pattern_pos(u_pixel_coord_upper,u_pixel_coord_lower,toScale*display_size_b,tileRatio,pos);v_lighting=vec4(0.0,0.0,0.0,1.0);float directional=clamp(dot(normal/16383.0,u_lightpos),0.0,1.0);directional=mix((1.0-u_lightintensity),max((0.5+u_lightintensity),1.0),directional);if (normal.y !=0.0) {directional*=((1.0-u_vertical_gradient)+(u_vertical_gradient*clamp((t+base)*pow(height/150.0,0.5),mix(0.7,0.98,1.0-u_lightintensity),1.0)));}v_lighting.rgb+=clamp(directional*u_lightcolor,mix(vec3(0.0),vec3(0.3),1.0-u_lightcolor),vec3(1.0));v_lighting*=u_opacity;}';
 
 var hillshadePrepareFrag = '#ifdef GL_ES\nprecision highp float;\n#endif\nuniform sampler2D u_image;varying vec2 v_pos;uniform vec2 u_dimension;uniform float u_zoom;uniform vec4 u_unpack;float getElevation(vec2 coord,float bias) {vec4 data=texture2D(u_image,coord)*255.0;data.a=-1.0;return dot(data,u_unpack)/4.0;}void main() {vec2 epsilon=1.0/u_dimension;float a=getElevation(v_pos+vec2(-epsilon.x,-epsilon.y),0.0);float b=getElevation(v_pos+vec2(0,-epsilon.y),0.0);float c=getElevation(v_pos+vec2(epsilon.x,-epsilon.y),0.0);float d=getElevation(v_pos+vec2(-epsilon.x,0),0.0);float e=getElevation(v_pos,0.0);float f=getElevation(v_pos+vec2(epsilon.x,0),0.0);float g=getElevation(v_pos+vec2(-epsilon.x,epsilon.y),0.0);float h=getElevation(v_pos+vec2(0,epsilon.y),0.0);float i=getElevation(v_pos+vec2(epsilon.x,epsilon.y),0.0);float exaggerationFactor=u_zoom < 2.0 ? 0.4 : u_zoom < 4.5 ? 0.35 : 0.3;float exaggeration=u_zoom < 15.0 ? (u_zoom-15.0)*exaggerationFactor : 0.0;vec2 deriv=vec2((c+f+f+i)-(a+d+d+g),(g+h+h+i)-(a+b+b+c))/pow(2.0,exaggeration+(19.2562-u_zoom));gl_FragColor=clamp(vec4(deriv.x/2.0+0.5,deriv.y/2.0+0.5,1.0,1.0),0.0,1.0);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
@@ -30126,15 +30214,15 @@ var rasterFrag = 'uniform float u_fade_t;uniform float u_opacity;uniform sampler
 
 var rasterVert = 'uniform mat4 u_matrix;uniform vec2 u_tl_parent;uniform float u_scale_parent;uniform float u_buffer_scale;attribute vec2 a_pos;attribute vec2 a_texture_pos;varying vec2 v_pos0;varying vec2 v_pos1;void main() {gl_Position=u_matrix*vec4(a_pos,0,1);v_pos0=(((a_texture_pos/8192.0)-0.5)/u_buffer_scale )+0.5;v_pos1=(v_pos0*u_scale_parent)+u_tl_parent;}';
 
-var symbolIconFrag = 'uniform sampler2D u_texture;varying vec2 v_tex;varying float v_fade_opacity;varying float v_visibility;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nlowp float alpha=opacity*v_fade_opacity;gl_FragColor=texture2D(u_texture,v_tex)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
+var symbolIconFrag = 'uniform sampler2D u_texture;varying vec2 v_tex;varying float v_fade_opacity;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nlowp float alpha=opacity*v_fade_opacity;gl_FragColor=texture2D(u_texture,v_tex)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
 var symbolIconVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec4 a_pixeloffset;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform highp float u_camera_to_center_distance;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform float u_fade_change;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform vec2 u_texsize;varying vec2 v_tex;varying float v_fade_opacity;\n#pragma mapbox: define lowp float opacity\nvoid main() {\n#pragma mapbox: initialize lowp float opacity\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);vec2 a_pxoffset=a_pixeloffset.xy;vec2 a_minFontScale=a_pixeloffset.zw/256.0;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=u_is_text ? size/24.0 : size;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*max(a_minFontScale,fontScale)+a_pxoffset/16.0),z,1.0);v_tex=a_tex/u_texsize;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float visibility=calculate_visibility(projectedPoint);v_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));}';
 
-var symbolSDFFrag = '#define SDF_PX 8.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;uniform bool u_is_text;varying vec2 v_data0;varying vec3 v_data1;varying float v_visibility;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat EDGE_GAMMA=0.105/u_device_pixel_ratio;vec2 tex=v_data0.xy;float gamma_scale=v_data1.x;float size=v_data1.y;float fade_opacity=v_data1[2];float fontScale=u_is_text ? size/24.0 : size;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
+var symbolSDFFrag = '#define SDF_PX 8.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;uniform bool u_is_text;varying vec2 v_data0;varying vec3 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat EDGE_GAMMA=0.105/u_device_pixel_ratio;vec2 tex=v_data0.xy;float gamma_scale=v_data1.x;float size=v_data1.y;float fade_opacity=v_data1[2];float fontScale=u_is_text ? size/24.0 : size;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
 var symbolSDFVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec4 a_pixeloffset;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform highp float u_camera_to_center_distance;uniform float u_fade_change;uniform vec2 u_texsize;varying vec2 v_data0;varying vec3 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);vec2 a_pxoffset=a_pixeloffset.xy;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=u_is_text ? size/24.0 : size;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*fontScale+a_pxoffset),z,1.0);float gamma_scale=gl_Position.w;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float visibility=calculate_visibility(projectedPoint);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float interpolated_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));v_data0=a_tex/u_texsize;v_data1=vec3(gamma_scale,size,interpolated_fade_opacity);}';
 
-var symbolTextAndIconFrag = '#define SDF_PX 8.0\n#define SDF 1.0\n#define ICON 0.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform sampler2D u_texture_icon;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;varying vec4 v_data0;varying vec4 v_data1;varying float v_visibility;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat fade_opacity=v_data1[2];if (v_data1.w==ICON) {vec2 tex_icon=v_data0.zw;lowp float alpha=opacity*fade_opacity;gl_FragColor=texture2D(u_texture_icon,tex_icon)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\nreturn;}vec2 tex=v_data0.xy;float EDGE_GAMMA=0.105/u_device_pixel_ratio;float gamma_scale=v_data1.x;float size=v_data1.y;float fontScale=size/24.0;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
+var symbolTextAndIconFrag = '#define SDF_PX 8.0\n#define SDF 1.0\n#define ICON 0.0\nuniform bool u_is_halo;uniform sampler2D u_texture;uniform sampler2D u_texture_icon;uniform highp float u_gamma_scale;uniform lowp float u_device_pixel_ratio;varying vec4 v_data0;varying vec4 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nfloat fade_opacity=v_data1[2];if (v_data1.w==ICON) {vec2 tex_icon=v_data0.zw;lowp float alpha=opacity*fade_opacity;gl_FragColor=texture2D(u_texture_icon,tex_icon)*alpha;\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\nreturn;}vec2 tex=v_data0.xy;float EDGE_GAMMA=0.105/u_device_pixel_ratio;float gamma_scale=v_data1.x;float size=v_data1.y;float fontScale=size/24.0;lowp vec4 color=fill_color;highp float gamma=EDGE_GAMMA/(fontScale*u_gamma_scale);lowp float buff=(256.0-64.0)/256.0;if (u_is_halo) {color=halo_color;gamma=(halo_blur*1.19/SDF_PX+EDGE_GAMMA)/(fontScale*u_gamma_scale);buff=(6.0-halo_width/fontScale)/SDF_PX;}lowp float dist=texture2D(u_texture,tex).a;highp float gamma_scaled=gamma*gamma_scale;highp float alpha=smoothstep(buff-gamma_scaled,buff+gamma_scaled,dist);gl_FragColor=color*(alpha*opacity*fade_opacity);\n#ifdef OVERDRAW_INSPECTOR\ngl_FragColor=vec4(1.0);\n#endif\n}';
 
 var symbolTextAndIconVert = 'const float PI=3.141592653589793;attribute vec4 a_pos_offset;attribute vec4 a_data;attribute vec3 a_projected_pos;attribute float a_fade_opacity;uniform bool u_is_size_zoom_constant;uniform bool u_is_size_feature_constant;uniform highp float u_size_t;uniform highp float u_size;uniform mat4 u_matrix;uniform mat4 u_label_plane_matrix;uniform mat4 u_coord_matrix;uniform bool u_is_text;uniform bool u_pitch_with_map;uniform highp float u_pitch;uniform bool u_rotate_symbol;uniform highp float u_aspect_ratio;uniform highp float u_camera_to_center_distance;uniform float u_fade_change;uniform vec2 u_texsize;uniform vec2 u_texsize_icon;varying vec4 v_data0;varying vec4 v_data1;\n#pragma mapbox: define highp vec4 fill_color\n#pragma mapbox: define highp vec4 halo_color\n#pragma mapbox: define lowp float opacity\n#pragma mapbox: define lowp float halo_width\n#pragma mapbox: define lowp float halo_blur\nvoid main() {\n#pragma mapbox: initialize highp vec4 fill_color\n#pragma mapbox: initialize highp vec4 halo_color\n#pragma mapbox: initialize lowp float opacity\n#pragma mapbox: initialize lowp float halo_width\n#pragma mapbox: initialize lowp float halo_blur\nvec2 a_pos=a_pos_offset.xy;vec2 a_offset=a_pos_offset.zw;vec2 a_tex=a_data.xy;vec2 a_size=a_data.zw;float a_size_min=floor(a_size[0]*0.5);float is_sdf=a_size[0]-2.0*a_size_min;float ele=get_elevation(a_pos);highp float segment_angle=-a_projected_pos[2];float size;if (!u_is_size_zoom_constant && !u_is_size_feature_constant) {size=mix(a_size_min,a_size[1],u_size_t)/128.0;} else if (u_is_size_zoom_constant && !u_is_size_feature_constant) {size=a_size_min/128.0;} else {size=u_size;}vec4 projectedPoint=u_matrix*vec4(a_pos,ele,1);highp float camera_to_anchor_distance=projectedPoint.w;highp float distance_ratio=u_pitch_with_map ?\ncamera_to_anchor_distance/u_camera_to_center_distance :\nu_camera_to_center_distance/camera_to_anchor_distance;highp float perspective_ratio=clamp(0.5+0.5*distance_ratio,0.0,4.0);size*=perspective_ratio;float fontScale=size/24.0;highp float symbol_rotation=0.0;if (u_rotate_symbol) {vec4 offsetProjectedPoint=u_matrix*vec4(a_pos+vec2(1,0),ele,1);vec2 a=projectedPoint.xy/projectedPoint.w;vec2 b=offsetProjectedPoint.xy/offsetProjectedPoint.w;symbol_rotation=atan((b.y-a.y)/u_aspect_ratio,b.x-a.x);}highp float angle_sin=sin(segment_angle+symbol_rotation);highp float angle_cos=cos(segment_angle+symbol_rotation);mat2 rotation_matrix=mat2(angle_cos,-1.0*angle_sin,angle_sin,angle_cos);vec4 projected_pos=u_label_plane_matrix*vec4(a_projected_pos.xy,ele,1.0);float z=float(u_pitch_with_map)*projected_pos.z/projected_pos.w;gl_Position=u_coord_matrix*vec4(projected_pos.xy/projected_pos.w+rotation_matrix*(a_offset/32.0*fontScale),z,1.0);float gamma_scale=gl_Position.w;vec2 fade_opacity=unpack_opacity(a_fade_opacity);float visibility=calculate_visibility(projectedPoint);float fade_change=fade_opacity[1] > 0.5 ? u_fade_change :-u_fade_change;float interpolated_fade_opacity=max(0.0,min(visibility,fade_opacity[0]+fade_change));v_data0.xy=a_tex/u_texsize;v_data0.zw=a_tex/u_texsize_icon;v_data1=vec4(gamma_scale,size,interpolated_fade_opacity,is_sdf);}';
 
@@ -30421,7 +30509,7 @@ function getTokenizedAttributesAndUniforms(array) {
     return result;
 }
 class Program {
-    constructor(context, name, source, configuration, fixedUniforms, showOverdrawInspector, useTerrain) {
+    constructor(context, name, source, configuration, fixedUniforms, showOverdrawInspector, terrain) {
         const gl = context.gl;
         this.program = gl.createProgram();
         const staticAttrInfo = getTokenizedAttributesAndUniforms(source.staticAttributes);
@@ -30440,7 +30528,7 @@ class Program {
         if (showOverdrawInspector) {
             defines.push('#define OVERDRAW_INSPECTOR;');
         }
-        if (useTerrain) {
+        if (terrain) {
             defines.push('#define TERRAIN3D;');
         }
         const fragmentSource = defines.concat(shaders.prelude.fragmentSource, source.fragmentSource).join('\n');
@@ -30610,7 +30698,11 @@ const fillExtrusionPatternUniforms = (context, locations) => ({
 const fillExtrusionUniformValues = (matrix, painter, shouldUseVerticalGradient, opacity) => {
     const light = painter.style.light;
     const _lp = light.properties.get('position');
-    const lightPos = fromValues(_lp.x, _lp.y, _lp.z);
+    const lightPos = [
+        _lp.x,
+        _lp.y,
+        _lp.z
+    ];
     const lightMat = create$3();
     if (light.properties.get('anchor') === 'viewport') {
         fromRotation(lightMat, -painter.transform.angle);
@@ -30842,7 +30934,7 @@ const hillshadeUniformPrepareValues = (tileID, dem) => {
             stride
         ],
         'u_zoom': tileID.overscaledZ,
-        'u_unpack': dem.getUnpackVector()
+        'u_unpack': dem.getHillshadingUnpackVector()
     };
 };
 function getTileLatRange(painter, tileID) {
@@ -32101,7 +32193,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
         }
         if (!buffers)
             continue;
-        program.draw(context, gl.LINES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, collisionUniformValues(posMatrix, painter.transform, tile), painter.style.terrainSourceCache.getTerrain(coord), layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, buffers.segments, null, painter.transform.zoom, null, null, buffers.collisionVertexBuffer);
+        program.draw(context, gl.LINES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, collisionUniformValues(posMatrix, painter.transform, tile), painter.style.terrain && painter.style.terrain.getTerrainData(coord), layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, buffers.segments, null, painter.transform.zoom, null, null, buffers.collisionVertexBuffer);
     }
     if (!isText || !tileBatches.length) {
         return;
@@ -32131,7 +32223,7 @@ function drawCollisionDebug(painter, sourceCache, layer, coords, translate, tran
     const vertexBuffer = context.createVertexBuffer(vertexData, performance.collisionCircleLayout.members, true);
     for (const batch of tileBatches) {
         const uniforms = collisionCircleUniformValues(batch.transform, batch.invTransform, painter.transform);
-        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrainSourceCache.getTerrain(batch.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch.circleOffset * 2, batch.circleArray.length, batch.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
+        circleProgram.draw(context, gl.TRIANGLES, DepthMode.disabled, StencilMode.disabled, painter.colorModeForRenderPass(), CullFaceMode.disabled, uniforms, painter.style.terrain && painter.style.terrain.getTerrainData(batch.coord), layer.id, vertexBuffer, indexBuffer, performance.SegmentVector.simpleSegment(0, batch.circleOffset * 2, batch.circleArray.length, batch.circleArray.length / 2), null, painter.transform.zoom, null, null, null);
     }
     vertexBuffer.destroy();
     indexBuffer.destroy();
@@ -32197,12 +32289,12 @@ function updateVariableAnchors(coords, painter, layer, sourceCache, rotationAlig
         const updateTextFitIcon = layer.layout.get('icon-text-fit') !== 'none' && bucket.hasIconData();
         if (size) {
             const tileScale = Math.pow(2, tr.zoom - tile.tileID.overscaledZ);
-            const getElevation = painter.style.terrainSourceCache && painter.style.terrainSourceCache.isEnabled() ? (x, y) => painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y) : null;
-            updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, performance.symbolSize, tr, labelPlaneMatrix, coord.posMatrix, tileScale, size, updateTextFitIcon, getElevation);
+            const getElevation = painter.style.terrain ? (x, y) => painter.style.terrain.getElevation(coord, x, y) : null;
+            updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, tr, labelPlaneMatrix, coord.posMatrix, tileScale, size, updateTextFitIcon, getElevation);
         }
     }
 }
-function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, symbolSize, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
+function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, variableOffsets, transform, labelPlaneMatrix, posMatrix, tileScale, size, updateTextFitIcon, getElevation) {
     const placedSymbols = bucket.text.placedSymbolArray;
     const dynamicTextLayoutVertexArray = bucket.text.dynamicLayoutVertexArray;
     const dynamicIconLayoutVertexArray = bucket.icon.dynamicLayoutVertexArray;
@@ -32218,7 +32310,7 @@ function updateVariableAnchorsForBucket(bucket, rotateWithMap, pitchWithMap, var
             const tileAnchor = new performance.pointGeometry(symbol.anchorX, symbol.anchorY);
             const projectedAnchor = project(tileAnchor, pitchWithMap ? posMatrix : labelPlaneMatrix, getElevation);
             const perspectiveRatio = getPerspectiveRatio(transform.cameraToCenterDistance, projectedAnchor.signedDistanceFromCamera);
-            let renderTextSize = symbolSize.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
+            let renderTextSize = performance.evaluateSizeForFeature(bucket.textSizeData, size, symbol) * perspectiveRatio / performance.ONE_EM;
             if (pitchWithMap) {
                 renderTextSize *= bucket.tilePixelRatio / tileScale;
             }
@@ -32274,7 +32366,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
     const tr = painter.transform;
     const rotateWithMap = rotationAlignment === 'map';
     const pitchWithMap = pitchAlignment === 'map';
-    const alongLine = rotateWithMap && layer.layout.get('symbol-placement') !== 'point';
+    const alongLine = rotationAlignment !== 'viewport' && layer.layout.get('symbol-placement') !== 'point';
     const rotateInShader = rotateWithMap && !pitchWithMap && !alongLine;
     const hasSortKey = !layer.layout.get('symbol-sort-key').isConstant();
     let sortFeaturesByKey = false;
@@ -32295,7 +32387,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
         const transformed = pitchWithMap || tr.pitch !== 0;
         const program = painter.useProgram(getSymbolProgramName(isSDF, isText, bucket), programConfiguration);
         const size = performance.evaluateSizeForZoom(sizeData, tr.zoom);
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         let texSize;
         let texSizeIcon = [
             0,
@@ -32327,8 +32419,9 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
         const hasVariableAnchors = variablePlacement && bucket.hasTextData();
         const updateTextFitIcon = layer.layout.get('icon-text-fit') !== 'none' && hasVariableAnchors && bucket.hasIconData();
         if (alongLine) {
-            const getElevation = painter.style.terrainSourceCache && painter.style.terrainSourceCache.isEnabled() ? (x, y) => painter.style.terrainSourceCache.getElevationWithExaggeration(coord, x, y) : 0;
-            updateLineLabels(bucket, coord.posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, getElevation);
+            const getElevation = painter.style.terrain ? (x, y) => painter.style.terrain.getElevation(coord, x, y) : null;
+            const rotateToLine = layer.layout.get('text-rotation-alignment') === 'map';
+            updateLineLabels(bucket, coord.posMatrix, painter, isText, labelPlaneMatrix, glCoordMatrix, pitchWithMap, keepUpright, rotateToLine, getElevation);
         }
         const matrix = painter.translatePosMatrix(coord.posMatrix, tile, translate, translateAnchor), uLabelPlaneMatrix = alongLine || isText && variablePlacement || updateTextFitIcon ? identityMat4 : labelPlaneMatrix, uglCoordMatrix = painter.translatePosMatrix(glCoordMatrix, tile, translate, translateAnchor, true);
         const hasHalo = isSDF && layer.paint.get(isText ? 'text-halo-width' : 'icon-halo-width').constantOr(1) !== 0;
@@ -32361,7 +32454,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
                     segments: new performance.SegmentVector([segment]),
                     sortKey: segment.sortKey,
                     state,
-                    terrain
+                    terrainData
                 });
             }
         } else {
@@ -32369,7 +32462,7 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
                 segments: buffers.segments,
                 sortKey: 0,
                 state,
-                terrain
+                terrainData
             });
         }
     }
@@ -32390,17 +32483,17 @@ function drawLayerSymbols(painter, sourceCache, layer, coords, isText, translate
             const uniformValues = state.uniformValues;
             if (state.hasHalo) {
                 uniformValues['u_is_halo'] = 1;
-                drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, uniformValues, segmentState.terrain);
+                drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, uniformValues, segmentState.terrainData);
             }
             uniformValues['u_is_halo'] = 0;
         }
-        drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, state.uniformValues, segmentState.terrain);
+        drawSymbolElements(state.buffers, segmentState.segments, layer, painter, state.program, depthMode, stencilMode, colorMode, state.uniformValues, segmentState.terrainData);
     }
 }
-function drawSymbolElements(buffers, segments, layer, painter, program, depthMode, stencilMode, colorMode, uniformValues, terrain) {
+function drawSymbolElements(buffers, segments, layer, painter, program, depthMode, stencilMode, colorMode, uniformValues, terrainData) {
     const context = painter.context;
     const gl = context.gl;
-    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, segments, layer.paint, painter.transform.zoom, buffers.programConfigurations.get(layer.id), buffers.dynamicLayoutVertexBuffer, buffers.opacityVertexBuffer);
+    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, buffers.layoutVertexBuffer, buffers.indexBuffer, segments, layer.paint, painter.transform.zoom, buffers.programConfigurations.get(layer.id), buffers.dynamicLayoutVertexBuffer, buffers.opacityVertexBuffer);
 }
 
 function drawCircles(painter, sourceCache, layer, coords) {
@@ -32429,7 +32522,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
         const program = painter.useProgram('circle', programConfiguration);
         const layoutVertexBuffer = bucket.layoutVertexBuffer;
         const indexBuffer = bucket.indexBuffer;
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         const uniformValues = circleUniformValues(painter, coord, tile, layer);
         const state = {
             programConfiguration,
@@ -32437,7 +32530,7 @@ function drawCircles(painter, sourceCache, layer, coords) {
             layoutVertexBuffer,
             indexBuffer,
             uniformValues,
-            terrain
+            terrainData
         };
         if (sortFeaturesByKey) {
             const oldSegments = bucket.segments.get();
@@ -32460,9 +32553,9 @@ function drawCircles(painter, sourceCache, layer, coords) {
         segmentsRenderStates.sort((a, b) => a.sortKey - b.sortKey);
     }
     for (const segmentsState of segmentsRenderStates) {
-        const {programConfiguration, program, layoutVertexBuffer, indexBuffer, uniformValues, terrain} = segmentsState.state;
+        const {programConfiguration, program, layoutVertexBuffer, indexBuffer, uniformValues, terrainData} = segmentsState.state;
         const segments = segmentsState.segments;
-        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
+        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
     }
 }
 
@@ -32585,7 +32678,7 @@ function drawLine(painter, sourceCache, layer, coords) {
         const prevProgram = painter.context.program.get();
         const program = painter.useProgram(programId, programConfiguration);
         const programChanged = firstTile || program.program !== prevProgram;
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         const constantPattern = patternProperty.constantOr(null);
         if (constantPattern && tile.imageAtlas) {
             const atlas = tile.imageAtlas;
@@ -32594,7 +32687,7 @@ function drawLine(painter, sourceCache, layer, coords) {
             if (posTo && posFrom)
                 programConfiguration.setConstantPatternPositions(posTo, posFrom);
         }
-        const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        const terrainCoord = terrainData ? coord : null;
         const uniformValues = image ? linePatternUniformValues(painter, tile, layer, crossfade, terrainCoord) : dasharray ? lineSDFUniformValues(painter, tile, layer, dasharray, crossfade, terrainCoord) : gradient ? lineGradientUniformValues(painter, tile, layer, bucket.lineClipsArray.length, terrainCoord) : lineUniformValues(painter, tile, layer, terrainCoord);
         if (image) {
             context.activeTexture.set(gl.TEXTURE0);
@@ -32634,7 +32727,7 @@ function drawLine(painter, sourceCache, layer, coords) {
             context.activeTexture.set(gl.TEXTURE0);
             gradientTexture.bind(layer.stepInterpolant ? gl.NEAREST : gl.LINEAR, gl.CLAMP_TO_EDGE);
         }
-        program.draw(context, gl.TRIANGLES, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.layoutVertexBuffer2);
+        program.draw(context, gl.TRIANGLES, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.layoutVertexBuffer2);
         firstTile = false;
     }
 }
@@ -32679,7 +32772,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
             continue;
         const programConfiguration = bucket.programConfigurations.get(layer.id);
         const program = painter.useProgram(programName, programConfiguration);
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         if (image) {
             painter.context.activeTexture.set(gl.TEXTURE0);
             tile.imageAtlasTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
@@ -32693,7 +32786,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
             if (posTo && posFrom)
                 programConfiguration.setConstantPatternPositions(posTo, posFrom);
         }
-        const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        const terrainCoord = terrainData ? coord : null;
         const posMatrix = terrainCoord ? terrainCoord.posMatrix : coord.posMatrix;
         const tileMatrix = painter.translatePosMatrix(posMatrix, tile, layer.paint.get('fill-translate'), layer.paint.get('fill-translate-anchor'));
         if (!isOutline) {
@@ -32709,7 +32802,7 @@ function drawFillTiles(painter, sourceCache, layer, coords, depthMode, colorMode
             ];
             uniformValues = programName === 'fillOutlinePattern' && image ? fillOutlinePatternUniformValues(tileMatrix, painter, crossfade, tile, drawingBufferSize) : fillOutlineUniformValues(tileMatrix, drawingBufferSize);
         }
-        program.draw(painter.context, drawMode, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
+        program.draw(painter.context, drawMode, depthMode, painter.stencilModeForClipping(coord), colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, indexBuffer, segments, layer.paint, painter.transform.zoom, programConfiguration);
     }
 }
 
@@ -32741,7 +32834,7 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
         const bucket = tile.getBucket(layer);
         if (!bucket)
             continue;
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
         const programConfiguration = bucket.programConfigurations.get(layer.id);
         const program = painter.useProgram(image ? 'fillExtrusionPattern' : 'fillExtrusion', programConfiguration);
         if (image) {
@@ -32760,7 +32853,7 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
         const matrix = painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('fill-extrusion-translate'), layer.paint.get('fill-extrusion-translate-anchor'));
         const shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
         const uniformValues = image ? fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, opacity, coord, crossfade, tile) : fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient, opacity);
-        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrain, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
+        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
     }
 }
 
@@ -32796,17 +32889,16 @@ function renderHillshade(painter, coord, tile, layer, depthMode, stencilMode, co
     if (!fbo)
         return;
     const program = painter.useProgram('hillshade');
-    const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
     context.activeTexture.set(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, fbo.colorAttachment.get());
-    const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
-    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformValues(painter, tile, layer, terrainCoord), terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
+    const terrainCoord = terrainData ? coord : null;
+    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformValues(painter, tile, layer, terrainCoord), terrainData, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
 }
 function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMode) {
     const context = painter.context;
     const gl = context.gl;
     const dem = tile.dem;
-    const terrain = painter.style.terrainSourceCache.getTerrain();
     if (dem && dem.data) {
         const tileSize = dem.dim;
         const textureStride = dem.stride;
@@ -32841,7 +32933,7 @@ function prepareHillshade(painter, tile, layer, depthMode, stencilMode, colorMod
             tileSize,
             tileSize
         ]);
-        painter.useProgram('hillshadePrepare').draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformPrepareValues(tile.tileID, dem), terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
+        painter.useProgram('hillshadePrepare').draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, hillshadeUniformPrepareValues(tile.tileID, dem), null, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
         tile.needsHillshadePrepare = false;
     }
 }
@@ -32868,7 +32960,7 @@ function drawRaster(painter, sourceCache, layer, tileIDs) {
         const depthMode = painter.depthModeForSublayer(coord.overscaledZ - minTileZ, layer.paint.get('raster-opacity') === 1 ? DepthMode.ReadWrite : DepthMode.ReadOnly, gl.LESS);
         const tile = sourceCache.getTile(coord);
         tile.registerFadeDuration(layer.paint.get('raster-fade-duration'));
-        const parentTile = sourceCache.findLoadedParent(coord, 0), fade = getFadeValues(tile, parentTile, sourceCache, layer, painter);
+        const parentTile = sourceCache.findLoadedParent(coord, 0), fade = getFadeValues(tile, parentTile, sourceCache, layer, painter.transform, painter.style.terrain);
         let parentScaleBy, parentTL;
         const textureFilter = layer.paint.get('raster-resampling') === 'nearest' ? gl.NEAREST : gl.LINEAR;
         context.activeTexture.set(gl.TEXTURE0);
@@ -32884,28 +32976,28 @@ function drawRaster(painter, sourceCache, layer, tileIDs) {
         } else {
             tile.texture.bind(textureFilter, gl.CLAMP_TO_EDGE, gl.LINEAR_MIPMAP_NEAREST);
         }
-        const terrainCoord = painter.style.terrainSourceCache.isEnabled() ? coord : null;
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
+        const terrainCoord = terrainData ? coord : null;
         const posMatrix = terrainCoord ? terrainCoord.posMatrix : painter.transform.calculatePosMatrix(coord.toUnwrapped(), align);
         const uniformValues = rasterUniformValues(posMatrix, parentTL || [
             0,
             0
         ], parentScaleBy || 1, fade, layer);
-        const terrain = painter.style.terrainSourceCache.getTerrain(coord);
         if (source instanceof ImageSource) {
-            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, source.boundsBuffer, painter.quadTriangleIndexBuffer, source.boundsSegments);
+            program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, source.boundsBuffer, painter.quadTriangleIndexBuffer, source.boundsSegments);
         } else {
-            program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
+            program.draw(context, gl.TRIANGLES, depthMode, stencilModes[coord.overscaledZ], colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, painter.rasterBoundsBuffer, painter.quadTriangleIndexBuffer, painter.rasterBoundsSegments);
         }
     }
 }
-function getFadeValues(tile, parentTile, sourceCache, layer, painter) {
+function getFadeValues(tile, parentTile, sourceCache, layer, transform, terrain) {
     const fadeDuration = layer.paint.get('raster-fade-duration');
-    if (!painter.style.terrainSourceCache.isEnabled() && fadeDuration > 0) {
+    if (!terrain && fadeDuration > 0) {
         const now = performance.exported.now();
         const sinceTile = (now - tile.timeAdded) / fadeDuration;
         const sinceParent = parentTile ? (now - parentTile.timeAdded) / fadeDuration : -1;
         const source = sourceCache.getSource();
-        const idealZ = painter.transform.coveringZoomLevel({
+        const idealZ = transform.coveringZoomLevel({
             tileSize: source.tileSize,
             roundZoom: source.roundZoom
         });
@@ -32963,8 +33055,8 @@ function drawBackground(painter, sourceCache, layer, coords) {
             tileID,
             tileSize
         }, crossfade) : backgroundUniformValues(matrix, opacity, color);
-        const terrain = painter.style.terrainSourceCache.getTerrain(tileID);
-        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrain, layer.id, painter.tileExtentBuffer, painter.quadTriangleIndexBuffer, painter.tileExtentSegments);
+        const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(tileID);
+        program.draw(context, gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.disabled, uniformValues, terrainData, layer.id, painter.tileExtentBuffer, painter.quadTriangleIndexBuffer, painter.tileExtentSegments);
     }
 }
 
@@ -33017,10 +33109,9 @@ function drawDebugTile(painter, sourceCache, coord) {
     const stencilMode = StencilMode.disabled;
     const colorMode = painter.colorModeForRenderPass();
     const id = '$debug';
-    const terrain = painter.style.terrainSourceCache.getTerrain(coord);
+    const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
     context.activeTexture.set(gl.TEXTURE0);
     painter.emptyTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-    program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.red), terrain, id, painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
     const tileRawData = sourceCache.getTileByID(coord.key).latestRawTileData;
     const tileByteLength = tileRawData && tileRawData.byteLength || 0;
     const tileSizeKb = Math.floor(tileByteLength / 1024);
@@ -33032,7 +33123,8 @@ function drawDebugTile(painter, sourceCache, coord) {
     }
     const tileLabel = `${ tileIdText } ${ tileSizeKb }kb`;
     drawTextToOverlay(painter, tileLabel);
-    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, ColorMode.alphaBlended, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.transparent, scaleRatio), terrain, id, painter.debugBuffer, painter.quadTriangleIndexBuffer, painter.debugSegments);
+    program.draw(context, gl.TRIANGLES, depthMode, stencilMode, ColorMode.alphaBlended, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.transparent, scaleRatio), null, id, painter.debugBuffer, painter.quadTriangleIndexBuffer, painter.debugSegments);
+    program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.red), terrainData, id, painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
 }
 function drawTextToOverlay(painter, text) {
     painter.initDebugOverlayCanvas();
@@ -33077,7 +33169,7 @@ function drawCustom(painter, sourceCache, layer) {
     }
 }
 
-function updateTerrainFacilitators(painter, sourceCache) {
+function drawDepth(painter, terrain) {
     const context = painter.context;
     const gl = context.gl;
     const colorMode = ColorMode.unblended;
@@ -33085,33 +33177,10 @@ function updateTerrainFacilitators(painter, sourceCache) {
         0,
         1
     ]);
-    const mesh = sourceCache.getTerrainMesh(context);
-    const coords = sourceCache.getCoordsTexture(context);
-    const tiles = sourceCache.getRenderableTiles();
-    let program = painter.useProgram('terrainCoords');
-    context.bindFramebuffer.set(sourceCache.getFramebuffer(painter, 'coords').framebuffer);
-    context.viewport.set([
-        0,
-        0,
-        painter.width / devicePixelRatio,
-        painter.height / devicePixelRatio
-    ]);
-    context.clear({
-        color: performance.Color.transparent,
-        depth: 1
-    });
-    sourceCache._coordsIndex = [];
-    for (const tile of tiles) {
-        const terrain = sourceCache.getTerrain(tile.tileID);
-        context.activeTexture.set(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, coords.texture);
-        const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
-        const uniformValues = terrainCoordsUniformValues(posMatrix, 255 - sourceCache._coordsIndex.length);
-        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
-        sourceCache._coordsIndex.push(tile.tileID.key);
-    }
-    program = painter.useProgram('terrainDepth');
-    context.bindFramebuffer.set(sourceCache.getFramebuffer(painter, 'depth').framebuffer);
+    const mesh = terrain.getTerrainMesh();
+    const tiles = terrain.sourceCache.getRenderableTiles();
+    const program = painter.useProgram('terrainDepth');
+    context.bindFramebuffer.set(terrain.getFramebuffer('depth').framebuffer);
     context.viewport.set([
         0,
         0,
@@ -33123,10 +33192,10 @@ function updateTerrainFacilitators(painter, sourceCache) {
         depth: 1
     });
     for (const tile of tiles) {
-        const terrain = sourceCache.getTerrain(tile.tileID);
+        const terrainData = terrain.getTerrainData(tile.tileID);
         const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
         const uniformValues = terrainDepthUniformValues(posMatrix);
-        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
     }
     context.bindFramebuffer.set(null);
     context.viewport.set([
@@ -33136,14 +33205,55 @@ function updateTerrainFacilitators(painter, sourceCache) {
         painter.height
     ]);
 }
-function drawTerrain(painter, sourceCache, tile) {
+function drawCoords(painter, terrain) {
+    const context = painter.context;
+    const gl = context.gl;
+    const colorMode = ColorMode.unblended;
+    const depthMode = new DepthMode(gl.LEQUAL, DepthMode.ReadWrite, [
+        0,
+        1
+    ]);
+    const mesh = terrain.getTerrainMesh();
+    const coords = terrain.getCoordsTexture();
+    const tiles = terrain.sourceCache.getRenderableTiles();
+    const program = painter.useProgram('terrainCoords');
+    context.bindFramebuffer.set(terrain.getFramebuffer('coords').framebuffer);
+    context.viewport.set([
+        0,
+        0,
+        painter.width / devicePixelRatio,
+        painter.height / devicePixelRatio
+    ]);
+    context.clear({
+        color: performance.Color.transparent,
+        depth: 1
+    });
+    terrain._coordsIndex = [];
+    for (const tile of tiles) {
+        const terrainData = terrain.getTerrainData(tile.tileID);
+        context.activeTexture.set(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, coords.texture);
+        const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
+        const uniformValues = terrainCoordsUniformValues(posMatrix, 255 - terrain._coordsIndex.length);
+        program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+        terrain._coordsIndex.push(tile.tileID.key);
+    }
+    context.bindFramebuffer.set(null);
+    context.viewport.set([
+        0,
+        0,
+        painter.width,
+        painter.height
+    ]);
+}
+function drawTerrain(painter, terrain, tile) {
     const context = painter.context;
     const gl = context.gl;
     const colorMode = painter.colorModeForRenderPass();
     const depthMode = new DepthMode(gl.LEQUAL, DepthMode.ReadWrite, painter.depthRangeFor3D);
     const program = painter.useProgram('terrain');
-    const mesh = sourceCache.getTerrainMesh(context);
-    const terrain = sourceCache.getTerrain(tile.tileID);
+    const mesh = terrain.getTerrainMesh();
+    const terrainData = terrain.getTerrainData(tile.tileID);
     context.bindFramebuffer.set(null);
     context.viewport.set([
         0,
@@ -33152,14 +33262,14 @@ function drawTerrain(painter, sourceCache, tile) {
         painter.height
     ]);
     context.activeTexture.set(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, sourceCache.getRTTFramebuffer(painter).colorAttachment.get());
+    gl.bindTexture(gl.TEXTURE_2D, terrain.getRTTFramebuffer().colorAttachment.get());
     const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
     const uniformValues = terrainUniformValues(posMatrix);
-    program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrain, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
+    program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
 }
-function prepareTerrain(painter, sourceCache, tile, stack) {
+function prepareTerrain(painter, terrain, tile, stack) {
     const context = painter.context;
-    const size = tile.tileSize * sourceCache.qualityFactor;
+    const size = tile.tileSize * terrain.qualityFactor;
     if (!tile.textures[stack]) {
         tile.textures[stack] = painter.getTileTexture(size) || new Texture(context, {
             width: size,
@@ -33168,9 +33278,9 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
         }, context.gl.RGBA);
         tile.textures[stack].bind(context.gl.LINEAR, context.gl.CLAMP_TO_EDGE);
         if (stack === 0)
-            sourceCache._renderHistory.push(tile.tileID.key);
+            terrain.sourceCache.renderHistory.push(tile.tileID.key);
     }
-    const fb = sourceCache.getRTTFramebuffer(painter);
+    const fb = terrain.getRTTFramebuffer();
     fb.colorAttachment.set(tile.textures[stack].texture);
     context.bindFramebuffer.set(fb.framebuffer);
     context.viewport.set([
@@ -33179,6 +33289,115 @@ function prepareTerrain(painter, sourceCache, tile, stack) {
         size,
         size
     ]);
+}
+
+class RenderToTexture {
+    constructor(painter) {
+        this._coordsDescendingInv = {};
+        this._coordsDescendingInvStr = {};
+        this.painter = painter;
+        this._renderToTexture = {
+            background: true,
+            fill: true,
+            line: true,
+            raster: true
+        };
+        this._coordsDescendingInv = {};
+        this._coordsDescendingInvStr = {};
+        this._stacks = [];
+        this._prevType = null;
+        this._rerender = {};
+        this._renderableTiles = painter.style.terrain.sourceCache.getRenderableTiles();
+        this._init();
+    }
+    _init() {
+        const style = this.painter.style;
+        const terrain = style.terrain;
+        for (const id in style.sourceCaches) {
+            this._coordsDescendingInv[id] = {};
+            const tileIDs = style.sourceCaches[id].getVisibleCoordinates();
+            for (const tileID of tileIDs) {
+                const keys = terrain.sourceCache.getTerrainCoords(tileID);
+                for (const key in keys) {
+                    if (!this._coordsDescendingInv[id][key])
+                        this._coordsDescendingInv[id][key] = [];
+                    this._coordsDescendingInv[id][key].push(keys[key]);
+                }
+            }
+        }
+        for (const id of style._order) {
+            const layer = style._layers[id], source = layer.source;
+            if (this._renderToTexture[layer.type]) {
+                if (!this._coordsDescendingInvStr[source]) {
+                    this._coordsDescendingInvStr[source] = {};
+                    for (const key in this._coordsDescendingInv[source])
+                        this._coordsDescendingInvStr[source][key] = this._coordsDescendingInv[source][key].map(c => c.key).sort().join();
+                }
+            }
+        }
+        this._renderableTiles.forEach(tile => {
+            for (const source in this._coordsDescendingInvStr) {
+                const coords = this._coordsDescendingInvStr[source][tile.tileID.key];
+                if (coords && coords !== tile.textureCoords[source])
+                    tile.clearTextures(this.painter);
+                if (terrain.needsRerender(source, tile.tileID))
+                    tile.clearTextures(this.painter);
+            }
+            this._rerender[tile.tileID.key] = !tile.textures.length;
+        });
+        terrain.clearRerenderCache();
+        terrain.sourceCache.removeOutdated(this.painter);
+        return this;
+    }
+    renderLayer(layer) {
+        const type = layer.type;
+        const painter = this.painter;
+        const layerIds = painter.style._order;
+        const currentLayer = painter.currentLayer;
+        const isLastLayer = currentLayer + 1 === layerIds.length;
+        if (this._renderToTexture[type]) {
+            if (!this._prevType || !this._renderToTexture[this._prevType])
+                this._stacks.push([]);
+            this._prevType = type;
+            this._stacks[this._stacks.length - 1].push(layerIds[currentLayer]);
+            if (!isLastLayer)
+                return true;
+        }
+        if (this._renderToTexture[this._prevType] || type === 'hillshade' || this._renderToTexture[type] && isLastLayer) {
+            this._prevType = type;
+            const stack = this._stacks.length - 1, layers = this._stacks[stack] || [];
+            for (const tile of this._renderableTiles) {
+                prepareTerrain(painter, painter.style.terrain, tile, stack);
+                if (this._rerender[tile.tileID.key]) {
+                    painter.context.clear({ color: performance.Color.transparent });
+                    for (let l = 0; l < layers.length; l++) {
+                        const layer = painter.style._layers[layers[l]];
+                        const coords = layer.source ? this._coordsDescendingInv[layer.source][tile.tileID.key] : [tile.tileID];
+                        painter._renderTileClippingMasks(layer, coords);
+                        painter.renderLayer(painter, painter.style.sourceCaches[layer.source], layer, coords);
+                        if (layer.source)
+                            tile.textureCoords[layer.source] = this._coordsDescendingInvStr[layer.source][tile.tileID.key];
+                    }
+                }
+                drawTerrain(painter, painter.style.terrain, tile);
+            }
+            if (type === 'hillshade') {
+                this._stacks.push([layerIds[currentLayer]]);
+                for (const tile of this._renderableTiles) {
+                    const coords = this._coordsDescendingInv[layer.source][tile.tileID.key];
+                    prepareTerrain(painter, painter.style.terrain, tile, this._stacks.length - 1);
+                    painter.context.clear({ color: performance.Color.transparent });
+                    painter._renderTileClippingMasks(layer, coords);
+                    painter.renderLayer(painter, painter.style.sourceCaches[layer.source], layer, coords);
+                    drawTerrain(painter, painter.style.terrain, tile);
+                }
+                return true;
+            }
+            if (isLastLayer)
+                return true;
+        }
+        return false;
+    }
 }
 
 const draw = {
@@ -33294,7 +33513,7 @@ class Painter {
             gl.drawingBufferHeight,
             0
         ]);
-        this.useProgram('clippingMask').draw(context, gl.TRIANGLES, DepthMode.disabled, this.stencilClearMode, ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(matrix), this.style.terrainSourceCache.getTerrain(), '$clipping', this.viewportBuffer, this.quadTriangleIndexBuffer, this.viewportSegments);
+        this.useProgram('clippingMask').draw(context, gl.TRIANGLES, DepthMode.disabled, this.stencilClearMode, ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(matrix), null, '$clipping', this.viewportBuffer, this.quadTriangleIndexBuffer, this.viewportSegments);
     }
     _renderTileClippingMasks(layer, tileIDs) {
         if (this.currentStencilSource === layer.source || !layer.isTileClipped() || !tileIDs || !tileIDs.length)
@@ -33311,11 +33530,11 @@ class Painter {
         this._tileClippingMaskIDs = {};
         for (const tileID of tileIDs) {
             const id = this._tileClippingMaskIDs[tileID.key] = this.nextStencilID++;
-            const terrain = this.style.terrainSourceCache.getTerrain(tileID);
+            const terrainData = this.style.terrain && this.style.terrain.getTerrainData(tileID);
             program.draw(context, gl.TRIANGLES, DepthMode.disabled, new StencilMode({
                 func: gl.ALWAYS,
                 mask: 0
-            }, id, 255, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(tileID.posMatrix), terrain, '$clipping', this.tileExtentBuffer, this.quadTriangleIndexBuffer, this.tileExtentSegments);
+            }, id, 255, gl.KEEP, gl.KEEP, gl.REPLACE), ColorMode.disabled, CullFaceMode.disabled, clippingMaskUniformValues(tileID.posMatrix), terrainData, '$clipping', this.tileExtentBuffer, this.quadTriangleIndexBuffer, this.tileExtentSegments);
         }
     }
     stencilModeFor3D() {
@@ -33407,14 +33626,7 @@ class Painter {
         this.imageManager.beginFrame();
         const layerIds = this.style._order;
         const sourceCaches = this.style.sourceCaches;
-        const renderToTexture = {
-            background: true,
-            fill: true,
-            line: true,
-            raster: true
-        };
-        const tsc = this.style.terrainSourceCache;
-        const isTerrainEnabled = tsc.isEnabled();
+        const renderToTexture = this.style.terrain && new RenderToTexture(this);
         for (const id in sourceCaches) {
             const sourceCache = sourceCaches[id];
             if (sourceCache.used) {
@@ -33424,34 +33636,11 @@ class Painter {
         const coordsAscending = {};
         const coordsDescending = {};
         const coordsDescendingSymbol = {};
-        const coordsDescendingInv = {};
-        const coordsDescendingInvStr = {};
         for (const id in sourceCaches) {
             const sourceCache = sourceCaches[id];
             coordsAscending[id] = sourceCache.getVisibleCoordinates();
             coordsDescending[id] = coordsAscending[id].slice().reverse();
             coordsDescendingSymbol[id] = sourceCache.getVisibleCoordinates(true).reverse();
-            if (isTerrainEnabled) {
-                coordsDescendingInv[id] = {};
-                for (let c = 0; c < coordsDescending[id].length; c++) {
-                    const coords = tsc.getTerrainCoords(coordsDescending[id][c]);
-                    for (const key in coords) {
-                        if (!coordsDescendingInv[id][key])
-                            coordsDescendingInv[id][key] = [];
-                        coordsDescendingInv[id][key].push(coords[key]);
-                    }
-                }
-            }
-        }
-        for (const id of layerIds) {
-            const layer = this.style._layers[id], source = layer.source;
-            if (renderToTexture[layer.type]) {
-                if (!coordsDescendingInvStr[source]) {
-                    coordsDescendingInvStr[source] = {};
-                    for (const key in coordsDescendingInv[source])
-                        coordsDescendingInvStr[source][key] = coordsDescendingInv[source][key].map(c => c.key).sort().join();
-                }
-            }
         }
         this.opaquePassCutoff = Infinity;
         for (let i = 0; i < layerIds.length; i++) {
@@ -33461,13 +33650,14 @@ class Painter {
                 break;
             }
         }
-        if (isTerrainEnabled) {
+        if (renderToTexture) {
             this.opaquePassCutoff = 0;
-            const newTiles = tsc.tilesAfterTime(this.terrainFacilitator.renderTime);
+            const newTiles = this.style.terrain.sourceCache.tilesAfterTime(this.terrainFacilitator.renderTime);
             if (!performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
                 performance.copy(this.terrainFacilitator.matrix, this.transform.projMatrix);
                 this.terrainFacilitator.renderTime = Date.now();
-                updateTerrainFacilitators(this, tsc);
+                drawDepth(this, this.style.terrain);
+                drawCoords(this, this.style.terrain);
             }
         }
         this.renderPass = 'offscreen';
@@ -33491,7 +33681,7 @@ class Painter {
             0,
             1 - (style._order.length + 2) * this.numSublayers * this.depthEpsilon
         ];
-        if (!isTerrainEnabled) {
+        if (!renderToTexture) {
             this.renderPass = 'opaque';
             for (this.currentLayer = layerIds.length - 1; this.currentLayer >= 0; this.currentLayer--) {
                 const layer = this.style._layers[layerIds[this.currentLayer]];
@@ -33502,70 +33692,11 @@ class Painter {
             }
         }
         this.renderPass = 'translucent';
-        const stacks = [];
-        let prevType = null;
-        const rerender = {};
-        let renderableTiles = [];
-        if (isTerrainEnabled) {
-            renderableTiles = tsc.getRenderableTiles();
-            renderableTiles.forEach(tile => {
-                for (const source in coordsDescendingInvStr) {
-                    const coords = coordsDescendingInvStr[source][tile.tileID.key];
-                    if (coords && coords !== tile.textureCoords[source])
-                        tile.clearTextures(this);
-                    if (tsc.rerender[source] && tsc.rerender[source][tile.tileID.key])
-                        tile.clearTextures(this);
-                }
-                rerender[tile.tileID.key] = !tile.textures.length;
-            });
-            tsc.rerender = {};
-        }
         for (this.currentLayer = 0; this.currentLayer < layerIds.length; this.currentLayer++) {
             const layer = this.style._layers[layerIds[this.currentLayer]];
             const sourceCache = sourceCaches[layer.source];
-            const type = layer.type;
-            if (isTerrainEnabled) {
-                const isLastLayer = this.currentLayer + 1 === layerIds.length;
-                if (renderToTexture[type]) {
-                    if (!prevType || !renderToTexture[prevType])
-                        stacks.push([]);
-                    prevType = type;
-                    stacks[stacks.length - 1].push(layerIds[this.currentLayer]);
-                    if (!isLastLayer)
-                        continue;
-                }
-                if (renderToTexture[prevType] || type === 'hillshade' || renderToTexture[type] && isLastLayer) {
-                    prevType = type;
-                    const stack = stacks.length - 1, layers = stacks[stack] || [];
-                    for (const tile of renderableTiles) {
-                        prepareTerrain(this, tsc, tile, stack);
-                        if (rerender[tile.tileID.key]) {
-                            this.context.clear({ color: performance.Color.transparent });
-                            for (let l = 0; l < layers.length; l++) {
-                                const layer = this.style._layers[layers[l]];
-                                const coords = layer.source ? coordsDescendingInv[layer.source][tile.tileID.key] : [tile.tileID];
-                                this._renderTileClippingMasks(layer, coords);
-                                this.renderLayer(this, this.style.sourceCaches[layer.source], layer, coords);
-                                if (layer.source)
-                                    tile.textureCoords[layer.source] = coordsDescendingInvStr[layer.source][tile.tileID.key];
-                            }
-                        }
-                        drawTerrain(this, tsc, tile);
-                    }
-                    if (type === 'hillshade') {
-                        stacks.push([layerIds[this.currentLayer]]);
-                        for (const tile of renderableTiles) {
-                            const coords = coordsDescendingInv[layer.source][tile.tileID.key];
-                            prepareTerrain(this, tsc, tile, stacks.length - 1);
-                            this.context.clear({ color: performance.Color.transparent });
-                            this._renderTileClippingMasks(layer, coords);
-                            this.renderLayer(this, sourceCache, layer, coords);
-                            drawTerrain(this, tsc, tile);
-                        }
-                        continue;
-                    }
-                }
-            }
+            if (renderToTexture && renderToTexture.renderLayer(layer))
+                continue;
             const coords = (layer.type === 'symbol' ? coordsDescendingSymbol : coordsDescending)[layer.source];
             this._renderTileClippingMasks(layer, coordsAscending[layer.source]);
             this.renderLayer(this, sourceCache, layer, coords);
@@ -33652,7 +33783,11 @@ class Painter {
                 translate[0] * sinA + translate[1] * cosA
             ];
         }
-        const translation = fromValues(inViewportPixelUnitsUnits ? translate[0] : pixelsToTileUnits(tile, translate[0], this.transform.zoom), inViewportPixelUnitsUnits ? translate[1] : pixelsToTileUnits(tile, translate[1], this.transform.zoom), 0);
+        const translation = [
+            inViewportPixelUnitsUnits ? translate[0] : pixelsToTileUnits(tile, translate[0], this.transform.zoom),
+            inViewportPixelUnitsUnits ? translate[1] : pixelsToTileUnits(tile, translate[1], this.transform.zoom),
+            0
+        ];
         const translatedMatrix = new Float32Array(16);
         performance.translate(translatedMatrix, matrix, translation);
         return translatedMatrix;
@@ -33680,9 +33815,9 @@ class Painter {
     }
     useProgram(name, programConfiguration) {
         this.cache = this.cache || {};
-        const key = name + (programConfiguration ? programConfiguration.cacheKey : '') + (this._showOverdrawInspector ? '/overdraw' : '') + (this.style.terrainSourceCache.isEnabled() ? '/terrain' : '');
+        const key = name + (programConfiguration ? programConfiguration.cacheKey : '') + (this._showOverdrawInspector ? '/overdraw' : '') + (this.style.terrain ? '/terrain' : '');
         if (!this.cache[key]) {
-            this.cache[key] = new Program(this.context, name, shaders[name], programConfiguration, programUniforms[name], this._showOverdrawInspector, this.style.terrainSourceCache.isEnabled());
+            this.cache[key] = new Program(this.context, name, shaders[name], programConfiguration, programUniforms[name], this._showOverdrawInspector, this.style.terrain);
         }
         return this.cache[key];
     }
@@ -33782,7 +33917,12 @@ class Frustum {
         const frustumCoords = clipSpaceCorners.map(v => {
             v = performance.transformMat4([], v, invProj);
             const s = 1 / v[3] / worldSize * scale;
-            return performance.mul$1(v, v, performance.fromValues(s, s, 1 / v[3], s));
+            return performance.mul$1(v, v, [
+                s,
+                s,
+                1 / v[3],
+                s
+            ]);
         });
         const frustumPlanePointIndices = [
             [
@@ -34016,7 +34156,7 @@ class Transform {
         clone._pitch = this._pitch;
         clone._unmodified = this._unmodified;
         clone._edgeInsets = this._edgeInsets.clone();
-        clone.terrainSourceCache = this.terrainSourceCache;
+        clone.terrain = this.terrain;
         clone._calcMatrices();
         return clone;
     }
@@ -34197,12 +34337,11 @@ class Transform {
     coveringTiles(options) {
         let z = this.coveringZoomLevel(options);
         const actualZ = z;
-        const tsc = this.terrainSourceCache;
         if (options.minzoom !== undefined && z < options.minzoom)
             return [];
         if (options.maxzoom !== undefined && z > options.maxzoom)
             z = options.maxzoom;
-        const cameraCoord = tsc && tsc.isEnabled() ? this.pointCoordinate(this.getCameraPoint()) : performance.MercatorCoordinate.fromLngLat(this.center);
+        const cameraCoord = this.pointCoordinate(this.getCameraPoint());
         const centerCoord = performance.MercatorCoordinate.fromLngLat(this.center);
         const numTiles = Math.pow(2, z);
         const cameraPoint = [
@@ -34217,9 +34356,9 @@ class Transform {
         ];
         const cameraFrustum = Frustum.fromInvProjectionMatrix(this.invProjMatrix, this.worldSize, z);
         let minZoom = options.minzoom || 0;
-        if (!(tsc && tsc.isEnabled()) && this.pitch <= 60 && this._edgeInsets.top < 0.1)
+        if (!this.terrain && this.pitch <= 60 && this._edgeInsets.top < 0.1)
             minZoom = z;
-        const radiusOfMaxLvlLodInTiles = 3;
+        const radiusOfMaxLvlLodInTiles = this.terrain ? 2 / Math.min(this.tileSize, options.tileSize) * this.tileSize : 3;
         const newRootTile = wrap => {
             return {
                 aabb: new Aabb([
@@ -34260,17 +34399,20 @@ class Transform {
                     continue;
                 fullyVisible = intersectResult === 2;
             }
-            const distanceX = it.aabb.distanceX(cameraPoint);
-            const distanceY = it.aabb.distanceY(cameraPoint);
+            const refPoint = this.terrain ? cameraPoint : centerPoint;
+            const distanceX = it.aabb.distanceX(refPoint);
+            const distanceY = it.aabb.distanceY(refPoint);
             const longestDim = Math.max(Math.abs(distanceX), Math.abs(distanceY));
             const distToSplit = radiusOfMaxLvlLodInTiles + (1 << maxZoom - it.zoom) - 2;
             if (it.zoom === maxZoom || longestDim > distToSplit && it.zoom >= minZoom) {
+                const dz = maxZoom - it.zoom, dx = cameraPoint[0] - 0.5 - (x << dz), dy = cameraPoint[1] - 0.5 - (y << dz);
                 result.push({
                     tileID: new performance.OverscaledTileID(it.zoom === maxZoom ? overscaledZ : it.zoom, it.wrap, it.zoom, x, y),
                     distanceSq: sqrLen([
                         centerPoint[0] - 0.5 - x,
                         centerPoint[1] - 0.5 - y
-                    ])
+                    ]),
+                    tileDistanceToCamera: Math.sqrt(dx * dx + dy * dy)
                 });
                 continue;
             }
@@ -34279,9 +34421,23 @@ class Transform {
                 const childY = (y << 1) + (i >> 1);
                 const childZ = it.zoom + 1;
                 let quadrant = it.aabb.quadrant(i);
-                if (tsc && tsc.isEnabled()) {
-                    const tile = tsc.getSourceTile(new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY));
-                    quadrant = new Aabb(fromValues(quadrant.min[0], quadrant.min[1], tile && tile.dem ? tile.dem.min - this.elevation : -this.elevation), fromValues(quadrant.max[0], quadrant.max[1], tile && tile.dem ? Math.max(0, tile.dem.max - this.elevation) : 0));
+                if (this.terrain) {
+                    const tileID = new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY);
+                    const tile = this.terrain.getTerrainData(tileID).tile;
+                    let minElevation = this.elevation, maxElevation = this.elevation;
+                    if (tile && tile.dem) {
+                        minElevation = tile.dem.min * this.terrain.exaggeration;
+                        maxElevation = tile.dem.max * this.terrain.exaggeration;
+                    }
+                    quadrant = new Aabb([
+                        quadrant.min[0],
+                        quadrant.min[1],
+                        minElevation
+                    ], [
+                        quadrant.max[0],
+                        quadrant.max[1],
+                        maxElevation
+                    ]);
                 }
                 stack.push({
                     aabb: quadrant,
@@ -34328,14 +34484,14 @@ class Transform {
         this.elevation = this.getElevation(this._center);
     }
     getElevation(lnglat) {
-        const merc = this.locationCoordinate(lnglat), tsc = this.terrainSourceCache;
-        if (!(tsc && tsc.isEnabled()))
+        if (!this.terrain)
             return 0;
-        const tileSize = tsc.tileSize, worldSize = (1 << this.tileZoom) * tileSize;
+        const merc = performance.MercatorCoordinate.fromLngLat(lnglat);
+        const worldSize = (1 << this.tileZoom) * performance.EXTENT;
         const mercX = merc.x * worldSize, mercY = merc.y * worldSize;
-        const tileX = Math.floor(mercX / tileSize), tileY = Math.floor(mercY / tileSize);
+        const tileX = Math.floor(mercX / performance.EXTENT), tileY = Math.floor(mercY / performance.EXTENT);
         const tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
-        return this.terrainSourceCache.getElevationWithExaggeration(tileID, mercX % tileSize, mercY % tileSize, tileSize);
+        return this.terrain.getElevation(tileID, mercX % performance.EXTENT, mercY % performance.EXTENT, performance.EXTENT);
     }
     getCameraPosition() {
         const lngLat = this.pointLocation(this.getCameraPoint());
@@ -34346,8 +34502,6 @@ class Transform {
         };
     }
     recalculateZoom() {
-        if (!this.terrainSourceCache || !this.terrainSourceCache.isEnabled())
-            return;
         const center = this.pointLocation3D(this.centerPoint);
         const elevation = this.getElevation(center);
         const deltaElevation = this.elevation - elevation;
@@ -34377,7 +34531,7 @@ class Transform {
         return this.coordinatePoint(this.locationCoordinate(lnglat));
     }
     locationPoint3D(lnglat) {
-        return this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat));
+        return this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat), this.pixelMatrix3D);
     }
     pointLocation(p) {
         return this.coordinateLocation(this.pointCoordinate(p));
@@ -34419,31 +34573,17 @@ class Transform {
         return new performance.MercatorCoordinate(performance.number(x0, x1, t) / this.worldSize, performance.number(y0, y1, t) / this.worldSize);
     }
     pointCoordinate3D(p) {
-        if (!this.terrainSourceCache)
-            return this.pointCoordinate(p);
-        const rgba = new Uint8Array(4);
-        const painter = this.terrainSourceCache._style.map.painter, context = painter.context, gl = context.gl;
-        context.bindFramebuffer.set(this.terrainSourceCache.getFramebuffer(painter, 'coords').framebuffer);
-        gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
-        context.bindFramebuffer.set(null);
-        const x = rgba[0] + (rgba[2] >> 4 << 8);
-        const y = rgba[1] + ((rgba[2] & 15) << 8);
-        const tileID = this.terrainSourceCache._coordsIndex[255 - rgba[3]];
-        const tile = tileID && this.terrainSourceCache.getTileByID(tileID);
-        if (!tile)
-            return this.pointCoordinate(p);
-        const coordsSize = this.terrainSourceCache._coordsTextureSize;
-        const worldSize = (1 << tile.tileID.canonical.z) * coordsSize;
-        return new performance.MercatorCoordinate((tile.tileID.canonical.x * coordsSize + x) / worldSize, (tile.tileID.canonical.y * coordsSize + y) / worldSize, this.terrainSourceCache.getElevationWithExaggeration(tile.tileID, x, y, coordsSize));
+        const coordinate = this.terrain && this.terrain.pointCoordinate(p);
+        return coordinate || this.pointCoordinate(p);
     }
-    coordinatePoint(coord, elevation = 0) {
+    coordinatePoint(coord, elevation = 0, pixelMatrix = this.pixelMatrix) {
         const p = [
             coord.x * this.worldSize,
             coord.y * this.worldSize,
             elevation,
             1
         ];
-        performance.transformMat4(p, p, this.pixelMatrix2);
+        performance.transformMat4(p, p, pixelMatrix);
         return new performance.pointGeometry(p[0] / p[3], p[1] / p[3]);
     }
     getBounds() {
@@ -34459,6 +34599,9 @@ class Transform {
             this.lngRange[1],
             this.latRange[1]
         ]);
+    }
+    getHorizon() {
+        return Math.tan(Math.PI / 2 - this._pitch) * this.cameraToCenterDistance * 0.85;
     }
     setMaxBounds(bounds) {
         if (bounds) {
@@ -34562,7 +34705,9 @@ class Transform {
             return;
         const halfFov = this._fov / 2;
         const offset = this.centerOffset;
+        const x = this.point.x, y = this.point.y;
         this.cameraToCenterDistance = 0.5 / Math.tan(halfFov) * this.height;
+        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
         let m = performance.identity(new Float64Array(16));
         performance.scale(m, m, [
             this.width / 2,
@@ -34592,16 +34737,17 @@ class Transform {
             1
         ]);
         this.glCoordMatrix = m;
-        this._pixelPerMeter = performance.mercatorZfromAltitude(1, this.center.lat) * this.worldSize;
+        this.cameraToSeaLevelDistance = this.terrain ? this.cameraToCenterDistance + this._elevation * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
         const groundAngle = Math.PI / 2 + this._pitch;
         const fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
-        const cameraAltitude = Math.cos(this._pitch) * this.cameraToCenterDistance / this._pixelPerMeter;
-        const cameraToCenterDistance = this.terrainSourceCache && this.terrainSourceCache.isEnabled() ? (cameraAltitude + this._elevation) * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
-        const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * cameraToCenterDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
-        const point = this.point;
-        const x = point.x, y = point.y;
-        const furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + cameraToCenterDistance;
-        const farZ = furthestDistance * 1.01;
+        const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToSeaLevelDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
+        const horizon = this.getHorizon();
+        const horizonAngle = Math.atan(horizon / this.cameraToCenterDistance);
+        const fovCenterToHorizon = 2 * horizonAngle * (0.5 + offset.y / (horizon * 2));
+        const topHalfSurfaceDistanceHorizon = Math.sin(fovCenterToHorizon) * this.cameraToSeaLevelDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovCenterToHorizon, 0.01, Math.PI - 0.01));
+        const furthestDistance = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistance + this.cameraToSeaLevelDistance;
+        const furthestDistanceHorizon = Math.cos(Math.PI / 2 - this._pitch) * topHalfSurfaceDistanceHorizon + this.cameraToSeaLevelDistance;
+        const farZ = Math.min(furthestDistance, furthestDistanceHorizon) * 1.01;
         const nearZ = this.height / 50;
         m = new Float64Array(16);
         performance.perspective(m, this._fov, this.width / this.height, nearZ, farZ);
@@ -34624,17 +34770,25 @@ class Transform {
             -y,
             0
         ]);
-        this.mercatorMatrix = performance.scale([], m, fromValues(this.worldSize, this.worldSize, this.worldSize));
-        performance.scale(m, m, fromValues(1, 1, this._pixelPerMeter));
+        this.mercatorMatrix = performance.scale([], m, [
+            this.worldSize,
+            this.worldSize,
+            this.worldSize
+        ]);
+        performance.scale(m, m, [
+            1,
+            1,
+            this._pixelPerMeter
+        ]);
         this.pixelMatrix = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
-        this.invProjMatrix = performance.invert([], m);
         performance.translate(m, m, [
             0,
             0,
             -this.elevation
         ]);
         this.projMatrix = m;
-        this.pixelMatrix2 = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
+        this.invProjMatrix = performance.invert([], m);
+        this.pixelMatrix3D = performance.multiply(new Float64Array(16), this.labelPlaneMatrix, m);
         const xShift = this.width % 2 / 2, yShift = this.height % 2 / 2, angleCos = Math.cos(this.angle), angleSin = Math.sin(this.angle), dx = x - Math.round(x) + angleCos * xShift + angleSin * yShift, dy = y - Math.round(y) + angleCos * yShift + angleSin * xShift;
         const alignedM = new Float64Array(m);
         performance.translate(alignedM, alignedM, [
@@ -34654,7 +34808,12 @@ class Transform {
         if (!this.pixelMatrixInverse)
             return 1;
         const coord = this.pointCoordinate(new performance.pointGeometry(0, 0));
-        const p = performance.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, 0, 1);
+        const p = [
+            coord.x * this.worldSize,
+            coord.y * this.worldSize,
+            0,
+            1
+        ];
         const topPoint = performance.transformMat4(p, p, this.pixelMatrix);
         return topPoint[3] / this.cameraToCenterDistance;
     }
@@ -36589,7 +36748,7 @@ class HandlerManager {
     _updateMapTransform(combinedResult, combinedEventsInProgress, deactivatedHandlers) {
         const map = this._map;
         const tr = map.transform;
-        const hasTerrain = map.style && map.style.terrainSourceCache && map.style.terrainSourceCache.isEnabled();
+        const hasTerrain = map.style && map.style.terrain;
         if (!hasChange(combinedResult) && !(hasTerrain && this._drag)) {
             return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
         }
@@ -36599,32 +36758,30 @@ class HandlerManager {
         }
         map._stop(true);
         around = around || map.transform.centerPoint;
+        const loc = tr.pointLocation(panDelta ? around.sub(panDelta) : around);
         if (bearingDelta)
             tr.bearing += bearingDelta;
         if (pitchDelta)
             tr.pitch += pitchDelta;
         if (zoomDelta)
             tr.zoom += zoomDelta;
-        if (combinedEventsInProgress.drag && !this._drag) {
-            this._drag = {
-                center: tr.centerPoint,
-                lngLat: tr.pointLocation(around),
-                point: around,
-                delta: panDelta,
-                handlerName: combinedEventsInProgress.drag.handlerName
-            };
-            tr.freezeElevation = true;
-        } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
-            tr.freezeElevation = false;
-            if (hasTerrain)
+        if (!hasTerrain) {
+            tr.setLocationAtPoint(loc, around);
+        } else {
+            if (combinedEventsInProgress.drag && !this._drag) {
+                this._drag = {
+                    center: tr.centerPoint,
+                    lngLat: tr.pointLocation(around),
+                    point: around,
+                    handlerName: combinedEventsInProgress.drag.handlerName
+                };
+                tr.freezeElevation = true;
+            } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
+                tr.freezeElevation = false;
                 tr.recalculateZoom();
-            this._drag = null;
-        } else if (combinedEventsInProgress.drag && this._drag) {
-            this._drag.delta = this._drag.delta.add(panDelta);
-            if (hasTerrain) {
+                this._drag = null;
+            } else if (combinedEventsInProgress.drag && this._drag) {
                 tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
-            } else {
-                tr.setLocationAtPoint(this._drag.lngLat, this._drag.point.add(this._drag.delta));
             }
         }
         this._map._update();
@@ -37013,7 +37170,7 @@ class Camera extends performance.Evented {
         }
         delete this._easeId;
         this.transform.freezeElevation = false;
-        if (this.transform.terrainSourceCache && this.transform.terrainSourceCache.isEnabled())
+        if (this.transform.terrain)
             this.transform.recalculateZoom();
         const wasZooming = this._zooming;
         const wasRotating = this._rotating;
@@ -37755,10 +37912,10 @@ class Map extends Camera {
         return this._update();
     }
     project(lnglat) {
-        return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
+        return this.style && this.style.terrain ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
     }
     unproject(point) {
-        return this.style && this.style.terrainSourceCache.isEnabled() ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
+        return this.style && this.style.terrain ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
     }
     isMoving() {
         return this._moving || this.handlers.isMoving();
@@ -38011,26 +38168,17 @@ class Map extends Camera {
         }
         return source.loaded();
     }
-    addTerrain(id, options) {
-        this.isSourceLoaded(id);
-        this.style.terrainSourceCache.enable(this.style.sourceCaches[id], options);
-        this.transform.updateElevation();
-        this.style.terrainSourceCache.update(this.transform);
+    setTerrain(options) {
+        if (options)
+            this.isSourceLoaded(options.source);
+        this.style.setTerrain(options);
         this._sourcesDirty = true;
         this._styleDirty = true;
         this.triggerRepaint();
-        this.fire(new performance.Event('terrain'));
         return this;
     }
-    isTerrainLoaded() {
-        return this.style.terrainSourceCache.isEnabled();
-    }
-    removeTerrain() {
-        this.style.terrainSourceCache.disable();
-        this.transform.updateElevation();
-        this.triggerRepaint();
-        this.fire(new performance.Event('terrain'));
-        return this;
+    getTerrain() {
+        return this.style.terrain && this.style.terrain.options;
     }
     areTilesLoaded() {
         const sources = this.style && this.style.sourceCaches;
@@ -38332,6 +38480,9 @@ class Map extends Camera {
             this._sourcesDirty = false;
             this.style._updateSources(this.transform);
         }
+        if (this.style.terrain)
+            this.style.terrain.sourceCache.update(this.transform);
+        this.transform.updateElevation();
         this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration, this._crossSourceCollisions);
         this.painter.render(this.style, {
             showTileBoundaries: this.showTileBoundaries,
@@ -39051,8 +39202,7 @@ class Marker extends performance.Evented {
             this._pos = this._pos.round();
         }
         DOM.setTransform(this._element, `${ anchorTranslate[this._anchor] } translate(${ this._pos.x }px, ${ this._pos.y }px) ${ pitch } ${ rotation }`);
-        const tsc = this._map.style && this._map.style.terrainSourceCache;
-        if (tsc && tsc.isEnabled() && !this._opacityTimeout)
+        if (this._map.style && this._map.style.terrain && !this._opacityTimeout)
             this._opacityTimeout = setTimeout(() => {
                 const lnglat = this._map.unproject(this._pos);
                 const metresPerPixel = 40075016.686 * Math.abs(Math.cos(this._lngLat.lat * Math.PI / 180)) / Math.pow(2, this._map.transform.tileZoom + 8);
@@ -39666,7 +39816,7 @@ class FullscreenControl {
 }
 
 class TerrainControl {
-    constructor(options = {}) {
+    constructor(options) {
         this.options = options;
         performance.bindAll([
             '_toggleTerrain',
@@ -39690,17 +39840,17 @@ class TerrainControl {
         this._map = undefined;
     }
     _toggleTerrain() {
-        if (this._map.style.terrainSourceCache.isEnabled()) {
-            this._map.removeTerrain();
+        if (this._map.getTerrain()) {
+            this._map.setTerrain(null);
         } else {
-            this._map.addTerrain(this.options.id, this.options.options);
+            this._map.setTerrain(this.options);
         }
         this._updateTerrainIcon();
     }
     _updateTerrainIcon() {
         this._terrainButton.classList.remove('maplibregl-ctrl-terrain', 'mapboxgl-ctrl-terrain');
         this._terrainButton.classList.remove('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
-        if (this._map.isTerrainLoaded()) {
+        if (this._map.style.terrain) {
             this._terrainButton.classList.add('maplibregl-ctrl-terrain-enabled', 'mapboxgl-ctrl-terrain-enabled');
             this._terrainButton.title = this._map._getUIString('TerrainControl.disableTerrain');
         } else {
