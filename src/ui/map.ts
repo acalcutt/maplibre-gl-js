@@ -3,7 +3,7 @@ import browser from '../util/browser';
 import DOM from '../util/dom';
 import {getImage, GetImageCallback, getJSON, ResourceType} from '../util/ajax';
 import {RequestManager} from '../util/request_manager';
-import Style, {TerrainOptions} from '../style/style';
+import Style from '../style/style';
 import EvaluationParameters from '../style/evaluation_parameters';
 import Painter from '../render/painter';
 import Transform from '../geo/transform';
@@ -51,7 +51,8 @@ import type {
     FilterSpecification,
     StyleSpecification,
     LightSpecification,
-    SourceSpecification
+    SourceSpecification,
+    TerrainSpecification
 } from '../style-spec/types.g';
 import {Callback} from '../types/callback';
 import type {ControlPosition, IControl} from './control/control';
@@ -200,7 +201,7 @@ const defaultOptions = {
  * @param {number} [options.clickTolerance=3] The max number of pixels a user can shift the mouse pointer during a click for it to be considered a valid click (as opposed to a mouse drag).
  * @param {boolean} [options.attributionControl=true] If `true`, an {@link AttributionControl} will be added to the map.
  * @param {string | Array<string>} [options.customAttribution] String or strings to show in an {@link AttributionControl}. Only applicable if `options.attributionControl` is `true`.
- * @param {boolean} [options.maplibreLogo=false] If `true`, the maplibre logo will be shown.
+ * @param {boolean} [options.maplibreLogo=false] If `true`, the MapLibre logo will be shown.
  * @param {string} [options.logoPosition='bottom-left'] A string representing the position of the MapLibre wordmark on the map. Valid options are `top-left`,`top-right`, `bottom-left`, `bottom-right`.
  * @param {boolean} [options.failIfMajorPerformanceCaveat=false] If `true`, map creation will fail if the performance of MapLibre
  *   GL JS would be dramatically worse than expected (i.e. a software renderer would be used).
@@ -432,6 +433,10 @@ class Map extends Camera {
         this.on('move', () => this._update(false));
         this.on('moveend', () => this._update(false));
         this.on('zoom', () => this._update(true));
+        this.on('terrain', () => {
+            this.painter.terrainFacilitator.dirty = true;
+            this._update(true);
+        });
 
         if (typeof window !== 'undefined') {
             addEventListener('online', this._onWindowOnline, false);
@@ -873,9 +878,7 @@ class Map extends Camera {
      * var point = map.project(coordinate);
      */
     project(lnglat: LngLatLike) {
-        return this.style && this.style.terrain ?
-            this.transform.locationPoint3D(LngLat.convert(lnglat)) :
-            this.transform.locationPoint(LngLat.convert(lnglat));
+        return this.transform.locationPoint(LngLat.convert(lnglat), this.style && this.style.terrain);
     }
 
     /**
@@ -891,9 +894,7 @@ class Map extends Camera {
      * });
      */
     unproject(point: PointLike) {
-        return this.style && this.style.terrain ?
-            this.transform.pointLocation3D(Point.convert(point)) :
-            this.transform.pointLocation(Point.convert(point));
+        return this.transform.pointLocation(Point.convert(point), this.style && this.style.terrain);
     }
 
     /**
@@ -1577,27 +1578,23 @@ class Map extends Camera {
 
     /**
      * Loads a 3D terrain mesh, based on a "raster-dem" source.
-     * @param {TerrainOptions} [options] Options object.
+     * @param {TerrainSpecification} [options] Options object.
      * @returns {Map} `this`
      * @example
      * map.setTerrain({ source: 'terrain' });
      */
-    setTerrain(options: TerrainOptions): Map {
-        if (options) this.isSourceLoaded(options.source);
+    setTerrain(options: TerrainSpecification): Map {
         this.style.setTerrain(options);
-        this._sourcesDirty = true;
-        this._styleDirty = true;
-        this.triggerRepaint();
         return this;
     }
 
     /**
      * Get the terrain-options if terrain is loaded
-     * @returns {TerrainOptions} the TerrainOptions passed to setTerrain
+     * @returns {TerrainSpecification} the TerrainSpecification passed to setTerrain
      * @example
      * map.getTerrain(); // { source: 'terrain' };
      */
-    getTerrain(): TerrainOptions {
+    getTerrain(): TerrainSpecification {
         return this.style.terrain && this.style.terrain.options;
     }
 
@@ -2580,8 +2577,8 @@ class Map extends Camera {
         }
 
         // update terrain stuff
-        if (this.style.terrain) this.style.terrain.sourceCache.update(this.transform);
-        this.transform.updateElevation();
+        if (this.style.terrain) this.style.terrain.sourceCache.update(this.transform, this.style.terrain);
+        this.transform.updateElevation(this.style.terrain);
 
         this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration, this._crossSourceCollisions);
 
