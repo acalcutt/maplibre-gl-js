@@ -29,7 +29,7 @@ export const plugins = (minified: boolean, production: boolean): Plugin[] => [
             '_token_stack:': ''
         }
     }),
-    production && strip({
+    production ? strip({
         sourceMap: true,
         functions: ['PerformanceUtils.*', 'Debug.*']
     }),
