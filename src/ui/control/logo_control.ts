@@ -24,8 +24,8 @@ class LogoControl implements IControl {
 
     constructor(options: LogoOptions = {}) {
         this.options = options;
+
         bindAll([
-            '_updateLogo',
             '_updateCompact'
         ], this);
     }
