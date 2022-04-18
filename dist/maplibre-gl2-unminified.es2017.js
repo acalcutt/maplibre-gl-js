@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.8-pre.3/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.9/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -1770,6 +1770,7 @@ var $root = {
         units: 'degrees'
     },
     light: { type: 'light' },
+    terrain: { type: 'terrain' },
     sources: {
         required: true,
         type: 'sources'
@@ -1928,7 +1929,6 @@ var source_raster_dem = {
         type: 'enum',
         values: {
             terrarium: {},
-            mtk: {},
             mapbox: {}
         },
         'default': 'mapbox'
@@ -3021,6 +3021,21 @@ var light = {
         transition: true
     }
 };
+var terrain = {
+    source: {
+        type: 'string',
+        required: true
+    },
+    exaggeration: {
+        type: 'number',
+        minimum: 0,
+        'default': 1
+    },
+    elevationOffset: {
+        type: 'number',
+        'default': 450
+    }
+};
 var paint$9 = [
     'paint_fill',
     'paint_line',
@@ -4074,6 +4089,7 @@ var spec = {
     function_stop: function_stop,
     expression: expression,
     light: light,
+    terrain: terrain,
     paint: paint$9,
     paint_fill: paint_fill,
     'paint_fill-extrusion': {
@@ -10326,6 +10342,35 @@ function validateLight$1(options) {
     return errors;
 }
 
+function validateTerrain(options) {
+    var terrain = options.value;
+    var styleSpec = options.styleSpec;
+    var terrainSpec = styleSpec.terrain;
+    var style = options.style;
+    var errors = [];
+    var rootType = getType(terrain);
+    if (terrain === undefined) {
+        return errors;
+    } else if (rootType !== 'object') {
+        errors = errors.concat([new ValidationError('terrain', terrain, 'object expected, ' + rootType + ' found')]);
+        return errors;
+    }
+    for (var key in terrain) {
+        if (terrainSpec[key]) {
+            errors = errors.concat(validate({
+                key: key,
+                value: terrain[key],
+                valueSpec: terrainSpec[key],
+                style: style,
+                styleSpec: styleSpec
+            }));
+        } else {
+            errors = errors.concat([new ValidationError(key, terrain[key], 'unknown property "' + key + '"')]);
+        }
+    }
+    return errors;
+}
+
 function validateFormatted(options) {
     if (validateString(options).length === 0) {
         return [];
@@ -10356,6 +10401,7 @@ var VALIDATORS = {
     'object': validateObject,
     'source': validateSource,
     'light': validateLight$1,
+    'terrain': validateTerrain,
     'string': validateString,
     'formatted': validateFormatted,
     'resolvedImage': validateImage
@@ -10421,6 +10467,7 @@ function validateStyleMin(style, styleSpec) {
 }
 validateStyleMin.source = wrapCleanErrors(validateSource);
 validateStyleMin.light = wrapCleanErrors(validateLight$1);
+validateStyleMin.terrain = wrapCleanErrors(validateTerrain);
 validateStyleMin.layer = wrapCleanErrors(validateLayer);
 validateStyleMin.filter = wrapCleanErrors(validateFilter);
 validateStyleMin.paintProperty = wrapCleanErrors(validatePaintProperty$1);
@@ -22234,8 +22281,8 @@ var DEMData = function DEMData(uid, data, encoding) {
     if (data.height !== data.width) {
         throw new RangeError('DEM tiles must be square');
     }
-    if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
-        warnOnce('"' + encoding + '" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".');
+    if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium') {
+        warnOnce('"' + encoding + '" is not a valid encoding type. Valid types include "mapbox" and "terrarium".');
         return;
     }
     this.stride = data.height;
@@ -22269,57 +22316,16 @@ var DEMData = function DEMData(uid, data, encoding) {
 DEMData.prototype.get = function get(x, y) {
     var pixels = new Uint8Array(this.data.buffer);
     var index = this._idx(x, y) * 4;
-    var unpack = this._unpackMapbox;
-    if (this.encoding === 'terrarium') {
-        unpack = this._unpackTerrarium;
-    }
-    if (this.encoding === 'mtk') {
-        unpack = this._unpackMTK;
-    }
+    var unpack = this.encoding === 'terrarium' ? this._unpackTerrarium : this._unpackMapbox;
     return unpack(pixels[index], pixels[index + 1], pixels[index + 2]);
 };
-DEMData.prototype.getHillshadingUnpackVector = function getHillshadingUnpackVector() {
-    if (this.encoding === 'terrarium') {
-        return [
-            256,
-            1,
-            1 / 256,
-            32768
-        ];
-    }
-    if (this.encoding === 'mtk') {
-        return [
-            6553.6,
-            25.6,
-            0.1,
-            10000
-        ];
-    }
-    return [
-        6553.6,
-        25.6,
-        0.1,
-        10000
-    ];
-};
 DEMData.prototype.getUnpackVector = function getUnpackVector() {
-    if (this.encoding === 'terrarium') {
-        return [
-            256,
-            1,
-            1 / 256,
-            32768
-        ];
-    }
-    if (this.encoding === 'mtk') {
-        return [
-            65536 * 0.03,
-            256 * 0.03,
-            0.03,
-            10000
-        ];
-    }
-    return [
+    return this.encoding === 'terrarium' ? [
+        256,
+        1,
+        1 / 256,
+        32768
+    ] : [
         6553.6,
         25.6,
         0.1,
@@ -22334,9 +22340,6 @@ DEMData.prototype._idx = function _idx(x, y) {
 };
 DEMData.prototype._unpackMapbox = function _unpackMapbox(r, g, b) {
     return (r * 256 * 256 + g * 256 + b) / 10 - 10000;
-};
-DEMData.prototype._unpackMTK = function _unpackMTK(r, g, b) {
-    return (r * 256 * 256 + g * 256 + b) * 0.03 - 10000;
 };
 DEMData.prototype._unpackTerrarium = function _unpackTerrarium(r, g, b) {
     return r * 256 + g + b / 256 - 32768;
@@ -28716,7 +28719,7 @@ var SourceCache = function (Evented) {
             if (this$1$1._sourceLoaded && !this$1$1._paused && e.dataType === 'source' && e.sourceDataType === 'content') {
                 this$1$1.reload();
                 if (this$1$1.transform) {
-                    this$1$1.update(this$1$1.transform);
+                    this$1$1.update(this$1$1.transform, this$1$1.terrain);
                 }
             }
         });
@@ -28788,7 +28791,7 @@ var SourceCache = function (Evented) {
             this.reload();
         }
         if (this.transform) {
-            this.update(this.transform);
+            this.update(this.transform, this.terrain);
         }
     };
     SourceCache.prototype._loadTile = function _loadTile(tile, callback) {
@@ -28895,7 +28898,7 @@ var SourceCache = function (Evented) {
             if (err.status !== 404) {
                 this._source.fire(new performance.ErrorEvent(err, { tile: tile }));
             } else {
-                this.update(this.transform);
+                this.update(this.transform, this.terrain);
             }
             return;
         }
@@ -29043,9 +29046,10 @@ var SourceCache = function (Evented) {
             }
         }
     };
-    SourceCache.prototype.update = function update(transform) {
+    SourceCache.prototype.update = function update(transform, terrain) {
         var this$1$1 = this;
         this.transform = transform;
+        this.terrain = terrain;
         if (!this._sourceLoaded || this._paused) {
             return;
         }
@@ -29065,7 +29069,8 @@ var SourceCache = function (Evented) {
                 minzoom: this._source.minzoom,
                 maxzoom: this._source.maxzoom,
                 roundZoom: this.usedForTerrain ? false : this._source.roundZoom,
-                reparseOverscaled: this._source.reparseOverscaled
+                reparseOverscaled: this._source.reparseOverscaled,
+                terrain: terrain
             });
             if (this._source.hasTile) {
                 idealTileIDs = idealTileIDs.filter(function (coord) {
@@ -29115,7 +29120,7 @@ var SourceCache = function (Evented) {
                     retain[id$1] = parentsForFading[id$1];
                 }
             }
-            if (this.style && this.style.terrain) {
+            if (terrain) {
                 var idealRasterTileIDs = {};
                 var missingTileIDs = {};
                 for (var i$2 = 0, list$2 = idealTileIDs; i$2 < list$2.length; i$2 += 1) {
@@ -29345,10 +29350,10 @@ var SourceCache = function (Evented) {
         }
         var cameraPointQueryGeometry = has3DLayer ? transform.getCameraQueryGeometry(pointQueryGeometry) : pointQueryGeometry;
         var queryGeometry = pointQueryGeometry.map(function (p) {
-            return transform.pointCoordinate3D(p);
+            return transform.pointCoordinate(p, this$1$1.terrain);
         });
         var cameraQueryGeometry = cameraPointQueryGeometry.map(function (p) {
-            return transform.pointCoordinate3D(p);
+            return transform.pointCoordinate(p, this$1$1.terrain);
         });
         var ids = this.getIds();
         var minX = Infinity;
@@ -30875,8 +30880,9 @@ function shiftVariableCollisionBox(collisionBox, shiftX, shiftY, rotateWithMap, 
         anchorPointY: anchorPointY
     };
 }
-var Placement = function Placement(transform, fadeDuration, crossSourceCollisions, prevPlacement) {
+var Placement = function Placement(transform, terrain, fadeDuration, crossSourceCollisions, prevPlacement) {
     this.transform = transform.clone();
+    this.terrain = terrain;
     this.collisionIndex = new CollisionIndex(this.transform);
     this.placements = {};
     this.opacities = {};
@@ -31048,8 +31054,8 @@ Placement.prototype.placeLayerBucketPart = function placeLayerBucketPart(bucketP
             verticalTextFeatureIndex = collisionArrays.verticalTextFeatureIndex;
         }
         var tileID = this$1$1.retainedQueryData[bucket.bucketInstanceId].tileID;
-        var getElevation = this$1$1.transform.terrain ? function (x, y) {
-            return this$1$1.transform.terrain.getElevation(tileID, x, y);
+        var getElevation = this$1$1.terrain ? function (x, y) {
+            return this$1$1.terrain.getElevation(tileID, x, y);
         } : null;
         for (var i$1 = 0, list = [
                     'textBox',
@@ -31601,8 +31607,8 @@ LayerPlacement.prototype.continuePlacement = function continuePlacement(tiles, p
     }
     return false;
 };
-var PauseablePlacement = function PauseablePlacement(transform, order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, prevPlacement) {
-    this.placement = new Placement(transform, fadeDuration, crossSourceCollisions, prevPlacement);
+var PauseablePlacement = function PauseablePlacement(transform, terrain, order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, prevPlacement) {
+    this.placement = new Placement(transform, terrain, fadeDuration, crossSourceCollisions, prevPlacement);
     this._currentPlacementIndex = order.length - 1;
     this._forceFullPlacement = forceFullPlacement;
     this._showCollisionBoxes = showCollisionBoxes;
@@ -31865,14 +31871,15 @@ var TerrainSourceCache = function (Evented) {
             tile.textures = [];
         }
     };
-    TerrainSourceCache.prototype.update = function update(transform) {
-        this.sourceCache.update(transform);
+    TerrainSourceCache.prototype.update = function update(transform, terrain) {
+        this.sourceCache.update(transform, terrain);
         this._renderableTilesKeys = [];
         for (var i = 0, list = transform.coveringTiles({
                     tileSize: this.tileSize,
                     minzoom: this.minzoom,
                     maxzoom: this.maxzoom,
-                    reparseOverscaled: false
+                    reparseOverscaled: false,
+                    terrain: terrain
                 }); i < list.length; i += 1) {
             var tileID = list[i];
             this._renderableTilesKeys.push(tileID.key);
@@ -31996,7 +32003,7 @@ var Terrain = function Terrain(style, sourceCache, options) {
     this.qualityFactor = 2;
     this.meshSize = 128;
     this._demMatrixCache = {};
-    this._coordsIndex = [];
+    this.coordsIndex = [];
     this._coordsTextureSize = 1024;
     this.clearRerenderCache();
 };
@@ -32197,11 +32204,11 @@ Terrain.prototype.pointCoordinate = function pointCoordinate(p) {
     var rgba = new Uint8Array(4);
     var painter = this.style.map.painter, context = painter.context, gl = context.gl;
     context.bindFramebuffer.set(this.getFramebuffer('coords').framebuffer);
-    gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+    gl.readPixels(p.x, painter.height / devicePixelRatio - p.y - 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
     context.bindFramebuffer.set(null);
     var x = rgba[0] + (rgba[2] >> 4 << 8);
     var y = rgba[1] + ((rgba[2] & 15) << 8);
-    var tileID = this._coordsIndex[255 - rgba[3]];
+    var tileID = this.coordsIndex[255 - rgba[3]];
     var tile = tileID && this.sourceCache.getTileByID(tileID);
     if (!tile) {
         return null;
@@ -32387,6 +32394,7 @@ var Style = function (Evented) {
         }
         this.dispatcher.broadcast('setLayers', this._serializeLayers(this._order));
         this.light = new Light(this.stylesheet.light);
+        this.setTerrain(this.stylesheet.terrain);
         this.fire(new performance.Event('data', { dataType: 'style' }));
         this.fire(new performance.Event('style.load'));
     };
@@ -32554,29 +32562,46 @@ var Style = function (Evented) {
     };
     Style.prototype.setTerrain = function setTerrain(options) {
         var this$1$1 = this;
+        this._checkLoaded();
         if (this._terrainDataCallback) {
             this.off('data', this._terrainDataCallback);
         }
+        if (this._terrainfreezeElevationCallback) {
+            this.map.off('freezeElevation', this._terrainfreezeElevationCallback);
+        }
         if (!options) {
-            this.terrain = this.map.transform.terrain = null;
-            this.map.transform.updateElevation();
+            this.terrain = null;
+            this.map.transform.updateElevation(this.terrain);
         } else {
             var sourceCache = this.sourceCaches[options.source];
-            this.map.transform.terrain = this.terrain = new Terrain(this, sourceCache, options);
-            this.map.transform.updateElevation();
+            if (!sourceCache) {
+                throw new Error('cannot load terrain, because there exists no source with ID: ' + options.source);
+            }
+            this.terrain = new Terrain(this, sourceCache, options);
+            this.map.transform.updateElevation(this.terrain);
+            this._terrainfreezeElevationCallback = function (e) {
+                if (e.freeze) {
+                    this$1$1.map.transform.freezeElevation = true;
+                } else {
+                    this$1$1.map.transform.freezeElevation = false;
+                    this$1$1.map.transform.recalculateZoom(this$1$1.terrain);
+                }
+            };
             this._terrainDataCallback = function (e) {
                 if (!e.tile) {
                     return;
                 }
                 if (e.sourceId === options.source) {
-                    this$1$1.map.transform.updateElevation();
+                    this$1$1.map.transform.updateElevation(this$1$1.terrain);
                     this$1$1.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
                 } else if (e.source.type === 'geojson') {
                     this$1$1.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
                 }
             };
             this.on('data', this._terrainDataCallback);
+            this.map.on('freezeElevation', this._terrainfreezeElevationCallback);
         }
+        this.map.fire(new performance.Event('terrain', { terrain: options }));
     };
     Style.prototype.setState = function setState(nextState) {
         var this$1$1 = this;
@@ -33173,7 +33198,7 @@ var Style = function (Evented) {
     };
     Style.prototype._updateSources = function _updateSources(transform) {
         for (var id in this.sourceCaches) {
-            this.sourceCaches[id].update(transform);
+            this.sourceCaches[id].update(transform, this.terrain);
         }
     };
     Style.prototype._generateCollisionBoxes = function _generateCollisionBoxes() {
@@ -33207,7 +33232,7 @@ var Style = function (Evented) {
         this.crossTileSymbolIndex.pruneUnusedLayers(this._order);
         forceFullPlacement = forceFullPlacement || this._layerOrderChanged || fadeDuration === 0;
         if (forceFullPlacement || !this.pauseablePlacement || this.pauseablePlacement.isDone() && !this.placement.stillRecent(performance.exported.now(), transform.zoom)) {
-            this.pauseablePlacement = new PauseablePlacement(transform, this._order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, this.placement);
+            this.pauseablePlacement = new PauseablePlacement(transform, this.terrain, this._order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, this.placement);
             this._layerOrderChanged = false;
         }
         if (this.pauseablePlacement.isDone()) {
@@ -34086,7 +34111,7 @@ var hillshadeUniformPrepareValues = function (tileID, dem) {
             stride
         ],
         'u_zoom': tileID.overscaledZ,
-        'u_unpack': dem.getHillshadingUnpackVector()
+        'u_unpack': dem.getUnpackVector()
     };
 };
 function getTileLatRange(painter, tileID) {
@@ -36372,7 +36397,7 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
         var matrix = painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('fill-extrusion-translate'), layer.paint.get('fill-extrusion-translate-anchor'));
         var shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
         var uniformValues = image ? fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, opacity, coord, crossfade, tile) : fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient, opacity);
-        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
+        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, painter.style.terrain && bucket.centroidVertexBuffer);
     }
 }
 
@@ -36392,7 +36417,7 @@ function drawHillshade(painter, sourceCache, layer, tileIDs) {
     for (var i = 0, list = coords; i < list.length; i += 1) {
         var coord = list[i];
         var tile = sourceCache.getTile(coord);
-        if (tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
+        if (typeof tile.needsHillshadePrepare !== 'undefined' && tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
             prepareHillshade(painter, tile, layer, depthMode, StencilMode.disabled, colorMode);
         } else if (painter.renderPass === 'translucent') {
             renderHillshade(painter, coord, tile, layer, depthMode, stencilModes[coord.overscaledZ], colorMode);
@@ -36577,7 +36602,10 @@ function drawBackground(painter, sourceCache, layer, coords) {
     var depthMode = painter.depthModeForSublayer(0, pass === 'opaque' ? DepthMode.ReadWrite : DepthMode.ReadOnly);
     var colorMode = painter.colorModeForRenderPass();
     var program = painter.useProgram(image ? 'backgroundPattern' : 'background');
-    var tileIDs = coords ? coords : transform.coveringTiles({ tileSize: tileSize });
+    var tileIDs = coords ? coords : transform.coveringTiles({
+        tileSize: tileSize,
+        terrain: painter.style.terrain
+    });
     if (image) {
         context.activeTexture.set(gl.TEXTURE0);
         painter.imageManager.bind(painter.context);
@@ -36764,16 +36792,16 @@ function drawCoords(painter, terrain) {
         color: performance.Color.transparent,
         depth: 1
     });
-    terrain._coordsIndex = [];
+    terrain.coordsIndex = [];
     for (var i = 0, list = tiles; i < list.length; i += 1) {
         var tile = list[i];
         var terrainData = terrain.getTerrainData(tile.tileID);
         context.activeTexture.set(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, coords.texture);
         var posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
-        var uniformValues = terrainCoordsUniformValues(posMatrix, 255 - terrain._coordsIndex.length);
+        var uniformValues = terrainCoordsUniformValues(posMatrix, 255 - terrain.coordsIndex.length);
         program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
-        terrain._coordsIndex.push(tile.tileID.key);
+        terrain.coordsIndex.push(tile.tileID.key);
     }
     context.bindFramebuffer.set(null);
     context.viewport.set([
@@ -36969,6 +36997,7 @@ var Painter = function Painter(gl, transform) {
     this.transform = transform;
     this._tileTextures = {};
     this.terrainFacilitator = {
+        dirty: true,
         matrix: performance.create(),
         renderTime: 0
     };
@@ -37211,9 +37240,10 @@ Painter.prototype.render = function render(style, options) {
     if (renderToTexture) {
         this.opaquePassCutoff = 0;
         var newTiles = this.style.terrain.sourceCache.tilesAfterTime(this.terrainFacilitator.renderTime);
-        if (!performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
+        if (this.terrainFacilitator.dirty || !performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
             performance.copy(this.terrainFacilitator.matrix, this.transform.projMatrix);
             this.terrainFacilitator.renderTime = Date.now();
+            this.terrainFacilitator.dirty = false;
             drawDepth(this, this.style.terrain);
             drawCoords(this, this.style.terrain);
         }
@@ -37753,7 +37783,6 @@ Transform.prototype.clone = function clone() {
     clone._pitch = this._pitch;
     clone._unmodified = this._unmodified;
     clone._edgeInsets = this._edgeInsets.clone();
-    clone.terrain = this.terrain;
     clone._calcMatrices();
     return clone;
 };
@@ -37887,13 +37916,9 @@ prototypeAccessors.elevation.get = function () {
     return this._elevation;
 };
 prototypeAccessors.elevation.set = function (elevation) {
-    if (this.freezeElevation) {
-        return;
-    }
     if (elevation === this._elevation) {
         return;
     }
-    this._unmodified = false;
     this._elevation = elevation;
     this._constrain();
     this._calcMatrices();
@@ -37968,10 +37993,10 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
     ];
     var cameraFrustum = Frustum.fromInvProjectionMatrix(this.invProjMatrix, this.worldSize, z);
     var minZoom = options.minzoom || 0;
-    if (!this.terrain && this.pitch <= 60 && this._edgeInsets.top < 0.1) {
+    if (!options.terrain && this.pitch <= 60 && this._edgeInsets.top < 0.1) {
         minZoom = z;
     }
-    var radiusOfMaxLvlLodInTiles = this.terrain ? 2 / Math.min(this.tileSize, options.tileSize) * this.tileSize : 3;
+    var radiusOfMaxLvlLodInTiles = options.terrain ? 2 / Math.min(this.tileSize, options.tileSize) * this.tileSize : 3;
     var newRootTile = function (wrap) {
         return {
             aabb: new Aabb([
@@ -38013,7 +38038,7 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
             }
             fullyVisible = intersectResult === 2;
         }
-        var refPoint = this.terrain ? cameraPoint : centerPoint;
+        var refPoint = options.terrain ? cameraPoint : centerPoint;
         var distanceX = it.aabb.distanceX(refPoint);
         var distanceY = it.aabb.distanceY(refPoint);
         var longestDim = Math.max(Math.abs(distanceX), Math.abs(distanceY));
@@ -38035,13 +38060,13 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
             var childY = (y << 1) + (i$1 >> 1);
             var childZ = it.zoom + 1;
             var quadrant = it.aabb.quadrant(i$1);
-            if (this.terrain) {
+            if (options.terrain) {
                 var tileID = new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY);
-                var tile = this.terrain.getTerrainData(tileID).tile;
+                var tile = options.terrain.getTerrainData(tileID).tile;
                 var minElevation = this.elevation, maxElevation = this.elevation;
                 if (tile && tile.dem) {
-                    minElevation = tile.dem.min * this.terrain.exaggeration;
-                    maxElevation = tile.dem.max * this.terrain.exaggeration;
+                    minElevation = tile.dem.min * options.terrain.exaggeration;
+                    maxElevation = tile.dem.max * options.terrain.exaggeration;
                 }
                 quadrant = new Aabb([
                     quadrant.min[0],
@@ -38098,19 +38123,19 @@ Transform.prototype.unproject = function unproject(point) {
 prototypeAccessors.point.get = function () {
     return this.project(this.center);
 };
-Transform.prototype.updateElevation = function updateElevation() {
-    this.elevation = this.getElevation(this._center);
-};
-Transform.prototype.getElevation = function getElevation(lnglat) {
-    if (!this.terrain) {
-        return 0;
+Transform.prototype.updateElevation = function updateElevation(terrain) {
+    if (this.freezeElevation) {
+        return;
     }
+    this.elevation = terrain ? this.getElevation(this._center, terrain) : 0;
+};
+Transform.prototype.getElevation = function getElevation(lnglat, terrain) {
     var merc = performance.MercatorCoordinate.fromLngLat(lnglat);
     var worldSize = (1 << this.tileZoom) * performance.EXTENT;
     var mercX = merc.x * worldSize, mercY = merc.y * worldSize;
     var tileX = Math.floor(mercX / performance.EXTENT), tileY = Math.floor(mercY / performance.EXTENT);
     var tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
-    return this.terrain.getElevation(tileID, mercX % performance.EXTENT, mercY % performance.EXTENT, performance.EXTENT);
+    return terrain.getElevation(tileID, mercX % performance.EXTENT, mercY % performance.EXTENT, performance.EXTENT);
 };
 Transform.prototype.getCameraPosition = function getCameraPosition() {
     var lngLat = this.pointLocation(this.getCameraPoint());
@@ -38120,9 +38145,9 @@ Transform.prototype.getCameraPosition = function getCameraPosition() {
         altitude: altitude + this.elevation
     };
 };
-Transform.prototype.recalculateZoom = function recalculateZoom() {
-    var center = this.pointLocation3D(this.centerPoint);
-    var elevation = this.getElevation(center);
+Transform.prototype.recalculateZoom = function recalculateZoom(terrain) {
+    var center = this.pointLocation(this.centerPoint, terrain);
+    var elevation = this.getElevation(center, terrain);
     var deltaElevation = this.elevation - elevation;
     if (!deltaElevation) {
         return;
@@ -38147,25 +38172,25 @@ Transform.prototype.setLocationAtPoint = function setLocationAtPoint(lnglat, poi
         this.center = this.center.wrap();
     }
 };
-Transform.prototype.locationPoint = function locationPoint(lnglat) {
-    return this.coordinatePoint(this.locationCoordinate(lnglat));
+Transform.prototype.locationPoint = function locationPoint(lnglat, terrain) {
+    return terrain ? this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat, terrain), this.pixelMatrix3D) : this.coordinatePoint(this.locationCoordinate(lnglat));
 };
-Transform.prototype.locationPoint3D = function locationPoint3D(lnglat) {
-    return this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat), this.pixelMatrix3D);
-};
-Transform.prototype.pointLocation = function pointLocation(p) {
-    return this.coordinateLocation(this.pointCoordinate(p));
-};
-Transform.prototype.pointLocation3D = function pointLocation3D(p) {
-    return this.coordinateLocation(this.pointCoordinate3D(p));
+Transform.prototype.pointLocation = function pointLocation(p, terrain) {
+    return this.coordinateLocation(this.pointCoordinate(p, terrain));
 };
 Transform.prototype.locationCoordinate = function locationCoordinate(lnglat) {
     return performance.MercatorCoordinate.fromLngLat(lnglat);
 };
 Transform.prototype.coordinateLocation = function coordinateLocation(coord) {
-    return coord.toLngLat();
+    return coord && coord.toLngLat();
 };
-Transform.prototype.pointCoordinate = function pointCoordinate(p) {
+Transform.prototype.pointCoordinate = function pointCoordinate(p, terrain) {
+    if (terrain) {
+        var coordinate = terrain.pointCoordinate(p);
+        if (coordinate != null) {
+            return coordinate;
+        }
+    }
     var targetZ = 0;
     var coord0 = [
         p.x,
@@ -38191,10 +38216,6 @@ Transform.prototype.pointCoordinate = function pointCoordinate(p) {
     var z1 = coord1[2] / w1;
     var t = z0 === z1 ? 0 : (targetZ - z0) / (z1 - z0);
     return new performance.MercatorCoordinate(performance.number(x0, x1, t) / this.worldSize, performance.number(y0, y1, t) / this.worldSize);
-};
-Transform.prototype.pointCoordinate3D = function pointCoordinate3D(p) {
-    var coordinate = this.terrain && this.terrain.pointCoordinate(p);
-    return coordinate || this.pointCoordinate(p);
 };
 Transform.prototype.coordinatePoint = function coordinatePoint(coord, elevation, pixelMatrix) {
     if (elevation === void 0)
@@ -38370,7 +38391,7 @@ Transform.prototype._calcMatrices = function _calcMatrices() {
         1
     ]);
     this.glCoordMatrix = m;
-    this.cameraToSeaLevelDistance = this.terrain ? this.cameraToCenterDistance + this._elevation * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
+    this.cameraToSeaLevelDistance = this.cameraToCenterDistance + this._elevation * this._pixelPerMeter / Math.cos(this._pitch);
     var groundAngle = Math.PI / 2 + this._pitch;
     var fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
     var topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToSeaLevelDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
@@ -40546,8 +40567,8 @@ HandlerManager.prototype._applyChanges = function _applyChanges() {
 HandlerManager.prototype._updateMapTransform = function _updateMapTransform(combinedResult, combinedEventsInProgress, deactivatedHandlers) {
     var map = this._map;
     var tr = map.transform;
-    var hasTerrain = map.style && map.style.terrain;
-    if (!hasChange(combinedResult) && !(hasTerrain && this._drag)) {
+    var terrain = map.style && map.style.terrain;
+    if (!hasChange(combinedResult) && !(terrain && this._drag)) {
         return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
     }
     var panDelta = combinedResult.panDelta;
@@ -40571,7 +40592,7 @@ HandlerManager.prototype._updateMapTransform = function _updateMapTransform(comb
     if (zoomDelta) {
         tr.zoom += zoomDelta;
     }
-    if (!hasTerrain) {
+    if (!terrain) {
         tr.setLocationAtPoint(loc, around);
     } else {
         if (combinedEventsInProgress.drag && !this._drag) {
@@ -40581,10 +40602,9 @@ HandlerManager.prototype._updateMapTransform = function _updateMapTransform(comb
                 point: around,
                 handlerName: combinedEventsInProgress.drag.handlerName
             };
-            tr.freezeElevation = true;
+            map.fire(new performance.Event('freezeElevation', { freeze: true }));
         } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
-            tr.freezeElevation = false;
-            tr.recalculateZoom();
+            map.fire(new performance.Event('freezeElevation', { freeze: false }));
             this._drag = null;
         } else if (combinedEventsInProgress.drag && this._drag) {
             tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
@@ -40969,7 +40989,7 @@ var Camera = function (Evented) {
         if (currently === void 0)
             currently = {};
         this._moving = true;
-        this.transform.freezeElevation = true;
+        this.fire(new performance.Event('freezeElevation', { freeze: true }));
         if (!noMoveStart && !currently.moving) {
             this.fire(new performance.Event('movestart', eventData));
         }
@@ -41000,10 +41020,7 @@ var Camera = function (Evented) {
             return;
         }
         delete this._easeId;
-        this.transform.freezeElevation = false;
-        if (this.transform.terrain) {
-            this.transform.recalculateZoom();
-        }
+        this.fire(new performance.Event('freezeElevation', { freeze: false }));
         var wasZooming = this._zooming;
         var wasRotating = this._rotating;
         var wasPitching = this._pitching;
@@ -41352,10 +41369,7 @@ var LogoControl = function LogoControl(options) {
     if (options === void 0)
         options = {};
     this.options = options;
-    performance.bindAll([
-        '_updateLogo',
-        '_updateCompact'
-    ], this);
+    performance.bindAll(['_updateCompact'], this);
 };
 LogoControl.prototype.getDefaultPosition = function getDefaultPosition() {
     return 'bottom-left';
@@ -41584,6 +41598,10 @@ var Map = function (Camera) {
         this.on('zoom', function () {
             return this$1$1._update(true);
         });
+        this.on('terrain', function () {
+            this$1$1.painter.terrainFacilitator.dirty = true;
+            this$1$1._update(true);
+        });
         if (typeof window !== 'undefined') {
             addEventListener('online', this._onWindowOnline, false);
             addEventListener('resize', this._onWindowResize, false);
@@ -41798,10 +41816,10 @@ var Map = function (Camera) {
         return this._update();
     };
     Map.prototype.project = function project(lnglat) {
-        return this.style && this.style.terrain ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
+        return this.transform.locationPoint(performance.LngLat.convert(lnglat), this.style && this.style.terrain);
     };
     Map.prototype.unproject = function unproject(point) {
-        return this.style && this.style.terrain ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
+        return this.transform.pointLocation(performance.pointGeometry.convert(point), this.style && this.style.terrain);
     };
     Map.prototype.isMoving = function isMoving() {
         return this._moving || this.handlers.isMoving();
@@ -42060,13 +42078,7 @@ var Map = function (Camera) {
         return source.loaded();
     };
     Map.prototype.setTerrain = function setTerrain(options) {
-        if (options) {
-            this.isSourceLoaded(options.source);
-        }
         this.style.setTerrain(options);
-        this._sourcesDirty = true;
-        this._styleDirty = true;
-        this.triggerRepaint();
         return this;
     };
     Map.prototype.getTerrain = function getTerrain() {
@@ -42404,9 +42416,9 @@ var Map = function (Camera) {
             this.style._updateSources(this.transform);
         }
         if (this.style.terrain) {
-            this.style.terrain.sourceCache.update(this.transform);
+            this.style.terrain.sourceCache.update(this.transform, this.style.terrain);
         }
-        this.transform.updateElevation();
+        this.transform.updateElevation(this.style.terrain);
         this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration, this._crossSourceCollisions);
         this.painter.render(this.style, {
             showTileBoundaries: this.showTileBoundaries,
@@ -43020,6 +43032,10 @@ var Marker = function (Evented) {
         return this;
     };
     Marker.prototype.remove = function remove() {
+        if (this._opacityTimeout) {
+            clearTimeout(this._opacityTimeout);
+            delete this._opacityTimeout;
+        }
         if (this._map) {
             this._map.off('click', this._onMapClick);
             this._map.off('move', this._update);
