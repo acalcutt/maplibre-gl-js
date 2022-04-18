@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.8-pre.3/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.1.9/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -968,6 +968,7 @@ var $root = {
         units: 'degrees'
     },
     light: { type: 'light' },
+    terrain: { type: 'terrain' },
     sources: {
         required: true,
         type: 'sources'
@@ -1126,7 +1127,6 @@ var source_raster_dem = {
         type: 'enum',
         values: {
             terrarium: {},
-            mtk: {},
             mapbox: {}
         },
         'default': 'mapbox'
@@ -2219,6 +2219,21 @@ var light = {
         transition: true
     }
 };
+var terrain = {
+    source: {
+        type: 'string',
+        required: true
+    },
+    exaggeration: {
+        type: 'number',
+        minimum: 0,
+        'default': 1
+    },
+    elevationOffset: {
+        type: 'number',
+        'default': 450
+    }
+};
 var paint$9 = [
     'paint_fill',
     'paint_line',
@@ -3272,6 +3287,7 @@ var spec = {
     function_stop: function_stop,
     expression: expression,
     light: light,
+    terrain: terrain,
     paint: paint$9,
     paint_fill: paint_fill,
     'paint_fill-extrusion': {
@@ -9108,6 +9124,35 @@ function validateLight$1(options) {
     return errors;
 }
 
+function validateTerrain(options) {
+    const terrain = options.value;
+    const styleSpec = options.styleSpec;
+    const terrainSpec = styleSpec.terrain;
+    const style = options.style;
+    let errors = [];
+    const rootType = getType(terrain);
+    if (terrain === undefined) {
+        return errors;
+    } else if (rootType !== 'object') {
+        errors = errors.concat([new ValidationError('terrain', terrain, `object expected, ${ rootType } found`)]);
+        return errors;
+    }
+    for (const key in terrain) {
+        if (terrainSpec[key]) {
+            errors = errors.concat(validate({
+                key,
+                value: terrain[key],
+                valueSpec: terrainSpec[key],
+                style,
+                styleSpec
+            }));
+        } else {
+            errors = errors.concat([new ValidationError(key, terrain[key], `unknown property "${ key }"`)]);
+        }
+    }
+    return errors;
+}
+
 function validateFormatted(options) {
     if (validateString(options).length === 0) {
         return [];
@@ -9138,6 +9183,7 @@ const VALIDATORS = {
     'object': validateObject,
     'source': validateSource,
     'light': validateLight$1,
+    'terrain': validateTerrain,
     'string': validateString,
     'formatted': validateFormatted,
     'resolvedImage': validateImage
@@ -9200,6 +9246,7 @@ function validateStyleMin(style, styleSpec = spec) {
 }
 validateStyleMin.source = wrapCleanErrors(validateSource);
 validateStyleMin.light = wrapCleanErrors(validateLight$1);
+validateStyleMin.terrain = wrapCleanErrors(validateTerrain);
 validateStyleMin.layer = wrapCleanErrors(validateLayer);
 validateStyleMin.filter = wrapCleanErrors(validateFilter);
 validateStyleMin.paintProperty = wrapCleanErrors(validatePaintProperty$1);
@@ -19767,8 +19814,8 @@ class DEMData {
         this.uid = uid;
         if (data.height !== data.width)
             throw new RangeError('DEM tiles must be square');
-        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium' && encoding !== 'mtk') {
-            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox", "mtk" and "terrarium".`);
+        if (encoding && encoding !== 'mapbox' && encoding !== 'terrarium') {
+            warnOnce(`"${ encoding }" is not a valid encoding type. Valid types include "mapbox" and "terrarium".`);
             return;
         }
         this.stride = data.height;
@@ -19800,51 +19847,16 @@ class DEMData {
     get(x, y) {
         const pixels = new Uint8Array(this.data.buffer);
         const index = this._idx(x, y) * 4;
-        let unpack = this._unpackMapbox;
-        if (this.encoding === 'terrarium')
-            unpack = this._unpackTerrarium;
-        if (this.encoding === 'mtk')
-            unpack = this._unpackMTK;
+        const unpack = this.encoding === 'terrarium' ? this._unpackTerrarium : this._unpackMapbox;
         return unpack(pixels[index], pixels[index + 1], pixels[index + 2]);
     }
-    getHillshadingUnpackVector() {
-        if (this.encoding === 'terrarium')
-            return [
-                256,
-                1,
-                1 / 256,
-                32768
-            ];
-        if (this.encoding === 'mtk')
-            return [
-                6553.6,
-                25.6,
-                0.1,
-                10000
-            ];
-        return [
-            6553.6,
-            25.6,
-            0.1,
-            10000
-        ];
-    }
     getUnpackVector() {
-        if (this.encoding === 'terrarium')
-            return [
-                256,
-                1,
-                1 / 256,
-                32768
-            ];
-        if (this.encoding === 'mtk')
-            return [
-                65536 * 0.03,
-                256 * 0.03,
-                0.03,
-                10000
-            ];
-        return [
+        return this.encoding === 'terrarium' ? [
+            256,
+            1,
+            1 / 256,
+            32768
+        ] : [
             6553.6,
             25.6,
             0.1,
@@ -19858,9 +19870,6 @@ class DEMData {
     }
     _unpackMapbox(r, g, b) {
         return (r * 256 * 256 + g * 256 + b) / 10 - 10000;
-    }
-    _unpackMTK(r, g, b) {
-        return (r * 256 * 256 + g * 256 + b) * 0.03 - 10000;
     }
     _unpackTerrarium(r, g, b) {
         return r * 256 + g + b / 256 - 32768;
@@ -25842,7 +25851,7 @@ class SourceCache extends performance.Evented {
             if (this._sourceLoaded && !this._paused && e.dataType === 'source' && e.sourceDataType === 'content') {
                 this.reload();
                 if (this.transform) {
-                    this.update(this.transform);
+                    this.update(this.transform, this.terrain);
                 }
             }
         });
@@ -25907,7 +25916,7 @@ class SourceCache extends performance.Evented {
         if (shouldReload)
             this.reload();
         if (this.transform)
-            this.update(this.transform);
+            this.update(this.transform, this.terrain);
     }
     _loadTile(tile, callback) {
         return this._source.loadTile(tile, callback);
@@ -25997,7 +26006,7 @@ class SourceCache extends performance.Evented {
             if (err.status !== 404)
                 this._source.fire(new performance.ErrorEvent(err, { tile }));
             else
-                this.update(this.transform);
+                this.update(this.transform, this.terrain);
             return;
         }
         tile.timeAdded = performance.exported.now();
@@ -26138,8 +26147,9 @@ class SourceCache extends performance.Evented {
             }
         }
     }
-    update(transform) {
+    update(transform, terrain) {
         this.transform = transform;
+        this.terrain = terrain;
         if (!this._sourceLoaded || this._paused) {
             return;
         }
@@ -26157,7 +26167,8 @@ class SourceCache extends performance.Evented {
                 minzoom: this._source.minzoom,
                 maxzoom: this._source.maxzoom,
                 roundZoom: this.usedForTerrain ? false : this._source.roundZoom,
-                reparseOverscaled: this._source.reparseOverscaled
+                reparseOverscaled: this._source.reparseOverscaled,
+                terrain
             });
             if (this._source.hasTile) {
                 idealTileIDs = idealTileIDs.filter(coord => this._source.hasTile(coord));
@@ -26202,7 +26213,7 @@ class SourceCache extends performance.Evented {
                     retain[id] = parentsForFading[id];
                 }
             }
-            if (this.style && this.style.terrain) {
+            if (terrain) {
                 const idealRasterTileIDs = {};
                 const missingTileIDs = {};
                 for (const tileID of idealTileIDs) {
@@ -26411,8 +26422,8 @@ class SourceCache extends performance.Evented {
         if (!transform)
             return tileResults;
         const cameraPointQueryGeometry = has3DLayer ? transform.getCameraQueryGeometry(pointQueryGeometry) : pointQueryGeometry;
-        const queryGeometry = pointQueryGeometry.map(p => transform.pointCoordinate3D(p));
-        const cameraQueryGeometry = cameraPointQueryGeometry.map(p => transform.pointCoordinate3D(p));
+        const queryGeometry = pointQueryGeometry.map(p => transform.pointCoordinate(p, this.terrain));
+        const cameraQueryGeometry = cameraPointQueryGeometry.map(p => transform.pointCoordinate(p, this.terrain));
         const ids = this.getIds();
         let minX = Infinity;
         let minY = Infinity;
@@ -27897,8 +27908,9 @@ function shiftVariableCollisionBox(collisionBox, shiftX, shiftY, rotateWithMap, 
     };
 }
 class Placement {
-    constructor(transform, fadeDuration, crossSourceCollisions, prevPlacement) {
+    constructor(transform, terrain, fadeDuration, crossSourceCollisions, prevPlacement) {
         this.transform = transform.clone();
+        this.terrain = terrain;
         this.collisionIndex = new CollisionIndex(this.transform);
         this.placements = {};
         this.opacities = {};
@@ -28053,7 +28065,7 @@ class Placement {
                 verticalTextFeatureIndex = collisionArrays.verticalTextFeatureIndex;
             }
             const tileID = this.retainedQueryData[bucket.bucketInstanceId].tileID;
-            const getElevation = this.transform.terrain ? (x, y) => this.transform.terrain.getElevation(tileID, x, y) : null;
+            const getElevation = this.terrain ? (x, y) => this.terrain.getElevation(tileID, x, y) : null;
             for (const boxType of [
                     'textBox',
                     'verticalTextBox',
@@ -28587,8 +28599,8 @@ class LayerPlacement {
     }
 }
 class PauseablePlacement {
-    constructor(transform, order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, prevPlacement) {
-        this.placement = new Placement(transform, fadeDuration, crossSourceCollisions, prevPlacement);
+    constructor(transform, terrain, order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, prevPlacement) {
+        this.placement = new Placement(transform, terrain, fadeDuration, crossSourceCollisions, prevPlacement);
         this._currentPlacementIndex = order.length - 1;
         this._forceFullPlacement = forceFullPlacement;
         this._showCollisionBoxes = showCollisionBoxes;
@@ -28849,14 +28861,15 @@ class TerrainSourceCache extends performance.Evented {
             tile.textures = [];
         }
     }
-    update(transform) {
-        this.sourceCache.update(transform);
+    update(transform, terrain) {
+        this.sourceCache.update(transform, terrain);
         this._renderableTilesKeys = [];
         for (const tileID of transform.coveringTiles({
                 tileSize: this.tileSize,
                 minzoom: this.minzoom,
                 maxzoom: this.maxzoom,
-                reparseOverscaled: false
+                reparseOverscaled: false,
+                terrain
             })) {
             this._renderableTilesKeys.push(tileID.key);
             if (!this._tiles[tileID.key]) {
@@ -28961,7 +28974,7 @@ class Terrain {
         this.qualityFactor = 2;
         this.meshSize = 128;
         this._demMatrixCache = {};
-        this._coordsIndex = [];
+        this.coordsIndex = [];
         this._coordsTextureSize = 1024;
         this.clearRerenderCache();
     }
@@ -29152,11 +29165,11 @@ class Terrain {
         const rgba = new Uint8Array(4);
         const painter = this.style.map.painter, context = painter.context, gl = context.gl;
         context.bindFramebuffer.set(this.getFramebuffer('coords').framebuffer);
-        gl.readPixels(p.x, painter.height / devicePixelRatio - p.y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+        gl.readPixels(p.x, painter.height / devicePixelRatio - p.y - 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
         context.bindFramebuffer.set(null);
         const x = rgba[0] + (rgba[2] >> 4 << 8);
         const y = rgba[1] + ((rgba[2] & 15) << 8);
-        const tileID = this._coordsIndex[255 - rgba[3]];
+        const tileID = this.coordsIndex[255 - rgba[3]];
         const tile = tileID && this.sourceCache.getTileByID(tileID);
         if (!tile)
             return null;
@@ -29316,6 +29329,7 @@ class Style extends performance.Evented {
         }
         this.dispatcher.broadcast('setLayers', this._serializeLayers(this._order));
         this.light = new Light(this.stylesheet.light);
+        this.setTerrain(this.stylesheet.terrain);
         this.fire(new performance.Event('data', { dataType: 'style' }));
         this.fire(new performance.Event('style.load'));
     }
@@ -29474,27 +29488,42 @@ class Style extends performance.Evented {
         this._changedImages = {};
     }
     setTerrain(options) {
+        this._checkLoaded();
         if (this._terrainDataCallback)
             this.off('data', this._terrainDataCallback);
+        if (this._terrainfreezeElevationCallback)
+            this.map.off('freezeElevation', this._terrainfreezeElevationCallback);
         if (!options) {
-            this.terrain = this.map.transform.terrain = null;
-            this.map.transform.updateElevation();
+            this.terrain = null;
+            this.map.transform.updateElevation(this.terrain);
         } else {
             const sourceCache = this.sourceCaches[options.source];
-            this.map.transform.terrain = this.terrain = new Terrain(this, sourceCache, options);
-            this.map.transform.updateElevation();
+            if (!sourceCache)
+                throw new Error(`cannot load terrain, because there exists no source with ID: ${ options.source }`);
+            this.terrain = new Terrain(this, sourceCache, options);
+            this.map.transform.updateElevation(this.terrain);
+            this._terrainfreezeElevationCallback = e => {
+                if (e.freeze) {
+                    this.map.transform.freezeElevation = true;
+                } else {
+                    this.map.transform.freezeElevation = false;
+                    this.map.transform.recalculateZoom(this.terrain);
+                }
+            };
             this._terrainDataCallback = e => {
                 if (!e.tile)
                     return;
                 if (e.sourceId === options.source) {
-                    this.map.transform.updateElevation();
+                    this.map.transform.updateElevation(this.terrain);
                     this.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
                 } else if (e.source.type === 'geojson') {
                     this.terrain.rememberForRerender(e.sourceId, e.tile.tileID);
                 }
             };
             this.on('data', this._terrainDataCallback);
+            this.map.on('freezeElevation', this._terrainfreezeElevationCallback);
         }
+        this.map.fire(new performance.Event('terrain', { terrain: options }));
     }
     setState(nextState) {
         this._checkLoaded();
@@ -30046,7 +30075,7 @@ class Style extends performance.Evented {
     }
     _updateSources(transform) {
         for (const id in this.sourceCaches) {
-            this.sourceCaches[id].update(transform);
+            this.sourceCaches[id].update(transform, this.terrain);
         }
     }
     _generateCollisionBoxes() {
@@ -30072,7 +30101,7 @@ class Style extends performance.Evented {
         this.crossTileSymbolIndex.pruneUnusedLayers(this._order);
         forceFullPlacement = forceFullPlacement || this._layerOrderChanged || fadeDuration === 0;
         if (forceFullPlacement || !this.pauseablePlacement || this.pauseablePlacement.isDone() && !this.placement.stillRecent(performance.exported.now(), transform.zoom)) {
-            this.pauseablePlacement = new PauseablePlacement(transform, this._order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, this.placement);
+            this.pauseablePlacement = new PauseablePlacement(transform, this.terrain, this._order, forceFullPlacement, showCollisionBoxes, fadeDuration, crossSourceCollisions, this.placement);
             this._layerOrderChanged = false;
         }
         if (this.pauseablePlacement.isDone()) {
@@ -30934,7 +30963,7 @@ const hillshadeUniformPrepareValues = (tileID, dem) => {
             stride
         ],
         'u_zoom': tileID.overscaledZ,
-        'u_unpack': dem.getHillshadingUnpackVector()
+        'u_unpack': dem.getUnpackVector()
     };
 };
 function getTileLatRange(painter, tileID) {
@@ -32853,7 +32882,7 @@ function drawExtrusionTiles(painter, source, layer, coords, depthMode, stencilMo
         const matrix = painter.translatePosMatrix(coord.posMatrix, tile, layer.paint.get('fill-extrusion-translate'), layer.paint.get('fill-extrusion-translate-anchor'));
         const shouldUseVerticalGradient = layer.paint.get('fill-extrusion-vertical-gradient');
         const uniformValues = image ? fillExtrusionPatternUniformValues(matrix, painter, shouldUseVerticalGradient, opacity, coord, crossfade, tile) : fillExtrusionUniformValues(matrix, painter, shouldUseVerticalGradient, opacity);
-        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, bucket.centroidVertexBuffer);
+        program.draw(context, context.gl.TRIANGLES, depthMode, stencilMode, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, layer.id, bucket.layoutVertexBuffer, bucket.indexBuffer, bucket.segments, layer.paint, painter.transform.zoom, programConfiguration, painter.style.terrain && bucket.centroidVertexBuffer);
     }
 }
 
@@ -32869,7 +32898,7 @@ function drawHillshade(painter, sourceCache, layer, tileIDs) {
     ];
     for (const coord of coords) {
         const tile = sourceCache.getTile(coord);
-        if (tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
+        if (typeof tile.needsHillshadePrepare !== 'undefined' && tile.needsHillshadePrepare && painter.renderPass === 'offscreen') {
             prepareHillshade(painter, tile, layer, depthMode, StencilMode.disabled, colorMode);
         } else if (painter.renderPass === 'translucent') {
             renderHillshade(painter, coord, tile, layer, depthMode, stencilModes[coord.overscaledZ], colorMode);
@@ -33043,7 +33072,10 @@ function drawBackground(painter, sourceCache, layer, coords) {
     const depthMode = painter.depthModeForSublayer(0, pass === 'opaque' ? DepthMode.ReadWrite : DepthMode.ReadOnly);
     const colorMode = painter.colorModeForRenderPass();
     const program = painter.useProgram(image ? 'backgroundPattern' : 'background');
-    const tileIDs = coords ? coords : transform.coveringTiles({ tileSize });
+    const tileIDs = coords ? coords : transform.coveringTiles({
+        tileSize,
+        terrain: painter.style.terrain
+    });
     if (image) {
         context.activeTexture.set(gl.TEXTURE0);
         painter.imageManager.bind(painter.context);
@@ -33228,15 +33260,15 @@ function drawCoords(painter, terrain) {
         color: performance.Color.transparent,
         depth: 1
     });
-    terrain._coordsIndex = [];
+    terrain.coordsIndex = [];
     for (const tile of tiles) {
         const terrainData = terrain.getTerrainData(tile.tileID);
         context.activeTexture.set(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, coords.texture);
         const posMatrix = painter.transform.calculatePosMatrix(tile.tileID.toUnwrapped());
-        const uniformValues = terrainCoordsUniformValues(posMatrix, 255 - terrain._coordsIndex.length);
+        const uniformValues = terrainCoordsUniformValues(posMatrix, 255 - terrain.coordsIndex.length);
         program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
-        terrain._coordsIndex.push(tile.tileID.key);
+        terrain.coordsIndex.push(tile.tileID.key);
     }
     context.bindFramebuffer.set(null);
     context.viewport.set([
@@ -33419,6 +33451,7 @@ class Painter {
         this.transform = transform;
         this._tileTextures = {};
         this.terrainFacilitator = {
+            dirty: true,
             matrix: performance.create(),
             renderTime: 0
         };
@@ -33653,9 +33686,10 @@ class Painter {
         if (renderToTexture) {
             this.opaquePassCutoff = 0;
             const newTiles = this.style.terrain.sourceCache.tilesAfterTime(this.terrainFacilitator.renderTime);
-            if (!performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
+            if (this.terrainFacilitator.dirty || !performance.equals(this.terrainFacilitator.matrix, this.transform.projMatrix) || newTiles.length) {
                 performance.copy(this.terrainFacilitator.matrix, this.transform.projMatrix);
                 this.terrainFacilitator.renderTime = Date.now();
+                this.terrainFacilitator.dirty = false;
                 drawDepth(this, this.style.terrain);
                 drawCoords(this, this.style.terrain);
             }
@@ -34156,7 +34190,6 @@ class Transform {
         clone._pitch = this._pitch;
         clone._unmodified = this._unmodified;
         clone._edgeInsets = this._edgeInsets.clone();
-        clone.terrain = this.terrain;
         clone._calcMatrices();
         return clone;
     }
@@ -34281,11 +34314,8 @@ class Transform {
         return this._elevation;
     }
     set elevation(elevation) {
-        if (this.freezeElevation)
-            return;
         if (elevation === this._elevation)
             return;
-        this._unmodified = false;
         this._elevation = elevation;
         this._constrain();
         this._calcMatrices();
@@ -34356,9 +34386,9 @@ class Transform {
         ];
         const cameraFrustum = Frustum.fromInvProjectionMatrix(this.invProjMatrix, this.worldSize, z);
         let minZoom = options.minzoom || 0;
-        if (!this.terrain && this.pitch <= 60 && this._edgeInsets.top < 0.1)
+        if (!options.terrain && this.pitch <= 60 && this._edgeInsets.top < 0.1)
             minZoom = z;
-        const radiusOfMaxLvlLodInTiles = this.terrain ? 2 / Math.min(this.tileSize, options.tileSize) * this.tileSize : 3;
+        const radiusOfMaxLvlLodInTiles = options.terrain ? 2 / Math.min(this.tileSize, options.tileSize) * this.tileSize : 3;
         const newRootTile = wrap => {
             return {
                 aabb: new Aabb([
@@ -34399,7 +34429,7 @@ class Transform {
                     continue;
                 fullyVisible = intersectResult === 2;
             }
-            const refPoint = this.terrain ? cameraPoint : centerPoint;
+            const refPoint = options.terrain ? cameraPoint : centerPoint;
             const distanceX = it.aabb.distanceX(refPoint);
             const distanceY = it.aabb.distanceY(refPoint);
             const longestDim = Math.max(Math.abs(distanceX), Math.abs(distanceY));
@@ -34421,13 +34451,13 @@ class Transform {
                 const childY = (y << 1) + (i >> 1);
                 const childZ = it.zoom + 1;
                 let quadrant = it.aabb.quadrant(i);
-                if (this.terrain) {
+                if (options.terrain) {
                     const tileID = new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY);
-                    const tile = this.terrain.getTerrainData(tileID).tile;
+                    const tile = options.terrain.getTerrainData(tileID).tile;
                     let minElevation = this.elevation, maxElevation = this.elevation;
                     if (tile && tile.dem) {
-                        minElevation = tile.dem.min * this.terrain.exaggeration;
-                        maxElevation = tile.dem.max * this.terrain.exaggeration;
+                        minElevation = tile.dem.min * options.terrain.exaggeration;
+                        maxElevation = tile.dem.max * options.terrain.exaggeration;
                     }
                     quadrant = new Aabb([
                         quadrant.min[0],
@@ -34480,18 +34510,18 @@ class Transform {
     get point() {
         return this.project(this.center);
     }
-    updateElevation() {
-        this.elevation = this.getElevation(this._center);
+    updateElevation(terrain) {
+        if (this.freezeElevation)
+            return;
+        this.elevation = terrain ? this.getElevation(this._center, terrain) : 0;
     }
-    getElevation(lnglat) {
-        if (!this.terrain)
-            return 0;
+    getElevation(lnglat, terrain) {
         const merc = performance.MercatorCoordinate.fromLngLat(lnglat);
         const worldSize = (1 << this.tileZoom) * performance.EXTENT;
         const mercX = merc.x * worldSize, mercY = merc.y * worldSize;
         const tileX = Math.floor(mercX / performance.EXTENT), tileY = Math.floor(mercY / performance.EXTENT);
         const tileID = new performance.OverscaledTileID(this.tileZoom, 0, this.tileZoom, tileX, tileY);
-        return this.terrain.getElevation(tileID, mercX % performance.EXTENT, mercY % performance.EXTENT, performance.EXTENT);
+        return terrain.getElevation(tileID, mercX % performance.EXTENT, mercY % performance.EXTENT, performance.EXTENT);
     }
     getCameraPosition() {
         const lngLat = this.pointLocation(this.getCameraPoint());
@@ -34501,9 +34531,9 @@ class Transform {
             altitude: altitude + this.elevation
         };
     }
-    recalculateZoom() {
-        const center = this.pointLocation3D(this.centerPoint);
-        const elevation = this.getElevation(center);
+    recalculateZoom(terrain) {
+        const center = this.pointLocation(this.centerPoint, terrain);
+        const elevation = this.getElevation(center, terrain);
         const deltaElevation = this.elevation - elevation;
         if (!deltaElevation)
             return;
@@ -34527,25 +34557,25 @@ class Transform {
             this.center = this.center.wrap();
         }
     }
-    locationPoint(lnglat) {
-        return this.coordinatePoint(this.locationCoordinate(lnglat));
+    locationPoint(lnglat, terrain) {
+        return terrain ? this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat, terrain), this.pixelMatrix3D) : this.coordinatePoint(this.locationCoordinate(lnglat));
     }
-    locationPoint3D(lnglat) {
-        return this.coordinatePoint(this.locationCoordinate(lnglat), this.getElevation(lnglat), this.pixelMatrix3D);
-    }
-    pointLocation(p) {
-        return this.coordinateLocation(this.pointCoordinate(p));
-    }
-    pointLocation3D(p) {
-        return this.coordinateLocation(this.pointCoordinate3D(p));
+    pointLocation(p, terrain) {
+        return this.coordinateLocation(this.pointCoordinate(p, terrain));
     }
     locationCoordinate(lnglat) {
         return performance.MercatorCoordinate.fromLngLat(lnglat);
     }
     coordinateLocation(coord) {
-        return coord.toLngLat();
+        return coord && coord.toLngLat();
     }
-    pointCoordinate(p) {
+    pointCoordinate(p, terrain) {
+        if (terrain) {
+            const coordinate = terrain.pointCoordinate(p);
+            if (coordinate != null) {
+                return coordinate;
+            }
+        }
         const targetZ = 0;
         const coord0 = [
             p.x,
@@ -34571,10 +34601,6 @@ class Transform {
         const z1 = coord1[2] / w1;
         const t = z0 === z1 ? 0 : (targetZ - z0) / (z1 - z0);
         return new performance.MercatorCoordinate(performance.number(x0, x1, t) / this.worldSize, performance.number(y0, y1, t) / this.worldSize);
-    }
-    pointCoordinate3D(p) {
-        const coordinate = this.terrain && this.terrain.pointCoordinate(p);
-        return coordinate || this.pointCoordinate(p);
     }
     coordinatePoint(coord, elevation = 0, pixelMatrix = this.pixelMatrix) {
         const p = [
@@ -34737,7 +34763,7 @@ class Transform {
             1
         ]);
         this.glCoordMatrix = m;
-        this.cameraToSeaLevelDistance = this.terrain ? this.cameraToCenterDistance + this._elevation * this._pixelPerMeter / Math.cos(this._pitch) : this.cameraToCenterDistance;
+        this.cameraToSeaLevelDistance = this.cameraToCenterDistance + this._elevation * this._pixelPerMeter / Math.cos(this._pitch);
         const groundAngle = Math.PI / 2 + this._pitch;
         const fovAboveCenter = this._fov * (0.5 + offset.y / this.height);
         const topHalfSurfaceDistance = Math.sin(fovAboveCenter) * this.cameraToSeaLevelDistance / Math.sin(performance.clamp(Math.PI - groundAngle - fovAboveCenter, 0.01, Math.PI - 0.01));
@@ -36748,8 +36774,8 @@ class HandlerManager {
     _updateMapTransform(combinedResult, combinedEventsInProgress, deactivatedHandlers) {
         const map = this._map;
         const tr = map.transform;
-        const hasTerrain = map.style && map.style.terrain;
-        if (!hasChange(combinedResult) && !(hasTerrain && this._drag)) {
+        const terrain = map.style && map.style.terrain;
+        if (!hasChange(combinedResult) && !(terrain && this._drag)) {
             return this._fireEvents(combinedEventsInProgress, deactivatedHandlers, true);
         }
         let {panDelta, zoomDelta, bearingDelta, pitchDelta, around, pinchAround} = combinedResult;
@@ -36765,7 +36791,7 @@ class HandlerManager {
             tr.pitch += pitchDelta;
         if (zoomDelta)
             tr.zoom += zoomDelta;
-        if (!hasTerrain) {
+        if (!terrain) {
             tr.setLocationAtPoint(loc, around);
         } else {
             if (combinedEventsInProgress.drag && !this._drag) {
@@ -36775,10 +36801,9 @@ class HandlerManager {
                     point: around,
                     handlerName: combinedEventsInProgress.drag.handlerName
                 };
-                tr.freezeElevation = true;
+                map.fire(new performance.Event('freezeElevation', { freeze: true }));
             } else if (this._drag && deactivatedHandlers[this._drag.handlerName]) {
-                tr.freezeElevation = false;
-                tr.recalculateZoom();
+                map.fire(new performance.Event('freezeElevation', { freeze: false }));
                 this._drag = null;
             } else if (combinedEventsInProgress.drag && this._drag) {
                 tr.center = tr.pointLocation(tr.centerPoint.sub(panDelta));
@@ -37138,7 +37163,7 @@ class Camera extends performance.Evented {
     }
     _prepareEase(eventData, noMoveStart, currently = {}) {
         this._moving = true;
-        this.transform.freezeElevation = true;
+        this.fire(new performance.Event('freezeElevation', { freeze: true }));
         if (!noMoveStart && !currently.moving) {
             this.fire(new performance.Event('movestart', eventData));
         }
@@ -37169,9 +37194,7 @@ class Camera extends performance.Evented {
             return;
         }
         delete this._easeId;
-        this.transform.freezeElevation = false;
-        if (this.transform.terrain)
-            this.transform.recalculateZoom();
+        this.fire(new performance.Event('freezeElevation', { freeze: false }));
         const wasZooming = this._zooming;
         const wasRotating = this._rotating;
         const wasPitching = this._pitching;
@@ -37503,10 +37526,7 @@ class AttributionControl {
 class LogoControl {
     constructor(options = {}) {
         this.options = options;
-        performance.bindAll([
-            '_updateLogo',
-            '_updateCompact'
-        ], this);
+        performance.bindAll(['_updateCompact'], this);
     }
     getDefaultPosition() {
         return 'bottom-left';
@@ -37725,6 +37745,10 @@ class Map extends Camera {
         this.on('move', () => this._update(false));
         this.on('moveend', () => this._update(false));
         this.on('zoom', () => this._update(true));
+        this.on('terrain', () => {
+            this.painter.terrainFacilitator.dirty = true;
+            this._update(true);
+        });
         if (typeof window !== 'undefined') {
             addEventListener('online', this._onWindowOnline, false);
             addEventListener('resize', this._onWindowResize, false);
@@ -37912,10 +37936,10 @@ class Map extends Camera {
         return this._update();
     }
     project(lnglat) {
-        return this.style && this.style.terrain ? this.transform.locationPoint3D(performance.LngLat.convert(lnglat)) : this.transform.locationPoint(performance.LngLat.convert(lnglat));
+        return this.transform.locationPoint(performance.LngLat.convert(lnglat), this.style && this.style.terrain);
     }
     unproject(point) {
-        return this.style && this.style.terrain ? this.transform.pointLocation3D(performance.pointGeometry.convert(point)) : this.transform.pointLocation(performance.pointGeometry.convert(point));
+        return this.transform.pointLocation(performance.pointGeometry.convert(point), this.style && this.style.terrain);
     }
     isMoving() {
         return this._moving || this.handlers.isMoving();
@@ -38169,12 +38193,7 @@ class Map extends Camera {
         return source.loaded();
     }
     setTerrain(options) {
-        if (options)
-            this.isSourceLoaded(options.source);
         this.style.setTerrain(options);
-        this._sourcesDirty = true;
-        this._styleDirty = true;
-        this.triggerRepaint();
         return this;
     }
     getTerrain() {
@@ -38481,8 +38500,8 @@ class Map extends Camera {
             this.style._updateSources(this.transform);
         }
         if (this.style.terrain)
-            this.style.terrain.sourceCache.update(this.transform);
-        this.transform.updateElevation();
+            this.style.terrain.sourceCache.update(this.transform, this.style.terrain);
+        this.transform.updateElevation(this.style.terrain);
         this._placementDirty = this.style && this.style._updatePlacement(this.painter.transform, this.showCollisionBoxes, this._fadeDuration, this._crossSourceCollisions);
         this.painter.render(this.style, {
             showTileBoundaries: this.showTileBoundaries,
@@ -39061,6 +39080,10 @@ class Marker extends performance.Evented {
         return this;
     }
     remove() {
+        if (this._opacityTimeout) {
+            clearTimeout(this._opacityTimeout);
+            delete this._opacityTimeout;
+        }
         if (this._map) {
             this._map.off('click', this._onMapClick);
             this._map.off('move', this._update);
