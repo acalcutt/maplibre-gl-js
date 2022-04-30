@@ -1,5 +1,5 @@
 {
-  "name": "@maplibre/maplibre-gl-style-spec",
+  "name": "@acalcutt/maplibre-gl-style-spec",
   "description": "a specification for maplibre gl styles",
   "version": "15.1.0",
   "author": "MapLibre",
