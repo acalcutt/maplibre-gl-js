@@ -17,7 +17,7 @@ export const nodeResolve = resolve({
     preferBuiltins: false
 });
 
-export const plugins = (production: boolean): Plugin[] => [
+export const plugins = (minified: boolean, production: boolean): Plugin[] => [
     minifyStyleSpec(),
     json(),
     // https://github.com/zaach/jison/issues/351
@@ -34,14 +34,13 @@ export const plugins = (production: boolean): Plugin[] => [
         functions: ['PerformanceUtils.*', 'Debug.*']
     }),
     buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
-    glsl('**/*.glsl', production),
     minified ? terser({
         compress: {
             // eslint-disable-next-line camelcase
             pure_getters: true,
             passes: 3
         }
-    }),
+    }) : false,
     production && unassert({
         include: ['**/*'], // by default, unassert only includes .js files
     }),
@@ -52,4 +51,4 @@ export const plugins = (production: boolean): Plugin[] => [
         // https://github.com/mapbox/mapbox-gl-js/pull/6956
         ignoreGlobal: true
     })
-].filter(Boolean);
+].filter(Boolean);	

@@ -16,7 +16,7 @@ const config = (input: InputOption, file: string, format: ModuleFormat): RollupO
         banner
     },
     treeshake: true,
-    plugins: plugins(true)
+    plugins: plugins(true, true)
 });
 
 export default [

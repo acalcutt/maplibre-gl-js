@@ -4,7 +4,8 @@ import {plugins} from './build/rollup_plugins';
 import banner from './build/banner';
 import {RollupOptions} from 'rollup';
 
-const {BUILD} = process.env;
+const {BUILD, MINIFY} = process.env;
+const minified = MINIFY === 'true';
 const production = BUILD === 'production';
 const outputFile =
     !production ? 'dist/maplibre-gl-compat-dev.ie.js' :
@@ -27,7 +28,7 @@ const config: RollupOptions[] = [{
         chunkFileNames: 'shared.js'
     },
     treeshake: production,
-    plugins: plugins(production)
+    plugins: plugins(minified, production)
 }, {
     // Next, bundle together the three "chunks" produced in the previous pass
     // into a single, final bundle. See rollup/bundle_prelude.js and
