@@ -42925,4 +42925,4 @@ var maplibregl$1 = maplibregl;
 return maplibregl$1;
 
 }));
-//# sourceMappingURL=maplibre-gl2-unminified.js.ie.map
+//# sourceMappingURL=maplibre-gl-compat-unminified.js.map
