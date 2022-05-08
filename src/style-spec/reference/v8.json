@@ -1144,7 +1144,10 @@
       "default": false,
       "doc": "If true, the icon will be visible even if it collides with other previously drawn symbols.",
       "requires": [
-        "icon-image"
+        "icon-image",
+        {
+          "!": "icon-overlap"
+        }
       ],
       "sdk-support": {
         "basic functionality": {
@@ -1152,6 +1155,36 @@
           "android": "2.0.1",
           "ios": "2.0.0",
           "macos": "0.1.0"
+        }
+      },
+      "expression": {
+        "interpolated": false,
+        "parameters": [
+          "zoom"
+        ]
+      },
+      "property-type": "data-constant"
+    },
+    "icon-overlap": {
+      "type": "enum",
+      "values": {
+        "never": {
+          "doc": "The icon will be hidden if it collides with any other previously drawn symbol."
+        },
+        "always": {
+          "doc": "The icon will be visible even if it collides with any other previously drawn symbol."
+        },
+        "cooperative": {
+          "doc": "If the icon collides with another previously drawn symbol, the overlap mode for that symbol is checked. If the previous symbol was placed using `never` overlap mode, the new icon is hidden. If the previous symbol was placed using `always` or `cooperative` overlap mode, the new icon is visible."
+        }
+      },
+      "doc": "Allows for control over whether to show an icon when it overlaps other symbols on the map. If `icon-overlap` is not set, `icon-allow-overlap` is used instead.",
+      "requires": [
+        "icon-image"
+      ],
+      "sdk-support": {
+        "basic functionality": {
+          "js": "2.1.0"
         }
       },
       "expression": {
@@ -1657,6 +1690,9 @@
         "viewport": {
           "doc": "Produces glyphs whose x-axes are aligned with the x-axis of the viewport, regardless of the value of `symbol-placement`."
         },
+        "viewport-glyph": {
+          "doc": "When `symbol-placement` is set to `point`, aligns text to the x-axis of the viewport. When `symbol-placement` is set to `line` or `line-center`, aligns glyphs to the x-axis of the viewport and places them along the line."
+        },
         "auto": {
           "doc": "When `symbol-placement` is set to `point`, this is equivalent to `viewport`. When `symbol-placement` is set to `line` or `line-center`, this is equivalent to `map`."
         }
@@ -1678,6 +1714,9 @@
           "android": "4.2.0",
           "ios": "3.4.0",
           "macos": "0.3.0"
+        },
+        "`viewport-glyph` value": {
+          "js": "2.1.8"
         }
       },
       "expression": {
@@ -2309,7 +2348,10 @@
       "default": false,
       "doc": "If true, the text will be visible even if it collides with other previously drawn symbols.",
       "requires": [
-        "text-field"
+        "text-field",
+        {
+          "!": "text-overlap"
+        }
       ],
       "sdk-support": {
         "basic functionality": {
@@ -2317,6 +2359,36 @@
           "android": "2.0.1",
           "ios": "2.0.0",
           "macos": "0.1.0"
+        }
+      },
+      "expression": {
+        "interpolated": false,
+        "parameters": [
+          "zoom"
+        ]
+      },
+      "property-type": "data-constant"
+    },
+    "text-overlap": {
+      "type": "enum",
+      "values": {
+        "never": {
+          "doc": "The text will be hidden if it collides with any other previously drawn symbol."
+        },
+        "always": {
+          "doc": "The text will be visible even if it collides with any other previously drawn symbol."
+        },
+        "cooperative": {
+          "doc": "If the text collides with another previously drawn symbol, the overlap mode for that symbol is checked. If the previous symbol was placed using `never` overlap mode, the new text is hidden. If the previous symbol was placed using `always` or `cooperative` overlap mode, the new text is visible."
+        }
+      },
+      "doc": "Allows for control over whether to show symbol text when it overlaps other symbols on the map. If `text-overlap` is not set, `text-allow-overlap` is used instead",
+      "requires": [
+        "text-field"
+      ],
+      "sdk-support": {
+        "basic functionality": {
+          "js": "2.1.0"
         }
       },
       "expression": {
@@ -3062,7 +3134,7 @@
         }
       },
       "feature-state": {
-        "doc": "Retrieves a property value from the current feature's state. Returns null if the requested property is not present on the feature's state. A feature's state is not part of the GeoJSON or vector tile data, and must be set programmatically on each feature. Features are identified by their `id` attribute, which must be an integer or a string that can be cast to an integer. Note that [\"feature-state\"] can only be used with paint properties that support data-driven styling.",
+        "doc": "Retrieves a property value from the current feature's state. Returns null if the requested property is not present on the feature's state. A feature's state is not part of the GeoJSON or vector tile data, and must be set programmatically on each feature. When `source.promoteId` is not provided, features are identified by their `id` attribute, which must be an integer or a string that can be cast to an integer. When `source.promoteId` is provided, features are identified by their `promoteId` property, which may be a number, string, or any primitive data type. Note that [\"feature-state\"] can only be used with paint properties that support data-driven styling.",
         "group": "Feature data",
         "sdk-support": {
           "basic functionality": {

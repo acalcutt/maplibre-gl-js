@@ -15,7 +15,7 @@ class SourceMock extends Evented {
     id: string;
     minzoom: number;
     maxzoom: number;
-    hasTile: (tileID: OverscaledTileID) => boolean
+    hasTile: (tileID: OverscaledTileID) => boolean;
     sourceOptions: any;
 
     constructor(id: string, sourceOptions: any, _dispatcher, eventedParent: Evented) {
@@ -336,6 +336,55 @@ describe('SourceCache#removeTile', () => {
         sourceCache._addTile(tileID);
     });
 
+    test('fires dataabort event', done => {
+        const sourceCache = createSourceCache({
+            loadTile() {
+                // Do not call back in order to make sure the tile is removed before it is loaded.
+            }
+        });
+        const tileID = new OverscaledTileID(0, 0, 0, 0, 0);
+        const tile = sourceCache._addTile(tileID);
+        sourceCache.once('dataabort', event => {
+            expect(event.dataType).toBe('source');
+            expect(event.tile).toBe(tile);
+            expect(event.coord).toBe(tileID);
+            done();
+        });
+        sourceCache._removeTile(tileID.key);
+    });
+
+    test('does not fire dataabort event when the tile has already been loaded', () => {
+        const sourceCache = createSourceCache({
+            loadTile(tile, callback) {
+                tile.state = 'loaded';
+                callback();
+            }
+        });
+        const tileID = new OverscaledTileID(0, 0, 0, 0, 0);
+        sourceCache._addTile(tileID);
+        const onAbort = jest.fn();
+        sourceCache.once('dataabort', onAbort);
+        sourceCache._removeTile(tileID.key);
+        expect(onAbort).toHaveBeenCalledTimes(0);
+    });
+
+    test('does not fire data event when the tile has already been aborted', () => {
+        const onData = jest.fn();
+        const sourceCache = createSourceCache({
+            loadTile(tile, callback) {
+                sourceCache.once('dataabort', () => {
+                    tile.state = 'loaded';
+                    callback();
+                    expect(onData).toHaveBeenCalledTimes(0);
+                });
+            }
+        });
+        sourceCache.once('data', onData);
+        const tileID = new OverscaledTileID(0, 0, 0, 0, 0);
+        sourceCache._addTile(tileID);
+        sourceCache._removeTile(tileID.key);
+    });
+
 });
 
 describe('SourceCache / Source lifecycle', () => {
@@ -398,6 +447,33 @@ describe('SourceCache / Source lifecycle', () => {
             }
         }).on('error', () => {
             expect(sourceCache.loaded()).toBeTruthy();
+            done();
+        });
+
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loaded() false after source begins loading following error', done => {
+        const sourceCache = createSourceCache({error: 'Error loading source'}).on('error', () => {
+            sourceCache.on('dataloading', () => {
+                expect(sourceCache.loaded()).toBeFalsy();
+                done();
+            });
+            sourceCache.getSource().fire(new Event('dataloading'));
+        });
+
+        sourceCache.onAdd(undefined);
+    });
+
+    test('loaded() false when error occurs while source is not loaded', done => {
+        const sourceCache = createSourceCache({
+            error: 'Error loading source',
+
+            loaded() {
+                return false;
+            }
+        }).on('error', () => {
+            expect(sourceCache.loaded()).toBeFalsy();
             done();
         });
 
@@ -1591,4 +1667,26 @@ describe('SourceCache sets max cache size correctly', () => {
         expect(sourceCache._cache.max).toBe(20);
     });
 
+});
+
+describe('SourceCache#onRemove', () => {
+    test('clears tiles', () => {
+        const sourceCache = createSourceCache();
+        jest.spyOn(sourceCache, 'clearTiles');
+
+        sourceCache.onRemove(undefined);
+
+        expect(sourceCache.clearTiles).toHaveBeenCalled();
+    });
+
+    test('calls onRemove on source', () => {
+        const sourceOnRemove = jest.fn();
+        const sourceCache = createSourceCache({
+            onRemove: sourceOnRemove
+        });
+
+        sourceCache.onRemove(undefined);
+
+        expect(sourceOnRemove).toHaveBeenCalled();
+    });
 });

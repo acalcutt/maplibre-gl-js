@@ -6,12 +6,12 @@ import Point from '@mapbox/point-geometry';
 import segment from '../segment';
 import LineBucket from './line_bucket';
 import LineStyleLayer from '../../style/style_layer/line_style_layer';
-import {LayerSpecification} from '../../style-spec/types';
+import {LayerSpecification} from '../../style-spec/types.g';
 import EvaluationParameters from '../../style/evaluation_parameters';
 import {BucketFeature, BucketParameters} from '../bucket';
 
 // Load a line feature from fixture tile.
-const vt = new VectorTile(new Protobuf(fs.readFileSync(path.resolve(__dirname, '../../../test/fixtures/mbsv5-6-18-23.vector.pbf'))));
+const vt = new VectorTile(new Protobuf(fs.readFileSync(path.resolve(__dirname, '../../../test/unit/assets/mbsv5-6-18-23.vector.pbf'))));
 const feature = vt.layers.road.feature(0);
 
 function createLine(numPoints) {

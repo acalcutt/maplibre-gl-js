@@ -5,7 +5,7 @@ import SourceCache from '../source/source_cache';
 import EXTENT from '../data/extent';
 import pixelsToTileUnits from '../source/pixels_to_tile_units';
 import SegmentVector from '../data/segment';
-import {RasterBoundsArray, PosArray, TriangleIndexArray, LineStripIndexArray} from '../data/array_types';
+import {RasterBoundsArray, PosArray, TriangleIndexArray, LineStripIndexArray} from '../data/array_types.g';
 import {values} from '../util/util';
 import rasterBoundsAttributes from '../data/raster_bounds_attributes';
 import posAttributes from '../data/pos_attributes';
@@ -66,14 +66,14 @@ import type {RGBAImage} from '../util/image';
 export type RenderPass = 'offscreen' | 'opaque' | 'translucent';
 
 type PainterOptions = {
-  showOverdrawInspector: boolean;
-  showTileBoundaries: boolean;
-  showPadding: boolean;
-  rotating: boolean;
-  zooming: boolean;
-  moving: boolean;
-  gpuTiming: boolean;
-  fadeDuration: number;
+    showOverdrawInspector: boolean;
+    showTileBoundaries: boolean;
+    showPadding: boolean;
+    rotating: boolean;
+    zooming: boolean;
+    moving: boolean;
+    gpuTiming: boolean;
+    fadeDuration: number;
 };
 
 /**
@@ -86,13 +86,14 @@ class Painter {
     context: Context;
     transform: Transform;
     _tileTextures: {
-      [_: number]: Array<Texture>;
+        [_: number]: Array<Texture>;
     };
     numSublayers: number;
     depthEpsilon: number;
     emptyProgramConfiguration: ProgramConfiguration;
     width: number;
     height: number;
+    pixelRatio: number;
     tileExtentBuffer: VertexBuffer;
     tileExtentSegments: SegmentVector;
     debugBuffer: VertexBuffer;
@@ -147,9 +148,10 @@ class Painter {
      * Update the GL viewport, projection matrix, and transforms to compensate
      * for a new width and height value.
      */
-    resize(width: number, height: number) {
-        this.width = width * devicePixelRatio;
-        this.height = height * devicePixelRatio;
+    resize(width: number, height: number, pixelRatio: number) {
+        this.width = width * pixelRatio;
+        this.height = height * pixelRatio;
+        this.pixelRatio = pixelRatio;
         this.context.viewport.set([0, 0, this.width, this.height]);
 
         if (this.style) {
@@ -304,7 +306,7 @@ class Painter {
      * Returns [StencilMode for tile overscaleZ map, sortedCoords].
      */
     stencilConfigForOverlap(tileIDs: Array<OverscaledTileID>): [{
-      [_: number]: Readonly<StencilMode>;
+        [_: number]: Readonly<StencilMode>;
     }, Array<OverscaledTileID>] {
         const gl = this.context.gl;
         const coords = tileIDs.sort((a, b) => b.overscaledZ - a.overscaledZ);
@@ -558,11 +560,11 @@ class Painter {
             ];
         }
 
-        const translation = vec3.fromValues(
+        const translation = [
             inViewportPixelUnitsUnits ? translate[0] : pixelsToTileUnits(tile, translate[0], this.transform.zoom),
             inViewportPixelUnitsUnits ? translate[1] : pixelsToTileUnits(tile, translate[1], this.transform.zoom),
             0
-        );
+        ] as vec3;
 
         const translatedMatrix = new Float32Array(16);
         mat4.translate(translatedMatrix, matrix, translation);

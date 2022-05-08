@@ -7,13 +7,13 @@ import Point from '@mapbox/point-geometry';
 import segment from '../segment';
 import FillBucket from './fill_bucket';
 import FillStyleLayer from '../../style/style_layer/fill_style_layer';
-import {LayerSpecification} from '../../style-spec/types';
+import {LayerSpecification} from '../../style-spec/types.g';
 import EvaluationParameters from '../../style/evaluation_parameters';
 import ZoomHistory from '../../style/zoom_history';
 import {BucketFeature, BucketParameters} from '../bucket';
 
 // Load a fill feature from fixture tile.
-const vt = new VectorTile(new Protobuf(fs.readFileSync(path.resolve(__dirname, '../../../test/fixtures/mbsv5-6-18-23.vector.pbf'))));
+const vt = new VectorTile(new Protobuf(fs.readFileSync(path.resolve(__dirname, '../../../test/unit/assets/mbsv5-6-18-23.vector.pbf'))));
 const feature = vt.layers.water.feature(0);
 
 function createPolygon(numPoints) {

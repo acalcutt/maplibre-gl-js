@@ -11,7 +11,7 @@ import type Dispatcher from '../util/dispatcher';
 import type Tile from './tile';
 import type Actor from '../util/actor';
 import type {Callback} from '../types/callback';
-import type {GeoJSONSourceSpecification, PromoteIdSpecification} from '../style-spec/types';
+import type {GeoJSONSourceSpecification, PromoteIdSpecification} from '../style-spec/types.g';
 import type {MapSourceDataType} from '../ui/events';
 
 export type GeoJSONSourceOptions = GeoJSONSourceSpecification & {
@@ -299,7 +299,7 @@ class GeoJSONSource extends Evented implements Source {
             maxZoom: this.maxzoom,
             tileSize: this.tileSize,
             source: this.id,
-            pixelRatio: devicePixelRatio,
+            pixelRatio: this.map.getPixelRatio(),
             showCollisionBoxes: this.map.showCollisionBoxes,
             promoteId: this.promoteId
         };

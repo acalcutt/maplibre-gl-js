@@ -32,13 +32,14 @@ import PauseablePlacement from './pauseable_placement';
 import ZoomHistory from './zoom_history';
 import CrossTileSymbolIndex from '../symbol/cross_tile_symbol_index';
 import {validateCustomStyleLayer} from './style_layer/custom_style_layer';
+import type {MapGeoJSONFeature} from '../util/vectortile_to_geojson';
 
 // We're skipping validation errors with the `source.canvas` identifier in order
 // to continue to allow canvas sources to be added at runtime/updated in
 // smart setStyle (see https://github.com/mapbox/mapbox-gl-js/pull/6424):
 const emitValidationErrors = (evented: Evented, errors?: ReadonlyArray<{
-  message: string;
-  identifier?: string;
+    message: string;
+    identifier?: string;
 }> | null) =>
     _emitValidationErrors(evented, errors && errors.filter(error => error.identifier !== 'source.canvas'));
 
@@ -57,7 +58,7 @@ import type {
     StyleSpecification,
     LightSpecification,
     SourceSpecification
-} from '../style-spec/types';
+} from '../style-spec/types.g';
 import type {CustomLayerInterface} from './style_layer/custom_style_layer';
 import type {Validator} from './validate_style';
 import type {OverscaledTileID} from '../source/tile_id';
@@ -87,13 +88,19 @@ const ignoredDiffOperations = pick(diffOperations, [
 
 const empty = emptyStyle() as StyleSpecification;
 
+export type FeatureIdentifier = {
+    id?: string | number | undefined;
+    source: string;
+    sourceLayer?: string | undefined;
+};
+
 export type StyleOptions = {
-  validate?: boolean;
-  localIdeographFontFamily?: string;
+    validate?: boolean;
+    localIdeographFontFamily?: string;
 };
 
 export type StyleSetterOptions = {
-  validate?: boolean;
+    validate?: boolean;
 };
 /**
  * @private
@@ -203,7 +210,7 @@ class Style extends Evented {
     }
 
     loadURL(url: string, options: {
-      validate?: boolean;
+        validate?: boolean;
     } = {}) {
         this.fire(new Event('dataloading', {dataType: 'style'}));
 
@@ -276,7 +283,7 @@ class Style extends Evented {
     }
 
     _loadSprite(url: string) {
-        this._spriteRequest = loadSprite(url, this.map._requestManager, (err, images) => {
+        this._spriteRequest = loadSprite(url, this.map._requestManager, this.map.getPixelRatio(), (err, images) => {
             this._spriteRequest = null;
             if (err) {
                 this.fire(new ErrorEvent(err));
@@ -604,17 +611,15 @@ class Style extends Evented {
         delete this._updatedSources[id];
         sourceCache.fire(new Event('data', {sourceDataType: 'metadata', dataType:'source', sourceId: id}));
         sourceCache.setEventedParent(null);
-        sourceCache.clearTiles();
-
-        if (sourceCache.onRemove) sourceCache.onRemove(this.map);
+        sourceCache.onRemove(this.map);
         this._changed = true;
     }
 
     /**
-    * Set the data of a GeoJSON source, given its id.
-    * @param {string} id id of the source
-    * @param {GeoJSON|string} data GeoJSON source
-    */
+     * Set the data of a GeoJSON source, given its id.
+     * @param {string} id id of the source
+     * @param {GeoJSON|string} data GeoJSON source
+     */
     setGeoJSONSourceData(id: string, data: GeoJSON.GeoJSON | string) {
         this._checkLoaded();
 
@@ -716,7 +721,7 @@ class Style extends Evented {
     /**
      * Moves a layer to a different z-position. The layer will be inserted before the layer with
      * ID `before`, or appended if `before` is omitted.
-     * @param {string} id  ID of the layer to move
+     * @param {string} id ID of the layer to move
      * @param {string} [before] ID of an existing layer to insert before
      */
     moveLayer(id: string, before?: string) {
@@ -912,11 +917,7 @@ class Style extends Evented {
         return this.getLayer(layer).getPaintProperty(name);
     }
 
-    setFeatureState(target: {
-      source: string;
-      sourceLayer?: string;
-      id: string | number;
-    }, state: any) {
+    setFeatureState(target: FeatureIdentifier, state: any) {
         this._checkLoaded();
         const sourceId = target.source;
         const sourceLayer = target.sourceLayer;
@@ -942,11 +943,7 @@ class Style extends Evented {
         sourceCache.setFeatureState(sourceLayer, target.id, state);
     }
 
-    removeFeatureState(target: {
-      source: string;
-      sourceLayer?: string;
-      id?: string | number;
-    }, key?: string) {
+    removeFeatureState(target: FeatureIdentifier, key?: string) {
         this._checkLoaded();
         const sourceId = target.source;
         const sourceCache = this.sourceCaches[sourceId];
@@ -972,11 +969,7 @@ class Style extends Evented {
         sourceCache.removeFeatureState(sourceLayer, target.id, key);
     }
 
-    getFeatureState(target: {
-      source: string;
-      sourceLayer?: string;
-      id: string | number;
-    }) {
+    getFeatureState(target: FeatureIdentifier) {
         this._checkLoaded();
         const sourceId = target.source;
         const sourceLayer = target.sourceLayer;
@@ -1031,7 +1024,7 @@ class Style extends Evented {
         this._changed = true;
     }
 
-    _flattenAndSortRenderedFeatures(sourceResults: Array<any>) {
+    _flattenAndSortRenderedFeatures(sourceResults: Array<{ [key: string]: Array<{featureIndex: number; feature: MapGeoJSONFeature}> }>) {
         // Feature order is complicated.
         // The order between features in two 2D layers is always determined by layer order.
         // The order between features in two 3D layers is always determined by depth.
@@ -1218,7 +1211,7 @@ class Style extends Evented {
     }
 
     _validate(validate: Validator, key: string, value: any, props: any, options: {
-      validate?: boolean;
+        validate?: boolean;
     } = {}) {
         if (options && options.validate === false) {
             return false;
@@ -1246,8 +1239,9 @@ class Style extends Evented {
             layer.setEventedParent(null);
         }
         for (const id in this.sourceCaches) {
-            this.sourceCaches[id].clearTiles();
-            this.sourceCaches[id].setEventedParent(null);
+            const sourceCache = this.sourceCaches[id];
+            sourceCache.setEventedParent(null);
+            sourceCache.onRemove(this.map);
         }
         this.imageManager.setEventedParent(null);
         this.setEventedParent(null);
@@ -1354,14 +1348,14 @@ class Style extends Evented {
     // Callbacks from web workers
 
     getImages(
-      mapId: string,
-      params: {
-        icons: Array<string>;
-        source: string;
-        tileID: OverscaledTileID;
-        type: string;
-      },
-      callback: Callback<{[_: string]: StyleImage}>
+        mapId: string,
+        params: {
+            icons: Array<string>;
+            source: string;
+            tileID: OverscaledTileID;
+            type: string;
+        },
+        callback: Callback<{[_: string]: StyleImage}>
     ) {
         this.imageManager.getImages(params.icons, callback);
 

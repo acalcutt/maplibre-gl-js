@@ -2,7 +2,7 @@ import Point from '@mapbox/point-geometry';
 import Transform from './transform';
 import LngLat from './lng_lat';
 import {OverscaledTileID, CanonicalTileID} from '../source/tile_id';
-import {fixedLngLat, fixedCoord} from '../../test/util/fixed';
+import {fixedLngLat, fixedCoord} from '../../test/unit/lib/fixed';
 
 describe('transform', () => {
     test('creates a transform', () => {
@@ -337,5 +337,19 @@ describe('transform', () => {
         transform._renderWorldCopies = false;
         unwrappedCoords = transform.getVisibleUnwrappedCoordinates(new CanonicalTileID(0, 0, 0));
         expect(unwrappedCoords).toHaveLength(1);
+    });
+
+    test('maintains high float precision when calculating matrices', () => {
+
+        const transform = new Transform(0, 22, 0, 60, true);
+        transform.resize(200.25, 200.25);
+        transform.zoom = 20.25;
+        transform.pitch = 67.25;
+        transform.center = new LngLat(0.0, 0.0);
+        transform._calcMatrices();
+
+        expect(transform.customLayerMatrix()[0].toString().length).toBeGreaterThan(10);
+        expect(transform.glCoordMatrix[0].toString().length).toBeGreaterThan(10);
+        expect(transform.maxPitchScaleFactor()).toBeCloseTo(2.366025418080343, 10);
     });
 });

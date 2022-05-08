@@ -20,7 +20,7 @@ import type Dispatcher from '../util/dispatcher';
 import type Transform from '../geo/transform';
 import type {TileState} from './tile';
 import type {Callback} from '../types/callback';
-import type {SourceSpecification} from '../style-spec/types';
+import type {SourceSpecification} from '../style-spec/types.g';
 
 /**
  * `SourceCache` is responsible for
@@ -46,10 +46,10 @@ class SourceCache extends Evented {
     _prevLng: number;
     _cache: TileCache;
     _timers: {
-      [_ in any]: ReturnType<typeof setTimeout>;
+        [_ in any]: ReturnType<typeof setTimeout>;
     };
     _cacheTimers: {
-      [_ in any]: ReturnType<typeof setTimeout>;
+        [_ in any]: ReturnType<typeof setTimeout>;
     };
     _maxTileCacheSize: number;
     _paused: boolean;
@@ -84,8 +84,13 @@ class SourceCache extends Evented {
             }
         });
 
+        this.on('dataloading', () => {
+            this._sourceErrored = false;
+        });
+
         this.on('error', () => {
-            this._sourceErrored = true;
+            // Only set _sourceErrored if the source does not have pending loads.
+            this._sourceErrored = this._source.loaded();
         });
 
         this._source = createSource(id, options, dispatcher, this);
@@ -110,6 +115,7 @@ class SourceCache extends Evented {
     }
 
     onRemove(map: Map) {
+        this.clearTiles();
         if (this._source && this._source.onRemove) {
             this._source.onRemove(map);
         }
@@ -160,7 +166,9 @@ class SourceCache extends Evented {
 
     _abortTile(tile: Tile) {
         if (this._source.abortTile)
-            return this._source.abortTile(tile, () => {});
+            this._source.abortTile(tile, () => {});
+
+        this._source.fire(new Event('dataabort', {tile, coord: tile.tileID, dataType: 'source'}));
     }
 
     serialize() {
@@ -265,7 +273,9 @@ class SourceCache extends Evented {
         if (this.getSource().type === 'raster-dem' && tile.dem) this._backfillDEM(tile);
         this._state.initializeTileState(tile, this.map ? this.map.painter : null);
 
-        this._source.fire(new Event('data', {dataType: 'source', tile, coord: tile.tileID}));
+        if (!tile.aborted) {
+            this._source.fire(new Event('data', {dataType: 'source', tile, coord: tile.tileID}));
+        }
     }
 
     /**
@@ -331,12 +341,12 @@ class SourceCache extends Evented {
      */
     _retainLoadedChildren(
         idealTiles: {
-          [_ in any]: OverscaledTileID;
+            [_ in any]: OverscaledTileID;
         },
         zoom: number,
         maxCoveringZoom: number,
         retain: {
-          [_ in any]: OverscaledTileID;
+            [_ in any]: OverscaledTileID;
         }
     ) {
         for (const id in this._tiles) {

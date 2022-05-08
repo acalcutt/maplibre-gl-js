@@ -15,7 +15,8 @@ import type {SingleCollisionBox} from '../data/bucket/symbol_bucket';
 import type {
     GlyphOffsetArray,
     SymbolLineVertexArray
-} from '../data/array_types';
+} from '../data/array_types.g';
+import type {OverlapMode} from '../style/style_layer/symbol_style_layer';
 
 // When a symbol crosses the edge that causes it to be included in
 // collision detection, it will cause changes in the symbols around
@@ -29,6 +30,7 @@ export type FeatureKey = {
     bucketInstanceId: number;
     featureIndex: number;
     collisionGroupID: number;
+    overlapMode: OverlapMode;
 };
 
 /**
@@ -71,15 +73,15 @@ class CollisionIndex {
     }
 
     placeCollisionBox(
-      collisionBox: SingleCollisionBox,
-      allowOverlap: boolean,
-      textPixelRatio: number,
-      posMatrix: mat4,
-      collisionGroupPredicate?: (key: FeatureKey) => boolean
+        collisionBox: SingleCollisionBox,
+        overlapMode: OverlapMode,
+        textPixelRatio: number,
+        posMatrix: mat4,
+        collisionGroupPredicate?: (key: FeatureKey) => boolean
     ): {
-      box: Array<number>;
-      offscreen: boolean;
-    } {
+            box: Array<number>;
+            offscreen: boolean;
+        } {
         const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY);
         const tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
         const tlX = collisionBox.x1 * tileToViewport + projectedPoint.point.x;
@@ -88,7 +90,7 @@ class CollisionIndex {
         const brY = collisionBox.y2 * tileToViewport + projectedPoint.point.y;
 
         if (!this.isInsideGrid(tlX, tlY, brX, brY) ||
-            (!allowOverlap && this.grid.hitTest(tlX, tlY, brX, brY, collisionGroupPredicate))) {
+            (overlapMode !== 'always' && this.grid.hitTest(tlX, tlY, brX, brY, overlapMode, collisionGroupPredicate))) {
             return {
                 box: [],
                 offscreen: false
@@ -102,24 +104,24 @@ class CollisionIndex {
     }
 
     placeCollisionCircles(
-      allowOverlap: boolean,
-      symbol: any,
-      lineVertexArray: SymbolLineVertexArray,
-      glyphOffsetArray: GlyphOffsetArray,
-      fontSize: number,
-      posMatrix: mat4,
-      labelPlaneMatrix: mat4,
-      labelToScreenMatrix: mat4,
-      showCollisionCircles: boolean,
-      pitchWithMap: boolean,
-      collisionGroupPredicate: (key: FeatureKey) => boolean,
-      circlePixelDiameter: number,
-      textPixelPadding: number
+        overlapMode: OverlapMode,
+        symbol: any,
+        lineVertexArray: SymbolLineVertexArray,
+        glyphOffsetArray: GlyphOffsetArray,
+        fontSize: number,
+        posMatrix: mat4,
+        labelPlaneMatrix: mat4,
+        labelToScreenMatrix: mat4,
+        showCollisionCircles: boolean,
+        pitchWithMap: boolean,
+        collisionGroupPredicate: (key: FeatureKey) => boolean,
+        circlePixelDiameter: number,
+        textPixelPadding: number
     ): {
-      circles: Array<number>;
-      offscreen: boolean;
-      collisionDetected: boolean;
-    } {
+            circles: Array<number>;
+            offscreen: boolean;
+            collisionDetected: boolean;
+        } {
         const placedCollisionCircles = [];
 
         const tileUnitAnchorPoint = new Point(symbol.anchorX, symbol.anchorY);
@@ -145,7 +147,8 @@ class CollisionIndex {
             symbol,
             lineVertexArray,
             labelPlaneMatrix,
-            projectionCache);
+            projectionCache,
+            false);
 
         let collisionDetected = false;
         let inGrid = false;
@@ -245,18 +248,16 @@ class CollisionIndex {
                     entirelyOffscreen = entirelyOffscreen && this.isOffscreen(x1, y1, x2, y2);
                     inGrid = inGrid || this.isInsideGrid(x1, y1, x2, y2);
 
-                    if (!allowOverlap) {
-                        if (this.grid.hitTestCircle(centerX, centerY, radius, collisionGroupPredicate)) {
-                            // Don't early exit if we're showing the debug circles because we still want to calculate
-                            // which circles are in use
-                            collisionDetected = true;
-                            if (!showCollisionCircles) {
-                                return {
-                                    circles: [],
-                                    offscreen: false,
-                                    collisionDetected
-                                };
-                            }
+                    if (overlapMode !== 'always' && this.grid.hitTestCircle(centerX, centerY, radius, overlapMode, collisionGroupPredicate)) {
+                        // Don't early exit if we're showing the debug circles because we still want to calculate
+                        // which circles are in use
+                        collisionDetected = true;
+                        if (!showCollisionCircles) {
+                            return {
+                                circles: [],
+                                offscreen: false,
+                                collisionDetected
+                            };
                         }
                     }
                 }
@@ -337,24 +338,24 @@ class CollisionIndex {
         return result;
     }
 
-    insertCollisionBox(collisionBox: Array<number>, ignorePlacement: boolean, bucketInstanceId: number, featureIndex: number, collisionGroupID: number) {
+    insertCollisionBox(collisionBox: Array<number>, overlapMode: OverlapMode, ignorePlacement: boolean, bucketInstanceId: number, featureIndex: number, collisionGroupID: number) {
         const grid = ignorePlacement ? this.ignoredGrid : this.grid;
 
-        const key = {bucketInstanceId, featureIndex, collisionGroupID};
+        const key = {bucketInstanceId, featureIndex, collisionGroupID, overlapMode};
         grid.insert(key, collisionBox[0], collisionBox[1], collisionBox[2], collisionBox[3]);
     }
 
-    insertCollisionCircles(collisionCircles: Array<number>, ignorePlacement: boolean, bucketInstanceId: number, featureIndex: number, collisionGroupID: number) {
+    insertCollisionCircles(collisionCircles: Array<number>, overlapMode: OverlapMode, ignorePlacement: boolean, bucketInstanceId: number, featureIndex: number, collisionGroupID: number) {
         const grid = ignorePlacement ? this.ignoredGrid : this.grid;
 
-        const key = {bucketInstanceId, featureIndex, collisionGroupID};
+        const key = {bucketInstanceId, featureIndex, collisionGroupID, overlapMode};
         for (let k = 0; k < collisionCircles.length; k += 4) {
             grid.insertCircle(key, collisionCircles[k], collisionCircles[k + 1], collisionCircles[k + 2]);
         }
     }
 
     projectAndGetPerspectiveRatio(posMatrix: mat4, x: number, y: number) {
-        const p = vec4.fromValues(x, y, 0, 1);
+        const p = [x, y, 0, 1] as vec4;
         projection.xyTransformMat4(p, p, posMatrix);
         const a = new Point(
             (((p[0] / p[3] + 1) / 2) * this.transform.width) + viewportPadding,

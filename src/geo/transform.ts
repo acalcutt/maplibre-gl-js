@@ -5,7 +5,7 @@ import Point from '@mapbox/point-geometry';
 import {wrap, clamp} from '../util/util';
 import {number as interpolate} from '../style-spec/util/interpolate';
 import EXTENT from '../data/extent';
-import {vec4, mat4, mat2, vec2, vec3} from 'gl-matrix';
+import {vec4, mat4, mat2, vec2} from 'gl-matrix';
 import {Aabb, Frustum} from '../util/primitives';
 import EdgeInsets from './edge_insets';
 
@@ -262,8 +262,8 @@ class Transform {
      * @returns {number} zoom level An integer zoom level at which all tiles will be visible.
      */
     coveringZoomLevel(options: {
-      roundZoom?: boolean;
-      tileSize: number;
+        roundZoom?: boolean;
+        tileSize: number;
     }) {
         const z = (options.roundZoom ? Math.round : Math.floor)(
             this.zoom + this.scaleZoom(this.tileSize / options.tileSize)
@@ -315,14 +315,14 @@ class Transform {
      * @private
      */
     coveringTiles(
-      options: {
-        tileSize: number;
-        minzoom?: number;
-        maxzoom?: number;
-        roundZoom?: boolean;
-        reparseOverscaled?: boolean;
-        renderWorldCopies?: boolean;
-      }
+        options: {
+            tileSize: number;
+            minzoom?: number;
+            maxzoom?: number;
+            roundZoom?: boolean;
+            reparseOverscaled?: boolean;
+            renderWorldCopies?: boolean;
+        }
     ): Array<OverscaledTileID> {
         let z = this.coveringZoomLevel(options);
         const actualZ = z;
@@ -436,8 +436,8 @@ class Transform {
     project(lnglat: LngLat) {
         const lat = clamp(lnglat.lat, -this.maxValidLatitude, this.maxValidLatitude);
         return new Point(
-                mercatorXfromLng(lnglat.lng) * this.worldSize,
-                mercatorYfromLat(lat) * this.worldSize);
+            mercatorXfromLng(lnglat.lng) * this.worldSize,
+            mercatorYfromLat(lat) * this.worldSize);
     }
 
     unproject(point: Point): LngLat {
@@ -451,8 +451,8 @@ class Transform {
         const b = this.pointCoordinate(this.centerPoint);
         const loc = this.locationCoordinate(lnglat);
         const newCenter = new MercatorCoordinate(
-                loc.x - (a.x - b.x),
-                loc.y - (a.y - b.y));
+            loc.x - (a.x - b.x),
+            loc.y - (a.y - b.y));
         this.center = this.coordinateLocation(newCenter);
         if (this._renderWorldCopies) {
             this.center = this.center.wrap();
@@ -568,7 +568,7 @@ class Transform {
      * Sets or clears the map's geographical constraints.
      * @param {LngLatBounds} bounds A {@link LngLatBounds} object describing the new geographic boundaries of the map.
      */
-    setMaxBounds(bounds?: LngLatBounds) {
+    setMaxBounds(bounds?: LngLatBounds | null) {
         if (bounds) {
             this.lngRange = [bounds.getWest(), bounds.getEast()];
             this.latRange = [bounds.getSouth(), bounds.getNorth()];
@@ -724,10 +724,10 @@ class Transform {
 
         // The mercatorMatrix can be used to transform points from mercator coordinates
         // ([0, 0] nw, [1, 1] se) to GL coordinates.
-        this.mercatorMatrix = mat4.scale([] as any, m, vec3.fromValues(this.worldSize, this.worldSize, this.worldSize));
+        this.mercatorMatrix = mat4.scale([] as any, m, [this.worldSize, this.worldSize, this.worldSize]);
 
         // scale vertically to meters per pixel (inverse of ground resolution):
-        mat4.scale(m, m, vec3.fromValues(1, 1, mercatorZfromAltitude(1, this.center.lat) * this.worldSize));
+        mat4.scale(m, m, [1, 1, mercatorZfromAltitude(1, this.center.lat) * this.worldSize]);
 
         this.projMatrix = m;
         this.invProjMatrix = mat4.invert([] as any, this.projMatrix);
@@ -774,7 +774,7 @@ class Transform {
         if (!this.pixelMatrixInverse) return 1;
 
         const coord = this.pointCoordinate(new Point(0, 0));
-        const p = vec4.fromValues(coord.x * this.worldSize, coord.y * this.worldSize, 0, 1);
+        const p = [coord.x * this.worldSize, coord.y * this.worldSize, 0, 1] as vec4;
         const topPoint = vec4.transformMat4(p, p, this.pixelMatrix);
         return topPoint[3] / this.cameraToCenterDistance;
     }
