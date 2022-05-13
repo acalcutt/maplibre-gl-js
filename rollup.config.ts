@@ -9,7 +9,7 @@ const minified = MINIFY === 'true';
 const production = BUILD === 'production';
 const outputFile =
     !production ? 'dist/maplibre-gl-compat-dev.ie.js' :
-    minified ? 'dist/maplibre-gl-compat.js' : 'dist/maplibre-gl2-compat-unminified.js';
+    minified ? 'dist/maplibre-gl-compat.js' : 'dist/maplibre-gl-compat-unminified.js';
 
 const config: RollupOptions[] = [{
     // Before rollup you should run build-tsc to transpile from typescript to javascript (except when running rollup in watch mode)
