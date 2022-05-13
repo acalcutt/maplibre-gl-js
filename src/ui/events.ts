@@ -311,6 +311,10 @@ export type MapDataEvent = {
     sourceDataType: MapSourceDataType;
 };
 
+export type MapTerrainEvent = {
+    type: 'terrain';
+};
+
 export type MapContextEvent = {
     type: 'webglcontextlost' | 'webglcontextrestored';
     originalEvent: WebGLContextEvent;
@@ -386,6 +390,8 @@ export type MapEventType = {
     pitchend: MapLibreEvent<MouseEvent | TouchEvent | undefined>;
 
     wheel: MapWheelEvent;
+
+    terrain: MapTerrainEvent;
 };
 
 export type MapEvent =
@@ -1395,7 +1401,16 @@ export type MapEvent =
     | 'style.load'
 
     /**
+     * @event terrain
+     * @memberof Map
+     * @instance
+     * @private
+     */
+    | 'terrain'
+
+    /**
      * Fired when a request for one of the map's sources' tiles is aborted.
+     * Fired when a request for one of the map's sources' data is aborted.
      * See {@link MapDataEvent} for more information.
      *
      * @event dataabort
@@ -1406,7 +1421,7 @@ export type MapEvent =
      * // Initialize the map
      * var map = new maplibregl.Map({ // map options });
      * // Set an event listener that fires
-     * // when a request for one of the map's sources' tiles is aborted.
+     * // when a request for one of the map's sources' data is aborted.
      * map.on('dataabort', function() {
      *   console.log('A dataabort event occurred.');
      * });
@@ -1414,7 +1429,7 @@ export type MapEvent =
     | 'dataabort'
 
     /**
-     * Fired when a request for one of the map's sources' tiles is aborted.
+     * Fired when a request for one of the map's sources' data is aborted.
      * See {@link MapDataEvent} for more information.
      *
      * @event sourcedataabort
@@ -1425,7 +1440,7 @@ export type MapEvent =
      * // Initialize the map
      * var map = new maplibregl.Map({ // map options });
      * // Set an event listener that fires
-     * // when a request for one of the map's sources' tiles is aborted.
+     * // when a request for one of the map's sources' data is aborted.
      * map.on('sourcedataabort', function() {
      *   console.log('A sourcedataabort event occurred.');
      * });
