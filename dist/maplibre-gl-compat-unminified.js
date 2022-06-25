@@ -1,4 +1,5 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.2.0-pre.2/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.2.0-pre.3/LICENSE.txt */
+/* https://github.com/acalcutt/maplibre-gl-js/tree/2.x_ie_compat */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -157,7 +158,7 @@ function keysDifference(obj, other) {
     }
     return difference;
 }
-function extend$1(dest) {
+function extend(dest) {
     var sources = [], len = arguments.length - 1;
     while (len-- > 0)
         sources[len] = arguments[len + 1];
@@ -1526,10 +1527,10 @@ var makeRequest = function (requestParameters, callback) {
     return makeXMLHttpRequest(requestParameters, callback);
 };
 var getJSON = function (requestParameters, callback) {
-    return makeRequest(extend$1(requestParameters, { type: 'json' }), callback);
+    return makeRequest(extend(requestParameters, { type: 'json' }), callback);
 };
 var getArrayBuffer = function (requestParameters, callback) {
-    return makeRequest(extend$1(requestParameters, { type: 'arrayBuffer' }), callback);
+    return makeRequest(extend(requestParameters, { type: 'arrayBuffer' }), callback);
 };
 function sameOrigin(url) {
     var a = window.document.createElement('a');
@@ -1675,14 +1676,14 @@ function _removeEventListener(type, listener, listenerList) {
 var Event$1 = function Event(type, data) {
     if (data === void 0)
         data = {};
-    extend$1(this, data);
+    extend(this, data);
     this.type = type;
 };
 var ErrorEvent = function (Event) {
     function ErrorEvent(error, data) {
         if (data === void 0)
             data = {};
-        Event.call(this, 'error', extend$1({ error: error }, data));
+        Event.call(this, 'error', extend({ error: error }, data));
     }
     if (Event)
         ErrorEvent.__proto__ = Event;
@@ -1727,7 +1728,7 @@ Evented.prototype.fire = function fire(event, properties) {
         }
         var parent = this._eventedParent;
         if (parent) {
-            extend$1(event, typeof this._eventedParentData === 'function' ? this._eventedParentData() : this._eventedParentData);
+            extend(event, typeof this._eventedParentData === 'function' ? this._eventedParentData() : this._eventedParentData);
             parent.fire(event);
         }
     } else if (event instanceof ErrorEvent) {
@@ -4245,7 +4246,7 @@ function validateConstants(options) {
     }
 }
 
-function extend (output) {
+function extendBy(output) {
     var inputs = [], len = arguments.length - 1;
     while (len-- > 0)
         inputs[len] = arguments[len + 1];
@@ -5525,35 +5526,6 @@ Formatted.prototype.toString = function toString() {
         return section.text;
     }).join('');
 };
-Formatted.prototype.serialize = function serialize() {
-    var serialized = ['format'];
-    for (var i = 0, list = this.sections; i < list.length; i += 1) {
-        var section = list[i];
-        if (section.image) {
-            serialized.push([
-                'image',
-                section.image.name
-            ]);
-            continue;
-        }
-        serialized.push(section.text);
-        var options = {};
-        if (section.fontStack) {
-            options['text-font'] = [
-                'literal',
-                section.fontStack.split(',')
-            ];
-        }
-        if (section.scale) {
-            options['font-scale'] = section.scale;
-        }
-        if (section.textColor) {
-            options['text-color'] = ['rgba'].concat(section.textColor.toArray());
-        }
-        serialized.push(options);
-    }
-    return serialized;
-};
 
 var ResolvedImage = function ResolvedImage(options) {
     this.name = options.name;
@@ -5570,12 +5542,6 @@ ResolvedImage.fromString = function fromString(name) {
         name: name,
         available: false
     });
-};
-ResolvedImage.prototype.serialize = function serialize() {
-    return [
-        'image',
-        this.name
-    ];
 };
 
 function validateRGBA(r, g, b, a) {
@@ -5715,20 +5681,6 @@ Literal.prototype.eachChild = function eachChild() {
 Literal.prototype.outputDefined = function outputDefined() {
     return true;
 };
-Literal.prototype.serialize = function serialize() {
-    if (this.type.kind === 'array' || this.type.kind === 'object') {
-        return [
-            'literal',
-            this.value
-        ];
-    } else if (this.value instanceof Color) {
-        return ['rgba'].concat(this.value.toArray());
-    } else if (this.value instanceof Formatted) {
-        return this.value.serialize();
-    } else {
-        return this.value;
-    }
-};
 
 var RuntimeError = function RuntimeError(message) {
     this.name = 'ExpressionEvaluationError';
@@ -5808,169 +5760,6 @@ Assertion.prototype.outputDefined = function outputDefined() {
     return this.args.every(function (arg) {
         return arg.outputDefined();
     });
-};
-Assertion.prototype.serialize = function serialize() {
-    var type = this.type;
-    var serialized = [type.kind];
-    if (type.kind === 'array') {
-        var itemType = type.itemType;
-        if (itemType.kind === 'string' || itemType.kind === 'number' || itemType.kind === 'boolean') {
-            serialized.push(itemType.kind);
-            var N = type.N;
-            if (typeof N === 'number' || this.args.length > 1) {
-                serialized.push(N);
-            }
-        }
-    }
-    return serialized.concat(this.args.map(function (arg) {
-        return arg.serialize();
-    }));
-};
-
-var FormatExpression = function FormatExpression(sections) {
-    this.type = FormattedType;
-    this.sections = sections;
-};
-FormatExpression.parse = function parse(args, context) {
-    if (args.length < 2) {
-        return context.error('Expected at least one argument.');
-    }
-    var firstArg = args[1];
-    if (!Array.isArray(firstArg) && typeof firstArg === 'object') {
-        return context.error('First argument must be an image or text section.');
-    }
-    var sections = [];
-    var nextTokenMayBeObject = false;
-    for (var i = 1; i <= args.length - 1; ++i) {
-        var arg = args[i];
-        if (nextTokenMayBeObject && typeof arg === 'object' && !Array.isArray(arg)) {
-            nextTokenMayBeObject = false;
-            var scale = null;
-            if (arg['font-scale']) {
-                scale = context.parse(arg['font-scale'], 1, NumberType);
-                if (!scale) {
-                    return null;
-                }
-            }
-            var font = null;
-            if (arg['text-font']) {
-                font = context.parse(arg['text-font'], 1, array$1(StringType));
-                if (!font) {
-                    return null;
-                }
-            }
-            var textColor = null;
-            if (arg['text-color']) {
-                textColor = context.parse(arg['text-color'], 1, ColorType);
-                if (!textColor) {
-                    return null;
-                }
-            }
-            var lastExpression = sections[sections.length - 1];
-            lastExpression.scale = scale;
-            lastExpression.font = font;
-            lastExpression.textColor = textColor;
-        } else {
-            var content = context.parse(args[i], 1, ValueType);
-            if (!content) {
-                return null;
-            }
-            var kind = content.type.kind;
-            if (kind !== 'string' && kind !== 'value' && kind !== 'null' && kind !== 'resolvedImage') {
-                return context.error('Formatted text type must be \'string\', \'value\', \'image\' or \'null\'.');
-            }
-            nextTokenMayBeObject = true;
-            sections.push({
-                content: content,
-                scale: null,
-                font: null,
-                textColor: null
-            });
-        }
-    }
-    return new FormatExpression(sections);
-};
-FormatExpression.prototype.evaluate = function evaluate(ctx) {
-    var evaluateSection = function (section) {
-        var evaluatedContent = section.content.evaluate(ctx);
-        if (typeOf(evaluatedContent) === ResolvedImageType) {
-            return new FormattedSection('', evaluatedContent, null, null, null);
-        }
-        return new FormattedSection(toString(evaluatedContent), null, section.scale ? section.scale.evaluate(ctx) : null, section.font ? section.font.evaluate(ctx).join(',') : null, section.textColor ? section.textColor.evaluate(ctx) : null);
-    };
-    return new Formatted(this.sections.map(evaluateSection));
-};
-FormatExpression.prototype.eachChild = function eachChild(fn) {
-    for (var i = 0, list = this.sections; i < list.length; i += 1) {
-        var section = list[i];
-        fn(section.content);
-        if (section.scale) {
-            fn(section.scale);
-        }
-        if (section.font) {
-            fn(section.font);
-        }
-        if (section.textColor) {
-            fn(section.textColor);
-        }
-    }
-};
-FormatExpression.prototype.outputDefined = function outputDefined() {
-    return false;
-};
-FormatExpression.prototype.serialize = function serialize() {
-    var serialized = ['format'];
-    for (var i = 0, list = this.sections; i < list.length; i += 1) {
-        var section = list[i];
-        serialized.push(section.content.serialize());
-        var options = {};
-        if (section.scale) {
-            options['font-scale'] = section.scale.serialize();
-        }
-        if (section.font) {
-            options['text-font'] = section.font.serialize();
-        }
-        if (section.textColor) {
-            options['text-color'] = section.textColor.serialize();
-        }
-        serialized.push(options);
-    }
-    return serialized;
-};
-
-var ImageExpression = function ImageExpression(input) {
-    this.type = ResolvedImageType;
-    this.input = input;
-};
-ImageExpression.parse = function parse(args, context) {
-    if (args.length !== 2) {
-        return context.error('Expected two arguments.');
-    }
-    var name = context.parse(args[1], 1, StringType);
-    if (!name) {
-        return context.error('No image name provided.');
-    }
-    return new ImageExpression(name);
-};
-ImageExpression.prototype.evaluate = function evaluate(ctx) {
-    var evaluatedImageName = this.input.evaluate(ctx);
-    var value = ResolvedImage.fromString(evaluatedImageName);
-    if (value && ctx.availableImages) {
-        value.available = ctx.availableImages.indexOf(evaluatedImageName) > -1;
-    }
-    return value;
-};
-ImageExpression.prototype.eachChild = function eachChild(fn) {
-    fn(this.input);
-};
-ImageExpression.prototype.outputDefined = function outputDefined() {
-    return false;
-};
-ImageExpression.prototype.serialize = function serialize() {
-    return [
-        'image',
-        this.input.serialize()
-    ];
 };
 
 var types = {
@@ -6062,24 +5851,6 @@ Coercion.prototype.outputDefined = function outputDefined() {
         return arg.outputDefined();
     });
 };
-Coercion.prototype.serialize = function serialize() {
-    if (this.type.kind === 'formatted') {
-        return new FormatExpression([{
-                content: this.args[0],
-                scale: null,
-                font: null,
-                textColor: null
-            }]).serialize();
-    }
-    if (this.type.kind === 'resolvedImage') {
-        return new ImageExpression(this.args[0]).serialize();
-    }
-    var serialized = ['to-' + this.type.kind];
-    this.eachChild(function (child) {
-        serialized.push(child.serialize());
-    });
-    return serialized;
-};
 
 var geometryTypes = [
     'Unknown',
@@ -6133,11 +5904,6 @@ CompoundExpression.prototype.eachChild = function eachChild(fn) {
 };
 CompoundExpression.prototype.outputDefined = function outputDefined() {
     return false;
-};
-CompoundExpression.prototype.serialize = function serialize() {
-    return [this.name].concat(this.args.map(function (arg) {
-        return arg.serialize();
-    }));
 };
 CompoundExpression.parse = function parse(args, context) {
     var ref$1;
@@ -6268,18 +6034,6 @@ CollatorExpression.prototype.eachChild = function eachChild(fn) {
 };
 CollatorExpression.prototype.outputDefined = function outputDefined() {
     return false;
-};
-CollatorExpression.prototype.serialize = function serialize() {
-    var options = {};
-    options['case-sensitive'] = this.caseSensitive.serialize();
-    options['diacritic-sensitive'] = this.diacriticSensitive.serialize();
-    if (this.locale) {
-        options['locale'] = this.locale.serialize();
-    }
-    return [
-        'collator',
-        options
-    ];
 };
 
 var EXTENT$1 = 8192;
@@ -6636,12 +6390,6 @@ Within.prototype.eachChild = function eachChild() {
 Within.prototype.outputDefined = function outputDefined() {
     return true;
 };
-Within.prototype.serialize = function serialize() {
-    return [
-        'within',
-        this.geojson
-    ];
-};
 
 function isFeatureConstant(e) {
     if (e instanceof CompoundExpression) {
@@ -6717,12 +6465,6 @@ Var.prototype.eachChild = function eachChild() {
 };
 Var.prototype.outputDefined = function outputDefined() {
     return false;
-};
-Var.prototype.serialize = function serialize() {
-    return [
-        'var',
-        this.name
-    ];
 };
 
 var ParsingContext = function ParsingContext(registry, path, expectedType, scope, errors) {
@@ -6967,19 +6709,6 @@ Step.prototype.outputDefined = function outputDefined() {
     return this.outputs.every(function (out) {
         return out.outputDefined();
     });
-};
-Step.prototype.serialize = function serialize() {
-    var serialized = [
-        'step',
-        this.input.serialize()
-    ];
-    for (var i = 0; i < this.labels.length; i++) {
-        if (i > 0) {
-            serialized.push(this.labels[i]);
-        }
-        serialized.push(this.outputs[i].serialize());
-    }
-    return serialized;
 };
 
 var unitbezier = UnitBezier;
@@ -7299,32 +7028,6 @@ Interpolate.prototype.outputDefined = function outputDefined() {
         return out.outputDefined();
     });
 };
-Interpolate.prototype.serialize = function serialize() {
-    var interpolation;
-    if (this.interpolation.name === 'linear') {
-        interpolation = ['linear'];
-    } else if (this.interpolation.name === 'exponential') {
-        if (this.interpolation.base === 1) {
-            interpolation = ['linear'];
-        } else {
-            interpolation = [
-                'exponential',
-                this.interpolation.base
-            ];
-        }
-    } else {
-        interpolation = ['cubic-bezier'].concat(this.interpolation.controlPoints);
-    }
-    var serialized = [
-        this.operator,
-        interpolation,
-        this.input.serialize()
-    ];
-    for (var i = 0; i < this.labels.length; i++) {
-        serialized.push(this.labels[i], this.outputs[i].serialize());
-    }
-    return serialized;
-};
 function exponentialInterpolation(input, base, lowerValue, upperValue) {
     var difference = upperValue - lowerValue;
     var progress = input - lowerValue;
@@ -7396,13 +7099,6 @@ Coalesce.prototype.outputDefined = function outputDefined() {
         return arg.outputDefined();
     });
 };
-Coalesce.prototype.serialize = function serialize() {
-    var serialized = ['coalesce'];
-    this.eachChild(function (child) {
-        serialized.push(child.serialize());
-    });
-    return serialized;
-};
 
 var Let = function Let(bindings, result) {
     this.type = result.type;
@@ -7450,17 +7146,6 @@ Let.parse = function parse(args, context) {
 Let.prototype.outputDefined = function outputDefined() {
     return this.result.outputDefined();
 };
-Let.prototype.serialize = function serialize() {
-    var serialized = ['let'];
-    for (var i = 0, list = this.bindings; i < list.length; i += 1) {
-        var ref = list[i];
-        var name = ref[0];
-        var expr = ref[1];
-        serialized.push(name, expr.serialize());
-    }
-    serialized.push(this.result.serialize());
-    return serialized;
-};
 
 var At = function At(type, index, input) {
     this.type = type;
@@ -7499,13 +7184,6 @@ At.prototype.eachChild = function eachChild(fn) {
 };
 At.prototype.outputDefined = function outputDefined() {
     return false;
-};
-At.prototype.serialize = function serialize() {
-    return [
-        'at',
-        this.index.serialize(),
-        this.input.serialize()
-    ];
 };
 
 var In = function In(needle, haystack) {
@@ -7561,13 +7239,6 @@ In.prototype.eachChild = function eachChild(fn) {
 };
 In.prototype.outputDefined = function outputDefined() {
     return true;
-};
-In.prototype.serialize = function serialize() {
-    return [
-        'in',
-        this.needle.serialize(),
-        this.haystack.serialize()
-    ];
 };
 
 var IndexOf = function IndexOf(needle, haystack, fromIndex) {
@@ -7636,22 +7307,6 @@ IndexOf.prototype.eachChild = function eachChild(fn) {
 };
 IndexOf.prototype.outputDefined = function outputDefined() {
     return false;
-};
-IndexOf.prototype.serialize = function serialize() {
-    if (this.fromIndex != null && this.fromIndex !== undefined) {
-        var fromIndex = this.fromIndex.serialize();
-        return [
-            'index-of',
-            this.needle.serialize(),
-            this.haystack.serialize(),
-            fromIndex
-        ];
-    }
-    return [
-        'index-of',
-        this.needle.serialize(),
-        this.haystack.serialize()
-    ];
 };
 
 var Match = function Match(inputType, outputType, input, cases, outputs, otherwise) {
@@ -7739,45 +7394,6 @@ Match.prototype.outputDefined = function outputDefined() {
         return out.outputDefined();
     }) && this.otherwise.outputDefined();
 };
-Match.prototype.serialize = function serialize() {
-    var this$1$1 = this;
-    var serialized = [
-        'match',
-        this.input.serialize()
-    ];
-    var sortedLabels = Object.keys(this.cases).sort();
-    var groupedByOutput = [];
-    var outputLookup = {};
-    for (var i = 0, list = sortedLabels; i < list.length; i += 1) {
-        var label = list[i];
-        var outputIndex = outputLookup[this.cases[label]];
-        if (outputIndex === undefined) {
-            outputLookup[this.cases[label]] = groupedByOutput.length;
-            groupedByOutput.push([
-                this.cases[label],
-                [label]
-            ]);
-        } else {
-            groupedByOutput[outputIndex][1].push(label);
-        }
-    }
-    var coerceLabel = function (label) {
-        return this$1$1.inputType.kind === 'number' ? Number(label) : label;
-    };
-    for (var i$1 = 0, list$1 = groupedByOutput; i$1 < list$1.length; i$1 += 1) {
-        var ref = list$1[i$1];
-        var outputIndex = ref[0];
-        var labels = ref[1];
-        if (labels.length === 1) {
-            serialized.push(coerceLabel(labels[0]));
-        } else {
-            serialized.push(labels.map(coerceLabel));
-        }
-        serialized.push(this.outputs[outputIndex$1].serialize());
-    }
-    serialized.push(this.otherwise.serialize());
-    return serialized;
-};
 
 var Case = function Case(type, branches, otherwise) {
     this.type = type;
@@ -7845,13 +7461,6 @@ Case.prototype.outputDefined = function outputDefined() {
         return out.outputDefined();
     }) && this.otherwise.outputDefined();
 };
-Case.prototype.serialize = function serialize() {
-    var serialized = ['case'];
-    this.eachChild(function (child) {
-        serialized.push(child.serialize());
-    });
-    return serialized;
-};
 
 var Slice = function Slice(type, input, beginIndex, endIndex) {
     this.type = type;
@@ -7909,22 +7518,6 @@ Slice.prototype.eachChild = function eachChild(fn) {
 };
 Slice.prototype.outputDefined = function outputDefined() {
     return false;
-};
-Slice.prototype.serialize = function serialize() {
-    if (this.endIndex != null && this.endIndex !== undefined) {
-        var endIndex = this.endIndex.serialize();
-        return [
-            'slice',
-            this.input.serialize(),
-            this.beginIndex.serialize(),
-            endIndex
-        ];
-    }
-    return [
-        'slice',
-        this.input.serialize(),
-        this.beginIndex.serialize()
-    ];
 };
 
 function isComparableType(op, type) {
@@ -8050,13 +7643,6 @@ function makeComparison(op, compareBasic, compareWithCollator) {
         Comparison.prototype.outputDefined = function outputDefined() {
             return true;
         };
-        Comparison.prototype.serialize = function serialize() {
-            var serialized = [op];
-            this.eachChild(function (child) {
-                serialized.push(child.serialize());
-            });
-            return serialized;
-        };
         return Comparison;
     }();
 }
@@ -8143,25 +7729,126 @@ NumberFormat.prototype.eachChild = function eachChild(fn) {
 NumberFormat.prototype.outputDefined = function outputDefined() {
     return false;
 };
-NumberFormat.prototype.serialize = function serialize() {
-    var options = {};
-    if (this.locale) {
-        options['locale'] = this.locale.serialize();
+
+var FormatExpression = function FormatExpression(sections) {
+    this.type = FormattedType;
+    this.sections = sections;
+};
+FormatExpression.parse = function parse(args, context) {
+    if (args.length < 2) {
+        return context.error('Expected at least one argument.');
     }
-    if (this.currency) {
-        options['currency'] = this.currency.serialize();
+    var firstArg = args[1];
+    if (!Array.isArray(firstArg) && typeof firstArg === 'object') {
+        return context.error('First argument must be an image or text section.');
     }
-    if (this.minFractionDigits) {
-        options['min-fraction-digits'] = this.minFractionDigits.serialize();
+    var sections = [];
+    var nextTokenMayBeObject = false;
+    for (var i = 1; i <= args.length - 1; ++i) {
+        var arg = args[i];
+        if (nextTokenMayBeObject && typeof arg === 'object' && !Array.isArray(arg)) {
+            nextTokenMayBeObject = false;
+            var scale = null;
+            if (arg['font-scale']) {
+                scale = context.parse(arg['font-scale'], 1, NumberType);
+                if (!scale) {
+                    return null;
+                }
+            }
+            var font = null;
+            if (arg['text-font']) {
+                font = context.parse(arg['text-font'], 1, array$1(StringType));
+                if (!font) {
+                    return null;
+                }
+            }
+            var textColor = null;
+            if (arg['text-color']) {
+                textColor = context.parse(arg['text-color'], 1, ColorType);
+                if (!textColor) {
+                    return null;
+                }
+            }
+            var lastExpression = sections[sections.length - 1];
+            lastExpression.scale = scale;
+            lastExpression.font = font;
+            lastExpression.textColor = textColor;
+        } else {
+            var content = context.parse(args[i], 1, ValueType);
+            if (!content) {
+                return null;
+            }
+            var kind = content.type.kind;
+            if (kind !== 'string' && kind !== 'value' && kind !== 'null' && kind !== 'resolvedImage') {
+                return context.error('Formatted text type must be \'string\', \'value\', \'image\' or \'null\'.');
+            }
+            nextTokenMayBeObject = true;
+            sections.push({
+                content: content,
+                scale: null,
+                font: null,
+                textColor: null
+            });
+        }
     }
-    if (this.maxFractionDigits) {
-        options['max-fraction-digits'] = this.maxFractionDigits.serialize();
+    return new FormatExpression(sections);
+};
+FormatExpression.prototype.evaluate = function evaluate(ctx) {
+    var evaluateSection = function (section) {
+        var evaluatedContent = section.content.evaluate(ctx);
+        if (typeOf(evaluatedContent) === ResolvedImageType) {
+            return new FormattedSection('', evaluatedContent, null, null, null);
+        }
+        return new FormattedSection(toString(evaluatedContent), null, section.scale ? section.scale.evaluate(ctx) : null, section.font ? section.font.evaluate(ctx).join(',') : null, section.textColor ? section.textColor.evaluate(ctx) : null);
+    };
+    return new Formatted(this.sections.map(evaluateSection));
+};
+FormatExpression.prototype.eachChild = function eachChild(fn) {
+    for (var i = 0, list = this.sections; i < list.length; i += 1) {
+        var section = list[i];
+        fn(section.content);
+        if (section.scale) {
+            fn(section.scale);
+        }
+        if (section.font) {
+            fn(section.font);
+        }
+        if (section.textColor) {
+            fn(section.textColor);
+        }
     }
-    return [
-        'number-format',
-        this.number.serialize(),
-        options
-    ];
+};
+FormatExpression.prototype.outputDefined = function outputDefined() {
+    return false;
+};
+
+var ImageExpression = function ImageExpression(input) {
+    this.type = ResolvedImageType;
+    this.input = input;
+};
+ImageExpression.parse = function parse(args, context) {
+    if (args.length !== 2) {
+        return context.error('Expected two arguments.');
+    }
+    var name = context.parse(args[1], 1, StringType);
+    if (!name) {
+        return context.error('No image name provided.');
+    }
+    return new ImageExpression(name);
+};
+ImageExpression.prototype.evaluate = function evaluate(ctx) {
+    var evaluatedImageName = this.input.evaluate(ctx);
+    var value = ResolvedImage.fromString(evaluatedImageName);
+    if (value && ctx.availableImages) {
+        value.available = ctx.availableImages.indexOf(evaluatedImageName) > -1;
+    }
+    return value;
+};
+ImageExpression.prototype.eachChild = function eachChild(fn) {
+    fn(this.input);
+};
+ImageExpression.prototype.outputDefined = function outputDefined() {
+    return false;
 };
 
 var Length = function Length(input) {
@@ -8196,13 +7883,6 @@ Length.prototype.eachChild = function eachChild(fn) {
 };
 Length.prototype.outputDefined = function outputDefined() {
     return false;
-};
-Length.prototype.serialize = function serialize() {
-    var serialized = ['length'];
-    this.eachChild(function (child) {
-        serialized.push(child.serialize());
-    });
-    return serialized;
 };
 
 var expressions = {
@@ -9005,7 +8685,7 @@ function createFunction(parameters, propertySpec) {
     var zoomDependent = zoomAndFeatureDependent || !featureDependent;
     var type = parameters.type || (supportsInterpolation(propertySpec) ? 'exponential' : 'interval');
     if (isColor) {
-        parameters = extend({}, parameters);
+        parameters = extendBy({}, parameters);
         if (parameters.stops) {
             parameters.stops = parameters.stops.map(function (stop) {
                 return [
@@ -9338,7 +9018,7 @@ function createPropertyExpression(expressionInput, propertySpec) {
 var StylePropertyFunction = function StylePropertyFunction(parameters, specification) {
     this._parameters = parameters;
     this._specification = specification;
-    extend(this, createFunction(this._parameters, this._specification));
+    extendBy(this, createFunction(this._parameters, this._specification));
 };
 StylePropertyFunction.deserialize = function deserialize(serialized) {
     return new StylePropertyFunction(serialized._parameters, serialized._specification);
@@ -9969,7 +9649,7 @@ function convertNegation(filter) {
 
 function validateFilter(options) {
     if (isExpressionFilter(deepUnbundle(options.value))) {
-        return validateExpression(extend({}, options, {
+        return validateExpression(extendBy({}, options, {
             expressionContext: 'filter',
             valueSpec: { value: 'boolean' }
         }));
@@ -10219,7 +9899,7 @@ function validateLayer(options) {
                     styleSpec: options.styleSpec,
                     objectElementValidators: {
                         '*': function _(options) {
-                            return validateLayoutProperty$1(extend({ layerType: type }, options));
+                            return validateLayoutProperty$1(extendBy({ layerType: type }, options));
                         }
                     }
                 });
@@ -10233,7 +9913,7 @@ function validateLayer(options) {
                     styleSpec: options.styleSpec,
                     objectElementValidators: {
                         '*': function _(options) {
-                            return validatePaintProperty$1(extend({ layerType: type }, options));
+                            return validatePaintProperty$1(extendBy({ layerType: type }, options));
                         }
                     }
                 });
@@ -10482,12 +10162,12 @@ function validate(options) {
     } else if (valueSpec.type && VALIDATORS[valueSpec.type]) {
         return VALIDATORS[valueSpec.type](options);
     } else {
-        var valid = validateObject(extend({}, options, { valueSpec: valueSpec.type ? styleSpec[valueSpec.type] : valueSpec }));
+        var valid = validateObject(extendBy({}, options, { valueSpec: valueSpec.type ? styleSpec[valueSpec.type] : valueSpec }));
         return valid;
     }
 }
 
-function validateGlyphsURL (options) {
+function validateGlyphsUrl(options) {
     var value = options.value;
     var key = options.key;
     var errors = validateString(options);
@@ -10514,16 +10194,16 @@ function validateStyleMin(style, styleSpec) {
         styleSpec: styleSpec,
         style: style,
         objectElementValidators: {
-            glyphs: validateGlyphsURL,
+            glyphs: validateGlyphsUrl,
             '*': function _() {
                 return [];
             }
         }
     }));
-    if (style.constants) {
+    if (style['constants']) {
         errors = errors.concat(validateConstants({
             key: 'constants',
-            value: style.constants,
+            value: style['constants'],
             style: style,
             styleSpec: styleSpec
         }));
@@ -11488,7 +11168,7 @@ var TransitionablePropertyValue = function TransitionablePropertyValue(property)
     this.value = new PropertyValue(property, undefined);
 };
 TransitionablePropertyValue.prototype.transitioned = function transitioned(parameters, prior) {
-    return new TransitioningPropertyValue(this.property, this.value, prior, extend$1({}, parameters.transition, this.transition), parameters.now);
+    return new TransitioningPropertyValue(this.property, this.value, prior, extend({}, parameters.transition, this.transition), parameters.now);
 };
 TransitionablePropertyValue.prototype.untransitioned = function untransitioned() {
     return new TransitioningPropertyValue(this.property, this.value, null, {}, 0);
@@ -17437,7 +17117,7 @@ var LineFloorwidthProperty = function (DataDrivenProperty) {
         return DataDrivenProperty.prototype.possiblyEvaluate.call(this, value, parameters);
     };
     LineFloorwidthProperty.prototype.evaluate = function evaluate(value, globals, feature, featureState) {
-        globals = extend$1({}, globals, { zoom: Math.floor(globals.zoom) });
+        globals = extend({}, globals, { zoom: Math.floor(globals.zoom) });
         return DataDrivenProperty.prototype.evaluate.call(this, value, globals, feature, featureState);
     };
     return LineFloorwidthProperty;
@@ -17814,7 +17494,7 @@ createLayout([
     }
 ]);
 
-function transformText(text, layer, feature) {
+function transformTextInternal(text, layer, feature) {
     var transform = layer.layout.get('text-transform').evaluate(feature, {});
     if (transform === 'uppercase') {
         text = text.toLocaleUpperCase();
@@ -17826,14 +17506,14 @@ function transformText(text, layer, feature) {
     }
     return text;
 }
-function transformText$1 (text, layer, feature) {
+function transformText(text, layer, feature) {
     text.sections.forEach(function (section) {
-        section.text = transformText(section.text, layer, feature);
+        section.text = transformTextInternal(section.text, layer, feature);
     });
     return text;
 }
 
-function mergeLines (features) {
+function mergeLines(features) {
     var leftIndex = {};
     var rightIndex = {};
     var mergedFeatures = [];
@@ -18832,7 +18512,7 @@ function readGlyph(tag, glyph, pbf) {
         glyph.advance = pbf.readVarint();
     }
 }
-function parseGlyphPBF (data) {
+function parseGlyphPbf(data) {
     return new pbf(data).readFields(readFontstacks, []);
 }
 var GLYPH_PBF_BORDER = border$1;
@@ -20298,7 +19978,7 @@ function defaultCompare(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function findPoleOfInaccessibility (polygonRings, precision, debug) {
+function findPoleOfInaccessibility(polygonRings, precision, debug) {
     if (precision === void 0)
         precision = 1;
     if (debug === void 0)
@@ -21054,7 +20734,7 @@ SymbolBucket.prototype.populate = function populate(features, options, canonical
                 this.hasRTLText = true;
             }
             if (!this.hasRTLText || getRTLTextPluginStatus() === 'unavailable' || this.hasRTLText && plugin.isParsed()) {
-                text = transformText$1(formattedText, layer, evaluationFeature);
+                text = transformText(formattedText, layer, evaluationFeature);
             }
         }
         var icon = void 0;
@@ -22602,7 +22282,7 @@ FeatureIndex.prototype.loadMatchingFeature = function loadMatchingFeature(result
         if (id && sourceFeatureState) {
             featureState = sourceFeatureState.getState(styleLayer.sourceLayer || '_geojsonTileLayer', id);
         }
-        var serializedLayer = extend$1({}, serializedLayers[layerID]);
+        var serializedLayer = extend({}, serializedLayers[layerID]);
         serializedLayer.paint = evaluateProperties(serializedLayer.paint, styleLayer.paint, feature, featureState, availableImages);
         serializedLayer.layout = evaluateProperties(serializedLayer.layout, styleLayer.layout, feature, featureState, availableImages);
         var intersectionZ = !intersectionTest || intersectionTest(feature, styleLayer, featureState);
@@ -22863,7 +22543,7 @@ exports.evaluateVariableOffset = evaluateVariableOffset;
 exports.evented = evented;
 exports.exported = exported$1;
 exports.exported$1 = exported;
-exports.extend = extend$1;
+exports.extend = extend;
 exports.filterObject = filterObject;
 exports.fromScaling = fromScaling;
 exports.getAnchorAlignment = getAnchorAlignment;
@@ -22893,7 +22573,7 @@ exports.nextPowerOfTwo = nextPowerOfTwo;
 exports.number = number;
 exports.ortho = ortho;
 exports.parseCacheControl = parseCacheControl;
-exports.parseGlyphPBF = parseGlyphPBF;
+exports.parseGlyphPbf = parseGlyphPbf;
 exports.pbf = pbf;
 exports.performSymbolLayout = performSymbolLayout;
 exports.perspective = perspective;
@@ -25860,7 +25540,7 @@ var sqrLen = squaredLength;
     };
 })();
 
-function loadSprite (baseURL, requestManager, pixelRatio, callback) {
+function loadSprite(baseURL, requestManager, pixelRatio, callback) {
     var json, image, error;
     var format = pixelRatio > 1 ? '@2x' : '';
     var jsonRequest = performance.getJSON(requestManager.transformRequest(requestManager.normalizeSpriteURL(baseURL, format, '.json'), performance.ResourceType.SpriteJSON), function (err, data) {
@@ -26337,7 +26017,7 @@ function loadGlyphRange(fontstack, range, urlTemplate, requestManager, callback)
             callback(err);
         } else if (data) {
             var glyphs = {};
-            for (var i = 0, list = performance.parseGlyphPBF(data); i < list.length; i += 1) {
+            for (var i = 0, list = performance.parseGlyphPbf(data); i < list.length; i += 1) {
                 var glyph = list[i];
                 glyphs[glyph.id] = glyph;
             }
@@ -26907,7 +26587,7 @@ Dispatcher.prototype.remove = function remove() {
 };
 Dispatcher.Actor = performance.Actor;
 
-function loadTileJSON (options, requestManager, callback) {
+function loadTileJson(options, requestManager, callback) {
     var loaded = function (err, tileJSON) {
         if (err) {
             return callback(err);
@@ -27007,7 +26687,7 @@ var VectorTileSource = function (Evented) {
         var this$1$1 = this;
         this._loaded = false;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._tileJSONRequest = loadTileJSON(this._options, this.map._requestManager, function (err, tileJSON) {
+        this._tileJSONRequest = loadTileJson(this._options, this.map._requestManager, function (err, tileJSON) {
             this$1$1._tileJSONRequest = null;
             this$1$1._loaded = true;
             this$1$1.map.style.sourceCaches[this$1$1.id].clearTiles();
@@ -27173,7 +26853,7 @@ var RasterTileSource = function (Evented) {
         var this$1$1 = this;
         this._loaded = false;
         this.fire(new performance.Event('dataloading', { dataType: 'source' }));
-        this._tileJSONRequest = loadTileJSON(this._options, this.map._requestManager, function (err, tileJSON) {
+        this._tileJSONRequest = loadTileJson(this._options, this.map._requestManager, function (err, tileJSON) {
             this$1$1._tileJSONRequest = null;
             this$1$1._loaded = true;
             if (err) {
@@ -30841,7 +30521,7 @@ CollisionIndex.prototype.getViewportMatrix = function getViewportMatrix() {
     return m;
 };
 
-function pixelsToTileUnits (tile, pixelValue, z) {
+function pixelsToTileUnits(tile, pixelValue, z) {
     return pixelValue * (performance.EXTENT / (tile.tileSize * Math.pow(2, z - tile.tileID.overscaledZ)));
 }
 
@@ -31905,7 +31585,7 @@ var TerrainSourceCache = function (Evented) {
         this.maxzoom = 22;
         this.tileSize = 512;
         this.deltaZoom = 1;
-        this.renderHistorySize = 150;
+        this.renderHistorySize = sourceCache._cache.max;
         sourceCache.usedForTerrain = true;
         sourceCache.tileSize = this.tileSize * Math.pow(2, this.deltaZoom);
     }
@@ -31946,18 +31626,21 @@ var TerrainSourceCache = function (Evented) {
     TerrainSourceCache.prototype.removeOutdated = function removeOutdated(painter) {
         var this$1$1 = this;
         var tileIDs = {};
+        this.renderHistory = this.renderHistory.filter(function (i, p) {
+            return this$1$1.renderHistory.indexOf(i) === p;
+        }).slice(0, this.renderHistorySize);
         for (var i = 0, list = this._renderableTilesKeys; i < list.length; i += 1) {
             var key = list[i];
             tileIDs[key] = true;
         }
-        this.renderHistory = this.renderHistory.filter(function (i, p) {
-            return this$1$1.renderHistory.indexOf(i) === p;
-        });
-        while (this.renderHistory.length > this.renderHistorySize) {
-            var tile = this.sourceCache._tiles[this.renderHistory.shift()];
-            if (tile && !tileIDs[tile.tileID.key]) {
-                tile.clearTextures(painter);
-                delete this.sourceCache._tiles[tile.tileID.key];
+        for (var i$1 = 0, list$1 = this.renderHistory; i$1 < list$1.length; i$1 += 1) {
+            var key$1 = list$1[i$1];
+            tileIDs[key$1] = true;
+        }
+        for (var key$2 in this._tiles) {
+            if (!tileIDs[key$2]) {
+                this._tiles[key$2].clearTextures(painter);
+                delete this._tiles[key$2];
             }
         }
     };
@@ -32031,7 +31714,7 @@ var TerrainSourceCache = function (Evented) {
         }
         var tile = this.sourceCache.getTileByID(this._sourceTileCache[tileID.key]);
         if (!(tile && tile.dem) && searchForDEM) {
-            while (z > source.minzoom && !(tile && tile.dem)) {
+            while (z >= source.minzoom && !(tile && tile.dem)) {
                 tile = this.sourceCache.getTileByID(tileID.scaledTo(z--).key);
             }
         }
@@ -32294,6 +31977,18 @@ Terrain.prototype.getTerrainMesh = function getTerrainMesh() {
         segments: performance.SegmentVector.simpleSegment(0, 0, vertexArray.length, indexArray.length)
     };
     return this._mesh;
+};
+Terrain.prototype.getMinMaxElevation = function getMinMaxElevation(tileID) {
+    var tile = this.getTerrainData(tileID).tile;
+    var minMax = {
+        minElevation: null,
+        maxElevation: null
+    };
+    if (tile && tile.dem) {
+        minMax.minElevation = (tile.dem.min + this.elevationOffset) * this.exaggeration;
+        minMax.maxElevation = (tile.dem.max + this.elevationOffset) * this.exaggeration;
+    }
+    return minMax;
 };
 
 var emitValidationErrors = function (evented, errors) {
@@ -36737,7 +36432,7 @@ function drawDebugTile(painter, sourceCache, coord) {
     if (coord.overscaledZ !== coord.canonical.z) {
         tileIdText += ' => ' + coord.overscaledZ;
     }
-    var tileLabel = tileIdText + ' ' + tileSizeKb + 'kb';
+    var tileLabel = tileIdText + ' ' + tileSizeKb + 'kB';
     drawTextToOverlay(painter, tileLabel);
     program.draw(context, gl.TRIANGLES, depthMode, stencilMode, ColorMode.alphaBlended, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.transparent, scaleRatio), null, id, painter.debugBuffer, painter.quadTriangleIndexBuffer, painter.debugSegments);
     program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled, debugUniformValues(posMatrix, performance.Color.red), terrainData, id, painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
@@ -36896,7 +36591,7 @@ function prepareTerrain(painter, terrain, tile, stack) {
         }, context.gl.RGBA);
         tile.textures[stack].bind(context.gl.LINEAR, context.gl.CLAMP_TO_EDGE);
         if (stack === 0) {
-            terrain.sourceCache.renderHistory.push(tile.tileID.key);
+            terrain.sourceCache.renderHistory.unshift(tile.tileID.key);
         }
     }
     var fb = terrain.getRTTFramebuffer();
@@ -38021,6 +37716,7 @@ Transform.prototype.getVisibleUnwrappedCoordinates = function getVisibleUnwrappe
     return result;
 };
 Transform.prototype.coveringTiles = function coveringTiles(options) {
+    var _a, _b;
     var z = this.coveringZoomLevel(options);
     var actualZ = z;
     if (options.minzoom !== undefined && z < options.minzoom) {
@@ -38113,12 +37809,9 @@ Transform.prototype.coveringTiles = function coveringTiles(options) {
             var quadrant = it.aabb.quadrant(i$1);
             if (options.terrain) {
                 var tileID = new performance.OverscaledTileID(childZ, it.wrap, childZ, childX, childY);
-                var tile = options.terrain.getTerrainData(tileID).tile;
-                var minElevation = this.elevation, maxElevation = this.elevation;
-                if (tile && tile.dem) {
-                    minElevation = tile.dem.min * options.terrain.exaggeration;
-                    maxElevation = tile.dem.max * options.terrain.exaggeration;
-                }
+                var minMax = options.terrain.getMinMaxElevation(tileID);
+                var minElevation = (_a = minMax.minElevation) !== null && _a !== void 0 ? _a : this.elevation;
+                var maxElevation = (_b = minMax.maxElevation) !== null && _b !== void 0 ? _b : this.elevation;
                 quadrant = new Aabb([
                     quadrant.min[0],
                     quadrant.min[1],
@@ -38368,8 +38061,11 @@ Transform.prototype._constrain = function _constrain() {
     }
     if (this.lngRange) {
         var lngRange = this.lngRange;
-        minX = performance.mercatorXfromLng(lngRange[0]) * this.worldSize;
-        maxX = performance.mercatorXfromLng(lngRange[1]) * this.worldSize;
+        minX = performance.wrap(performance.mercatorXfromLng(lngRange[0]) * this.worldSize, 0, this.worldSize);
+        maxX = performance.wrap(performance.mercatorXfromLng(lngRange[1]) * this.worldSize, 0, this.worldSize);
+        if (maxX < minX) {
+            maxX += this.worldSize;
+        }
         sx = maxX - minX < size.x ? size.x / (maxX - minX) : 0;
     }
     var point = this.point;
@@ -38391,7 +38087,9 @@ Transform.prototype._constrain = function _constrain() {
         }
     }
     if (this.lngRange) {
-        var x = point.x, w2 = size.x / 2;
+        var centerX = (minX + maxX) / 2;
+        var x = performance.wrap(point.x, centerX - this.worldSize / 2, centerX + this.worldSize / 2);
+        var w2 = size.x / 2;
         if (x - w2 < minX) {
             x2 = minX + w2;
         }
@@ -38400,7 +38098,7 @@ Transform.prototype._constrain = function _constrain() {
         }
     }
     if (x2 !== undefined || y2 !== undefined) {
-        this.center = this.unproject(new performance.pointGeometry(x2 !== undefined ? x2 : point.x, y2 !== undefined ? y2 : point.y));
+        this.center = this.unproject(new performance.pointGeometry(x2 !== undefined ? x2 : point.x, y2 !== undefined ? y2 : point.y)).wrap();
     }
     this._unmodified = unmodified;
     this._constraining = false;
@@ -42874,7 +42572,7 @@ MouseRotateWrapper.prototype.reset = function reset() {
     this.offTemp();
 };
 
-function smartWrap (lngLat, priorPos, transform) {
+function smartWrap(lngLat, priorPos, transform) {
     lngLat = new performance.LngLat(lngLat.lng, lngLat.lat);
     if (priorPos) {
         var left = new performance.LngLat(lngLat.lng - 360, lngLat.lat);
