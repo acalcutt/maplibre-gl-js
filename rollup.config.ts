@@ -8,7 +8,7 @@ const {BUILD, MINIFY} = process.env;
 const minified = MINIFY === 'true';
 const production = BUILD === 'production';
 const outputFile =
-    !production ? 'dist/maplibre-gl-compat-dev.ie.js' :
+    !production ? 'dist/maplibre-gl-compat-dev.js' :
     minified ? 'dist/maplibre-gl-compat.js' : 'dist/maplibre-gl-compat-unminified.js';
 
 const config: RollupOptions[] = [{
