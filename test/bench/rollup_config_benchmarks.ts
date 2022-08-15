@@ -7,6 +7,7 @@ import buble from '@rollup/plugin-buble';
 import typescript from '@rollup/plugin-typescript';
 import {execSync} from 'child_process';
 import {RollupOptions} from 'rollup';
+import {importAssertions} from 'acorn-import-assertions';
 
 let styles = ['https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL'];
 
@@ -39,6 +40,7 @@ const splitConfig = (name: string): RollupOptions[] => [{
         sourcemap: 'inline',
         chunkFileNames: 'shared.js'
     },
+    acornInjectPlugins: [importAssertions],
     plugins: allPlugins
 }, {
     input: `rollup/benchmarks_${name}.js`,

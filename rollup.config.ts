@@ -3,6 +3,7 @@ import sourcemaps from 'rollup-plugin-sourcemaps';
 import {plugins} from './build/rollup_plugins';
 import banner from './build/banner';
 import {RollupOptions} from 'rollup';
+import {importAssertions} from 'acorn-import-assertions';
 
 const {BUILD, MINIFY} = process.env;
 const minified = MINIFY === 'true';
@@ -28,6 +29,7 @@ const config: RollupOptions[] = [{
         chunkFileNames: 'shared.js'
     },
     treeshake: production,
+    acornInjectPlugins: [ importAssertions ],
     plugins: plugins(minified, production)
 }, {
     // Next, bundle together the three "chunks" produced in the previous pass
