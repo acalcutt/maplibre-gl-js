@@ -42,7 +42,7 @@ export const plugins = (minified: boolean, production: boolean): Plugin[] => [
             pure_getters: true,
             passes: 3
         }
-    }),
+    }) : false,
     nodeResolve,
     typescript(),
     commonjs({
