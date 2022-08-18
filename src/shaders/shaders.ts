@@ -1,3 +1,6 @@
+
+// Disable Flow annotations here because Flow doesn't support importing GLSL files
+
 import preludeFrag from './_prelude.fragment.glsl.g';
 import preludeVert from './_prelude.vertex.glsl.g';
 import backgroundFrag from './background.fragment.glsl.g';
@@ -55,7 +58,7 @@ import terrainCoordsFrag from './terrain_coords.fragment.glsl.g';
 import terrainFrag from './terrain.fragment.glsl.g';
 import terrainVert from './terrain.vertex.glsl.g';
 
-export default {
+const shaders = {
     prelude: compile(preludeFrag, preludeVert),
     background: compile(backgroundFrag, backgroundVert),
     backgroundPattern: compile(backgroundPatternFrag, backgroundPatternVert),
@@ -86,6 +89,8 @@ export default {
     terrainDepth: compile(terrainDepthFrag, terrainVert),
     terrainCoords: compile(terrainCoordsFrag, terrainVert)
 };
+
+export default shaders;
 
 // Expand #pragmas to #ifdefs.
 

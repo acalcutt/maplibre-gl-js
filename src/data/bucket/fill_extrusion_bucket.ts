@@ -1,4 +1,5 @@
 import {FillExtrusionLayoutArray, PosArray} from '../array_types.g';
+
 import {members as layoutAttributes, centroidAttributes} from './fill_extrusion_attributes';
 import SegmentVector from '../segment';
 import {ProgramConfigurationSet} from '../program_configuration';
@@ -8,7 +9,6 @@ import earcut from 'earcut';
 import mvt from '@mapbox/vector-tile';
 const vectorTileFeatureTypes = mvt.VectorTileFeature.types;
 import classifyRings from '../../util/classify_rings';
-import assert from 'assert';
 const EARCUT_MAX_RINGS = 500;
 import {register} from '../../util/web_worker_transfer';
 import {hasPattern, addPatternDependencies} from './pattern_bucket_features';
@@ -263,7 +263,6 @@ class FillExtrusionBucket implements Bucket {
             }
 
             const indices = earcut(flattened, holeIndices);
-            assert(indices.length % 3 === 0);
 
             for (let j = 0; j < indices.length; j += 3) {
                 // Counter-clockwise winding order.
