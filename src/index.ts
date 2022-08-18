@@ -1,5 +1,5 @@
 import {supported} from '@mapbox/mapbox-gl-supported';
-import packageJSON from '../package.json' assert {type: 'json'};
+import packageJSON from '../package.json'
 import Map from './ui/map';
 import NavigationControl from './ui/control/navigation_control';
 import GeolocateControl from './ui/control/geolocate_control';
