@@ -22,22 +22,6 @@ jest.mock('../source/tile');
 jest.mock('../data/bucket/symbol_bucket');
 jest.mock('../symbol/projection');
 
-class StubMap extends Evented {
-    transform: Transform;
-    painter: Painter;
-    _requestManager: RequestManager;
-
-    constructor() {
-        super();
-        this.transform = new Transform();
-        this._requestManager = {
-            transformRequest: (url) => {
-                return {url};
-            }
-        } as any as RequestManager;
-    }
-}
-
 describe('drawSymbol', () => {
     test('should not do anything', () => {
         const mockPainter = new Painter(null, null);
