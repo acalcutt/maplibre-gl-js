@@ -1,5 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.3.1-pre.1/LICENSE.txt */
-/* https://github.com/acalcutt/maplibre-gl-js/tree/2.x_ie_compat */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.3.1-pre.2/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -23740,7 +23739,7 @@ var SymbolStyleLayer = /*@__PURE__*/(function (StyleLayer) {
                 expression = new ZoomConstantExpression('source', styleExpression);
             }
             else {
-                expression = new ZoomDependentExpression('composite', styleExpression, overriden.value.zoomStops, overriden.value._interpolationType);
+                expression = new ZoomDependentExpression('composite', styleExpression, overriden.value.zoomStops);
             }
             this.paint._values[overridable] = new PossiblyEvaluatedPropertyValue(overriden.property, expression, overriden.parameters);
         }
@@ -28426,7 +28425,7 @@ function isNotIE() {
 
 var name = "maplibre-gl";
 var description = "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library";
-var version$2 = "2.3.1-pre.1";
+var version$2 = "2.3.1-pre.2";
 var main = "dist/maplibre-gl-compat.js";
 var style = "dist/maplibre-gl-compat.css";
 var license = "BSD-3-Clause";
@@ -28466,7 +28465,7 @@ var devDependencies = {
 	"@babel/core": "^7.16.7",
 	"@mapbox/gazetteer": "^5.1.0",
 	"@mapbox/mapbox-gl-rtl-text": "^0.2.3",
-	"@mapbox/mvt-fixtures": "^3.9.0",
+	"@mapbox/mvt-fixtures": "^3.10.0",
 	"@rollup/plugin-buble": "^0.21.3",
 	"@rollup/plugin-commonjs": "^22.0.2",
 	"@rollup/plugin-json": "^4.1.0",
@@ -28490,7 +28489,7 @@ var devDependencies = {
 	"@types/offscreencanvas": "^2019.7.0",
 	"@types/pixelmatch": "^5.2.4",
 	"@types/pngjs": "^6.0.1",
-	"@types/react": "^18.0.15",
+	"@types/react": "^18.0.17",
 	"@types/react-dom": "^18.0.6",
 	"@types/request": "^2.48.8",
 	"@types/rollup-plugin-json": "^3.0.3",
@@ -28509,7 +28508,7 @@ var devDependencies = {
 	diff: "^5.1.0",
 	documentation: "14.0.0-alpha.1",
 	"dts-bundle-generator": "^6.12.0",
-	eslint: "^8.21.0",
+	eslint: "^8.22.0",
 	"eslint-config-mourner": "^3.0.0",
 	"eslint-plugin-html": "^7.1.0",
 	"eslint-plugin-import": "^2.26.0",
@@ -28543,7 +28542,7 @@ var devDependencies = {
 	react: "^18.2.0",
 	"react-dom": "^18.2.0",
 	request: "^2.88.0",
-	rollup: "^2.77.3",
+	rollup: "^2.78.0",
 	"rollup-plugin-import-assert": "^2.1.0",
 	"rollup-plugin-sourcemaps": "^0.6.3",
 	"rollup-plugin-terser": "^7.0.2",
@@ -28554,7 +28553,7 @@ var devDependencies = {
 	st: "^3.0.0",
 	stylelint: "^14.10.0",
 	"stylelint-config-standard": "^27.0.0",
-	"ts-jest": "^28.0.7",
+	"ts-jest": "^28.0.8",
 	"ts-node": "^10.9.1",
 	typescript: "^4.7.4",
 	"abortcontroller-polyfill": "^1.7.3",
@@ -28569,6 +28568,7 @@ var scripts = {
 	"generate-typings": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-typings.ts",
 	"generate-query-test-fixtures": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-query-test-fixtures.ts",
 	"generate-debug-index-file": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-debug-index-file.ts",
+	"build-dist": "npm run generate-typings && npm run build-dev && npm run build-prod && npm run build-prod-min && npm run build-csp && npm run build-css",
 	"build-dev": "rollup --configPlugin @rollup/plugin-typescript -c --environment BUILD:dev",
 	"watch-dev": "rollup --configPlugin @rollup/plugin-typescript -c --environment BUILD:dev --watch",
 	"build-prod": "rollup --configPlugin @rollup/plugin-typescript -c --environment BUILD:production",
@@ -36557,6 +36557,8 @@ var Style = /*@__PURE__*/(function (Evented) {
             { this.map.off('freezeElevation', this._terrainfreezeElevationCallback); }
         // remove terrain
         if (!options) {
+            if (this.terrain)
+                { this.terrain.sourceCache.destruct(); }
             this.terrain = null;
             this.map.transform.updateElevation(this.terrain);
             // add terrain
@@ -37866,8 +37868,6 @@ var Program = function Program(context, name, source, configuration, fixedUnifor
     this.binderUniforms = configuration ? configuration.getUniforms(context, uniformLocations) : [];
 };
 Program.prototype.draw = function draw (context, drawMode, depthMode, stencilMode, colorMode, cullFaceMode, uniformValues, terrain, layerID, layoutVertexBuffer, indexBuffer, segments, currentProperties, zoom, configuration, dynamicLayoutBuffer, dynamicLayoutBuffer2, dynamicLayoutBuffer3) {
-        var obj;
-
     var gl = context.gl;
     if (this.failedToCreate)
         { return; }
@@ -37892,7 +37892,18 @@ Program.prototype.draw = function draw (context, drawMode, depthMode, stencilMod
     if (configuration) {
         configuration.setUniforms(context, this.binderUniforms, currentProperties, { zoom: zoom });
     }
-    var primitiveSize = ( obj = {}, obj[gl.LINES] = 2, obj[gl.TRIANGLES] = 3, obj[gl.LINE_STRIP] = 1, obj )[drawMode];
+    var primitiveSize = 0;
+    switch (drawMode) {
+        case gl.LINES:
+            primitiveSize = 2;
+            break;
+        case gl.TRIANGLES:
+            primitiveSize = 3;
+            break;
+        case gl.LINE_STRIP:
+            primitiveSize = 1;
+            break;
+    }
     for (var i = 0, list = segments.get(); i < list.length; i += 1) {
         var segment = list[i];
 
@@ -43088,6 +43099,7 @@ var BlockableMapEventHandler = function BlockableMapEventHandler(map) {
 };
 BlockableMapEventHandler.prototype.reset = function reset () {
     this._delayContextMenu = false;
+    this._ignoreContextMenu = true;
     delete this._contextMenuEvent;
 };
 BlockableMapEventHandler.prototype.mousemove = function mousemove (e) {
@@ -43096,6 +43108,7 @@ BlockableMapEventHandler.prototype.mousemove = function mousemove (e) {
 };
 BlockableMapEventHandler.prototype.mousedown = function mousedown () {
     this._delayContextMenu = true;
+    this._ignoreContextMenu = false;
 };
 BlockableMapEventHandler.prototype.mouseup = function mouseup () {
     this._delayContextMenu = false;
@@ -43109,7 +43122,7 @@ BlockableMapEventHandler.prototype.contextmenu = function contextmenu (e) {
         // Mac: contextmenu fired on mousedown; we save it until mouseup for consistency's sake
         this._contextMenuEvent = e;
     }
-    else {
+    else if (!this._ignoreContextMenu) {
         // Windows: contextmenu fired on mouseup, so fire event now
         this._map.fire(new MapMouseEvent(e.type, this._map, e));
     }
@@ -46202,6 +46215,7 @@ AttributionControl.prototype.onAdd = function onAdd (map) {
     this._updateCompact();
     this._map.on('styledata', this._updateData);
     this._map.on('sourcedata', this._updateData);
+    this._map.on('terrain', this._updateData);
     this._map.on('resize', this._updateCompact);
     this._map.on('drag', this._updateCompactMinimize);
     return this._container;
@@ -46210,6 +46224,7 @@ AttributionControl.prototype.onRemove = function onRemove () {
     DOM.remove(this._container);
     this._map.off('styledata', this._updateData);
     this._map.off('sourcedata', this._updateData);
+    this._map.off('terrain', this._updateData);
     this._map.off('resize', this._updateCompact);
     this._map.off('drag', this._updateCompactMinimize);
     this._map = undefined;
@@ -46234,7 +46249,7 @@ AttributionControl.prototype._toggleAttribution = function _toggleAttribution ()
     }
 };
 AttributionControl.prototype._updateData = function _updateData (e) {
-    if (e && (e.sourceDataType === 'metadata' || e.sourceDataType === 'visibility' || e.dataType === 'style')) {
+    if (e && (e.sourceDataType === 'metadata' || e.sourceDataType === 'visibility' || e.dataType === 'style' || e.type === 'terrain')) {
         this._updateAttributions();
     }
 };
@@ -46262,7 +46277,7 @@ AttributionControl.prototype._updateAttributions = function _updateAttributions 
     var sourceCaches = this._map.style.sourceCaches;
     for (var id in sourceCaches) {
         var sourceCache = sourceCaches[id];
-        if (sourceCache.used) {
+        if (sourceCache.used || sourceCache.usedForTerrain) {
             var source = sourceCache.getSource();
             if (source.attribution && attributions.indexOf(source.attribution) < 0) {
                 attributions.push(source.attribution);
