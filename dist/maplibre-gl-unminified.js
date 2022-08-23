@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.3.1-pre.1/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.3.1-pre.2/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -18728,7 +18728,7 @@ class SymbolStyleLayer extends StyleLayer {
                 expression = new ZoomConstantExpression('source', styleExpression);
             }
             else {
-                expression = new ZoomDependentExpression('composite', styleExpression, overriden.value.zoomStops, overriden.value._interpolationType);
+                expression = new ZoomDependentExpression('composite', styleExpression, overriden.value.zoomStops);
             }
             this.paint._values[overridable] = new PossiblyEvaluatedPropertyValue(overriden.property, expression, overriden.parameters);
         }
@@ -23329,7 +23329,7 @@ function isNotIE() {
 var packageJSON = {
   "name": "maplibre-gl",
   "description": "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library",
-  "version": "2.3.1-pre.1",
+  "version": "2.3.1-pre.2",
   "main": "dist/maplibre-gl.js",
   "style": "dist/maplibre-gl.css",
   "license": "BSD-3-Clause",
@@ -23467,6 +23467,7 @@ var packageJSON = {
     "generate-typings": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-typings.ts",
     "generate-query-test-fixtures": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-query-test-fixtures.ts",
     "generate-debug-index-file": "node --loader ts-node/esm --experimental-specifier-resolution=node build/generate-debug-index-file.ts",
+    "build-dist": "npm run generate-typings && npm run build-dev && npm run build-prod && npm run build-prod-min && npm run build-csp && npm run build-css",
     "build-dev": "rollup --configPlugin @rollup/plugin-typescript -c --environment BUILD:dev",
     "watch-dev": "rollup --configPlugin @rollup/plugin-typescript -c --environment BUILD:dev --watch",
     "build-prod": "rollup --configPlugin @rollup/plugin-typescript -c --environment BUILD:production",
@@ -31181,6 +31182,8 @@ class Style extends performance.Evented {
             this.map.off('freezeElevation', this._terrainfreezeElevationCallback);
         // remove terrain
         if (!options) {
+            if (this.terrain)
+                this.terrain.sourceCache.destruct();
             this.terrain = null;
             this.map.transform.updateElevation(this.terrain);
             // add terrain
@@ -37310,6 +37313,7 @@ class BlockableMapEventHandler {
     }
     reset() {
         this._delayContextMenu = false;
+        this._ignoreContextMenu = true;
         delete this._contextMenuEvent;
     }
     mousemove(e) {
@@ -37318,6 +37322,7 @@ class BlockableMapEventHandler {
     }
     mousedown() {
         this._delayContextMenu = true;
+        this._ignoreContextMenu = false;
     }
     mouseup() {
         this._delayContextMenu = false;
@@ -37331,7 +37336,7 @@ class BlockableMapEventHandler {
             // Mac: contextmenu fired on mousedown; we save it until mouseup for consistency's sake
             this._contextMenuEvent = e;
         }
-        else {
+        else if (!this._ignoreContextMenu) {
             // Windows: contextmenu fired on mouseup, so fire event now
             this._map.fire(new MapMouseEvent(e.type, this._map, e));
         }
@@ -40342,6 +40347,7 @@ class AttributionControl {
         this._updateCompact();
         this._map.on('styledata', this._updateData);
         this._map.on('sourcedata', this._updateData);
+        this._map.on('terrain', this._updateData);
         this._map.on('resize', this._updateCompact);
         this._map.on('drag', this._updateCompactMinimize);
         return this._container;
@@ -40350,6 +40356,7 @@ class AttributionControl {
         DOM.remove(this._container);
         this._map.off('styledata', this._updateData);
         this._map.off('sourcedata', this._updateData);
+        this._map.off('terrain', this._updateData);
         this._map.off('resize', this._updateCompact);
         this._map.off('drag', this._updateCompactMinimize);
         this._map = undefined;
@@ -40374,7 +40381,7 @@ class AttributionControl {
         }
     }
     _updateData(e) {
-        if (e && (e.sourceDataType === 'metadata' || e.sourceDataType === 'visibility' || e.dataType === 'style')) {
+        if (e && (e.sourceDataType === 'metadata' || e.sourceDataType === 'visibility' || e.dataType === 'style' || e.type === 'terrain')) {
             this._updateAttributions();
         }
     }
@@ -40402,7 +40409,7 @@ class AttributionControl {
         const sourceCaches = this._map.style.sourceCaches;
         for (const id in sourceCaches) {
             const sourceCache = sourceCaches[id];
-            if (sourceCache.used) {
+            if (sourceCache.used || sourceCache.usedForTerrain) {
                 const source = sourceCache.getSource();
                 if (source.attribution && attributions.indexOf(source.attribution) < 0) {
                     attributions.push(source.attribution);
