@@ -1,4 +1,4 @@
-/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.3.1-pre.2/LICENSE.txt */
+/* MapLibre GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/maplibre/maplibre-gl-js/blob/v2.4.0/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -28425,7 +28425,7 @@ function isNotIE() {
 
 var name = "maplibre-gl";
 var description = "BSD licensed community fork of mapbox-gl, a WebGL interactive maps library";
-var version$2 = "2.3.1-pre.2";
+var version$2 = "2.4.0";
 var main = "dist/maplibre-gl-compat.js";
 var style = "dist/maplibre-gl-compat.css";
 var license = "BSD-3-Clause";
@@ -28478,10 +28478,10 @@ var devDependencies = {
 	"@types/d3": "^7.4.0",
 	"@types/diff": "^5.0.2",
 	"@types/earcut": "^2.1.1",
-	"@types/eslint": "^8.4.5",
+	"@types/eslint": "^8.4.6",
 	"@types/gl": "^4.1.1",
 	"@types/glob": "^7.2.0",
-	"@types/jest": "^28.1.6",
+	"@types/jest": "^28.1.7",
 	"@types/jsdom": "^20.0.0",
 	"@types/minimist": "^1.2.2",
 	"@types/murmurhash-js": "^1.0.3",
@@ -28496,8 +28496,8 @@ var devDependencies = {
 	"@types/shuffle-seed": "^1.1.0",
 	"@types/supercluster": "^7.1.0",
 	"@types/window-or-global": "^1.0.4",
-	"@typescript-eslint/eslint-plugin": "^5.32.0",
-	"@typescript-eslint/parser": "^5.32.0",
+	"@typescript-eslint/eslint-plugin": "^5.34.0",
+	"@typescript-eslint/parser": "^5.33.1",
 	"acorn-import-assertions": "^1.8.0",
 	address: "^1.2.0",
 	benchmark: "^2.1.4",
@@ -28506,13 +28506,13 @@ var devDependencies = {
 	d3: "^7.6.1",
 	"d3-queue": "^3.0.7",
 	diff: "^5.1.0",
-	documentation: "14.0.0-alpha.1",
+	documentation: "14.0.0",
 	"dts-bundle-generator": "^6.12.0",
 	eslint: "^8.22.0",
 	"eslint-config-mourner": "^3.0.0",
 	"eslint-plugin-html": "^7.1.0",
 	"eslint-plugin-import": "^2.26.0",
-	"eslint-plugin-jest": "^26.7.0",
+	"eslint-plugin-jest": "^26.8.7",
 	"eslint-plugin-jsdoc": "^39.3.4",
 	"eslint-plugin-react": "^7.30.1",
 	gl: "^5.0.3",
@@ -28542,7 +28542,7 @@ var devDependencies = {
 	react: "^18.2.0",
 	"react-dom": "^18.2.0",
 	request: "^2.88.0",
-	rollup: "^2.78.0",
+	rollup: "^2.78.1",
 	"rollup-plugin-import-assert": "^2.1.0",
 	"rollup-plugin-sourcemaps": "^0.6.3",
 	"rollup-plugin-terser": "^7.0.2",
@@ -28551,8 +28551,8 @@ var devDependencies = {
 	"shuffle-seed": "^1.1.6",
 	"source-map-explorer": "^2.5.2",
 	st: "^3.0.0",
-	stylelint: "^14.10.0",
-	"stylelint-config-standard": "^27.0.0",
+	stylelint: "^14.11.0",
+	"stylelint-config-standard": "^28.0.0",
 	"ts-jest": "^28.0.8",
 	"ts-node": "^10.9.1",
 	typescript: "^4.7.4",
@@ -45755,6 +45755,39 @@ var Camera = /*@__PURE__*/(function (Evented) {
         return this.fire(new performance.Event('moveend', eventData));
     };
     /**
+     * Calculates pitch, zoom and bearing for looking at @param newCenter with the camera position being @param newCenter
+     * and returns them as Cameraoptions.
+     * @memberof Map#
+     * @param from The camera to look from
+     * @param altitudeFrom The altitude of the camera to look from
+     * @param to The center to look at
+     * @param altitudeTo Optional altitude of the center to look at. If none given the ground height will be used.
+     * @returns {CameraOptions} the calculated camera options
+     */
+    Camera.prototype.calculateCameraOptionsFromTo = function calculateCameraOptionsFromTo (from, altitudeFrom, to, altitudeTo) {
+        if ( altitudeTo === void 0 ) altitudeTo = 0;
+
+        var fromMerc = performance.MercatorCoordinate.fromLngLat(from, altitudeFrom);
+        var toMerc = performance.MercatorCoordinate.fromLngLat(to, altitudeTo);
+        var dx = toMerc.x - fromMerc.x;
+        var dy = toMerc.y - fromMerc.y;
+        var dz = toMerc.z - fromMerc.z;
+        var distance3D = Math.hypot(dx, dy, dz);
+        if (distance3D === 0)
+            { throw new Error('Can\'t calculate camera options with same From and To'); }
+        var groundDistance = Math.hypot(dx, dy);
+        var zoom = this.transform.scaleZoom(this.transform.cameraToCenterDistance / distance3D / this.transform.tileSize);
+        var bearing = (Math.atan2(dx, -dy) * 180) / Math.PI;
+        var pitch = (Math.acos(groundDistance / distance3D) * 180) / Math.PI;
+        pitch = dz < 0 ? 90 - pitch : 90 + pitch;
+        return {
+            center: toMerc.toLngLat(),
+            zoom: zoom,
+            pitch: pitch,
+            bearing: bearing
+        };
+    };
+    /**
      * Changes any combination of `center`, `zoom`, `bearing`, `pitch`, and `padding` with an animated transition
      * between old and new values. The map will retain its current values for any
      * details not specified in `options`.
@@ -46821,6 +46854,12 @@ var Map = /*@__PURE__*/(function (Camera) {
      */
     Map.prototype.hasControl = function hasControl (control) {
         return this._controls.indexOf(control) > -1;
+    };
+    Map.prototype.calculateCameraOptionsFromTo = function calculateCameraOptionsFromTo (from, altitudeFrom, to, altitudeTo) {
+        if (altitudeTo == null && this.style.terrain) {
+            altitudeTo = this.transform.getElevation(to, this.style.terrain);
+        }
+        return Camera.prototype.calculateCameraOptionsFromTo.call(this, from, altitudeFrom, to, altitudeTo);
     };
     /**
      * Resizes the map according to the dimensions of its
