@@ -66,7 +66,7 @@ function drawDebug(painter: Painter, sourceCache: SourceCache, coords: Array<Ove
     }
 }
 
-function drawDebugTile(painter, sourceCache, coord: OverscaledTileID) {
+function drawDebugTile(painter: Painter, sourceCache: SourceCache, coord: OverscaledTileID) {
     const context = painter.context;
     const gl = context.gl;
 
@@ -77,14 +77,11 @@ function drawDebugTile(painter, sourceCache, coord: OverscaledTileID) {
     const stencilMode = StencilMode.disabled;
     const colorMode = painter.colorModeForRenderPass();
     const id = '$debug';
+    const terrainData = painter.style.terrain && painter.style.terrain.getTerrainData(coord);
 
     context.activeTexture.set(gl.TEXTURE0);
     // Bind the empty texture for drawing outlines
     painter.emptyTexture.bind(gl.LINEAR, gl.CLAMP_TO_EDGE);
-
-    program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled,
-        debugUniformValues(posMatrix, Color.red), id,
-        painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
 
     const tileRawData = sourceCache.getTileByID(coord.key).latestRawTileData;
     const tileByteLength = (tileRawData && tileRawData.byteLength) || 0;
@@ -95,12 +92,15 @@ function drawDebugTile(painter, sourceCache, coord: OverscaledTileID) {
     if (coord.overscaledZ !== coord.canonical.z) {
         tileIdText += ` => ${coord.overscaledZ}`;
     }
-    const tileLabel = `${tileIdText} ${tileSizeKb}kb`;
+    const tileLabel = `${tileIdText} ${tileSizeKb}kB`;
     drawTextToOverlay(painter, tileLabel);
 
     program.draw(context, gl.TRIANGLES, depthMode, stencilMode, ColorMode.alphaBlended, CullFaceMode.disabled,
-        debugUniformValues(posMatrix, Color.transparent, scaleRatio), id,
+        debugUniformValues(posMatrix, Color.transparent, scaleRatio), null, id,
         painter.debugBuffer, painter.quadTriangleIndexBuffer, painter.debugSegments);
+    program.draw(context, gl.LINE_STRIP, depthMode, stencilMode, colorMode, CullFaceMode.disabled,
+        debugUniformValues(posMatrix, Color.red), terrainData, id,
+        painter.debugBuffer, painter.tileBorderIndexBuffer, painter.debugSegments);
 }
 
 function drawTextToOverlay(painter: Painter, text: string) {

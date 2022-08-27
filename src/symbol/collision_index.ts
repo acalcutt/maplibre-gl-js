@@ -6,7 +6,6 @@ import * as intersectionTests from '../util/intersection_tests';
 import GridIndex from './grid_index';
 import {mat4, vec4} from 'gl-matrix';
 import ONE_EM from '../symbol/one_em';
-import assert from 'assert';
 
 import * as projection from '../symbol/projection';
 
@@ -55,6 +54,10 @@ class CollisionIndex {
     gridRightBoundary: number;
     gridBottomBoundary: number;
 
+    // With perspectiveRatio the fontsize is calculated for tilted maps (near = bigger, far = smaller).
+    // The cutoff defines a threshold to no longer render labels near the horizon.
+    perspectiveRatioCutoff: number;
+
     constructor(
         transform: Transform,
         grid = new GridIndex<FeatureKey>(transform.width + 2 * viewportPadding, transform.height + 2 * viewportPadding, 25),
@@ -70,6 +73,8 @@ class CollisionIndex {
         this.screenBottomBoundary = transform.height + viewportPadding;
         this.gridRightBoundary = transform.width + 2 * viewportPadding;
         this.gridBottomBoundary = transform.height + 2 * viewportPadding;
+
+        this.perspectiveRatioCutoff = 0.6;
     }
 
     placeCollisionBox(
@@ -77,12 +82,13 @@ class CollisionIndex {
         overlapMode: OverlapMode,
         textPixelRatio: number,
         posMatrix: mat4,
-        collisionGroupPredicate?: (key: FeatureKey) => boolean
+        collisionGroupPredicate?: (key: FeatureKey) => boolean,
+        getElevation?: (x: number, y: number) => number
     ): {
             box: Array<number>;
             offscreen: boolean;
         } {
-        const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY);
+        const projectedPoint = this.projectAndGetPerspectiveRatio(posMatrix, collisionBox.anchorPointX, collisionBox.anchorPointY, getElevation);
         const tileToViewport = textPixelRatio * projectedPoint.perspectiveRatio;
         const tlX = collisionBox.x1 * tileToViewport + projectedPoint.point.x;
         const tlY = collisionBox.y1 * tileToViewport + projectedPoint.point.y;
@@ -90,7 +96,8 @@ class CollisionIndex {
         const brY = collisionBox.y2 * tileToViewport + projectedPoint.point.y;
 
         if (!this.isInsideGrid(tlX, tlY, brX, brY) ||
-            (overlapMode !== 'always' && this.grid.hitTest(tlX, tlY, brX, brY, overlapMode, collisionGroupPredicate))) {
+            (overlapMode !== 'always' && this.grid.hitTest(tlX, tlY, brX, brY, overlapMode, collisionGroupPredicate)) ||
+            projectedPoint.perspectiveRatio < this.perspectiveRatioCutoff) {
             return {
                 box: [],
                 offscreen: false
@@ -116,7 +123,8 @@ class CollisionIndex {
         pitchWithMap: boolean,
         collisionGroupPredicate: (key: FeatureKey) => boolean,
         circlePixelDiameter: number,
-        textPixelPadding: number
+        textPixelPadding: number,
+        getElevation: (x: number, y: number) => number
     ): {
             circles: Array<number>;
             offscreen: boolean;
@@ -125,12 +133,12 @@ class CollisionIndex {
         const placedCollisionCircles = [];
 
         const tileUnitAnchorPoint = new Point(symbol.anchorX, symbol.anchorY);
-        const screenAnchorPoint = projection.project(tileUnitAnchorPoint, posMatrix);
+        const screenAnchorPoint = projection.project(tileUnitAnchorPoint, posMatrix, getElevation);
         const perspectiveRatio = projection.getPerspectiveRatio(this.transform.cameraToCenterDistance, screenAnchorPoint.signedDistanceFromCamera);
         const labelPlaneFontSize = pitchWithMap ? fontSize / perspectiveRatio : fontSize * perspectiveRatio;
         const labelPlaneFontScale = labelPlaneFontSize / ONE_EM;
 
-        const labelPlaneAnchorPoint = projection.project(tileUnitAnchorPoint, labelPlaneMatrix).point;
+        const labelPlaneAnchorPoint = projection.project(tileUnitAnchorPoint, labelPlaneMatrix, getElevation).point;
 
         const projectionCache = {};
         const lineOffsetX = symbol.lineOffsetX * labelPlaneFontScale;
@@ -148,7 +156,8 @@ class CollisionIndex {
             lineVertexArray,
             labelPlaneMatrix,
             projectionCache,
-            false);
+            false,
+            getElevation);
 
         let collisionDetected = false;
         let inGrid = false;
@@ -171,14 +180,13 @@ class CollisionIndex {
             for (let i = 1; i < last.path.length; i++) {
                 projectedPath.push(last.path[i]);
             }
-            assert(projectedPath.length >= 2);
 
             // Tolerate a slightly longer distance than one diameter between two adjacent circles
             const circleDist = radius * 2.5;
 
             // The path might need to be converted into screen space if a pitched map is used as the label space
             if (labelToScreenMatrix) {
-                const screenSpacePath = projectedPath.map(p => projection.project(p, labelToScreenMatrix));
+                const screenSpacePath = projectedPath.map(p => projection.project(p, labelToScreenMatrix, getElevation));
 
                 // Do not try to place collision circles if even of the points is behind the camera.
                 // This is a plausible scenario with big camera pitch angles
@@ -219,7 +227,6 @@ class CollisionIndex {
 
             for (const seg of segments) {
                 // interpolate positions for collision circles. Add a small padding to both ends of the segment
-                assert(seg.length > 0);
                 interpolator.reset(seg, radius * 0.25);
 
                 let numCircles = 0;
@@ -265,7 +272,7 @@ class CollisionIndex {
         }
 
         return {
-            circles: ((!showCollisionCircles && collisionDetected) || !inGrid) ? [] : placedCollisionCircles,
+            circles: ((!showCollisionCircles && collisionDetected) || !inGrid || perspectiveRatio < this.perspectiveRatioCutoff) ? [] : placedCollisionCircles,
             offscreen: entirelyOffscreen,
             collisionDetected
         };
@@ -354,9 +361,15 @@ class CollisionIndex {
         }
     }
 
-    projectAndGetPerspectiveRatio(posMatrix: mat4, x: number, y: number) {
-        const p = [x, y, 0, 1] as vec4;
-        projection.xyTransformMat4(p, p, posMatrix);
+    projectAndGetPerspectiveRatio(posMatrix: mat4, x: number, y: number, getElevation?: (x: number, y: number) => number) {
+        let p;
+        if (getElevation) { // slow because of handle z-index
+            p = [x, y, getElevation(x, y), 1] as vec4;
+            vec4.transformMat4(p, p, posMatrix);
+        } else { // fast because of ignore z-index
+            p = [x, y, 0, 1] as vec4;
+            projection.xyTransformMat4(p, p, posMatrix);
+        }
         const a = new Point(
             (((p[0] / p[3] + 1) / 2) * this.transform.width) + viewportPadding,
             (((-p[1] / p[3] + 1) / 2) * this.transform.height) + viewportPadding

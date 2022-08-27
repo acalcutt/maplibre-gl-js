@@ -1,6 +1,5 @@
-import assert from 'assert';
 import {supported} from '@mapbox/mapbox-gl-supported';
-
+import packageJSON from '../package.json' assert {type: 'json'};
 import Map from './ui/map';
 import NavigationControl from './ui/control/navigation_control';
 import GeolocateControl from './ui/control/geolocate_control';
@@ -8,6 +7,7 @@ import AttributionControl from './ui/control/attribution_control';
 import LogoControl from './ui/control/logo_control';
 import ScaleControl from './ui/control/scale_control';
 import FullscreenControl from './ui/control/fullscreen_control';
+import TerrainControl from './ui/control/terrain_control';
 import Popup from './ui/popup';
 import Marker from './ui/marker';
 import Style from './style/style';
@@ -35,6 +35,8 @@ import RasterTileSource from './source/raster_tile_source';
 import VectorTileSource from './source/vector_tile_source';
 import VideoSource from './source/video_source';
 
+const version = packageJSON.version;
+
 const exported = {
     supported,
     setRTLTextPlugin,
@@ -46,6 +48,7 @@ const exported = {
     LogoControl,
     ScaleControl,
     FullscreenControl,
+    TerrainControl,
     Popup,
     Marker,
     Style,
@@ -96,6 +99,14 @@ const exported = {
      * maplibregl.clearPrewarmedResources()
      */
     clearPrewarmedResources,
+
+    /**
+     * Returns the package version of the library
+     * @returns {string} Package version of the library
+     */
+    get version(): string {
+        return version;
+    },
 
     /**
      * Gets and sets the number of web workers instantiated on a page with GL JS maps.
@@ -235,7 +246,7 @@ Debug.extend(exported, {isSafari, getPerformanceMetrics: PerformanceUtils.getPer
  * @param {boolean} lazy If set to `true`, mapboxgl will defer loading the plugin until rtl text is encountered,
  *    rtl text will then be rendered only after the plugin finishes loading.
  * @example
- * maplibregl.setRTLTextPlugin('https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.0/mapbox-gl-rtl-text.js');
+ * maplibregl.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.js');
  * @see [Add support for right-to-left scripts](https://maplibre.org/maplibre-gl-js-docs/example/mapbox-gl-rtl-text/)
  */
 
@@ -250,5 +261,4 @@ Debug.extend(exported, {isSafari, getPerformanceMetrics: PerformanceUtils.getPer
  */
 
 export default exported;
-// canary assert: used to confirm that asserts have been removed from production build
-assert(true, 'canary assert');
+

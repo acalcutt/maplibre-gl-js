@@ -13,6 +13,9 @@ import {LngLatBoundsLike} from '../geo/lng_lat_bounds';
 import {IControl} from './control/control';
 import EvaluationParameters from '../style/evaluation_parameters';
 import {fakeServer, FakeServer} from 'nise';
+import {CameraOptions} from './camera';
+import Terrain, {} from '../render/terrain';
+import {mercatorZfromAltitude} from '../geo/mercator_coordinate';
 
 function createStyleSource() {
     return {
@@ -39,6 +42,17 @@ afterEach(() => {
 });
 
 describe('Map', () => {
+
+    test('version', () => {
+        const map = createMap({interactive: true, style: null});
+
+        expect(typeof map.version === 'string').toBeTruthy();
+
+        // Semver regex: https://gist.github.com/jhorsman/62eeea161a13b80e39f5249281e17c39
+        // Backslashes are doubled to escape them
+        const regexp = new RegExp('^([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?$');
+        expect(regexp.test(map.version)).toBeTruthy();
+    });
 
     test('constructor', () => {
         const map = createMap({interactive: true, style: null});
@@ -227,7 +241,7 @@ describe('Map', () => {
             map.transform.lngRange = [-120, 140];
             map.transform.latRange = [-60, 80];
             map.transform.resize(600, 400);
-            expect(map.transform.zoom).toBe(0.6983039737971012);
+            expect(map.transform.zoom).toBe(0.6983039737971014);
             expect(map.transform.unmodified).toBeTruthy();
             map.setStyle(createStyle());
             map.on('style.load', () => {
@@ -598,8 +612,8 @@ describe('Map', () => {
             expect(parseFloat(map.getBounds().getCenter().lat.toFixed(10))).toBe(0);
 
             expect(toFixed(map.getBounds().toArray())).toEqual(toFixed([
-                [ -70.31249999999976, -57.326521225216965 ],
-                [ 70.31249999999977, 57.32652122521695 ] ]));
+                [-70.31249999999976, -57.326521225216965],
+                [70.31249999999977, 57.32652122521695]]));
         });
 
         test('rotated bounds', () => {
@@ -631,7 +645,7 @@ describe('Map', () => {
 
     describe('#setMaxBounds', () => {
         test('constrains map bounds', () => {
-            const map = createMap({zoom:0});
+            const map = createMap({zoom: 0});
             map.setMaxBounds([[-130.4297, 50.0642], [-61.52344, 24.20688]]);
             expect(
                 toFixed([[-130.4297000000, 7.0136641176], [-61.5234400000, 60.2398142283]])
@@ -639,7 +653,7 @@ describe('Map', () => {
         });
 
         test('when no argument is passed, map bounds constraints are removed', () => {
-            const map = createMap({zoom:0});
+            const map = createMap({zoom: 0});
             map.setMaxBounds([[-130.4297, 50.0642], [-61.52344, 24.20688]]);
             expect(
                 toFixed([[-166.28906999999964, -27.6835270554], [-25.664070000000066, 73.8248206697]])
@@ -664,12 +678,12 @@ describe('Map', () => {
 
     describe('#getMaxBounds', () => {
         test('returns null when no bounds set', () => {
-            const map = createMap({zoom:0});
+            const map = createMap({zoom: 0});
             expect(map.getMaxBounds()).toBeNull();
         });
 
         test('returns bounds', () => {
-            const map = createMap({zoom:0});
+            const map = createMap({zoom: 0});
             const bounds = [[-130.4297, 50.0642], [-61.52344, 24.20688]] as LngLatBoundsLike;
             map.setMaxBounds(bounds);
             expect(map.getMaxBounds().toArray()).toEqual(bounds);
@@ -718,14 +732,14 @@ describe('Map', () => {
     });
 
     test('#setMinZoom', () => {
-        const map = createMap({zoom:5});
+        const map = createMap({zoom: 5});
         map.setMinZoom(3.5);
         map.setZoom(1);
         expect(map.getZoom()).toBe(3.5);
     });
 
     test('unset minZoom', () => {
-        const map = createMap({minZoom:5});
+        const map = createMap({minZoom: 5});
         map.setMinZoom(null);
         map.setZoom(1);
         expect(map.getZoom()).toBe(1);
@@ -739,7 +753,7 @@ describe('Map', () => {
     });
 
     test('ignore minZooms over maxZoom', () => {
-        const map = createMap({zoom:2, maxZoom:5});
+        const map = createMap({zoom: 2, maxZoom: 5});
         expect(() => {
             map.setMinZoom(6);
         }).toThrow();
@@ -748,14 +762,14 @@ describe('Map', () => {
     });
 
     test('#setMaxZoom', () => {
-        const map = createMap({zoom:0});
+        const map = createMap({zoom: 0});
         map.setMaxZoom(3.5);
         map.setZoom(4);
         expect(map.getZoom()).toBe(3.5);
     });
 
     test('unset maxZoom', () => {
-        const map = createMap({maxZoom:5});
+        const map = createMap({maxZoom: 5});
         map.setMaxZoom(null);
         map.setZoom(6);
         expect(map.getZoom()).toBe(6);
@@ -769,7 +783,7 @@ describe('Map', () => {
     });
 
     test('ignore maxZooms over minZoom', () => {
-        const map = createMap({minZoom:5});
+        const map = createMap({minZoom: 5});
         expect(() => {
             map.setMaxZoom(4);
         }).toThrow();
@@ -779,13 +793,13 @@ describe('Map', () => {
 
     test('throw on maxZoom smaller than minZoom at init', () => {
         expect(() => {
-            createMap({minZoom:10, maxZoom:5});
+            createMap({minZoom: 10, maxZoom: 5});
         }).toThrow(new Error('maxZoom must be greater than or equal to minZoom'));
     });
 
     test('throw on maxZoom smaller than minZoom at init with falsey maxZoom', () => {
         expect(() => {
-            createMap({minZoom:1, maxZoom:0});
+            createMap({minZoom: 1, maxZoom: 0});
         }).toThrow(new Error('maxZoom must be greater than or equal to minZoom'));
     });
 
@@ -827,7 +841,7 @@ describe('Map', () => {
     });
 
     test('unset maxPitch', () => {
-        const map = createMap({maxPitch:10});
+        const map = createMap({maxPitch: 10});
         map.setMaxPitch(null);
         map.setPitch(20);
         expect(map.getPitch()).toBe(20);
@@ -841,7 +855,7 @@ describe('Map', () => {
     });
 
     test('ignore maxPitchs over minPitch', () => {
-        const map = createMap({minPitch:10});
+        const map = createMap({minPitch: 10});
         expect(() => {
             map.setMaxPitch(0);
         }).toThrow();
@@ -2119,6 +2133,108 @@ describe('Map', () => {
         const map = createMap();
         map.once('sourcedataabort', () => done());
         map.fire(new Event('dataabort'));
+    });
+
+    describe('#calculateCameraOptionsFromTo', () => {
+        // Choose initial zoom to avoid center being constrained by mercator latitude limits.
+        test('pitch 90 with terrain', () => {
+            const map = createMap();
+
+            const mockedGetElevation = jest.fn((_tileID: OverscaledTileID, _x: number, _y: number, _extent?: number) => 111200);
+
+            const terrainStub = {} as Terrain;
+            terrainStub.getElevation = mockedGetElevation;
+            map.style.terrain = terrainStub;
+
+            // distance between lng x and lng x+1 is 111.2km at same lat
+            // altitude same as center elevation => 90° pitch
+            const cameraOptions: CameraOptions = map.calculateCameraOptionsFromTo(new LngLat(1, 0), 111200, new LngLat(0, 0));
+            expect(cameraOptions).toBeDefined();
+            expect(cameraOptions.pitch).toBeCloseTo(90);
+            expect(mockedGetElevation.mock.calls).toHaveLength(1);
+        });
+
+        test('pitch 153.435 with terrain', () => {
+            const map = createMap();
+
+            const mockedGetElevation = jest.fn((_tileID: OverscaledTileID, _x: number, _y: number, _extent?: number) => 111200 * 3);
+
+            const terrainStub = {} as Terrain;
+            terrainStub.getElevation = mockedGetElevation;
+            map.style.terrain = terrainStub;
+            // distance between lng x and lng x+1 is 111.2km at same lat
+            // (elevation difference of cam and center) / 2 = grounddistance =>
+            // acos(111.2 / sqrt(111.2² + (111.2 * 2)²)) = acos(1/sqrt(5)) => 63.435 + 90 = 153.435
+            const cameraOptions: CameraOptions = map.calculateCameraOptionsFromTo(new LngLat(1, 0), 111200, new LngLat(0, 0));
+            expect(cameraOptions).toBeDefined();
+            expect(cameraOptions.pitch).toBeCloseTo(153.435);
+            expect(mockedGetElevation.mock.calls).toHaveLength(1);
+        });
+
+        test('pitch 63 with terrain', () => {
+            const map = createMap();
+
+            const mockedGetElevation = jest.fn((_tileID: OverscaledTileID, _x: number, _y: number, _extent?: number) => 111200 / 2);
+
+            const terrainStub = {} as Terrain;
+            terrainStub.getElevation = mockedGetElevation;
+            map.style.terrain = terrainStub;
+
+            // distance between lng x and lng x+1 is 111.2km at same lat
+            // (elevation difference of cam and center) * 2 = grounddistance =>
+            // acos(111.2 / sqrt(111.2² + (111.2 * 0.5)²)) = acos(1/sqrt(1.25)) => 90 (looking down) - 26.565 = 63.435
+            const cameraOptions: CameraOptions = map.calculateCameraOptionsFromTo(new LngLat(0, 0), 111200, new LngLat(1, 0));
+            expect(cameraOptions).toBeDefined();
+            expect(cameraOptions.pitch).toBeCloseTo(63.435);
+            expect(mockedGetElevation.mock.calls).toHaveLength(1);
+        });
+
+        test('zoom distance 1000', () => {
+            const map = createMap();
+
+            const mockedGetElevation = jest.fn((_tileID: OverscaledTileID, _x: number, _y: number, _extent?: number) => 1000);
+
+            const terrainStub = {} as Terrain;
+            terrainStub.getElevation = mockedGetElevation;
+            map.style.terrain = terrainStub;
+
+            const expectedZoom = Math.log2(map.transform.cameraToCenterDistance / mercatorZfromAltitude(1000, 0) / map.transform.tileSize);
+            const cameraOptions = map.calculateCameraOptionsFromTo(new LngLat(0, 0), 0, new LngLat(0, 0));
+
+            expect(cameraOptions).toBeDefined();
+            expect(cameraOptions.zoom).toBeCloseTo(expectedZoom);
+            expect(mockedGetElevation.mock.calls).toHaveLength(1);
+        });
+
+        test('don\'t call getElevation when altitude supplied', () => {
+            const map = createMap();
+
+            const mockedGetElevation = jest.fn((_tileID: OverscaledTileID, _x: number, _y: number, _extent?: number) => 0);
+
+            const terrainStub = {} as Terrain;
+            terrainStub.getElevation = mockedGetElevation;
+            map.style.terrain = terrainStub;
+
+            const cameraOptions = map.calculateCameraOptionsFromTo(new LngLat(0, 0), 0, new LngLat(0, 0), 1000);
+
+            expect(cameraOptions).toBeDefined();
+            expect(mockedGetElevation.mock.calls).toHaveLength(0);
+        });
+
+        test('don\'t call getElevation when altitude 0 supplied', () => {
+            const map = createMap();
+
+            const mockedGetElevation = jest.fn((_tileID: OverscaledTileID, _x: number, _y: number, _extent?: number) => 0);
+
+            const terrainStub = {} as Terrain;
+            terrainStub.getElevation = mockedGetElevation;
+            map.style.terrain = terrainStub;
+
+            const cameraOptions = map.calculateCameraOptionsFromTo(new LngLat(0, 0), 0, new LngLat(1, 0), 0);
+
+            expect(cameraOptions).toBeDefined();
+            expect(mockedGetElevation.mock.calls).toHaveLength(0);
+        });
     });
 
 });

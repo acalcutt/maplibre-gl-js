@@ -379,6 +379,22 @@ describe('Style#loadJSON', () => {
             style._layers.background.fire(new Event('error', {mapLibre: true}));
         });
     });
+
+    test('sets terrain if defined', (done) => {
+        const map = getStubMap();
+        const style = new Style(map);
+        map.transform.updateElevation = jest.fn();
+        style.loadJSON(createStyleJSON({
+            sources: {'source-id': createGeoJSONSource()},
+            terrain: {source: 'source-id', exaggeration: 0.33}
+        }));
+
+        style.on('style.load', () => {
+            expect(style.terrain).toBeDefined();
+            expect(map.transform.updateElevation).toHaveBeenCalled();
+            done();
+        });
+    });
 });
 
 describe('Style#_remove', () => {
@@ -867,7 +883,7 @@ describe('Style#addLayer', () => {
                 'type': 'geojson',
                 'data': {
                     'type': 'Point',
-                    'coordinates': [ 0, 0]
+                    'coordinates': [0, 0]
                 }
             };
             const layer = {id: 'inline-source-layer', type: 'circle', source} as any as LayerSpecification;
@@ -1885,7 +1901,7 @@ describe('Style#queryRenderedFeatures', () => {
                 errors++;
             }
         });
-        style.queryRenderedFeatures([{x: 0, y: 0}], {layers:'string'}, transform);
+        style.queryRenderedFeatures([{x: 0, y: 0}], {layers: 'string'}, transform);
         expect(errors).toBe(1);
     });
 
@@ -1923,7 +1939,7 @@ describe('Style#queryRenderedFeatures', () => {
         jest.spyOn(style, 'fire').mockImplementation((event) => {
             if (event['error'] && event['error'].message.includes('does not exist in the map\'s style and cannot be queried for features.')) errors++;
         });
-        const results = style.queryRenderedFeatures([{x: 0, y: 0}], {layers:['merp']}, transform);
+        const results = style.queryRenderedFeatures([{x: 0, y: 0}], {layers: ['merp']}, transform);
         expect(errors).toBe(1);
         expect(results).toHaveLength(0);
     });

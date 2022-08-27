@@ -1,3 +1,6 @@
+
+// Disable Flow annotations here because Flow doesn't support importing GLSL files
+
 import preludeFrag from './_prelude.fragment.glsl.g';
 import preludeVert from './_prelude.vertex.glsl.g';
 import backgroundFrag from './background.fragment.glsl.g';
@@ -50,8 +53,12 @@ import symbolSDFFrag from './symbol_sdf.fragment.glsl.g';
 import symbolSDFVert from './symbol_sdf.vertex.glsl.g';
 import symbolTextAndIconFrag from './symbol_text_and_icon.fragment.glsl.g';
 import symbolTextAndIconVert from './symbol_text_and_icon.vertex.glsl.g';
+import terrainDepthFrag from './terrain_depth.fragment.glsl.g';
+import terrainCoordsFrag from './terrain_coords.fragment.glsl.g';
+import terrainFrag from './terrain.fragment.glsl.g';
+import terrainVert from './terrain.vertex.glsl.g';
 
-export default {
+const shaders = {
     prelude: compile(preludeFrag, preludeVert),
     background: compile(backgroundFrag, backgroundVert),
     backgroundPattern: compile(backgroundPatternFrag, backgroundPatternVert),
@@ -77,8 +84,13 @@ export default {
     raster: compile(rasterFrag, rasterVert),
     symbolIcon: compile(symbolIconFrag, symbolIconVert),
     symbolSDF: compile(symbolSDFFrag, symbolSDFVert),
-    symbolTextAndIcon: compile(symbolTextAndIconFrag, symbolTextAndIconVert)
+    symbolTextAndIcon: compile(symbolTextAndIconFrag, symbolTextAndIconVert),
+    terrain: compile(terrainFrag, terrainVert),
+    terrainDepth: compile(terrainDepthFrag, terrainVert),
+    terrainCoords: compile(terrainCoordsFrag, terrainVert)
 };
+
+export default shaders;
 
 // Expand #pragmas to #ifdefs.
 

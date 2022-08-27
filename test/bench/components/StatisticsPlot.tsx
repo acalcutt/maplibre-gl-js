@@ -5,11 +5,11 @@ import {Axis} from './Axis';
 import {formatSample, Version, versionColor} from './util';
 
 type StatisticsPlotProps = {
-  versions: Version[];
+    versions: Version[];
 }
 
 type StatisticsPlotState = {
-  width: number;
+    width: number;
 }
 
 export const StatisticsPlot = (props:StatisticsPlotProps) => {
@@ -131,7 +131,7 @@ export const StatisticsPlot = (props:StatisticsPlotProps) => {
                                         x={scale(i)}
                                         y={t(d)}
                                         style={{
-                                            stroke:color,
+                                            stroke: color,
                                             strokeWidth: i === argmin || i === argmax ? 2 : 1,
                                             fill: 'rgba(200, 0, 0, 0.5)'
                                         }}
