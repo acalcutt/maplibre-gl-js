@@ -8621,6 +8621,17 @@ declare abstract class Camera extends Evented {
 	 */
 	jumpTo(options: JumpToOptions, eventData?: any): this;
 	/**
+	 * Calculates pitch, zoom and bearing for looking at @param newCenter with the camera position being @param newCenter
+	 * and returns them as Cameraoptions.
+	 * @memberof Map#
+	 * @param from The camera to look from
+	 * @param altitudeFrom The altitude of the camera to look from
+	 * @param to The center to look at
+	 * @param altitudeTo Optional altitude of the center to look at. If none given the ground height will be used.
+	 * @returns {CameraOptions} the calculated camera options
+	 */
+	calculateCameraOptionsFromTo(from: LngLat, altitudeFrom: number, to: LngLat, altitudeTo?: number): CameraOptions;
+	/**
 	 * Changes any combination of `center`, `zoom`, `bearing`, `pitch`, and `padding` with an animated transition
 	 * between old and new values. The map will retain its current values for any
 	 * details not specified in `options`.
@@ -9514,6 +9525,7 @@ export declare class Map extends Camera {
 	 * map.hasControl(navigation);
 	 */
 	hasControl(control: IControl): boolean;
+	calculateCameraOptionsFromTo(from: LngLat, altitudeFrom: number, to: LngLat, altitudeTo?: number): CameraOptions;
 	/**
 	 * Resizes the map according to the dimensions of its
 	 * `container` element.
