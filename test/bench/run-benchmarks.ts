@@ -15,8 +15,10 @@ if (!fs.existsSync(dir)) {
 
 const url = new URL('http://localhost:9966/bench/versions');
 
-for (const compare of [].concat(argv.compare).filter(Boolean))
-    url.searchParams.append('compare', compare);
+if (argv.compare !== true && argv.compare !== undefined) { // handle --compare without argument as the default
+    for (const compare of [].concat(argv.compare))
+        url.searchParams.append('compare', compare || '');
+}
 
 console.log(`Starting headeless chrome at: ${url.toString()}`);
 
@@ -43,6 +45,7 @@ try {
     const versions = await webPage.evaluate((name) => Object.keys(window.maplibreglBenchmarks[name]), allNames[0]);
 
     const toRun = argv._.length > 0 ? argv._ : allNames;
+    toRun.sort();
 
     const nameWidth = Math.max(...toRun.map(v => v.length)) + 1;
     const timeWidth = Math.max(...versions.map(v => v.length), 16);
@@ -67,15 +70,15 @@ try {
         );
         // @ts-ignore
         const results = await webPage.evaluate((name) => window.maplibreglBenchmarkResults[name], name);
-        const output = versions.map((v) => formatTime(results[v].summary.trimmedMean).padStart(timeWidth) + formatRegression(results[v].regression));
+        const output = versions.map((v) => results[v] ? formatTime(results[v].summary?.trimmedMean).padStart(timeWidth) + formatRegression(results[v].regression) : ''.padStart(timeWidth + 1));
         if (versions.length === 2) {
             const [main, current] = versions;
-            const delta = results[current].summary.trimmedMean - results[main].summary.trimmedMean;
+            const delta = results[current]?.summary?.trimmedMean - results[main]?.summary?.trimmedMean;
             output.push(((delta > 0 ? '+' : '') + formatTime(delta)).padStart(15));
         }
         console.log(...output);
 
-        merger.add(await webPage.pdf({
+        await merger.add(await webPage.pdf({
             format: 'a4',
             path: `${dir}/${name}.pdf`,
             printBackground: true,
@@ -95,5 +98,5 @@ try {
         console.log('Could not connect to server. Please run \'npm run start-bench\'.');
     }
 } finally {
-    browser.close();
+    await browser.close();
 }

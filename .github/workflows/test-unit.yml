@@ -18,13 +18,18 @@ jobs:
           - x64
 
     name: ${{ matrix.os }}
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: write
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3.4.1
+        uses: actions/setup-node@v3.5.0
         with:
           node-version: ${{ matrix.node_version }}
           architecture: ${{ matrix.architecture }}
       - run: npm ci
-      - run: xvfb-run -s "-ac -screen 0 1280x1024x24" npm run test-unit
+      - run: xvfb-run -s "-ac -screen 0 1280x1024x24" npm run test-unit-ci
+
