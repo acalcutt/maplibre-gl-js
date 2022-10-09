@@ -6,6 +6,7 @@ import {Evented} from '../util/evented';
 import type Transform from '../geo/transform';
 import type SourceCache from '../source/source_cache';
 import Terrain from '../render/terrain';
+import {values} from '../util/util';
 
 /**
  * This class is a helper for the Terrain-class, it:
@@ -182,6 +183,6 @@ export default class TerrainSourceCache extends Evented {
      * @returns {Array<Tile>} - the relevant tiles
      */
     tilesAfterTime(time = Date.now()): Array<Tile> {
-        return Object.values(this._tiles).filter(t => t.timeAdded >= time);
+        return values(this._tiles).filter(t => t.timeAdded >= time);
     }
 }

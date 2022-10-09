@@ -4,6 +4,7 @@ import CullFaceMode from '../gl/cull_face_mode';
 import {debugUniformValues} from './program/debug_program';
 import Color from '../style-spec/util/color';
 import ColorMode from '../gl/color_mode';
+import {values} from '../util/util';
 
 import type Painter from './painter';
 import type SourceCache from '../source/source_cache';
@@ -128,7 +129,7 @@ export function selectDebugSource(style: Style, zoom: number): SourceCache | nul
     // Use vector source with highest maxzoom
     // Else use source with highest maxzoom of any type
     let selectedSource: SourceCache = null;
-    const layers = Object.values(style._layers);
+    const layers = values(style._layers);
     const sources = layers.flatMap((layer) => {
         if (layer.source && !layer.isHidden(zoom)) {
             const sourceCache = style.sourceCaches[layer.source];

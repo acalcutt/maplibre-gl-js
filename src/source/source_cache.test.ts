@@ -10,6 +10,7 @@ import {extend} from '../util/util';
 import browser from '../util/browser';
 import Dispatcher from '../util/dispatcher';
 import {Callback} from '../types/callback';
+import {values} from '../util/util';
 
 class SourceMock extends Evented {
     id: string;
@@ -1703,7 +1704,7 @@ describe('SourceCache#usedForTerrain', () => {
         sourceCache.on('data', (e) => {
             if (e.sourceDataType === 'metadata') {
                 sourceCache.update(transform);
-                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                expect(values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
                     ['2tc099', '2tbz99', '2sxs99', '2sxr99', 'pds88', 'eo55', 'pdr88', 'en55', 'p6o88', 'ds55', 'p6n88', 'dr55']
                 );
                 done();
@@ -1723,7 +1724,7 @@ describe('SourceCache#usedForTerrain', () => {
         sourceCache.on('data', (e) => {
             if (e.sourceDataType === 'metadata') {
                 sourceCache.update(transform);
-                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                expect(values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
                     ['2tc099', '2tbz99', '2sxs99', '2sxr99', 'pds88', 'pdr88', 'p6o88', 'p6n88']
                 );
                 done();
@@ -1743,7 +1744,7 @@ describe('SourceCache#usedForTerrain', () => {
         sourceCache.on('data', (e) => {
             if (e.sourceDataType === 'metadata') {
                 sourceCache.update(transform);
-                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                expect(values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
                     ['1033', '3s44', '3r44', '3c44', '3b44', 'z33', 's33', 'r33']
                 );
                 done();
@@ -1763,7 +1764,7 @@ describe('SourceCache#usedForTerrain', () => {
         sourceCache.on('data', (e) => {
             if (e.sourceDataType === 'metadata') {
                 sourceCache.update(transform);
-                expect(Object.values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
+                expect(values(sourceCache._tiles).map(t => t.tileID.key)).toEqual(
                     ['3s44', '3r44', '3c44', '3b44']
                 );
                 done();

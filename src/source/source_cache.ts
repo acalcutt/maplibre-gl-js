@@ -11,6 +11,7 @@ import Point from '@mapbox/point-geometry';
 import browser from '../util/browser';
 import {OverscaledTileID} from './tile_id';
 import SourceFeatureState from './source_state';
+import {values} from '../util/util';
 
 import type {Source} from './source';
 import type Map from '../ui/map';
@@ -541,7 +542,7 @@ class SourceCache extends Evented {
                     parents[parent2.key] = parent2;
                 }
             }
-            idealTileIDs = idealTileIDs.concat(Object.values(parents));
+            idealTileIDs = idealTileIDs.concat(values(parents));
         }
 
         // Retain is a list of tiles that we shouldn't delete, even if they are not
