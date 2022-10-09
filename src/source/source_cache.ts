@@ -11,7 +11,6 @@ import Point from '@mapbox/point-geometry';
 import browser from '../util/browser';
 import {OverscaledTileID} from './tile_id';
 import SourceFeatureState from './source_state';
-import {values} from '../util/util';
 
 import type {Source} from './source';
 import type Map from '../ui/map';
