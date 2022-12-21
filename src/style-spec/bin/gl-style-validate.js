@@ -3,7 +3,7 @@
 
 import minimist from 'minimist';
 import rw from 'rw';
-import {validate} from '@maplibre/maplibre-gl-style-spec';
+import {validate} from '@acalcutt/maplibre-gl-style-spec';
 
 const argv = minimist('minimist')(process.argv.slice(2), {
     boolean: 'json',
