@@ -65,7 +65,7 @@
     "@types/pngjs": "^6.0.1",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
-    "@types/request": "^2.48.8",
+    "@types/request": "^2.48.12",
     "@types/rollup-plugin-json": "^3.0.3",
     "@types/shuffle-seed": "^1.1.0",
     "@types/supercluster": "^7.1.0",
