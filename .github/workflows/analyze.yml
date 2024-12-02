@@ -25,14 +25,14 @@ jobs:
           architecture: x64
       - run: npm ci
       - name: Download branch artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v7
         with:
           workflow: ${{ github.event.workflow_run.workflow_id }}
           name: dist
           path: after
           repo: maplibre/maplibre-gl-js
       - name: Download branch build info
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v7
         with:
           workflow: ${{ github.event.workflow_run.workflow_id }}
           name: build-info
@@ -44,7 +44,7 @@ jobs:
           echo "::set-output name=pr_number::$(cat build-info/pull_request_number)"
           echo "::set-output name=base_sha::$(cat build-info/base_sha)"
       - name: Download base artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v7
         with:
           workflow: build.yml
           commit: ${{ steps.build_info.outputs.base_sha }}
